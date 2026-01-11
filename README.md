@@ -16,7 +16,8 @@ This is a monorepo containing:
 ├── .claude/          # Claude Code configuration and custom commands
 ├── apps/             # Frontend applications
 │   ├── web/          # Web application
-│   └── mobile/       # Mobile application
+│   ├── mobile/       # Mobile application
+│   └── ai/           # AI interface (Claude-powered)
 ├── services/         # Backend microservices
 │   ├── api-gateway/  # API gateway service
 │   ├── auth-service/ # Authentication & authorization

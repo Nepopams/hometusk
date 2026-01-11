@@ -90,6 +90,7 @@ Custom Claude commands are located in `.claude/commands/`
 
 ### Project Context
 Key context documents for Claude:
+- Service catalog: `docs/architecture/service-catalog.md`
 - Architecture diagrams: `docs/architecture/diagrams/`
 - Architecture decisions: `docs/architecture/decisions/`
 - API contracts: `docs/contracts/`
