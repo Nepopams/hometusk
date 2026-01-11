@@ -1,0 +1,41 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+title C4 L3 - Components: Command Processor
+
+Container_Boundary(cp, "Command Processor") {
+
+  Component(controller, "CommandController", "HTTP Controller", "Принимает /commands/execute, присваивает correlationId")
+  Component(authz, "AuthZ/Policy Check", "Policy", "Проверка прав: household membership, роли")
+  Component(router, "CommandRouter", "Router", "Определяет тип команды: NL/Structured")
+  Component(pipeline, "AIPipelineInvoker", "Orchestrator", "Вызывает Intent→Context→Decision пайплайн")
+  Component(schema, "SchemaValidator", "Validation", "JSON Schema validation результатов агентов")
+  Component(bizval, "BusinessValidator", "Validation", "Проверяет бизнес-инварианты (зоны, дедлайны, доступность)")
+  Component(exec, "ActionExecutor", "Application Service", "Маппит решение в доменные команды и исполняет")
+  Component(decisionlog, "DecisionLogWriter", "Repository", "Пишет decision trace (JSONB) для аудита/аналитики")
+  Component(outbox, "OutboxPublisher", "Outbox", "Публикует события (TaskCreated/Assigned/Completed)")
+  Component(fallback, "FallbackHandler", "UX", "Формирует уточняющий вопрос/дефолтное поведение при низкой уверенности")
+
+}
+
+Container(ai, "AI Orchestration Layer", "Service", "Intent/Context/Decision")
+Container(domain, "Domain Services", "Service", "Task/User/Zone/Shopping")
+ContainerDb(db, "PostgreSQL", "DB", "Data + logs + outbox")
+
+Rel(controller, authz, "Checks")
+Rel(controller, router, "Routes")
+Rel(router, pipeline, "Invokes for NL commands")
+Rel(pipeline, schema, "Validates AI outputs")
+Rel(schema, bizval, "Passes validated payload")
+Rel(bizval, exec, "Executes or rejects")
+Rel(exec, domain, "Calls domain APIs", "gRPC/HTTP")
+Rel(exec, outbox, "Writes events")
+Rel(exec, decisionlog, "Writes decision trace")
+Rel(decisionlog, db, "INSERT", "SQL")
+Rel(outbox, db, "INSERT (outbox)", "SQL")
+
+Rel(bizval, fallback, "On failure/low confidence")
+Rel(fallback, controller, "Returns UX response")
+
+Rel(pipeline, ai, "Calls", "gRPC/HTTP")
+
+@enduml

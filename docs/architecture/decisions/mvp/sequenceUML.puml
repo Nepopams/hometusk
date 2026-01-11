@@ -1,0 +1,58 @@
+@startuml
+title Sequence - MVP: NL Command -> Assign Task
+
+actor User as user
+participant "Mobile App" as mobile
+participant "API Gateway" as api
+participant "Command Processor" as cp
+participant "AI Orchestration Layer" as ai
+participant "LLM Provider" as llm
+participant "Domain Services" as domain
+database "PostgreSQL" as db
+participant "Notification Service" as notif
+participant "Push Provider" as push
+
+user -> mobile : ввод/голос\n"Нужно убрать кухню сегодня вечером"
+mobile -> api : POST /commands/execute\n{ text, householdId }
+api -> cp : ExecuteCommand(correlationId, payload)
+
+cp -> db : load household context\n(users, zones, rules, load)
+cp -> ai : runPipeline(command, contextRef)
+
+ai -> llm : Intent prompt + schema
+llm --> ai : IntentResult{ create_task, cleaning, zone=kitchen, timeframe=today_evening, confidence }
+
+ai -> llm : Context prompt (with candidates)\n+ schema
+llm --> ai : ContextSnapshot{ candidates, constraints }
+
+ai -> llm : Decision prompt\n(rules + context)\n+ schema
+llm --> ai : DecisionResult{ action=assign_task, assigneeId, deadline, confidence }
+
+ai --> cp : DecisionResult + traces
+
+cp -> cp : SchemaValidator(JSON Schema)
+cp -> cp : BusinessValidator(invariants)
+
+alt confidence low OR validation fails
+  cp -> ai : request clarification template
+  ai -> llm : Clarify prompt
+  llm --> ai : DecisionResult{ action=ask_clarifying_question, question }
+  ai --> cp : clarification
+  cp --> api : 200 OK (question)
+  api --> mobile : show question
+else validated decision
+  cp -> domain : AssignTaskCommand(...)
+  domain -> db : INSERT task (tx)
+  domain -> db : INSERT outbox events (tx)
+  domain --> cp : TaskCreated + TaskAssigned
+
+  cp -> db : INSERT decision_log (JSONB)\n(correlationId, intent, context, decision)
+  cp -> notif : Notify(assigneeId, taskId)
+  notif -> push : send push
+  push --> mobile : push received
+
+  cp --> api : 200 OK\n{taskId, assignee, deadline}
+  api --> mobile : render result
+end
+
+@enduml

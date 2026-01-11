@@ -1,0 +1,83 @@
+@startuml
+title C4 L4 - Code (MVP): Core Contracts + Domain Model (simplified)
+
+class NaturalLanguageCommand {
+  +text: String
+  +source: String  <<mobile|web|voice>>
+  +requestedByUserId: UUID
+  +householdId: UUID
+  +clientTimestamp: Instant
+}
+
+class IntentResult {
+  +intent: String <<create_task|add_to_shopping_list|...>>
+  +taskType: String
+  +zone: String
+  +timeframe: String
+  +confidence: float
+}
+
+class ContextSnapshot {
+  +householdId: UUID
+  +candidates: List<UserCandidate>
+  +constraints: Map
+  +currentLoadModelVersion: String
+}
+
+class UserCandidate {
+  +userId: UUID
+  +loadScore: float
+  +zoneOwner: boolean
+  +availability: String
+}
+
+class DecisionResult {
+  +action: String <<assign_task|ask_clarifying_question>>
+  +assigneeId: UUID
+  +deadline: Instant
+  +confidence: float
+  +clarifyingQuestion: String
+}
+
+class AssignTaskCommand {
+  +taskTitle: String
+  +taskType: String
+  +zoneId: UUID
+  +assigneeId: UUID
+  +deadline: Instant
+  +createdByUserId: UUID
+}
+
+class TaskAggregate {
+  +taskId: UUID
+  +title: String
+  +type: String
+  +zoneId: UUID
+  +assigneeId: UUID
+  +status: String <<Open|Done|Cancelled>>
+  +deadline: Instant
+  +createdAt: Instant
+  +complete()
+  +assign()
+}
+
+class TaskCreatedEvent {
+  +taskId: UUID
+  +householdId: UUID
+  +occurredAt: Instant
+}
+class TaskAssignedEvent {
+  +taskId: UUID
+  +assigneeId: UUID
+  +occurredAt: Instant
+}
+
+NaturalLanguageCommand --> IntentResult : "Intent Agent output"
+IntentResult --> ContextSnapshot : "Context Agent enrich"
+ContextSnapshot --> DecisionResult : "Decision Agent decides"
+DecisionResult --> AssignTaskCommand : "mapped by ActionExecutor"
+AssignTaskCommand --> TaskAggregate : "handled by Domain Service"
+TaskAggregate --> TaskCreatedEvent
+TaskAggregate --> TaskAssignedEvent
+
+@enduml

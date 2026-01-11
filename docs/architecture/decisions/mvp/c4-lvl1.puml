@@ -1,0 +1,20 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+title C4 L1 - System Context: HomeOps (MVP)
+
+Person(user, "Пользователь", "Взрослый/ребёнок/сосед. Создаёт команды, выполняет задачи.")
+Person(admin, "Администратор дома", "Настраивает домохозяйство, участников, зоны ответственности.")
+
+System(homeops, "HomeOps", "ИИ-координатор домашних дел: команды → решения → исполнение")
+
+System_Ext(push, "Push/Notification Provider", "APNS/FCM/Email/SMS")
+System_Ext(idp, "Identity Provider", "OIDC/OAuth2 (опционально)")
+System_Ext(llm, "LLM Provider", "Модель для NLU/Decision (через API)")
+
+Rel(user, homeops, "Использует", "Mobile/Web")
+Rel(admin, homeops, "Администрирует", "Mobile/Web")
+Rel(homeops, push, "Отправляет уведомления", "HTTPS")
+Rel(homeops, idp, "Проверяет токены", "OIDC/OAuth2")
+Rel(homeops, llm, "Запрашивает интерпретацию и решение", "HTTPS")
+
+@enduml
