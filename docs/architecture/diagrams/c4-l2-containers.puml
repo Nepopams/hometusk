@@ -1,0 +1,43 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+title C4 L2 - Containers: HomeOps (MVP)
+
+Person(user, "Пользователь", "Команды, подтверждения, выполнение")
+Person(admin, "Администратор дома", "Роли, зоны, правила")
+
+System_Boundary(s1, "HomeOps") {
+
+  Container(mobile, "Mobile App", "iOS/Android", "Primary UX: чат/голос, уведомления, быстрые действия")
+  Container(web, "Web App", "Web", "Read-heavy: аналитика, история, админка")
+
+  Container(api, "API Gateway", "HTTP/REST", "Единая точка входа: AuthN/Z, rate limits, correlationId")
+  Container(cmd, "Command Processor", "Service", "Приём команд, оркестрация AI-пайплайна, валидации, исполнение действий")
+  Container(ai, "AI Orchestration Layer", "Service", "Intent/Context/Decision pipeline, prompts, schema binding")
+  Container(domain, "Domain Services", "Service", "Task/User/Zone/Shopping: бизнес-правила, транзакции")
+  Container(notify, "Notification Service", "Service", "Доставка уведомлений, шаблоны, ретраи")
+
+  ContainerDb(db, "PostgreSQL", "DB", "Операционные данные + журналы решений (JSONB), outbox events")
+}
+
+System_Ext(push, "Push Provider (APNS/FCM)", "External")
+System_Ext(llm, "LLM Provider", "External")
+
+Rel(user, mobile, "Использует")
+Rel(user, web, "Иногда использует")
+Rel(admin, web, "Использует")
+
+Rel(mobile, api, "Calls", "HTTPS")
+Rel(web, api, "Calls", "HTTPS")
+
+Rel(api, cmd, "Routes commands", "HTTP/gRPC")
+Rel(cmd, ai, "Requests AI decision", "HTTP/gRPC")
+Rel(ai, llm, "LLM calls", "HTTPS")
+
+Rel(cmd, domain, "Executes validated actions", "HTTP/gRPC")
+Rel(domain, db, "Read/Write", "SQL")
+Rel(cmd, db, "Writes decision logs + outbox", "SQL")
+
+Rel(domain, notify, "Emits notification intents/events", "Async (outbox/poll)")
+Rel(notify, push, "Sends", "HTTPS")
+
+@enduml
