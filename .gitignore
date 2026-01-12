@@ -38,4 +38,9 @@ temp/
 Thumbs.db
 .DS_Store
 
+# Gradle
+.gradle/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+
 # TODO: Add language/framework-specific ignores as stack is defined
