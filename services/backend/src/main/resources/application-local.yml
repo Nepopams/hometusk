@@ -1,0 +1,20 @@
+# Local development profile
+# Usage: SPRING_PROFILES_ACTIVE=local ./gradlew bootRun
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/hometusk
+    username: hometusk
+    password: hometusk_dev
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8180/realms/hometusk
+          jwk-set-uri: http://localhost:8180/realms/hometusk/protocol/openid-connect/certs
+
+logging:
+  level:
+    com.hometusk: DEBUG
+    org.springframework.security: DEBUG

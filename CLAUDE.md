@@ -55,7 +55,7 @@ These rules **must never be violated**. They are invariants of the system.
 ### 2. Intent-driven API
 
 - Users submit **commands**, not CRUD operations
-- Endpoint: `POST /commands/execute` (not `POST /tasks`)
+- Endpoint: `POST /api/v1/commands` (not `POST /tasks`)
 - Commands are first-class entities with their own lifecycle
 
 ### 3. Command traceability is mandatory
@@ -147,15 +147,38 @@ These files are the source of truth for the project:
 
 ## Technology Stack
 
-> Decisions pending. Do not assume specific technologies.
+### Stage 1 (Current)
+
+| Layer | Technology | Notes |
+|-------|------------|-------|
+| Backend | Java 21 + Spring Boot 3.x | Single service: `services/backend/` |
+| Build | Gradle (Kotlin DSL) | With Spotless for formatting |
+| Database | PostgreSQL 15 | Via Flyway migrations |
+| ORM | Spring Data JPA | With JSONB support |
+| Auth | Keycloak | JWT validation (Resource Server) |
+| API Docs | springdoc-openapi | Swagger UI at `/swagger-ui.html` |
+| Testing | JUnit 5 + Testcontainers | PostgreSQL container for integration tests |
+
+### Future (TBD)
 
 | Layer | Status |
 |-------|--------|
-| Backend language/framework | TBD |
-| Database | TBD |
-| LLM Provider | TBD |
+| LLM Provider | Stage 2 |
 | Frontend framework | TBD |
-| Infrastructure | TBD |
+| Push notifications | Stage 3 |
+
+### Local Development
+
+```bash
+# Start infrastructure
+cd infra/compose && docker-compose up -d
+
+# Run backend
+cd services/backend && ./gradlew bootRun
+
+# Run tests
+./scripts/test.sh
+```
 
 ---
 
@@ -266,4 +289,6 @@ If a new agent is needed:
 
 - [ADR-001: Voice scenario (future)](docs/architecture/decisions/001-mvp-voice-task-scenario.md)
 - [ADR-002: Text MVP scenario](docs/architecture/decisions/002-mvp-text-command-scenario.md)
+- [ADR-003: Stage 1 Commands API](docs/architecture/decisions/003-stage1-commands-api.md)
 - [C4 Diagrams](docs/architecture/decisions/mvp/)
+- [Commands API Contract](docs/contracts/http/commands.openapi.yaml)

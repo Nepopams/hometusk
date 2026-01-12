@@ -1,0 +1,25 @@
+# Test configuration
+spring:
+  datasource:
+    # Will be overridden by Testcontainers
+    url: jdbc:postgresql://localhost:5432/hometusk_test
+    username: test
+    password: test
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Disabled for tests - using mock JWT
+          issuer-uri: http://localhost:8180/realms/test
+
+logging:
+  level:
+    com.hometusk: DEBUG
+    org.springframework.security: DEBUG
+    org.testcontainers: INFO

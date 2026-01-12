@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "create-task",
+  "title": "CreateTaskPayload",
+  "type": "object",
+  "required": ["title"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "description": {
+      "type": ["string", "null"],
+      "maxLength": 2000
+    },
+    "assigneeId": {
+      "type": ["string", "null"],
+      "format": "uuid"
+    },
+    "zoneId": {
+      "type": ["string", "null"],
+      "format": "uuid"
+    },
+    "deadline": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}

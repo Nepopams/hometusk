@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hometusk.app/schemas/commands/complete-task.json",
+  "title": "CompleteTaskPayload",
+  "description": "Payload for complete_task command",
+  "type": "object",
+  "required": ["taskId"],
+  "properties": {
+    "taskId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "ID of the task to complete (must exist in household)"
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "taskId": "123e4567-e89b-12d3-a456-426614174002"
+    }
+  ]
+}
