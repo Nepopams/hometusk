@@ -1,0 +1,804 @@
+openapi: 3.1.0
+info:
+  title: HomeTusk Commands API
+  version: 1.0.0
+  description: |
+    Intent-driven API for household task management.
+    Users submit commands, not CRUD operations.
+
+    **Stage 1:** Structured commands (no NL processing yet).
+
+    See also:
+    - [CLAUDE.md](../../../CLAUDE.md) — Development rules
+    - [ADR-003](../../architecture/decisions/003-stage1-commands-api.md) — Stage 1 decisions
+
+servers:
+  - url: /api/v1
+    description: API version 1
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Commands
+    description: Command execution endpoints
+  - name: Users
+    description: User profile endpoints
+  - name: Households
+    description: Household data endpoints
+  - name: Internal
+    description: Internal/admin endpoints (not for public use)
+
+paths:
+  /commands:
+    post:
+      operationId: executeCommand
+      summary: Execute a household command
+      description: |
+        Processes a command and returns the execution result.
+        Commands are first-class entities with their own lifecycle.
+
+        **Supported command types:**
+        - `create_task` — Create a new task
+        - `complete_task` — Mark a task as done
+
+        **Traceability:**
+        - Provide `X-Correlation-ID` header for distributed tracing
+        - Server generates one if not provided
+        - All logs and database records include this ID
+      tags:
+        - Commands
+      parameters:
+        - name: X-Correlation-ID
+          in: header
+          required: false
+          description: Client-provided correlation ID for distributed tracing
+          schema:
+            type: string
+            format: uuid
+        - name: X-Idempotency-Key
+          in: header
+          required: false
+          description: Client-provided key for safe retries
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommandRequest'
+            examples:
+              createTask:
+                summary: Create a task
+                value:
+                  householdId: "123e4567-e89b-12d3-a456-426614174000"
+                  type: "create_task"
+                  payload:
+                    title: "Clean the kitchen"
+                    zoneId: "123e4567-e89b-12d3-a456-426614174001"
+                    deadline: "2026-01-13T18:00:00Z"
+                  source: "web"
+              completeTask:
+                summary: Complete a task
+                value:
+                  householdId: "123e4567-e89b-12d3-a456-426614174000"
+                  type: "complete_task"
+                  payload:
+                    taskId: "123e4567-e89b-12d3-a456-426614174002"
+                  source: "mobile"
+      responses:
+        '200':
+          description: Command executed successfully
+          headers:
+            X-Correlation-ID:
+              schema:
+                type: string
+                format: uuid
+              description: Correlation ID for this request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandSuccessResponse'
+        '207':
+          description: Command executed with degraded mode (fallback used)
+          headers:
+            X-Correlation-ID:
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandDegradedResponse'
+        '400':
+          description: Invalid request (schema or business rule violation)
+          headers:
+            X-Correlation-ID:
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+        '401':
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '403':
+          description: User does not have access to this household
+          headers:
+            X-Correlation-ID:
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Seconds until rate limit resets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitErrorResponse'
+
+  /users/me:
+    get:
+      operationId: getCurrentUser
+      summary: Get current user profile
+      description: |
+        Returns the current user's profile.
+        If the user does not exist, creates a new profile from JWT claims.
+      tags:
+        - Users
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+
+  /households/{householdId}/tasks:
+    get:
+      operationId: listTasks
+      summary: List tasks in a household
+      tags:
+        - Households
+      parameters:
+        - name: householdId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [open, in_progress, done, cancelled]
+        - name: assigneeId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '403':
+          description: Not a member of this household
+
+  /households/{householdId}/tasks/{taskId}:
+    get:
+      operationId: getTask
+      summary: Get a specific task
+      tags:
+        - Households
+      parameters:
+        - name: householdId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Task details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '403':
+          description: Not a member of this household
+        '404':
+          description: Task not found
+
+  /households/{householdId}/members:
+    get:
+      operationId: listHouseholdMembers
+      summary: List members of a household
+      tags:
+        - Households
+      parameters:
+        - name: householdId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HouseholdMember'
+        '403':
+          description: Not a member of this household
+
+  /households/{householdId}/zones:
+    get:
+      operationId: listZones
+      summary: List zones in a household
+      tags:
+        - Households
+      parameters:
+        - name: householdId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of zones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Zone'
+        '403':
+          description: Not a member of this household
+
+  # Internal endpoints for setup/testing
+  /internal/households:
+    post:
+      operationId: createHousehold
+      summary: Create a new household (internal)
+      tags:
+        - Internal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateHouseholdRequest'
+      responses:
+        '201':
+          description: Household created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Household'
+
+  /internal/households/{householdId}/members:
+    post:
+      operationId: addHouseholdMember
+      summary: Add a member to household (internal)
+      tags:
+        - Internal
+      parameters:
+        - name: householdId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddMemberRequest'
+      responses:
+        '201':
+          description: Member added
+
+  /internal/households/{householdId}/zones:
+    post:
+      operationId: createZone
+      summary: Create a zone in household (internal)
+      tags:
+        - Internal
+      parameters:
+        - name: householdId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateZoneRequest'
+      responses:
+        '201':
+          description: Zone created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Zone'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Keycloak JWT token
+
+  schemas:
+    # Command Request/Response
+    CommandRequest:
+      type: object
+      required:
+        - householdId
+        - type
+        - payload
+        - source
+      properties:
+        householdId:
+          type: string
+          format: uuid
+          description: Target household for this command
+        type:
+          type: string
+          enum:
+            - create_task
+            - complete_task
+          description: Command type to execute
+        payload:
+          oneOf:
+            - $ref: '#/components/schemas/CreateTaskPayload'
+            - $ref: '#/components/schemas/CompleteTaskPayload'
+          description: Command-specific payload
+        source:
+          type: string
+          enum:
+            - api
+            - web
+            - mobile
+          description: Origin of the command
+        clientTimestamp:
+          type: string
+          format: date-time
+          description: Client-side timestamp (ISO 8601)
+
+    CreateTaskPayload:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Task title
+        description:
+          type: string
+          maxLength: 2000
+          description: Task description
+        zoneId:
+          type: string
+          format: uuid
+          description: Zone/location for the task (must exist in household)
+        assigneeId:
+          type: string
+          format: uuid
+          description: Explicit assignee (must be household member)
+        deadline:
+          type: string
+          format: date-time
+          description: Deadline (must be in the future)
+
+    CompleteTaskPayload:
+      type: object
+      required:
+        - taskId
+      properties:
+        taskId:
+          type: string
+          format: uuid
+          description: ID of task to complete (must exist in household)
+
+    CommandSuccessResponse:
+      type: object
+      required:
+        - commandId
+        - correlationId
+        - status
+        - result
+        - executionMs
+      properties:
+        commandId:
+          type: string
+          format: uuid
+          description: Unique ID of the created command
+        correlationId:
+          type: string
+          format: uuid
+          description: Correlation ID for tracing
+        status:
+          type: string
+          enum:
+            - executed
+          description: Command execution status
+        result:
+          $ref: '#/components/schemas/CommandResult'
+        executionMs:
+          type: integer
+          minimum: 0
+          description: Server-side execution time in milliseconds
+        initiatorId:
+          type: string
+          format: uuid
+          description: User who initiated this command (from JWT)
+
+    CommandDegradedResponse:
+      type: object
+      required:
+        - commandId
+        - correlationId
+        - status
+        - result
+        - executionMs
+        - degradedReason
+      properties:
+        commandId:
+          type: string
+          format: uuid
+        correlationId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - executed_degraded
+        result:
+          $ref: '#/components/schemas/CommandResult'
+        executionMs:
+          type: integer
+          minimum: 0
+        degradedReason:
+          type: string
+          enum:
+            - ai_unavailable
+            - ai_timeout
+            - ai_low_confidence
+          description: Why degraded mode was used
+        fallbackStrategy:
+          type: string
+          description: Description of fallback applied
+
+    CommandResult:
+      type: object
+      properties:
+        taskId:
+          type: string
+          format: uuid
+          description: ID of created/affected task
+        assigneeId:
+          type: string
+          format: uuid
+          description: ID of assigned user
+        decisionConfidence:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Decision confidence (1.0 for rule-based in Stage 1)
+
+    CommandErrorResponse:
+      type: object
+      required:
+        - correlationId
+        - errorCode
+        - message
+      properties:
+        correlationId:
+          type: string
+          format: uuid
+        errorCode:
+          type: string
+          enum:
+            - SCHEMA_INVALID
+            - BUSINESS_RULE_VIOLATION
+            - HOUSEHOLD_NOT_FOUND
+            - TASK_NOT_FOUND
+            - ACCESS_DENIED
+            - IDEMPOTENCY_CONFLICT
+          description: Machine-readable error code
+        message:
+          type: string
+          description: Human-readable error message
+        validationErrors:
+          type: array
+          description: Present when errorCode is SCHEMA_INVALID
+          items:
+            $ref: '#/components/schemas/ValidationError'
+        violations:
+          type: array
+          description: Present when errorCode is BUSINESS_RULE_VIOLATION
+          items:
+            $ref: '#/components/schemas/BusinessViolation'
+
+    ValidationError:
+      type: object
+      required:
+        - path
+        - code
+        - message
+      properties:
+        path:
+          type: string
+          description: JSON path to invalid field (e.g., $.payload.deadline)
+        code:
+          type: string
+          description: Validation error code
+        message:
+          type: string
+          description: Human-readable validation message
+
+    BusinessViolation:
+      type: object
+      required:
+        - rule
+        - message
+      properties:
+        rule:
+          type: string
+          enum:
+            - ASSIGNEE_MUST_BE_MEMBER
+            - ZONE_MUST_EXIST
+            - DEADLINE_MUST_BE_FUTURE
+            - INITIATOR_MUST_HAVE_PERMISSION
+            - TASK_ALREADY_COMPLETED
+          description: Business rule that was violated
+        message:
+          type: string
+          description: Human-readable explanation
+
+    AuthErrorResponse:
+      type: object
+      required:
+        - errorCode
+        - message
+      properties:
+        errorCode:
+          type: string
+          enum:
+            - AUTH_TOKEN_MISSING
+            - AUTH_TOKEN_INVALID
+            - AUTH_TOKEN_EXPIRED
+        message:
+          type: string
+
+    RateLimitErrorResponse:
+      type: object
+      required:
+        - errorCode
+        - message
+        - retryAfter
+      properties:
+        errorCode:
+          type: string
+          enum:
+            - RATE_LIMITED
+        message:
+          type: string
+        retryAfter:
+          type: integer
+          description: Seconds until rate limit resets
+
+    # Domain entities
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        externalId:
+          type: string
+          description: Keycloak subject claim
+        email:
+          type: string
+          format: email
+        displayName:
+          type: string
+        avatarUrl:
+          type: string
+          format: uri
+        households:
+          type: array
+          items:
+            $ref: '#/components/schemas/HouseholdSummary'
+        createdAt:
+          type: string
+          format: date-time
+
+    HouseholdSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        role:
+          type: string
+          enum: [admin, member]
+
+    Household:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    HouseholdMember:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [admin, member]
+        joinedAt:
+          type: string
+          format: date-time
+
+    Zone:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        householdId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        householdId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [open, in_progress, done, cancelled]
+        assignee:
+          $ref: '#/components/schemas/UserSummary'
+        zone:
+          $ref: '#/components/schemas/Zone'
+        deadline:
+          type: string
+          format: date-time
+        createdBy:
+          $ref: '#/components/schemas/UserSummary'
+        commandId:
+          type: string
+          format: uuid
+          description: Command that created this task
+        createdVia:
+          type: string
+          enum: [command, fallback, direct]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+
+    UserSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+
+    # Internal request schemas
+    CreateHouseholdRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+
+    AddMemberRequest:
+      type: object
+      required:
+        - userId
+        - role
+      properties:
+        userId:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [admin, member]
+
+    CreateZoneRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255

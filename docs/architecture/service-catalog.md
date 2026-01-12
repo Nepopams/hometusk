@@ -2,13 +2,21 @@
 
 Living registry of all services and applications in the HomeTusk monorepo.
 
-**Last updated:** 2026-01-11
+**Last updated:** 2026-01-12
 
 ---
 
 ## Services
 
-### Core Services
+### Stage 1: Unified Backend
+
+| Service | Purpose | Tech Stack | Status | Owner |
+|---------|---------|------------|--------|-------|
+| **hometusk-backend** | Commands API, domain logic, journaling | Java 21, Spring Boot 3.x, PostgreSQL 15, Flyway | **In Development** | — |
+
+> **Note:** Stage 1 uses a single unified backend. Services below are planned for future decomposition (Stage 3+).
+
+### Core Services (Future)
 
 | Service | Purpose | Tech Stack | Status | Owner |
 |---------|---------|------------|--------|-------|
@@ -16,14 +24,14 @@ Living registry of all services and applications in the HomeTusk monorepo.
 | auth-service | Authentication via external IDP, session management | TBD | Planned | TBD |
 | user-service | User profiles, household management, membership | TBD | Planned | TBD |
 
-### AI & Command Processing
+### AI & Command Processing (Future)
 
 | Service | Purpose | Tech Stack | Status | Owner |
 |---------|---------|------------|--------|-------|
 | ai-service | LLM integration, AI orchestration | TBD | Planned | TBD |
 | command-processor | Intent → Context → Decision pipeline | TBD | Planned | TBD |
 
-### Domain Services
+### Domain Services (Future)
 
 | Service | Purpose | Tech Stack | Status | Owner |
 |---------|---------|------------|--------|-------|
@@ -33,6 +41,54 @@ Living registry of all services and applications in the HomeTusk monorepo.
 ---
 
 ## Service Descriptions
+
+### hometusk-backend (Stage 1)
+
+Unified backend service for Stage 1 MVP. Combines all domain logic into a single deployable unit.
+
+**Location:** `services/backend/`
+
+**Tech Stack:**
+- Java 21 + Spring Boot 3.x
+- PostgreSQL 15 + Flyway migrations
+- Spring Data JPA
+- Spring Security OAuth2 Resource Server (Keycloak JWT)
+- springdoc-openapi
+- JUnit 5 + Testcontainers
+
+**Internal Packages:**
+- `commands` — Command pipeline (POST /api/v1/commands)
+- `tasks` — Task domain
+- `households` — Household and Zone management
+- `users` — User profiles and Memberships
+- `activity` — TaskActivity events
+- `shared` — Security, logging, exceptions, validation
+
+**Key Endpoints:**
+- `POST /api/v1/commands` — Execute command (create_task, complete_task)
+- `GET /api/v1/users/me` — Current user profile
+- `GET /api/v1/households/{id}/tasks` — List tasks
+- `POST /internal/households` — Create household (internal)
+
+**Command Pipeline Flow:**
+```
+Request → JWT Auth → UserResolver → MembershipValidator
+       → CommandService.execute()
+           ├─ SchemaValidator
+           ├─ BusinessValidator
+           ├─ DecisionEngine (rule-based)
+           ├─ DecisionLogWriter
+           ├─ ActionExecutor
+           └─ ActivityRecorder
+       → CommandResponse
+```
+
+**Traceability:**
+- `X-Correlation-ID` header propagates through all layers
+- `correlationId` stored in Command, DecisionLog, TaskActivity
+- MDC logging with correlationId
+
+---
 
 ### api-gateway
 
@@ -128,20 +184,37 @@ Handles all notifications to users.
 
 ## Data Stores
 
-| Store | Purpose | Technology | Owner |
-|-------|---------|------------|-------|
-| primary-db | Main application data | TBD (PostgreSQL recommended) | TBD |
-| decision-log-db | AI decision audit trail | TBD | TBD |
+| Store | Purpose | Technology | Status | Owner |
+|-------|---------|------------|--------|-------|
+| hometusk-db | All application data (Stage 1) | PostgreSQL 15 | **In Development** | — |
+
+### Database Schema (Stage 1)
+
+**Domain Tables (7):**
+- `households` — Container for all data
+- `zones` — Locations within household
+- `users` — User profiles (linked to Keycloak sub)
+- `memberships` — User ↔ Household relationship
+- `tasks` — Work items
+- `shopping_lists` — Shopping list containers
+- `shopping_items` — Items in shopping lists
+
+**Command Pipeline Tables (2):**
+- `commands` — First-class command entities with JSONB payload
+- `decision_logs` — Audit trail for every command decision
+
+**Activity Table (1):**
+- `task_activities` — Events (TASK_CREATED, TASK_COMPLETED, etc.)
 
 ---
 
 ## External Dependencies
 
-| Dependency | Purpose | Provider |
-|------------|---------|----------|
-| Identity Provider | User authentication | TBD |
-| LLM Provider | AI inference | TBD |
-| Push Provider | Push notifications | TBD |
+| Dependency | Purpose | Provider | Status |
+|------------|---------|----------|--------|
+| Identity Provider | User authentication | Keycloak (local) | **In Development** |
+| LLM Provider | AI inference | TBD | Planned (Stage 2) |
+| Push Provider | Push notifications | TBD | Planned (Stage 3) |
 
 ---
 
