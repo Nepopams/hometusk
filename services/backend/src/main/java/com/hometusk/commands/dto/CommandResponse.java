@@ -1,5 +1,7 @@
 package com.hometusk.commands.dto;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public record CommandResponse(
@@ -8,14 +10,15 @@ public record CommandResponse(
         String status,
         CommandResult result,
         Integer executionMs,
-        UUID initiatorId) {
+        UUID initiatorId)
+        implements CommandResponseBase {
 
     public static CommandResponse success(
             UUID commandId, UUID correlationId, CommandResult result, int executionMs, UUID initiatorId) {
         return new CommandResponse(commandId, correlationId, "executed", result, executionMs, initiatorId);
     }
 
-    public static CommandResponse degraded(
+    public static CommandResponseBase degraded(
             UUID commandId,
             UUID correlationId,
             CommandResult result,
@@ -24,6 +27,19 @@ public record CommandResponse(
             String degradedReason) {
         return new CommandDegradedResponse(
                 commandId, correlationId, "executed_degraded", result, executionMs, initiatorId, degradedReason, null);
+    }
+
+    /** Stage 2: AI needs clarification from user */
+    public static CommandResponseBase needsInput(
+            UUID commandId,
+            UUID correlationId,
+            String question,
+            List<String> requiredFields,
+            Map<String, Object> suggestions,
+            int executionMs,
+            UUID initiatorId) {
+        return new CommandNeedsInputResponse(
+                commandId, correlationId, "needs_input", question, requiredFields, suggestions, executionMs, initiatorId);
     }
 
     public record CommandResult(UUID taskId, UUID assigneeId, Double decisionConfidence) {

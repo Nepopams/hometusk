@@ -7,6 +7,9 @@ import com.hometusk.commands.domain.CommandType;
 import com.hometusk.commands.domain.DecisionSource;
 import com.hometusk.commands.dto.*;
 import com.hometusk.commands.pipeline.*;
+import com.hometusk.commands.pipeline.decision.DecisionContext;
+import com.hometusk.commands.pipeline.decision.DecisionProviderSelector;
+import com.hometusk.commands.pipeline.decision.DecisionResult;
 import com.hometusk.commands.repository.CommandRepository;
 import com.hometusk.households.domain.Household;
 import com.hometusk.households.service.HouseholdService;
@@ -14,6 +17,7 @@ import com.hometusk.shared.exception.BusinessException;
 import com.hometusk.shared.exception.ErrorCode;
 import com.hometusk.shared.exception.ValidationException;
 import com.hometusk.users.domain.User;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -43,7 +47,7 @@ public class CommandService {
     private final ObjectMapper objectMapper;
     private final SchemaValidator schemaValidator;
     private final BusinessValidator businessValidator;
-    private final DecisionEngine decisionEngine;
+    private final DecisionProviderSelector decisionProviderSelector;
     private final DecisionLogWriter decisionLogWriter;
     private final ActionExecutor actionExecutor;
 
@@ -53,7 +57,7 @@ public class CommandService {
             ObjectMapper objectMapper,
             SchemaValidator schemaValidator,
             BusinessValidator businessValidator,
-            DecisionEngine decisionEngine,
+            DecisionProviderSelector decisionProviderSelector,
             DecisionLogWriter decisionLogWriter,
             ActionExecutor actionExecutor) {
         this.commandRepository = commandRepository;
@@ -61,13 +65,13 @@ public class CommandService {
         this.objectMapper = objectMapper;
         this.schemaValidator = schemaValidator;
         this.businessValidator = businessValidator;
-        this.decisionEngine = decisionEngine;
+        this.decisionProviderSelector = decisionProviderSelector;
         this.decisionLogWriter = decisionLogWriter;
         this.actionExecutor = actionExecutor;
     }
 
     @Transactional
-    public CommandResponse execute(CommandRequest request, User requester, UUID correlationId) {
+    public CommandResponseBase execute(CommandRequest request, User requester, UUID correlationId) {
         long startTime = System.currentTimeMillis();
 
         log.info(
@@ -109,24 +113,26 @@ public class CommandService {
             // 5. Schema validation
             schemaValidator.validate(commandType, request.payload());
 
-            // 6. Business validation & 7. Decision & 8. Action
-            CommandResponse.CommandResult result = switch (commandType) {
-                case CREATE_TASK -> processCreateTask(request, command, correlationId, requester.getId());
-                case COMPLETE_TASK -> processCompleteTask(request, command, correlationId);
-            };
+            // 6. Business validation
+            switch (commandType) {
+                case CREATE_TASK -> {
+                    CreateTaskPayload payload = objectMapper.convertValue(request.payload(), CreateTaskPayload.class);
+                    businessValidator.validateCreateTask(payload, request.householdId());
+                }
+                case COMPLETE_TASK -> {
+                    CompleteTaskPayload payload = objectMapper.convertValue(request.payload(), CompleteTaskPayload.class);
+                    businessValidator.validateCompleteTask(payload, request.householdId());
+                }
+            }
 
-            // 9. Mark executed
-            int executionMs = (int) (System.currentTimeMillis() - startTime);
-            command.markExecuted(executionMs);
-            commandRepository.save(command);
+            command.markProcessing();
 
-            log.info(
-                    "Command executed: id={}, correlationId={}, executionMs={}",
-                    command.getId(),
-                    correlationId,
-                    executionMs);
+            // 7. Build decision context and get decision
+            DecisionContext context = buildDecisionContext(command, request, requester.getId(), correlationId);
+            DecisionResult result = decisionProviderSelector.decide(context);
 
-            return CommandResponse.success(command.getId(), correlationId, result, executionMs, requester.getId());
+            // 8. Handle result based on type
+            return handleDecisionResult(result, command, correlationId, requester, startTime);
 
         } catch (ValidationException e) {
             int executionMs = (int) (System.currentTimeMillis() - startTime);
@@ -168,74 +174,168 @@ public class CommandService {
         }
     }
 
-    private CommandResponse.CommandResult processCreateTask(
-            CommandRequest request, Command command, UUID correlationId, UUID initiatorId) {
-
-        // Parse payload
-        CreateTaskPayload payload = objectMapper.convertValue(request.payload(), CreateTaskPayload.class);
-
-        // Business validation
-        businessValidator.validateCreateTask(payload, request.householdId());
-
-        command.markProcessing();
-
-        // Decision
-        DecisionEngine.CreateTaskDecision decision = decisionEngine.decideCreateTask(payload, initiatorId);
-
-        // Log decision
-        decisionLogWriter.write(DecisionLogWriter.DecisionLogEntry.builder()
-                .command(command)
+    private DecisionContext buildDecisionContext(
+            Command command, CommandRequest request, UUID requesterId, UUID correlationId) {
+        return DecisionContext.builder()
+                .commandId(command.getId())
                 .correlationId(correlationId)
-                .intent(Map.of("type", "create_task", "title", payload.title()))
-                .contextSnapshot(Map.of(
-                        "householdId", request.householdId(),
-                        "initiatorId", initiatorId,
-                        "hasAssignee", payload.assigneeId() != null,
-                        "hasZone", payload.zoneId() != null,
-                        "hasDeadline", payload.deadline() != null))
-                .decision(Map.of(
-                        "action", "create_task",
-                        "assigneeId", decision.assigneeId() != null ? decision.assigneeId().toString() : "null",
-                        "source", decision.source().name()))
-                .source(decision.source())
-                .confidence(decision.confidence())
-                .build());
-
-        // Execute (pass correlationId for activity recording)
-        ActionExecutor.CreateTaskResult result = actionExecutor.executeCreateTask(decision, command, correlationId);
-
-        return CommandResponse.CommandResult.forTask(result.taskId(), result.assigneeId());
+                .commandType(command.getType())
+                .payload(request.payload())
+                .requesterId(requesterId)
+                .householdId(request.householdId())
+                .householdContext(Map.of()) // Minimal context for now
+                .build();
     }
 
-    private CommandResponse.CommandResult processCompleteTask(
-            CommandRequest request, Command command, UUID correlationId) {
+    private CommandResponseBase handleDecisionResult(
+            DecisionResult result,
+            Command command,
+            UUID correlationId,
+            User requester,
+            long startTime) {
 
-        // Parse payload
-        CompleteTaskPayload payload = objectMapper.convertValue(request.payload(), CompleteTaskPayload.class);
+        return switch (result) {
+            case DecisionResult.StartJob startJob -> handleStartJob(
+                    startJob, command, correlationId, requester, startTime);
+            case DecisionResult.Clarify clarify -> handleClarify(
+                    clarify, command, correlationId, requester, startTime);
+            case DecisionResult.Reject reject -> handleReject(
+                    reject, command, correlationId, requester, startTime);
+        };
+    }
 
-        // Business validation
-        businessValidator.validateCompleteTask(payload, request.householdId());
+    private CommandResponseBase handleStartJob(
+            DecisionResult.StartJob decision,
+            Command command,
+            UUID correlationId,
+            User requester,
+            long startTime) {
 
-        command.markProcessing();
+        // Log decision
+        Map<String, Object> decisionMap = new HashMap<>();
+        decisionMap.put("type", "start_job");
+        decisionMap.put("source", decision.source().name());
+        decisionMap.put("actionsCount", decision.actions().size());
 
-        // Decision
-        DecisionEngine.CompleteTaskDecision decision = decisionEngine.decideCompleteTask(payload);
+        decisionLogWriter.write(DecisionLogWriter.DecisionLogEntry.builder()
+                .command(command)
+                .correlationId(correlationId)
+                .intent(Map.of("type", command.getType().name().toLowerCase()))
+                .contextSnapshot(Map.of("householdId", command.getHouseholdId()))
+                .decision(decisionMap)
+                .source(decision.source())
+                .confidence(decision.confidence())
+                .externalDecisionId(decision.externalDecisionId())
+                .rawDecisionPayload(decision.rawPayload())
+                .build());
+
+        // Execute all actions
+        ActionExecutor.ActionResult lastResult = null;
+        for (var action : decision.actions()) {
+            lastResult = actionExecutor.executeAction(action, command, correlationId);
+        }
+
+        // Mark executed
+        int executionMs = (int) (System.currentTimeMillis() - startTime);
+        command.markExecuted(executionMs);
+        commandRepository.save(command);
+
+        log.info(
+                "Command executed: id={}, correlationId={}, executionMs={}, source={}",
+                command.getId(),
+                correlationId,
+                executionMs,
+                decision.source());
+
+        CommandResponse.CommandResult commandResult = lastResult != null
+                ? CommandResponse.CommandResult.forTask(lastResult.taskId(), lastResult.assigneeId())
+                : null;
+
+        // Check if this was a fallback (degraded mode)
+        if (decision.source() == DecisionSource.FALLBACK) {
+            return CommandResponse.degraded(
+                    command.getId(), correlationId, commandResult, executionMs, requester.getId(), "ai_unavailable");
+        }
+
+        return CommandResponse.success(command.getId(), correlationId, commandResult, executionMs, requester.getId());
+    }
+
+    private CommandResponseBase handleClarify(
+            DecisionResult.Clarify decision,
+            Command command,
+            UUID correlationId,
+            User requester,
+            long startTime) {
 
         // Log decision
         decisionLogWriter.write(DecisionLogWriter.DecisionLogEntry.builder()
                 .command(command)
                 .correlationId(correlationId)
-                .intent(Map.of("type", "complete_task", "taskId", payload.taskId().toString()))
-                .contextSnapshot(Map.of("householdId", request.householdId(), "taskId", payload.taskId()))
-                .decision(Map.of("action", "complete_task", "source", decision.source().name()))
+                .intent(Map.of("type", command.getType().name().toLowerCase()))
+                .contextSnapshot(Map.of("householdId", command.getHouseholdId()))
+                .decision(Map.of(
+                        "type", "clarify",
+                        "question", decision.question(),
+                        "requiredFields", decision.requiredFields()))
                 .source(decision.source())
                 .confidence(decision.confidence())
+                .externalDecisionId(decision.externalDecisionId())
+                .rawDecisionPayload(decision.rawPayload())
                 .build());
 
-        // Execute (pass correlationId for activity recording)
-        ActionExecutor.CompleteTaskResult result = actionExecutor.executeCompleteTask(decision, command, correlationId);
+        // Mark needs input
+        int executionMs = (int) (System.currentTimeMillis() - startTime);
+        command.markNeedsInput(decision.question());
+        commandRepository.save(command);
 
-        return CommandResponse.CommandResult.forTask(result.taskId(), null);
+        log.info(
+                "Command needs input: id={}, correlationId={}, question={}",
+                command.getId(),
+                correlationId,
+                decision.question());
+
+        return CommandResponse.needsInput(
+                command.getId(),
+                correlationId,
+                decision.question(),
+                decision.requiredFields(),
+                decision.suggestions(),
+                executionMs,
+                requester.getId());
+    }
+
+    private CommandResponseBase handleReject(
+            DecisionResult.Reject decision,
+            Command command,
+            UUID correlationId,
+            User requester,
+            long startTime) {
+
+        // Log decision
+        decisionLogWriter.write(DecisionLogWriter.DecisionLogEntry.builder()
+                .command(command)
+                .correlationId(correlationId)
+                .intent(Map.of("type", command.getType().name().toLowerCase()))
+                .contextSnapshot(Map.of("householdId", command.getHouseholdId()))
+                .decision(Map.of("type", "reject", "reason", decision.reason(), "errorCode", decision.errorCode()))
+                .source(decision.source())
+                .confidence(decision.confidence())
+                .externalDecisionId(decision.externalDecisionId())
+                .rawDecisionPayload(decision.rawPayload())
+                .build());
+
+        // Mark rejected
+        int executionMs = (int) (System.currentTimeMillis() - startTime);
+        command.markRejected(decision.errorCode(), decision.reason(), executionMs);
+        commandRepository.save(command);
+
+        log.info(
+                "Command rejected by AI: id={}, correlationId={}, reason={}",
+                command.getId(),
+                correlationId,
+                decision.reason());
+
+        throw new BusinessException(ErrorCode.AI_REJECTED, decision.reason());
     }
 
     private String toJson(Object obj) {

@@ -55,6 +55,14 @@ public class DecisionLogWriter {
             decisionLog.setValidationErrors(toJson(entry.validationErrors()));
         }
 
+        // Stage 2: External AI Platform fields
+        if (entry.externalDecisionId() != null) {
+            decisionLog.setExternalDecisionId(entry.externalDecisionId());
+        }
+        if (entry.rawDecisionPayload() != null) {
+            decisionLog.setRawDecisionPayload(entry.rawDecisionPayload());
+        }
+
         DecisionLog saved = decisionLogRepository.save(decisionLog);
         log.debug("Decision log written: id={}, correlationId={}", saved.getId(), saved.getCorrelationId());
 
@@ -107,7 +115,11 @@ public class DecisionLogWriter {
             Object alternativesConsidered,
             boolean schemaValid,
             boolean businessValid,
-            Object validationErrors) {
+            Object validationErrors,
+            /** Stage 2: External AI Platform decision ID */
+            UUID externalDecisionId,
+            /** Stage 2: Raw response from AI Platform */
+            String rawDecisionPayload) {
 
         public static Builder builder() {
             return new Builder();
@@ -119,12 +131,14 @@ public class DecisionLogWriter {
             private Object intent;
             private Object contextSnapshot;
             private Object decision;
-            private DecisionSource source = DecisionSource.RULE;
+            private DecisionSource source = DecisionSource.MANUAL;
             private BigDecimal confidence = BigDecimal.ONE;
             private Object alternativesConsidered;
             private boolean schemaValid = true;
             private boolean businessValid = true;
             private Object validationErrors;
+            private UUID externalDecisionId;
+            private String rawDecisionPayload;
 
             public Builder command(Command command) {
                 this.command = command;
@@ -181,6 +195,16 @@ public class DecisionLogWriter {
                 return this;
             }
 
+            public Builder externalDecisionId(UUID externalDecisionId) {
+                this.externalDecisionId = externalDecisionId;
+                return this;
+            }
+
+            public Builder rawDecisionPayload(String rawDecisionPayload) {
+                this.rawDecisionPayload = rawDecisionPayload;
+                return this;
+            }
+
             public DecisionLogEntry build() {
                 return new DecisionLogEntry(
                         command,
@@ -193,7 +217,9 @@ public class DecisionLogWriter {
                         alternativesConsidered,
                         schemaValid,
                         businessValid,
-                        validationErrors);
+                        validationErrors,
+                        externalDecisionId,
+                        rawDecisionPayload);
             }
         }
     }

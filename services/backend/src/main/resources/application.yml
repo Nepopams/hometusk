@@ -68,3 +68,15 @@ springdoc:
     path: /swagger-ui.html
     operationsSorter: method
     tagsSorter: alpha
+
+# Decision Provider Configuration (Stage 2)
+decision:
+  provider: ${DECISION_PROVIDER:manual}  # Options: manual, aiplatform
+  fallback:
+    enabled: ${DECISION_FALLBACK_ENABLED:true}  # Use manual as fallback when aiplatform unavailable
+
+# AI Platform Configuration (used when decision.provider=aiplatform)
+aiplatform:
+  base-url: ${AI_PLATFORM_URL:http://localhost:8090}
+  timeout-ms: ${AI_PLATFORM_TIMEOUT_MS:5000}
+  api-key: ${AI_PLATFORM_API_KEY:}

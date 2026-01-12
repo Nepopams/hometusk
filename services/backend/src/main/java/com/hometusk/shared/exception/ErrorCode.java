@@ -21,6 +21,10 @@ public enum ErrorCode {
     // Access control
     ACCESS_DENIED("Access denied to this resource"),
 
+    // AI Platform (Stage 2)
+    AI_REJECTED("AI rejected the command"),
+    AI_UNAVAILABLE("AI Platform is unavailable"),
+
     // Other
     IDEMPOTENCY_CONFLICT("Request with this idempotency key already processed"),
     INTERNAL_ERROR("Internal server error");
