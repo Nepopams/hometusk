@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hometusk.app/schemas/integration/ai-platform/v1/command.json",
+  "title": "AI Platform Decision Request",
+  "description": "Request sent from HomeTusk to AI Platform for decision-making",
+  "type": "object",
+  "required": [
+    "commandId",
+    "correlationId",
+    "commandType",
+    "payload",
+    "requesterId",
+    "householdId"
+  ],
+  "properties": {
+    "commandId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique command identifier in HomeTusk"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Correlation ID for distributed tracing"
+    },
+    "commandType": {
+      "type": "string",
+      "enum": ["create_task", "complete_task"],
+      "description": "Type of command being processed"
+    },
+    "payload": {
+      "type": "object",
+      "description": "Command-specific payload",
+      "oneOf": [
+        { "$ref": "#/$defs/createTaskPayload" },
+        { "$ref": "#/$defs/completeTaskPayload" }
+      ]
+    },
+    "requesterId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "User ID who initiated the command"
+    },
+    "householdId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Household context ID"
+    },
+    "householdContext": {
+      "type": "object",
+      "description": "Minimal household context for AI decision",
+      "properties": {
+        "members": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "name"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "zones": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "name"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "createTaskPayload": {
+      "type": "object",
+      "required": ["title"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "zoneId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "assigneeId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "deadline": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "completeTaskPayload": {
+      "type": "object",
+      "required": ["taskId"],
+      "properties": {
+        "taskId": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    }
+  }
+}

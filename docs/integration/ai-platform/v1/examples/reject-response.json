@@ -1,0 +1,8 @@
+{
+  "$comment": "Example: AI Platform rejects the command",
+  "decisionId": "f490f1ee-6c54-4b01-90e6-d701748f0853",
+  "type": "reject",
+  "confidence": 0.99,
+  "reason": "Команда не содержит понятного действия. Пожалуйста, уточните что нужно сделать.",
+  "errorCode": "UNCLEAR_INTENT"
+}

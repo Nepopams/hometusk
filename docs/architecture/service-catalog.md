@@ -227,7 +227,12 @@ Handles all notifications to users.
 
 HomeTusk is a **consumer** of an external AI Platform for intelligent decision-making.
 
-**Contract:** `docs/contracts/external/ai-platform.decision.openapi.yaml`
+**Integration Package:** [`docs/integration/ai-platform/v1/`](../integration/ai-platform/v1/README.md)
+
+**Contracts:**
+- OpenAPI: `docs/contracts/external/ai-platform.decision.openapi.yaml`
+- JSON Schemas: `docs/integration/ai-platform/v1/contracts/schemas/`
+- Examples: `docs/integration/ai-platform/v1/examples/`
 
 **Endpoints called:**
 - `POST /decision` - Request AI decision
@@ -246,7 +251,14 @@ aiplatform:
   api-key: ${AI_PLATFORM_API_KEY}
 ```
 
+**Validation:**
+```bash
+./scripts/validate-aiplatform-contracts.sh
+```
+
 > **Note:** AI Platform is external to this repository. HomeTusk validates all AI output against business rules before execution.
+>
+> See [mapping documentation](../integration/ai-platform/v1/mapping/hometusk-to-aiplatform.md) for field mappings between HomeTusk and AI Platform.
 
 ---
 
