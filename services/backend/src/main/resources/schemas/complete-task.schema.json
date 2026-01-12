@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "complete-task",
+  "title": "CompleteTaskPayload",
+  "type": "object",
+  "required": ["taskId"],
+  "properties": {
+    "taskId": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "additionalProperties": false
+}
