@@ -1,46 +1,183 @@
-# Claude Code Development Guide
+# HomeTusk Development Guide
 
-This document provides context and guidelines for AI-assisted development on this project.
+This document provides context and rules for AI-assisted development on this project.
 
-## Project Goals
+---
 
-> TODO: Define core business objectives and success metrics
+## What This Project Is
 
-> TODO: Define target users and use cases
+**HomeTusk** is an AI-coordinated home task manager.
 
-> TODO: Define scope and non-goals
+- **NOT** a todo app
+- **NOT** a chatbot
+- **NOT** a smart speaker clone
 
-## Architecture Principles
+It is an intelligent coordinator that converts natural-language commands into household actions.
 
-> TODO: Define architectural patterns (microservices, event-driven, etc.)
+**Core value proposition:**
+> Natural language commands → structured decisions → real domain actions.
 
-> TODO: Define service communication patterns (REST, gRPC, message queues)
+---
 
-> TODO: Define data storage strategy (databases per service, shared, etc.)
+## MVP Goal
 
-> TODO: Define scalability and performance requirements
+Validate one key hypothesis:
 
-> TODO: Define security and compliance requirements
+> Users can create and assign household tasks by typing natural language, without learning a structured interface.
+
+### Example Flow
+
+**Input:** "Убрать кухню сегодня вечером"
+
+**Processing:**
+1. Intent: clean
+2. Zone: kitchen
+3. Deadline: today evening (18:00–22:00)
+4. Decision: assign to Maria (highest availability score)
+
+**Output:**
+- `TaskCreated` event
+- `TaskAssigned` event
+- Push notification to assignee
+
+---
+
+## Architectural Rules
+
+These rules **must never be violated**. They are invariants of the system.
+
+### 1. AI is a decision engine, not source of truth
+
+- AI output **must** be schema-validated before use
+- Business rules are enforced in code, not in prompts
+- If AI returns invalid data, reject it — do not auto-fix
+
+### 2. Intent-driven API
+
+- Users submit **commands**, not CRUD operations
+- Endpoint: `POST /commands/execute` (not `POST /tasks`)
+- Commands are first-class entities with their own lifecycle
+
+### 3. Command traceability is mandatory
+
+Every command must be traceable:
+```
+input → intent → context → decision → action
+```
+
+- Store `DecisionLog` for every command
+- Include confidence scores, alternatives considered
+- Enable replay and debugging
+
+### 4. Degraded mode is required
+
+- System **must** work if AI is unavailable
+- Use heuristics as fallback (e.g., assign to initiator)
+- Never hard-fail on LLM timeout
+- Log degraded decisions for later analysis
+
+### 5. Domain invariants over prompts
+
+Prompts may evolve. Domain rules must remain stable.
+
+**Always validate in code:**
+- Assignee belongs to the household
+- Zone exists in the household
+- Deadline is in the future (or "no deadline")
+- Initiator has permission to create tasks
+
+---
+
+## Required Domain Concepts
+
+| Entity | Purpose | Key Fields |
+|--------|---------|------------|
+| Household | Container for everything | id, name, created_at |
+| User | External identity reference | id, external_id, name |
+| Membership | User's role in household | user_id, household_id, role |
+| Zone | Location tag | id, household_id, name |
+| Task | Work item | id, title, status, assignee_id, deadline, zone_id |
+| Command | NL input entity | id, raw_text, source, household_id, initiator_id |
+| DecisionLog | AI decision audit | command_id, intent, context_snapshot, decision, confidence |
+
+---
+
+## How to Reason About Changes
+
+When modifying code, ask yourself:
+
+1. **Does this maintain command traceability?**
+   - Can I trace from input to action?
+   - Is the decision logged?
+
+2. **Is AI output validated before execution?**
+   - Schema validation present?
+   - Business rules checked in code?
+
+3. **Can this work without AI?**
+   - What happens if LLM times out?
+   - Is there a fallback path?
+
+4. **Are domain invariants enforced in code?**
+   - Not just in prompts
+   - Not just in frontend validation
+
+---
+
+## Project Context Documents
+
+These files are the source of truth for the project:
+
+| Document | Purpose |
+|----------|---------|
+| `README.md` | Project overview, MVP scope |
+| `CLAUDE.md` | This file — development rules |
+| `docs/architecture/service-catalog.md` | Service registry |
+| `docs/architecture/decisions/` | Architecture Decision Records |
+| `docs/architecture/decisions/mvp/` | C4 diagrams |
+| `docs/contracts/` | API contracts |
+
+### Update Policy
+
+- **This file (CLAUDE.md):** Update when architectural rules or domain concepts change
+- **service-catalog.md:** Update when services are added, removed, or change status
+- **README.md:** Update when project structure or scope changes
+
+---
 
 ## Technology Stack
 
-> TODO: Specify backend languages and frameworks
+> Decisions pending. Do not assume specific technologies.
 
-> TODO: Specify frontend frameworks and libraries
+| Layer | Status |
+|-------|--------|
+| Backend language/framework | TBD |
+| Database | TBD |
+| LLM Provider | TBD |
+| Frontend framework | TBD |
+| Infrastructure | TBD |
 
-> TODO: Specify databases and caching layers
+---
 
-> TODO: Specify infrastructure and deployment platforms
+## Common Development Patterns
 
-> TODO: Specify monitoring and observability tools
+### Processing a Command
 
-## Coding and Decision-Making Rules
+```
+1. Receive NL command via API
+2. Create Command entity
+3. Call AI pipeline:
+   a. Resolve intent
+   b. Enrich context (household state, member availability)
+   c. Make decision (who, when, confidence)
+4. Validate decision (schema + business rules)
+5. Execute action (create task, assign)
+6. Log decision
+7. Publish events
+8. Send notifications
+```
 
-### General Principles
-- Keep it simple – avoid premature optimization
-- Code for maintainability and clarity
-- Follow the principle of least surprise
-- Document decisions in `docs/architecture/decisions/`
+### Handling Low Confidence
 
 ### Service and Contract Changes
 **CRITICAL RULE:** When making changes to services, contracts, or pipelines, you MUST:
@@ -52,59 +189,81 @@ This ensures consistency between code, documentation, and architectural decision
 
 ### Code Quality
 > TODO: Define code style and linting rules
+If AI confidence < threshold:
+1. Return decision with `needs_confirmation: true`
+2. Show user the interpretation
+3. Allow user to confirm or modify
+4. Re-execute with user input
 
-> TODO: Define testing requirements (unit, integration, e2e)
+### Fallback Without AI
 
-> TODO: Define code review process
+If AI is unavailable:
+1. Log the failure
+2. Use heuristic: assign to initiator, no deadline
+3. Mark task as `created_via_fallback`
+4. Return success with warning
 
-### API Design
-> TODO: Define API versioning strategy
+---
 
-> TODO: Define error handling conventions
+## Claude Code Configuration
 
-> TODO: Define authentication/authorization patterns
+Custom commands: `.claude/commands/`
+Custom agents: `.claude/agents/`
 
-### Database
-> TODO: Define migration strategy
+---
 
-> TODO: Define naming conventions
+## Sub-agents and When to Use Them
 
-## Local Development
+This project uses specialized sub-agents for quality gates. **All agents are read-only** — they analyze and recommend, but do not modify code directly.
 
-### Prerequisites
-> TODO: List required tools and versions
+### Agent Registry
 
-### Environment Setup
-> TODO: Environment variables and configuration
+| Agent | Purpose | Invoke When | Output |
+|-------|---------|-------------|--------|
+| `arch-reviewer` | Prevents overengineering, enforces stage scope | Before structural changes, new services | Review verdict + boundary analysis |
+| `contract-writer` | Creates OpenAPI/JSON Schema specs | Before new commands/intents/endpoints | Contract specifications |
+| `test-writer` | Writes test specifications | Before marking task done | Test code + fixtures |
+| `security-reviewer` | Validates auth/authz, prevents IDOR | Before auth changes, data access | Security verdict + actions |
+| `observability-reviewer` | Ensures command traceability | Before command pipeline changes | Traceability analysis |
 
-### Running Services
-> TODO: How to start individual services
+### Hard Rules (Mandatory Checks)
 
-> TODO: How to run the full stack locally
+1. **Before any architecture change:**
+   - Run `arch-reviewer`
+   - Update `docs/architecture/service-catalog.md` if boundaries change
+   - Create ADR if significant decision
 
-### Development Workflow
-> TODO: Branch naming conventions
+2. **Before introducing new commands/intents:**
+   - Run `contract-writer`
+   - Add schemas to `docs/contracts/`
 
-> TODO: Commit message format
+3. **Before marking a task done:**
+   - Run `test-writer`
+   - Ensure tests exist and pass
 
-> TODO: Testing before commit
+4. **Before any auth/data boundary change:**
+   - Run `security-reviewer`
+   - BLOCK if cross-household access is possible
 
-## Claude Code Tips
+5. **Before claiming "command traceable":**
+   - Run `observability-reviewer`
+   - Verify correlationId propagation
+   - Verify DecisionLog completeness
 
-### Custom Commands
-Custom Claude commands are located in `.claude/commands/`
+### Agent Guardrail
 
-> TODO: Document custom commands when created
+> **Do not create new agents without justification.** Prefer improving existing agents. Maximum 8 agents total for this project.
 
-### Project Context
-Key context documents for Claude:
-- Architecture diagrams: `docs/architecture/diagrams/`
-- Architecture decisions: `docs/architecture/decisions/`
-- API contracts: `docs/contracts/`
+If a new agent is needed:
+1. Document why existing agents cannot cover the use case
+2. Ensure no overlap with existing agent responsibilities
+3. Add to this registry
+4. Update `.claude/agents/` directory
 
-### Common Tasks
-> TODO: Add common development tasks and how to ask Claude for help
+---
 
 ## References
 
-> TODO: Links to external documentation, tools, and resources
+- [ADR-001: Voice scenario (future)](docs/architecture/decisions/001-mvp-voice-task-scenario.md)
+- [ADR-002: Text MVP scenario](docs/architecture/decisions/002-mvp-text-command-scenario.md)
+- [C4 Diagrams](docs/architecture/decisions/mvp/)
