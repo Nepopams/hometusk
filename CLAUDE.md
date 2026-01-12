@@ -179,6 +179,16 @@ These files are the source of truth for the project:
 
 ### Handling Low Confidence
 
+### Service and Contract Changes
+**CRITICAL RULE:** When making changes to services, contracts, or pipelines, you MUST:
+1. Update the service catalog (`docs/architecture/service-catalog.md`)
+2. Update or create the relevant API contract in `docs/contracts/`
+3. Create or update an Architecture Decision Record (ADR) in `docs/architecture/decisions/` if the change involves architectural decisions
+
+This ensures consistency between code, documentation, and architectural decisions. Always check and update these artifacts as part of any service/contract/pipeline change.
+
+### Code Quality
+> TODO: Define code style and linting rules
 If AI confidence < threshold:
 1. Return decision with `needs_confirmation: true`
 2. Show user the interpretation
