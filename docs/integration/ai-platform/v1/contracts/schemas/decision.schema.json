@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hometusk.app/schemas/integration/ai-platform/v1/decision.json",
+  "title": "AI Platform Decision Response",
+  "description": "Response from AI Platform with decision for HomeTusk command",
+  "type": "object",
+  "required": [
+    "decisionId",
+    "type",
+    "confidence"
+  ],
+  "properties": {
+    "decisionId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "AI Platform's decision ID for cross-system tracing"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["start_job", "clarify", "reject"],
+      "description": "Decision type"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Confidence score (0.0 to 1.0)"
+    },
+    "actions": {
+      "type": "array",
+      "description": "Actions to execute (only for type=start_job)",
+      "items": {
+        "$ref": "#/$defs/proposedAction"
+      }
+    },
+    "question": {
+      "type": "string",
+      "description": "User-facing clarification question (only for type=clarify)"
+    },
+    "requiredFields": {
+      "type": "array",
+      "description": "Fields that need user input (only for type=clarify)",
+      "items": {
+        "type": "string"
+      }
+    },
+    "suggestions": {
+      "type": "object",
+      "description": "Suggested values for clarification (only for type=clarify)"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Rejection reason (only for type=reject)"
+    },
+    "errorCode": {
+      "type": "string",
+      "description": "Error code for rejection (only for type=reject)"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "type": { "const": "start_job" } }
+      },
+      "then": {
+        "required": ["actions"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "type": { "const": "clarify" } }
+      },
+      "then": {
+        "required": ["question"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "type": { "const": "reject" } }
+      },
+      "then": {
+        "required": ["reason"]
+      }
+    }
+  ],
+  "$defs": {
+    "proposedAction": {
+      "type": "object",
+      "required": ["actionType", "parameters"],
+      "properties": {
+        "actionType": {
+          "type": "string",
+          "enum": ["create_task", "complete_task"],
+          "description": "Type of action to execute"
+        },
+        "parameters": {
+          "type": "object",
+          "description": "Action-specific parameters"
+        }
+      }
+    }
+  }
+}

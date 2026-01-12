@@ -1,0 +1,14 @@
+0.1.0
+
+# AI Platform Integration Contract Version
+#
+# Semantic versioning: MAJOR.MINOR.PATCH
+# - MAJOR: Breaking changes to request/response structure
+# - MINOR: New optional fields, new decision types
+# - PATCH: Documentation updates, bug fixes
+#
+# Changelog:
+# 0.1.0 - Initial version
+#   - Decision types: start_job, clarify, reject
+#   - Command types: create_task, complete_task
+#   - Context v1 specification

@@ -130,6 +130,7 @@ Notification sent
 - [Architecture Decisions](docs/architecture/decisions/) — ADRs for key decisions
 - [Service Catalog](docs/architecture/service-catalog.md) — Registry of all services
 - [C4 Diagrams](docs/architecture/decisions/mvp/) — System architecture diagrams
+- [AI Platform Integration](docs/integration/ai-platform/v1/) — AI Platform integration package
 - [CLAUDE.md](CLAUDE.md) — AI-assisted development guidelines
 - [CONTRIBUTING.md](CONTRIBUTING.md) — How to contribute
 

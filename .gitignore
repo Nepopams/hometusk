@@ -43,4 +43,7 @@ Thumbs.db
 **/build/
 !gradle/wrapper/gradle-wrapper.jar
 
+# Contract validation tools
+.ajv-validator/
+
 # TODO: Add language/framework-specific ignores as stack is defined

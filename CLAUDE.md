@@ -310,3 +310,4 @@ If a new agent is needed:
 - [C4 Diagrams](docs/architecture/decisions/mvp/)
 - [Commands API Contract](docs/contracts/http/commands.openapi.yaml)
 - [AI Platform External Contract](docs/contracts/external/ai-platform.decision.openapi.yaml)
+- [AI Platform Integration Package](docs/integration/ai-platform/v1/) — Schemas, examples, and field mappings
