@@ -198,8 +198,57 @@ If AI is unavailable:
 ## Claude Code Configuration
 
 Custom commands: `.claude/commands/`
+Custom agents: `.claude/agents/`
 
-> TODO: Document custom commands when created
+---
+
+## Sub-agents and When to Use Them
+
+This project uses specialized sub-agents for quality gates. **All agents are read-only** — they analyze and recommend, but do not modify code directly.
+
+### Agent Registry
+
+| Agent | Purpose | Invoke When | Output |
+|-------|---------|-------------|--------|
+| `arch-reviewer` | Prevents overengineering, enforces stage scope | Before structural changes, new services | Review verdict + boundary analysis |
+| `contract-writer` | Creates OpenAPI/JSON Schema specs | Before new commands/intents/endpoints | Contract specifications |
+| `test-writer` | Writes test specifications | Before marking task done | Test code + fixtures |
+| `security-reviewer` | Validates auth/authz, prevents IDOR | Before auth changes, data access | Security verdict + actions |
+| `observability-reviewer` | Ensures command traceability | Before command pipeline changes | Traceability analysis |
+
+### Hard Rules (Mandatory Checks)
+
+1. **Before any architecture change:**
+   - Run `arch-reviewer`
+   - Update `docs/architecture/service-catalog.md` if boundaries change
+   - Create ADR if significant decision
+
+2. **Before introducing new commands/intents:**
+   - Run `contract-writer`
+   - Add schemas to `docs/contracts/`
+
+3. **Before marking a task done:**
+   - Run `test-writer`
+   - Ensure tests exist and pass
+
+4. **Before any auth/data boundary change:**
+   - Run `security-reviewer`
+   - BLOCK if cross-household access is possible
+
+5. **Before claiming "command traceable":**
+   - Run `observability-reviewer`
+   - Verify correlationId propagation
+   - Verify DecisionLog completeness
+
+### Agent Guardrail
+
+> **Do not create new agents without justification.** Prefer improving existing agents. Maximum 8 agents total for this project.
+
+If a new agent is needed:
+1. Document why existing agents cannot cover the use case
+2. Ensure no overlap with existing agent responsibilities
+3. Add to this registry
+4. Update `.claude/agents/` directory
 
 ---
 
