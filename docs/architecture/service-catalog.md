@@ -70,18 +70,25 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 - `GET /api/v1/households/{id}/tasks` — List tasks
 - `POST /internal/households` — Create household (internal)
 
-**Command Pipeline Flow:**
+**Command Pipeline Flow (Stage 2):**
 ```
 Request → JWT Auth → UserResolver → MembershipValidator
        → CommandService.execute()
            ├─ SchemaValidator
            ├─ BusinessValidator
-           ├─ DecisionEngine (rule-based)
-           ├─ DecisionLogWriter
+           ├─ DecisionProviderSelector
+           │   ├─ ManualDecisionProvider (rule-based, fallback)
+           │   └─ AiPlatformDecisionProvider (external AI, optional)
+           ├─ DecisionLogWriter (includes external AI fields)
            ├─ ActionExecutor
            └─ ActivityRecorder
-       → CommandResponse
+       → CommandResponse | ClarifyResponse | DegradedResponse
 ```
+
+**Decision Provider Configuration:**
+- `decision.provider=manual` (default) - Rule-based decisions
+- `decision.provider=aiplatform` - External AI Platform calls
+- `decision.fallback.enabled=true` - Fall back to manual if AI unavailable
 
 **Traceability:**
 - `X-Correlation-ID` header propagates through all layers
@@ -213,8 +220,33 @@ Handles all notifications to users.
 | Dependency | Purpose | Provider | Status |
 |------------|---------|----------|--------|
 | Identity Provider | User authentication | Keycloak (local) | **In Development** |
-| LLM Provider | AI inference | TBD | Planned (Stage 2) |
+| AI Platform | Decision-making for commands | External (stub) | **In Development (Stage 2)** |
 | Push Provider | Push notifications | TBD | Planned (Stage 3) |
+
+### AI Platform (Stage 2)
+
+HomeTusk is a **consumer** of an external AI Platform for intelligent decision-making.
+
+**Contract:** `docs/contracts/external/ai-platform.decision.openapi.yaml`
+
+**Endpoints called:**
+- `POST /decision` - Request AI decision
+- `GET /health` - Health check
+
+**Response types:**
+- `start_job` - Execute proposed actions
+- `clarify` - Need user clarification
+- `reject` - Cannot process command
+
+**Configuration:**
+```yaml
+aiplatform:
+  base-url: ${AI_PLATFORM_URL}
+  timeout-ms: 5000
+  api-key: ${AI_PLATFORM_API_KEY}
+```
+
+> **Note:** AI Platform is external to this repository. HomeTusk validates all AI output against business rules before execution.
 
 ---
 

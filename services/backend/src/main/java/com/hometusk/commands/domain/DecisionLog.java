@@ -55,6 +55,15 @@ public class DecisionLog {
     @Column(name = "validation_errors", columnDefinition = "jsonb")
     private String validationErrors;
 
+    /** External AI Platform decision ID for cross-system tracing (Stage 2) */
+    @Column(name = "external_decision_id")
+    private UUID externalDecisionId;
+
+    /** Raw response from AI Platform for audit trail (Stage 2) */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "raw_decision_payload", columnDefinition = "jsonb")
+    private String rawDecisionPayload;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -123,6 +132,14 @@ public class DecisionLog {
         return validationErrors;
     }
 
+    public UUID getExternalDecisionId() {
+        return externalDecisionId;
+    }
+
+    public String getRawDecisionPayload() {
+        return rawDecisionPayload;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
@@ -162,6 +179,14 @@ public class DecisionLog {
 
     public void setValidationErrors(String validationErrors) {
         this.validationErrors = validationErrors;
+    }
+
+    public void setExternalDecisionId(UUID externalDecisionId) {
+        this.externalDecisionId = externalDecisionId;
+    }
+
+    public void setRawDecisionPayload(String rawDecisionPayload) {
+        this.rawDecisionPayload = rawDecisionPayload;
     }
 
     public void markSchemaInvalid(String validationErrors) {

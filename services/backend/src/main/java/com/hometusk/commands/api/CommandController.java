@@ -1,7 +1,9 @@
 package com.hometusk.commands.api;
 
+import com.hometusk.commands.dto.CommandDegradedResponse;
+import com.hometusk.commands.dto.CommandNeedsInputResponse;
 import com.hometusk.commands.dto.CommandRequest;
-import com.hometusk.commands.dto.CommandResponse;
+import com.hometusk.commands.dto.CommandResponseBase;
 import com.hometusk.commands.service.CommandService;
 import com.hometusk.shared.logging.MdcKeys;
 import com.hometusk.users.domain.User;
@@ -64,7 +66,7 @@ public class CommandController {
         @ApiResponse(responseCode = "401", description = "Authentication required"),
         @ApiResponse(responseCode = "403", description = "Not a member of this household")
     })
-    public ResponseEntity<CommandResponse> executeCommand(
+    public ResponseEntity<CommandResponseBase> executeCommand(
             @RequestBody @Valid CommandRequest request,
             @RequestHeader(value = CORRELATION_ID_HEADER, required = false)
                     @Parameter(description = "Client-provided correlation ID")
@@ -87,12 +89,18 @@ public class CommandController {
             membershipService.requireMembership(user.getId(), request.householdId());
 
             // Execute command
-            CommandResponse response = commandService.execute(request, user, correlationId);
+            CommandResponseBase response = commandService.execute(request, user, correlationId);
 
             // Return with correlation ID header
             HttpHeaders headers = new HttpHeaders();
             headers.set(CORRELATION_ID_HEADER, correlationId.toString());
 
+            // Determine HTTP status based on response type
+            if (response instanceof CommandDegradedResponse) {
+                return ResponseEntity.status(207).headers(headers).body(response);
+            } else if (response instanceof CommandNeedsInputResponse) {
+                return ResponseEntity.ok().headers(headers).body(response);
+            }
             return ResponseEntity.ok().headers(headers).body(response);
 
         } finally {

@@ -1,0 +1,201 @@
+openapi: 3.1.0
+info:
+  title: AI Platform Decision API
+  version: 1.0.0
+  description: |
+    External AI Platform contract for decision-making.
+    HomeTusk backend calls this API to get AI-powered decisions.
+
+    **Note:** This API is owned by an external AI Platform, not HomeTusk.
+    HomeTusk is a consumer of this API.
+
+servers:
+  - url: "{baseUrl}"
+    description: AI Platform server
+    variables:
+      baseUrl:
+        default: http://localhost:8090
+        description: AI Platform base URL
+
+paths:
+  /decision:
+    post:
+      operationId: requestDecision
+      summary: Request an AI decision for a command
+      description: |
+        HomeTusk sends command context to AI Platform.
+        AI Platform returns one of:
+        - start_job: Execute proposed actions
+        - clarify: Need more information from user
+        - reject: Cannot process this command
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionRequest'
+      responses:
+        '200':
+          description: Decision made
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionResponse'
+        '400':
+          description: Invalid request
+        '503':
+          description: AI service temporarily unavailable
+
+  /health:
+    get:
+      operationId: healthCheck
+      summary: Health check for AI Platform
+      description: Used by HomeTusk to check if AI Platform is available before making decisions.
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy]
+        '503':
+          description: Service is unhealthy
+
+components:
+  schemas:
+    DecisionRequest:
+      type: object
+      required:
+        - commandId
+        - correlationId
+        - commandType
+        - payload
+        - requesterId
+        - householdId
+      properties:
+        commandId:
+          type: string
+          format: uuid
+          description: HomeTusk command ID
+        correlationId:
+          type: string
+          format: uuid
+          description: Request correlation ID for tracing
+        commandType:
+          type: string
+          enum: [create_task, complete_task]
+          description: Type of command being processed
+        payload:
+          type: object
+          description: Command-specific payload (e.g., task title, description)
+        requesterId:
+          type: string
+          format: uuid
+          description: User making the request
+        householdId:
+          type: string
+          format: uuid
+          description: Household context
+        householdContext:
+          type: object
+          description: Minimal household context for AI decision
+          properties:
+            members:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+            zones:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+
+    DecisionResponse:
+      type: object
+      required:
+        - decisionId
+        - type
+        - confidence
+      properties:
+        decisionId:
+          type: string
+          format: uuid
+          description: AI Platform's decision ID for cross-system tracing
+        type:
+          type: string
+          enum: [start_job, clarify, reject]
+          description: Decision type
+        confidence:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Confidence score (0.0 to 1.0)
+        # For start_job
+        actions:
+          type: array
+          description: Actions to execute (only for type=start_job)
+          items:
+            $ref: '#/components/schemas/ProposedAction'
+        # For clarify
+        question:
+          type: string
+          description: User-facing clarification question (only for type=clarify)
+        requiredFields:
+          type: array
+          description: Fields that need user input (only for type=clarify)
+          items:
+            type: string
+        suggestions:
+          type: object
+          description: Suggested values for clarification (only for type=clarify)
+        # For reject
+        reason:
+          type: string
+          description: Rejection reason (only for type=reject)
+        errorCode:
+          type: string
+          description: Error code for rejection (only for type=reject)
+
+    ProposedAction:
+      type: object
+      required:
+        - actionType
+        - parameters
+      properties:
+        actionType:
+          type: string
+          enum: [create_task, complete_task]
+          description: Type of action to execute
+        parameters:
+          type: object
+          description: Action-specific parameters
+          additionalProperties: true
+          example:
+            title: "Clean the kitchen"
+            assigneeId: "123e4567-e89b-12d3-a456-426614174000"
+            zoneId: "123e4567-e89b-12d3-a456-426614174001"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key for AI Platform authentication
+
+security:
+  - bearerAuth: []

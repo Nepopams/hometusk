@@ -177,6 +177,12 @@ public class Command {
         this.executionMs = executionMs;
     }
 
+    /** Stage 2: Mark command as needing user input (AI returned clarify) */
+    public void markNeedsInput(String clarificationQuestion) {
+        this.status = CommandStatus.NEEDS_INPUT;
+        this.errorMessage = clarificationQuestion; // Store question in error_message field
+    }
+
     public boolean isExecuted() {
         return this.status == CommandStatus.EXECUTED;
     }

@@ -86,6 +86,15 @@ Prompts may evolve. Domain rules must remain stable.
 - Deadline is in the future (or "no deadline")
 - Initiator has permission to create tasks
 
+### 6. Decision logic lives in external AI Platform (Stage 2+)
+
+- HomeTusk is a **consumer** of an external AI Platform
+- No LLM/AI code in this repository
+- AI output is a **suggestion**, validated by code before execution
+- If AI returns invalid data (non-existent assignee, invalid zone), reject
+- Log all AI responses for audit (`rawDecisionPayload` in DecisionLog)
+- External contract: `docs/contracts/external/ai-platform.decision.openapi.yaml`
+
 ---
 
 ## Required Domain Concepts
@@ -159,11 +168,18 @@ These files are the source of truth for the project:
 | API Docs | springdoc-openapi | Swagger UI at `/swagger-ui.html` |
 | Testing | JUnit 5 + Testcontainers | PostgreSQL container for integration tests |
 
+### Stage 2 (Current)
+
+| Layer | Technology | Notes |
+|-------|------------|-------|
+| AI Integration | RestClient + WireMock | External AI Platform consumer |
+| Decision Provider | DecisionProvider interface | Manual + AiPlatform implementations |
+| Fallback | ManualDecisionProvider | Automatic when AI Platform unavailable |
+
 ### Future (TBD)
 
 | Layer | Status |
 |-------|--------|
-| LLM Provider | Stage 2 |
 | Frontend framework | TBD |
 | Push notifications | Stage 3 |
 
@@ -290,5 +306,7 @@ If a new agent is needed:
 - [ADR-001: Voice scenario (future)](docs/architecture/decisions/001-mvp-voice-task-scenario.md)
 - [ADR-002: Text MVP scenario](docs/architecture/decisions/002-mvp-text-command-scenario.md)
 - [ADR-003: Stage 1 Commands API](docs/architecture/decisions/003-stage1-commands-api.md)
+- [ADR-004: Stage 2 AI Platform Integration](docs/architecture/decisions/004-stage2-ai-platform-integration.md)
 - [C4 Diagrams](docs/architecture/decisions/mvp/)
 - [Commands API Contract](docs/contracts/http/commands.openapi.yaml)
+- [AI Platform External Contract](docs/contracts/external/ai-platform.decision.openapi.yaml)
