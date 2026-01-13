@@ -10,6 +10,8 @@ import com.hometusk.commands.pipeline.*;
 import com.hometusk.commands.pipeline.decision.DecisionContext;
 import com.hometusk.commands.pipeline.decision.DecisionProviderSelector;
 import com.hometusk.commands.pipeline.decision.DecisionResult;
+import com.hometusk.commands.pipeline.guardrails.GuardrailResult;
+import com.hometusk.commands.pipeline.guardrails.GuardrailsOrchestrator;
 import com.hometusk.commands.repository.CommandRepository;
 import com.hometusk.households.domain.Household;
 import com.hometusk.households.service.HouseholdService;
@@ -28,14 +30,20 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Orchestrates the command processing pipeline.
  *
- * Pipeline flow:
- * 1. Create Command entity (status=received)
- * 2. SchemaValidator (validate payload structure)
- * 3. BusinessValidator (validate domain invariants)
- * 4. DecisionEngine (make rule-based decision)
- * 5. DecisionLogWriter (record decision)
- * 6. ActionExecutor (execute the action)
- * 7. Update Command status
+ * <p>Pipeline flow (Stage 3):
+ * <ol>
+ *   <li>Create Command entity (status=received)</li>
+ *   <li>SchemaValidator (validate payload structure)</li>
+ *   <li>BusinessValidator (validate domain invariants)</li>
+ *   <li>ContextBuilder (build household snapshot for AI and guardrails)</li>
+ *   <li>DecisionProviderSelector (get decision from AI Platform or fallback)</li>
+ *   <li>GuardrailsOrchestrator (evaluate policies before action execution)</li>
+ *   <li>ActionExecutor (execute the action if guardrails pass)</li>
+ *   <li>DecisionLogWriter (record decision with guardrails info)</li>
+ *   <li>Update Command status</li>
+ * </ol>
+ *
+ * <p>Guardrails can modify, clarify, or reject decisions before execution.
  */
 @Service
 public class CommandService {
@@ -50,6 +58,8 @@ public class CommandService {
     private final DecisionProviderSelector decisionProviderSelector;
     private final DecisionLogWriter decisionLogWriter;
     private final ActionExecutor actionExecutor;
+    private final ContextBuilder contextBuilder;
+    private final GuardrailsOrchestrator guardrailsOrchestrator;
 
     public CommandService(
             CommandRepository commandRepository,
@@ -59,7 +69,9 @@ public class CommandService {
             BusinessValidator businessValidator,
             DecisionProviderSelector decisionProviderSelector,
             DecisionLogWriter decisionLogWriter,
-            ActionExecutor actionExecutor) {
+            ActionExecutor actionExecutor,
+            ContextBuilder contextBuilder,
+            GuardrailsOrchestrator guardrailsOrchestrator) {
         this.commandRepository = commandRepository;
         this.householdService = householdService;
         this.objectMapper = objectMapper;
@@ -68,6 +80,8 @@ public class CommandService {
         this.decisionProviderSelector = decisionProviderSelector;
         this.decisionLogWriter = decisionLogWriter;
         this.actionExecutor = actionExecutor;
+        this.contextBuilder = contextBuilder;
+        this.guardrailsOrchestrator = guardrailsOrchestrator;
     }
 
     @Transactional
@@ -131,8 +145,8 @@ public class CommandService {
             DecisionContext context = buildDecisionContext(command, request, requester.getId(), correlationId);
             DecisionResult result = decisionProviderSelector.decide(context);
 
-            // 8. Handle result based on type
-            return handleDecisionResult(result, command, correlationId, requester, startTime);
+            // 8. Handle result based on type (pass context for guardrails)
+            return handleDecisionResult(result, command, context, correlationId, requester, startTime);
 
         } catch (ValidationException e) {
             int executionMs = (int) (System.currentTimeMillis() - startTime);
@@ -176,6 +190,10 @@ public class CommandService {
 
     private DecisionContext buildDecisionContext(
             Command command, CommandRequest request, UUID requesterId, UUID correlationId) {
+        // Build household context for AI Platform (no internal data like task counts)
+        Map<String, Object> householdContext =
+                contextBuilder.buildHouseholdContextForAi(request.householdId(), correlationId);
+
         return DecisionContext.builder()
                 .commandId(command.getId())
                 .correlationId(correlationId)
@@ -183,20 +201,21 @@ public class CommandService {
                 .payload(request.payload())
                 .requesterId(requesterId)
                 .householdId(request.householdId())
-                .householdContext(Map.of()) // Minimal context for now
+                .householdContext(householdContext)
                 .build();
     }
 
     private CommandResponseBase handleDecisionResult(
             DecisionResult result,
             Command command,
+            DecisionContext context,
             UUID correlationId,
             User requester,
             long startTime) {
 
         return switch (result) {
             case DecisionResult.StartJob startJob -> handleStartJob(
-                    startJob, command, correlationId, requester, startTime);
+                    startJob, command, context, correlationId, requester, startTime);
             case DecisionResult.Clarify clarify -> handleClarify(
                     clarify, command, correlationId, requester, startTime);
             case DecisionResult.Reject reject -> handleReject(
@@ -207,15 +226,102 @@ public class CommandService {
     private CommandResponseBase handleStartJob(
             DecisionResult.StartJob decision,
             Command command,
+            DecisionContext context,
             UUID correlationId,
             User requester,
             long startTime) {
 
-        // Log decision
+        // Evaluate guardrails BEFORE executing actions
+        GuardrailResult guardrailResult = guardrailsOrchestrator.evaluate(decision, context);
+
+        return switch (guardrailResult) {
+            case GuardrailResult.Proceed proceed -> executeStartJob(
+                    proceed.decision(), command, correlationId, requester, startTime, proceed.appliedPolicies());
+
+            case GuardrailResult.NeedsClarification clarify -> {
+                log.info(
+                        "Guardrails requested clarification: correlationId={}, policy={}, question={}",
+                        correlationId,
+                        clarify.triggeredPolicy(),
+                        clarify.question());
+
+                // Log guardrails clarification
+                decisionLogWriter.write(DecisionLogWriter.DecisionLogEntry.builder()
+                        .command(command)
+                        .correlationId(correlationId)
+                        .intent(Map.of("type", command.getType().name().toLowerCase()))
+                        .contextSnapshot(Map.of("householdId", command.getHouseholdId()))
+                        .decision(Map.of(
+                                "type", "guardrails_clarify",
+                                "policy", clarify.triggeredPolicy(),
+                                "question", clarify.question()))
+                        .source(decision.source())
+                        .confidence(decision.confidence())
+                        .externalDecisionId(decision.externalDecisionId())
+                        .rawDecisionPayload(decision.rawPayload())
+                        .build());
+
+                int executionMs = (int) (System.currentTimeMillis() - startTime);
+                command.markNeedsInput(clarify.question());
+                commandRepository.save(command);
+
+                yield CommandResponse.needsInput(
+                        command.getId(),
+                        correlationId,
+                        clarify.question(),
+                        clarify.requiredFields(),
+                        clarify.suggestions(),
+                        executionMs,
+                        requester.getId());
+            }
+
+            case GuardrailResult.Rejected rejected -> {
+                log.warn(
+                        "Guardrails rejected: correlationId={}, policy={}, reason={}",
+                        correlationId,
+                        rejected.triggeredPolicy(),
+                        rejected.reason());
+
+                // Log guardrails rejection
+                decisionLogWriter.write(DecisionLogWriter.DecisionLogEntry.builder()
+                        .command(command)
+                        .correlationId(correlationId)
+                        .intent(Map.of("type", command.getType().name().toLowerCase()))
+                        .contextSnapshot(Map.of("householdId", command.getHouseholdId()))
+                        .decision(Map.of(
+                                "type", "guardrails_reject",
+                                "policy", rejected.triggeredPolicy(),
+                                "reason", rejected.reason(),
+                                "errorCode", rejected.errorCode()))
+                        .source(decision.source())
+                        .confidence(decision.confidence())
+                        .externalDecisionId(decision.externalDecisionId())
+                        .rawDecisionPayload(decision.rawPayload())
+                        .build());
+
+                int executionMs = (int) (System.currentTimeMillis() - startTime);
+                command.markRejected(rejected.errorCode(), rejected.reason(), executionMs);
+                commandRepository.save(command);
+
+                throw new BusinessException(ErrorCode.GUARDRAILS_REJECTED, rejected.reason());
+            }
+        };
+    }
+
+    private CommandResponseBase executeStartJob(
+            DecisionResult.StartJob decision,
+            Command command,
+            UUID correlationId,
+            User requester,
+            long startTime,
+            java.util.List<String> appliedPolicies) {
+
+        // Log decision with guardrails info
         Map<String, Object> decisionMap = new HashMap<>();
         decisionMap.put("type", "start_job");
         decisionMap.put("source", decision.source().name());
         decisionMap.put("actionsCount", decision.actions().size());
+        decisionMap.put("guardrails_policies", appliedPolicies);
 
         decisionLogWriter.write(DecisionLogWriter.DecisionLogEntry.builder()
                 .command(command)
@@ -241,11 +347,12 @@ public class CommandService {
         commandRepository.save(command);
 
         log.info(
-                "Command executed: id={}, correlationId={}, executionMs={}, source={}",
+                "Command executed: id={}, correlationId={}, executionMs={}, source={}, guardrails={}",
                 command.getId(),
                 correlationId,
                 executionMs,
-                decision.source());
+                decision.source(),
+                appliedPolicies);
 
         CommandResponse.CommandResult commandResult = lastResult != null
                 ? CommandResponse.CommandResult.forTask(lastResult.taskId(), lastResult.assigneeId())

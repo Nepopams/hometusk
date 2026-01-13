@@ -59,4 +59,17 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
      * Find tasks created by a specific command.
      */
     List<Task> findByCommandId(UUID commandId);
+
+    /**
+     * Count open tasks per assignee in a household (batch query for guardrails).
+     * Returns list of [assigneeId, count] pairs.
+     */
+    @Query(
+            "SELECT t.assignee.id, COUNT(t) FROM Task t "
+                    + "WHERE t.household.id = :householdId "
+                    + "AND t.status IN :statuses "
+                    + "AND t.assignee IS NOT NULL "
+                    + "GROUP BY t.assignee.id")
+    List<Object[]> countTasksByAssigneeAndStatuses(
+            @Param("householdId") UUID householdId, @Param("statuses") List<TaskStatus> statuses);
 }

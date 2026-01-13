@@ -86,7 +86,7 @@ public abstract class IntegrationTestBase {
         testUser2 = userRepository.save(testUser2);
 
         // Create membership for testUser
-        testMembership = new Membership(testUser, testHousehold, MembershipRole.ADMIN);
+        testMembership = new Membership(testUser, testHousehold, MembershipRole.admin);
         testMembership = membershipRepository.save(testMembership);
 
         // Create test zone

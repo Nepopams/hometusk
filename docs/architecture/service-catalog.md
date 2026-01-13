@@ -2,7 +2,7 @@
 
 Living registry of all services and applications in the HomeTusk monorepo.
 
-**Last updated:** 2026-01-12
+**Last updated:** 2026-01-13
 
 ---
 
@@ -70,25 +70,34 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 - `GET /api/v1/households/{id}/tasks` — List tasks
 - `POST /internal/households` — Create household (internal)
 
-**Command Pipeline Flow (Stage 2):**
+**Command Pipeline Flow (Stage 3):**
 ```
 Request → JWT Auth → UserResolver → MembershipValidator
        → CommandService.execute()
            ├─ SchemaValidator
            ├─ BusinessValidator
+           ├─ ContextBuilder (builds HouseholdSnapshot for guardrails)
            ├─ DecisionProviderSelector
            │   ├─ ManualDecisionProvider (rule-based, fallback)
            │   └─ AiPlatformDecisionProvider (external AI, optional)
-           ├─ DecisionLogWriter (includes external AI fields)
+           │       └─ AiResponseSchemaValidator (JSON Schema validation)
+           ├─ GuardrailsOrchestrator (policy chain before execution)
+           │   ├─ ZoneOwnerFirstPolicy (assign zone owner if no assignee)
+           │   └─ MaxOpenTasksPerAssigneePolicy (limit open tasks)
            ├─ ActionExecutor
+           ├─ DecisionLogWriter (includes guardrails info)
            └─ ActivityRecorder
-       → CommandResponse | ClarifyResponse | DegradedResponse
+       → CommandResponse | NeedsInputResponse | DegradedResponse
 ```
 
 **Decision Provider Configuration:**
 - `decision.provider=manual` (default) - Rule-based decisions
 - `decision.provider=aiplatform` - External AI Platform calls
 - `decision.fallback.enabled=true` - Fall back to manual if AI unavailable
+
+**Guardrails Configuration:**
+- `guardrails.enabled=true` - Enable/disable guardrails pipeline
+- `guardrails.max-open-tasks-per-assignee=10` - Max open tasks before clarification
 
 **Traceability:**
 - `X-Correlation-ID` header propagates through all layers
