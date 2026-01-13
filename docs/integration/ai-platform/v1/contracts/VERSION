@@ -1,13 +1,23 @@
-0.1.0
+0.2.0
 
-# AI Platform Integration Contract Version
+# HomeTusk AI Platform Contract Version
+#
+# This is a WRAPPER schema documenting what HomeTusk supports.
+# Canonical contracts: ../upstream/
 #
 # Semantic versioning: MAJOR.MINOR.PATCH
 # - MAJOR: Breaking changes to request/response structure
 # - MINOR: New optional fields, new decision types
 # - PATCH: Documentation updates, bug fixes
 #
+# Upstream Reference: 1.0.0 (see ../upstream/VERSION)
+#
 # Changelog:
+# 0.2.0 - Align with upstream snapshot 1.0.0
+#   - Document as wrapper schema (not source of truth)
+#   - Add upstream reference
+#   - Mapping: upstream/mapping/hometusk-to-upstream.md
+#
 # 0.1.0 - Initial version
 #   - Decision types: start_job, clarify, reject
 #   - Command types: create_task, complete_task
