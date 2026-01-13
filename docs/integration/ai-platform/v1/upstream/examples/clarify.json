@@ -1,0 +1,14 @@
+{
+  "$comment": "Example: AI Platform needs user clarification",
+  "decisionId": "a590f1ee-9c54-4b01-90e6-d701748f0854",
+  "type": "clarify",
+  "confidence": 0.4,
+  "question": "В какой комнате нужно убраться?",
+  "requiredFields": ["zoneId"],
+  "suggestions": {
+    "zones": [
+      {"id": "a47ac10b-58cc-4372-a567-0e02b2c3d480", "name": "Кухня"},
+      {"id": "b47ac10b-58cc-4372-a567-0e02b2c3d481", "name": "Гостиная"}
+    ]
+  }
+}

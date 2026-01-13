@@ -1,0 +1,15 @@
+{
+  "$comment": "Example: AI Platform proposes task creation (may require user confirmation)",
+  "decisionId": "e390f1ee-7c54-4b01-90e6-d701748f0852",
+  "type": "propose_create_task",
+  "confidence": 0.75,
+  "actions": [
+    {
+      "actionType": "create_task",
+      "parameters": {
+        "title": "Купить продукты",
+        "assigneeId": "8c9e6679-7425-40de-944b-e07fc1f90ae8"
+      }
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-platform.example.com/schemas/v1/command.json",
+  "title": "AI Platform Command Request",
+  "description": "Request sent to AI Platform for decision-making (POST /decide)",
+  "type": "object",
+  "required": [
+    "commandId",
+    "correlationId",
+    "commandType",
+    "payload",
+    "requesterId",
+    "householdId"
+  ],
+  "properties": {
+    "commandId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique command identifier from client system"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Correlation ID for distributed tracing"
+    },
+    "commandType": {
+      "type": "string",
+      "enum": ["create_task", "complete_task", "add_shopping_item"],
+      "description": "Type of command being processed"
+    },
+    "payload": {
+      "type": "object",
+      "description": "Command-specific payload"
+    },
+    "requesterId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "User ID who initiated the command"
+    },
+    "householdId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Household context ID"
+    },
+    "householdContext": {
+      "type": "object",
+      "description": "Household context for AI decision",
+      "properties": {
+        "members": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "name"],
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "name": { "type": "string" },
+              "role": { "type": "string", "enum": ["admin", "member"] }
+            }
+          }
+        },
+        "zones": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "name"],
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "name": { "type": "string" },
+              "ownerId": { "type": "string", "format": "uuid" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

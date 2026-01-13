@@ -1,0 +1,16 @@
+{
+  "$comment": "Example: AI Platform proposes adding shopping item (NOT SUPPORTED by HomeTusk)",
+  "decisionId": "f490f1ee-8c54-4b01-90e6-d701748f0853",
+  "type": "propose_add_shopping_item",
+  "confidence": 0.85,
+  "actions": [
+    {
+      "actionType": "add_shopping_item",
+      "parameters": {
+        "listId": "list-uuid-here",
+        "itemName": "Молоко",
+        "quantity": 2
+      }
+    }
+  ]
+}
