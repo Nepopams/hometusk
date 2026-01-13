@@ -150,7 +150,7 @@ fi
 
 
 # Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
-DEFAULT_JVM_OPTS='"-Xmx64m" "-Xms64m"'
+DEFAULT_JVM_OPTS="-Xmx64m -Xms64m"
 
 # Collect all arguments for the java command;
 #   * $DEFAULT_JVM_OPTS, $JAVA_OPTS, and $GRADLE_OPTS can contain fragments of
@@ -164,18 +164,10 @@ set -- \
         org.gradle.wrapper.GradleWrapperMain \
         "$@"
 
-# Stop when "xeli" is found, then print the rest.
-# Uses a for loop to examine all command line parameters
-while [ $# -gt 0 ] ; do
-    shift
-done
-
-# Escape application args
-save () {
-    for i do printf %s\\n "$i" | sed "s/'/'\\\\''/g;1s/^/'/;\$s/\$/' \\\\/" ; done
-    echo " "
-}
-APP_ARGS=`save "$@"`
+# Collect all arguments for the java command:
+#   * $DEFAULT_JVM_OPTS, $JAVA_OPTS, $GRADLE_OPTS can contain fragments of
+#     temporary args, e.g. if they contain quoted spaces. Instead of
+#     trying to put them back together we pass them as-is.
 
 # Download the gradle wrapper jar if it doesn't exist
 if [ ! -f "$APP_HOME/gradle/wrapper/gradle-wrapper.jar" ]; then
@@ -185,4 +177,5 @@ if [ ! -f "$APP_HOME/gradle/wrapper/gradle-wrapper.jar" ]; then
         "https://github.com/gradle/gradle/raw/v8.5.0/gradle/wrapper/gradle-wrapper.jar"
 fi
 
-exec "$JAVACMD" "$@"
+# shellcheck disable=SC2086
+exec "$JAVACMD" $DEFAULT_JVM_OPTS $JAVA_OPTS $GRADLE_OPTS "$@"

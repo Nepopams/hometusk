@@ -8,6 +8,7 @@ import com.hometusk.commands.domain.DecisionSource;
 import com.hometusk.commands.dto.*;
 import com.hometusk.commands.pipeline.*;
 import com.hometusk.commands.pipeline.decision.DecisionContext;
+import com.hometusk.commands.pipeline.guardrails.HouseholdSnapshot;
 import com.hometusk.commands.pipeline.decision.DecisionProviderSelector;
 import com.hometusk.commands.pipeline.decision.DecisionResult;
 import com.hometusk.commands.repository.CommandRepository;
@@ -50,6 +51,7 @@ public class CommandService {
     private final DecisionProviderSelector decisionProviderSelector;
     private final DecisionLogWriter decisionLogWriter;
     private final ActionExecutor actionExecutor;
+    private final ContextBuilder contextBuilder;
 
     public CommandService(
             CommandRepository commandRepository,
@@ -59,7 +61,8 @@ public class CommandService {
             BusinessValidator businessValidator,
             DecisionProviderSelector decisionProviderSelector,
             DecisionLogWriter decisionLogWriter,
-            ActionExecutor actionExecutor) {
+            ActionExecutor actionExecutor,
+            ContextBuilder contextBuilder) {
         this.commandRepository = commandRepository;
         this.householdService = householdService;
         this.objectMapper = objectMapper;
@@ -68,6 +71,7 @@ public class CommandService {
         this.decisionProviderSelector = decisionProviderSelector;
         this.decisionLogWriter = decisionLogWriter;
         this.actionExecutor = actionExecutor;
+        this.contextBuilder = contextBuilder;
     }
 
     @Transactional
@@ -176,6 +180,10 @@ public class CommandService {
 
     private DecisionContext buildDecisionContext(
             Command command, CommandRequest request, UUID requesterId, UUID correlationId) {
+        // Build household context for AI Platform (no internal data like task counts)
+        Map<String, Object> householdContext =
+                contextBuilder.buildHouseholdContextForAi(request.householdId(), correlationId);
+
         return DecisionContext.builder()
                 .commandId(command.getId())
                 .correlationId(correlationId)
@@ -183,7 +191,7 @@ public class CommandService {
                 .payload(request.payload())
                 .requesterId(requesterId)
                 .householdId(request.householdId())
-                .householdContext(Map.of()) // Minimal context for now
+                .householdContext(householdContext)
                 .build();
     }
 
