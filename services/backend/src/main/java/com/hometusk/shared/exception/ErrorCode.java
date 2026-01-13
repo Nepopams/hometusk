@@ -25,6 +25,9 @@ public enum ErrorCode {
     AI_REJECTED("AI rejected the command"),
     AI_UNAVAILABLE("AI Platform is unavailable"),
 
+    // Guardrails (Stage 3)
+    GUARDRAILS_REJECTED("Command rejected by guardrails policy"),
+
     // Other
     IDEMPOTENCY_CONFLICT("Request with this idempotency key already processed"),
     INTERNAL_ERROR("Internal server error");
