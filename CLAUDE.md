@@ -95,6 +95,15 @@ Prompts may evolve. Domain rules must remain stable.
 - Log all AI responses for audit (`rawDecisionPayload` in DecisionLog)
 - External contract: `docs/contracts/external/ai-platform.decision.openapi.yaml`
 
+### 7. AI Platform Contracts are Canonical (Stage 2 Enhancement)
+
+- Upstream contracts at `docs/integration/ai-platform/v1/upstream/` are **READ-ONLY**
+- Any contract change requires ADR and coordination with AI Platform team
+- HomeTusk **adapts** to upstream, never the reverse
+- Unsupported upstream types degrade safely (Clarify or Reject, no exceptions)
+- Endpoint is configurable: `/decision` (default) or `/decide` (upstream canonical)
+- See: `docs/integration/ai-platform/v1/mapping/hometusk-to-upstream.md`
+
 ---
 
 ## Required Domain Concepts
