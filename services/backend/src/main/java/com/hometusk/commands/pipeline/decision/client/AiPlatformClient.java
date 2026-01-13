@@ -14,6 +14,12 @@ import org.springframework.web.client.RestClientException;
 /**
  * HTTP client for external AI Platform.
  * Only instantiated when decision.provider=aiplatform.
+ *
+ * <p>Endpoint configuration:
+ * <ul>
+ *   <li>aiplatform.decision-path=/decision (default, HomeTusk legacy)</li>
+ *   <li>aiplatform.decision-path=/decide (upstream canonical)</li>
+ * </ul>
  */
 @Component
 @ConditionalOnProperty(name = "decision.provider", havingValue = "aiplatform")
@@ -23,12 +29,15 @@ public class AiPlatformClient {
 
     private final RestClient restClient;
     private final int timeoutMs;
+    private final String decisionPath;
 
     public AiPlatformClient(
             @Value("${aiplatform.base-url}") String baseUrl,
             @Value("${aiplatform.timeout-ms:5000}") int timeoutMs,
-            @Value("${aiplatform.api-key:}") String apiKey) {
+            @Value("${aiplatform.api-key:}") String apiKey,
+            @Value("${aiplatform.decision-path:/decision}") String decisionPath) {
         this.timeoutMs = timeoutMs;
+        this.decisionPath = decisionPath;
 
         var builder = RestClient.builder().baseUrl(baseUrl).defaultHeader("Content-Type", "application/json");
 
@@ -37,7 +46,8 @@ public class AiPlatformClient {
         }
 
         this.restClient = builder.build();
-        log.info("AI Platform client initialized: baseUrl={}, timeoutMs={}", baseUrl, timeoutMs);
+        log.info("AI Platform client initialized: baseUrl={}, decisionPath={}, timeoutMs={}",
+                baseUrl, decisionPath, timeoutMs);
     }
 
     /**
@@ -48,12 +58,13 @@ public class AiPlatformClient {
      * @throws AiPlatformException if request fails
      */
     public AiDecisionResponse requestDecision(AiDecisionRequest request) {
-        log.debug("Requesting decision from AI Platform: commandId={}", request.commandId());
+        log.debug("Requesting decision from AI Platform: commandId={}, path={}",
+                request.commandId(), decisionPath);
 
         try {
             AiDecisionResponse response = restClient
                     .post()
-                    .uri("/decision")
+                    .uri(decisionPath)
                     .body(request)
                     .retrieve()
                     .onStatus(

@@ -76,8 +76,11 @@ decision:
     enabled: ${DECISION_FALLBACK_ENABLED:true}  # Use manual as fallback when aiplatform unavailable
 
 # AI Platform Configuration (used when decision.provider=aiplatform)
+# Endpoint: /decision (HomeTusk legacy) or /decide (upstream canonical)
+# See: docs/integration/ai-platform/v1/mapping/hometusk-to-upstream.md
 aiplatform:
   base-url: ${AI_PLATFORM_URL:http://localhost:8090}
+  decision-path: ${AI_PLATFORM_DECISION_PATH:/decision}  # /decision (default) or /decide (upstream)
   timeout-ms: ${AI_PLATFORM_TIMEOUT_MS:5000}
   api-key: ${AI_PLATFORM_API_KEY:}
 
