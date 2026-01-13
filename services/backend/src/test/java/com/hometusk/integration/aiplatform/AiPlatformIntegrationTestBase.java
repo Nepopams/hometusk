@@ -146,4 +146,118 @@ public abstract class AiPlatformIntegrationTestBase extends IntegrationTestBase 
     protected void stubHealthCheckFailed() {
         stubFor(get(urlEqualTo("/health")).willReturn(aResponse().withStatus(503)));
     }
+
+    // --- Upstream contract stubs ---
+
+    /**
+     * Stubs upstream propose_create_task (mapped to start_job in HomeTusk).
+     */
+    protected void stubProposeCreateTaskDecision(String assigneeId, String title) {
+        String responseBody =
+                """
+                {
+                    "decisionId": "e390f1ee-7c54-4b01-90e6-d701748f0852",
+                    "type": "propose_create_task",
+                    "confidence": 0.75,
+                    "actions": [
+                        {
+                            "actionType": "create_task",
+                            "parameters": {
+                                "title": "%s",
+                                "assigneeId": "%s"
+                            }
+                        }
+                    ]
+                }
+                """
+                        .formatted(title, assigneeId);
+
+        stubFor(post(urlEqualTo("/decision"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(responseBody)));
+    }
+
+    /**
+     * Stubs upstream propose_add_shopping_item (unsupported → Clarify).
+     */
+    protected void stubProposeAddShoppingItemDecision() {
+        String responseBody =
+                """
+                {
+                    "decisionId": "f490f1ee-8c54-4b01-90e6-d701748f0853",
+                    "type": "propose_add_shopping_item",
+                    "confidence": 0.85,
+                    "actions": [
+                        {
+                            "actionType": "add_shopping_item",
+                            "parameters": {
+                                "listId": "list-uuid-here",
+                                "itemName": "Молоко",
+                                "quantity": 2
+                            }
+                        }
+                    ]
+                }
+                """;
+
+        stubFor(post(urlEqualTo("/decision"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(responseBody)));
+    }
+
+    /**
+     * Stubs unknown decision type (safe degradation → Reject).
+     */
+    protected void stubUnknownDecisionType() {
+        String responseBody =
+                """
+                {
+                    "decisionId": "a590f1ee-9c54-4b01-90e6-d701748f0854",
+                    "type": "unknown_future_type",
+                    "confidence": 0.9
+                }
+                """;
+
+        stubFor(post(urlEqualTo("/decision"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(responseBody)));
+    }
+
+    /**
+     * Stubs upstream start_job with deadline and zone for guardrails test.
+     */
+    protected void stubStartJobWithFullParams(String assigneeId, String title, String zoneId) {
+        String responseBody =
+                """
+                {
+                    "decisionId": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                    "type": "start_job",
+                    "confidence": 0.95,
+                    "actions": [
+                        {
+                            "actionType": "create_task",
+                            "parameters": {
+                                "title": "%s",
+                                "assigneeId": "%s",
+                                "zoneId": "%s",
+                                "deadline": "2026-01-20T18:00:00Z"
+                            }
+                        }
+                    ]
+                }
+                """
+                        .formatted(title, assigneeId, zoneId);
+
+        stubFor(post(urlEqualTo("/decision"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(responseBody)));
+    }
 }
