@@ -6,6 +6,7 @@ import com.hometusk.commands.domain.Command;
 import com.hometusk.commands.domain.CommandType;
 import com.hometusk.commands.domain.DecisionSource;
 import com.hometusk.commands.dto.*;
+import com.hometusk.commands.metrics.DecisionMetrics;
 import com.hometusk.commands.pipeline.*;
 import com.hometusk.commands.pipeline.decision.DecisionContext;
 import com.hometusk.commands.pipeline.decision.DecisionProviderSelector;
@@ -60,6 +61,7 @@ public class CommandService {
     private final ActionExecutor actionExecutor;
     private final ContextBuilder contextBuilder;
     private final GuardrailsOrchestrator guardrailsOrchestrator;
+    private final DecisionMetrics metrics;
 
     public CommandService(
             CommandRepository commandRepository,
@@ -71,7 +73,8 @@ public class CommandService {
             DecisionLogWriter decisionLogWriter,
             ActionExecutor actionExecutor,
             ContextBuilder contextBuilder,
-            GuardrailsOrchestrator guardrailsOrchestrator) {
+            GuardrailsOrchestrator guardrailsOrchestrator,
+            DecisionMetrics metrics) {
         this.commandRepository = commandRepository;
         this.householdService = householdService;
         this.objectMapper = objectMapper;
@@ -82,6 +85,7 @@ public class CommandService {
         this.actionExecutor = actionExecutor;
         this.contextBuilder = contextBuilder;
         this.guardrailsOrchestrator = guardrailsOrchestrator;
+        this.metrics = metrics;
     }
 
     @Transactional
@@ -235,10 +239,14 @@ public class CommandService {
         GuardrailResult guardrailResult = guardrailsOrchestrator.evaluate(decision, context);
 
         return switch (guardrailResult) {
-            case GuardrailResult.Proceed proceed -> executeStartJob(
-                    proceed.decision(), command, correlationId, requester, startTime, proceed.appliedPolicies());
+            case GuardrailResult.Proceed proceed -> {
+                metrics.recordDecisionOutcome("applied");
+                yield executeStartJob(
+                        proceed.decision(), command, correlationId, requester, startTime, proceed.appliedPolicies());
+            }
 
             case GuardrailResult.NeedsClarification clarify -> {
+                metrics.recordDecisionOutcome("clarify");
                 log.info(
                         "Guardrails requested clarification: correlationId={}, policy={}, question={}",
                         correlationId,
@@ -276,6 +284,7 @@ public class CommandService {
             }
 
             case GuardrailResult.Rejected rejected -> {
+                metrics.recordDecisionOutcome("reject");
                 log.warn(
                         "Guardrails rejected: correlationId={}, policy={}, reason={}",
                         correlationId,
