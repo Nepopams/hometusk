@@ -6,6 +6,7 @@ import com.hometusk.activity.domain.ActivityType;
 import com.hometusk.activity.domain.TaskActivity;
 import com.hometusk.activity.repository.TaskActivityRepository;
 import com.hometusk.households.domain.Household;
+import com.hometusk.shopping.domain.ShoppingItem;
 import com.hometusk.tasks.domain.Task;
 import com.hometusk.users.domain.User;
 import java.util.Map;
@@ -91,6 +92,59 @@ public class ActivityRecorder {
         activity.setChanges(toJson(Map.of("status", Map.of("old", task.getStatus().name(), "new", "cancelled"))));
 
         return taskActivityRepository.save(activity);
+    }
+
+    /**
+     * Records a shopping item added event (Stage 5).
+     */
+    @Transactional
+    public TaskActivity recordShoppingItemAdded(ShoppingItem item, User actor, UUID commandId, UUID correlationId) {
+        Household household = item.getShoppingList().getHousehold();
+        TaskActivity activity = new TaskActivity(
+                household,
+                commandId,
+                correlationId,
+                ActivityType.SHOPPING_ITEM_ADDED,
+                ENTITY_TYPE_SHOPPING_ITEM,
+                item.getId(),
+                actor);
+
+        activity.setMetadata(toJson(Map.of(
+                "name", item.getName(),
+                "quantity", item.getQuantity() != null ? item.getQuantity() : 1,
+                "unit", item.getUnit() != null ? item.getUnit() : "",
+                "listId", item.getShoppingList().getId().toString(),
+                "linkedTaskId", item.getLinkedTaskId() != null ? item.getLinkedTaskId().toString() : "null")));
+
+        TaskActivity saved = taskActivityRepository.save(activity);
+        log.debug("Recorded SHOPPING_ITEM_ADDED: itemId={}, correlationId={}", item.getId(), correlationId);
+
+        return saved;
+    }
+
+    /**
+     * Records a shopping item purchased event (Stage 5).
+     */
+    @Transactional
+    public TaskActivity recordShoppingItemPurchased(ShoppingItem item, User actor, UUID commandId, UUID correlationId) {
+        Household household = item.getShoppingList().getHousehold();
+        TaskActivity activity = new TaskActivity(
+                household,
+                commandId,
+                correlationId,
+                ActivityType.SHOPPING_ITEM_PURCHASED,
+                ENTITY_TYPE_SHOPPING_ITEM,
+                item.getId(),
+                actor);
+
+        activity.setMetadata(toJson(Map.of(
+                "purchasedAt", item.getPurchasedAt() != null ? item.getPurchasedAt().toString() : "null",
+                "name", item.getName())));
+
+        TaskActivity saved = taskActivityRepository.save(activity);
+        log.debug("Recorded SHOPPING_ITEM_PURCHASED: itemId={}, correlationId={}", item.getId(), correlationId);
+
+        return saved;
     }
 
     private String toJson(Object obj) {
