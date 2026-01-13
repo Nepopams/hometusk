@@ -1,105 +1,66 @@
-# Интеграция HomeTask ↔ AI Platform
+# AI Platform Upstream Contracts (Vendor Snapshot)
 
-Этот документ фиксирует минимальный интеграционный контракт для HomeTask и AI Platform (LangGraph).
-Он описывает, как формировать запросы, как интерпретировать ответы и где проходят границы ответственности.
+> **ВАЖНО:** Файлы в этой директории являются **vendor snapshot** canonical контрактов AI Platform.
+> НЕ РЕДАКТИРОВАТЬ эти файлы вручную без согласования с командой AI Platform.
 
-## Основные схемы (контракты)
+## Версия
 
-- CommandDTO: `contracts/schemas/command.schema.json`
-- DecisionDTO: `contracts/schemas/decision.schema.json`
-- Версия контрактов: `contracts/VERSION`
+**Snapshot Date:** 2026-01-13
+**Contract Version:** 1.0.0
+**Source:** AI Platform API Specification
 
-## Формирование CommandDTO
+## Содержимое
 
-Команда отправляется в виде JSON-объекта, полностью соответствующего схеме CommandDTO.
-Ключевые требования:
-
-- `command_id`: уникальный идентификатор команды (используйте для идемпотентности).
-- `user_id`: пользователь-инициатор.
-- `timestamp`: ISO-8601 дата/время.
-- `text`: исходная пользовательская фраза.
-- `capabilities`: список допустимых действий для этой команды.
-- `context`: доменный контекст (см. `docs/integration/context_v1.md`).
-
-Минимальные примеры CommandDTO находятся в `docs/integration/examples/*.json`.
-
-## Вызов Decision API
-
-**HTTP:** `POST /decide`
-
-Рекомендуемые заголовки:
-
-- `Content-Type: application/json`
-
-Пример запроса:
-
-```bash
-curl -sS http://localhost:8000/decide \
-  -H 'Content-Type: application/json' \
-  -d @docs/integration/examples/create_task_start_job.json
+```
+upstream/
+├── README.md                      # Этот файл
+├── VERSION                        # Версия контрактов
+├── context_v1.md                  # Спецификация контекста запроса
+├── contracts/
+│   └── schemas/
+│       ├── command.schema.json    # JSON Schema для запроса (POST /decide)
+│       └── decision.schema.json   # JSON Schema для ответа
+└── examples/
+    ├── start-job.json             # Пример: выполнить действия
+    ├── propose-create-task.json   # Пример: предложить создание задачи
+    ├── clarify.json               # Пример: запросить уточнение
+    └── reject.json                # Пример: отклонить команду
 ```
 
-## Выбор стратегии маршрутизации решений
+## Endpoint
 
-По умолчанию используется стратегия v1 (поведение не меняется).
-Чтобы включить скелет RouterV2, установите флаг окружения:
+**Canonical Endpoint:** `POST /decide`
 
-```bash
-DECISION_ROUTER_STRATEGY=v2
-```
+> Примечание: HomeTusk исторически использует `/decision`.
+> Endpoint настраивается через `aiplatform.decision-path`.
 
-## Интерпретация DecisionDTO
+## Типы решений (Decision Types)
 
-Ответ DecisionDTO всегда содержит `action` и `payload`, соответствующие схеме.
-Важно различать:
+| Type | Описание | Поддержка HomeTusk |
+|------|----------|---------------------|
+| `start_job` | Выполнить предложенные действия | Полная |
+| `propose_create_task` | Предложить создание задачи (требует подтверждения) | Маппится на start_job |
+| `propose_add_shopping_item` | Предложить добавление в список покупок | Не поддерживается → Clarify |
+| `clarify` | Запросить уточнение у пользователя | Полная |
+| `reject` | Отклонить команду | Полная |
 
-### `start_job`
+## Как обновлять snapshot
 
-`action = "start_job"` означает, что AI Platform предлагает начать выполнение задания.
-В `payload` содержатся:
+1. Получить новую версию контрактов от AI Platform team
+2. Скопировать файлы в эту директорию
+3. Обновить `VERSION` файл
+4. Сравнить с HomeTusk адаптером (`hometusk-to-upstream.md`)
+5. Обновить адаптер при необходимости
+6. Создать ADR если есть breaking changes
 
-- `job_id`: идентификатор задания.
-- `job_type`: тип задания (`create_task`, `add_shopping_item`, `unknown`).
-- `proposed_actions` (опционально): предложения по деталям (см. ниже).
-- `ui_message` (опционально): текст для UI.
+## Правила
 
-### `clarify`
-
-`action = "clarify"` означает, что для продолжения нужны уточнения.
-В `payload` содержатся:
-
-- `question`: вопрос пользователю.
-- `options` (опционально): варианты ответа.
-- `missing_fields` (опционально): перечень недостающих полей.
-- `job_id` (опционально): идентификатор контекста задания.
-
-## Работа с `proposed_actions`
-
-`proposed_actions` — это **предложение**, а не команда к выполнению.
-HomeTask может:
-
-- принять предложение и отобразить/выполнить;
-- частично применить;
-- проигнорировать и запросить уточнение.
-
-AI Platform **не выполняет** эти действия сама — ответственность за исполнение лежит на HomeTask.
-
-## Идемпотентность и ретраи (ответственность HomeTask)
-
-- Используйте стабильный `command_id` для повторных отправок одной и той же команды.
-- При сетевых ошибках допустимы ретраи с тем же `command_id`.
-- Нельзя менять `command_id` при повторной отправке одной и той же команды.
-- Ответственность за дедупликацию и безопасные ретраи полностью на стороне HomeTask.
-
-## AI Platform НЕ гарантирует
-
-- выполнение действий: платформа лишь возвращает решение;
-- отсутствие `clarify` даже при схожих командах;
-- неизменяемость `job_type` при повторной интерпретации разных команд;
-- пригодность решения без учета актуальности вашего `context`;
-- корректность при нарушении схемы запроса или при пустом/неконсистентном контексте.
+1. **НЕ РЕДАКТИРОВАТЬ** файлы в этой директории без согласования
+2. HomeTusk **адаптируется** к upstream, не наоборот
+3. Любые расхождения документируются в `mapping/hometusk-to-upstream.md`
+4. Breaking changes требуют ADR
 
 ## Связанные документы
 
-- Контекст: `docs/integration/context_v1.md`
-- Примеры: `docs/integration/examples/*.json`
+- [HomeTusk Adapter Mapping](../mapping/hometusk-to-upstream.md)
+- [ADR-006: Upstream Contract Alignment](../../../../architecture/decisions/006-upstream-contract-alignment.md)

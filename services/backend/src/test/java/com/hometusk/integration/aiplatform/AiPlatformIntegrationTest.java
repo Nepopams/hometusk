@@ -24,13 +24,17 @@ import org.springframework.http.MediaType;
 /**
  * Integration tests for AI Platform decision flow.
  *
- * <p>Tests all scenarios from Stage 3 plan:
+ * <p>Tests scenarios from Stage 3 + Stage 2 Enhancement (upstream alignment):
  * <ol>
  *   <li>start_job → Task created</li>
  *   <li>clarify → NEEDS_INPUT</li>
  *   <li>Invalid payload → REJECTED</li>
  *   <li>Timeout/unavailable → Fallback</li>
  *   <li>Guardrails CLARIFY → NEEDS_INPUT</li>
+ *   <li>propose_create_task → Task created (mapped to start_job)</li>
+ *   <li>propose_add_shopping_item → NEEDS_INPUT (unsupported, safe degradation)</li>
+ *   <li>Unknown type → REJECTED (safe degradation)</li>
+ *   <li>Adapter → Guardrails flow (critical path test)</li>
  * </ol>
  */
 class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
@@ -251,6 +255,151 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
             // Verify no additional task was created
             var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(tasks).hasSize(10); // Only the pre-created tasks
+        }
+    }
+
+    // --- Upstream Contract Alignment Tests (Stage 2 Enhancement) ---
+
+    @Nested
+    @DisplayName("Scenario 6: propose_create_task → Task created (mapped)")
+    class ProposeCreateTaskScenario {
+
+        @Test
+        @DisplayName("should create task when AI returns propose_create_task")
+        void createsTaskOnProposeCreateTask() throws Exception {
+            // Given: AI Platform returns propose_create_task (upstream type)
+            stubProposeCreateTaskDecision(testUser.getId().toString(), "Buy groceries");
+
+            String requestBody = objectMapper.writeValueAsString(Map.of(
+                    "type", "create_task",
+                    "householdId", testHousehold.getId(),
+                    "source", "text",
+                    "clientTimestamp", "2024-01-15T10:00:00Z",
+                    "payload", Map.of("rawText", "Buy groceries")));
+
+            // When
+            mockMvc.perform(post("/api/v1/commands")
+                            .header("X-Correlation-ID", correlationId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestBody)
+                            .with(jwt()))
+                    // Then: Should be executed (propose_create_task mapped to start_job)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("executed"))
+                    .andExpect(jsonPath("$.result.taskId").exists());
+
+            // Verify task was created
+            var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            org.assertj.core.api.Assertions.assertThat(tasks).hasSize(1);
+            org.assertj.core.api.Assertions.assertThat(tasks.get(0).getTitle()).isEqualTo("Buy groceries");
+        }
+    }
+
+    @Nested
+    @DisplayName("Scenario 7: propose_add_shopping_item → NEEDS_INPUT (unsupported)")
+    class ProposeAddShoppingItemScenario {
+
+        @Test
+        @DisplayName("should return needs_input for unsupported upstream type")
+        void returnsNeedsInputForUnsupportedType() throws Exception {
+            // Given: AI Platform returns propose_add_shopping_item (unsupported)
+            stubProposeAddShoppingItemDecision();
+
+            String requestBody = objectMapper.writeValueAsString(Map.of(
+                    "type", "create_task",
+                    "householdId", testHousehold.getId(),
+                    "source", "text",
+                    "clientTimestamp", "2024-01-15T10:00:00Z",
+                    "payload", Map.of("rawText", "Add milk to shopping list")));
+
+            // When
+            mockMvc.perform(post("/api/v1/commands")
+                            .header("X-Correlation-ID", correlationId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestBody)
+                            .with(jwt()))
+                    // Then: Safe degradation to NEEDS_INPUT
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("needs_input"))
+                    .andExpect(jsonPath("$.question", containsString("не поддерживается")));
+
+            // Verify no task was created
+            var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            org.assertj.core.api.Assertions.assertThat(tasks).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("Scenario 8: Unknown type → REJECTED (safe degradation)")
+    class UnknownTypeScenario {
+
+        @Test
+        @DisplayName("should reject unknown decision type")
+        void rejectsUnknownType() throws Exception {
+            // Given: AI Platform returns unknown_future_type
+            stubUnknownDecisionType();
+
+            String requestBody = objectMapper.writeValueAsString(Map.of(
+                    "type", "create_task",
+                    "householdId", testHousehold.getId(),
+                    "source", "text",
+                    "clientTimestamp", "2024-01-15T10:00:00Z",
+                    "payload", Map.of("rawText", "Something")));
+
+            // When
+            mockMvc.perform(post("/api/v1/commands")
+                            .header("X-Correlation-ID", correlationId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestBody)
+                            .with(jwt()))
+                    // Then: Safe degradation to REJECTED (schema validation fails for unknown type)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").exists());
+        }
+    }
+
+    @Nested
+    @DisplayName("Scenario 9: Adapter → Guardrails flow (critical path)")
+    class AdapterGuardrailsFlowScenario {
+
+        @Test
+        @DisplayName("should pass mapped decision through guardrails correctly")
+        void adapterToGuardrailsFlow() throws Exception {
+            // Given: Create 10 tasks for testUser to trigger guardrails
+            for (int i = 0; i < 10; i++) {
+                Task task = new Task(testHousehold, "Existing Task " + i);
+                task.setAssignee(testUser);
+                taskRepository.save(task);
+            }
+
+            // AI Platform returns start_job with full params (assignee, zone)
+            // This tests that adapter correctly preserves all fields for guardrails
+            stubStartJobWithFullParams(
+                    testUser.getId().toString(),
+                    "Critical test task",
+                    testZone.getId().toString());
+
+            String requestBody = objectMapper.writeValueAsString(Map.of(
+                    "type", "create_task",
+                    "householdId", testHousehold.getId(),
+                    "source", "text",
+                    "clientTimestamp", "2024-01-15T10:00:00Z",
+                    "payload", Map.of("rawText", "Critical test task")));
+
+            // When
+            mockMvc.perform(post("/api/v1/commands")
+                            .header("X-Correlation-ID", correlationId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestBody)
+                            .with(jwt()))
+                    // Then: Guardrails should block (testUser has 10 tasks)
+                    // This proves adapter correctly passed assigneeId to guardrails
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("needs_input"));
+
+            // Verify no new task was created (guardrails blocked it)
+            var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            org.assertj.core.api.Assertions.assertThat(tasks).hasSize(10);
         }
     }
 }

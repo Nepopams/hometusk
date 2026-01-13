@@ -232,40 +232,47 @@ Handles all notifications to users.
 | AI Platform | Decision-making for commands | External (stub) | **In Development (Stage 2)** |
 | Push Provider | Push notifications | TBD | Planned (Stage 3) |
 
-### AI Platform (Stage 2)
+### AI Platform (Stage 2 + Enhancement)
 
 HomeTusk is a **consumer** of an external AI Platform for intelligent decision-making.
 
-**Integration Package:** [`docs/integration/ai-platform/v1/`](../integration/ai-platform/v1/README.md)
+**Upstream Contracts (Source of Truth):**
+- Location: `docs/integration/ai-platform/v1/upstream/`
+- Version: 1.0.0 (see `upstream/VERSION`)
+- Canonical endpoint: `POST /decide`
 
-**Contracts:**
-- OpenAPI: `docs/contracts/external/ai-platform.decision.openapi.yaml`
-- JSON Schemas: `docs/integration/ai-platform/v1/contracts/schemas/`
-- Examples: `docs/integration/ai-platform/v1/examples/`
+**HomeTusk Integration:**
+- Integration Package: [`docs/integration/ai-platform/v1/`](../integration/ai-platform/v1/README.md)
+- Mapping: `docs/integration/ai-platform/v1/mapping/hometusk-to-upstream.md`
+- Wrapper Schemas: `docs/integration/ai-platform/v1/contracts/schemas/`
 
-**Endpoints called:**
-- `POST /decision` - Request AI decision
+**Endpoints (configurable):**
+- `POST /decision` (default, HomeTusk legacy)
+- `POST /decide` (upstream canonical)
 - `GET /health` - Health check
 
-**Response types:**
-- `start_job` - Execute proposed actions
-- `clarify` - Need user clarification
-- `reject` - Cannot process command
+**Upstream Response types:**
+- `start_job` - Execute proposed actions (full support)
+- `propose_create_task` - Propose task creation (mapped to start_job)
+- `propose_add_shopping_item` - Propose shopping item (unsupported → Clarify)
+- `clarify` - Need user clarification (full support)
+- `reject` - Cannot process command (full support)
 
 **Configuration:**
 ```yaml
 aiplatform:
   base-url: ${AI_PLATFORM_URL}
+  decision-path: /decision  # or /decide for upstream
   timeout-ms: 5000
   api-key: ${AI_PLATFORM_API_KEY}
 ```
 
-**Validation:**
-```bash
-./scripts/validate-aiplatform-contracts.sh
-```
+**Safe Degradation:**
+- Unsupported types → Clarify with user-friendly message
+- Unknown types → Reject with errorCode
+- Schema validation failure → Reject
 
-> **Note:** AI Platform is external to this repository. HomeTusk validates all AI output against business rules before execution.
+> **Contract-First:** Upstream contracts are canonical. HomeTusk adapts to upstream, not vice versa. See ADR-006.
 >
 > See [mapping documentation](../integration/ai-platform/v1/mapping/hometusk-to-aiplatform.md) for field mappings between HomeTusk and AI Platform.
 

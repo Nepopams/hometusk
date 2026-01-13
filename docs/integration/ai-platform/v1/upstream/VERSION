@@ -1,0 +1,21 @@
+1.0.0
+
+# AI Platform Contract Version (Upstream)
+#
+# This file tracks the version of canonical AI Platform contracts.
+#
+# Format: MAJOR.MINOR.PATCH
+# - MAJOR: Breaking changes to request/response structure
+# - MINOR: New optional fields, new decision types
+# - PATCH: Documentation updates, clarifications
+#
+# Snapshot Info:
+# - Date: 2026-01-13
+# - Source: AI Platform API Specification v1.0.0
+# - Endpoint: POST /decide
+#
+# Changelog:
+# 1.0.0 - Initial upstream snapshot
+#   - Decision types: start_job, propose_create_task, propose_add_shopping_item, clarify, reject
+#   - Action types: create_task, complete_task, add_shopping_item
+#   - Endpoint: /decide

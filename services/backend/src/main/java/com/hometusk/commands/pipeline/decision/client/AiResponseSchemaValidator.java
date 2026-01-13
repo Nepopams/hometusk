@@ -21,6 +21,12 @@ import org.springframework.stereotype.Component;
  * with detailed error information for debugging.
  *
  * <p>Per CLAUDE.md Rule 1: "AI output MUST be schema-validated before use"
+ *
+ * <p>Schema is aligned with upstream AI Platform contracts and accepts all
+ * upstream decision types. Unsupported types are handled via safe degradation
+ * in {@link AiDecisionResponseMapper}.
+ *
+ * @see AiDecisionResponseMapper for safe degradation of unsupported types
  */
 @Component
 public class AiResponseSchemaValidator {

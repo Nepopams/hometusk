@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://hometusk.app/schemas/ai-decision-response.json",
-  "title": "AI Platform Decision Response",
-  "description": "Response from AI Platform with decision for HomeTusk command",
+  "title": "AI Platform Decision Response (Upstream-aligned)",
+  "description": "Response from AI Platform. Accepts all upstream types; unsupported types handled via safe degradation in adapter.",
   "type": "object",
   "required": [
     "decisionId",
@@ -17,8 +17,8 @@
     },
     "type": {
       "type": "string",
-      "enum": ["start_job", "clarify", "reject"],
-      "description": "Decision type"
+      "enum": ["start_job", "propose_create_task", "propose_add_shopping_item", "clarify", "reject"],
+      "description": "Decision type (upstream format)"
     },
     "confidence": {
       "type": "number",
@@ -68,6 +68,22 @@
     },
     {
       "if": {
+        "properties": { "type": { "const": "propose_create_task" } }
+      },
+      "then": {
+        "required": ["actions"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "type": { "const": "propose_add_shopping_item" } }
+      },
+      "then": {
+        "required": ["actions"]
+      }
+    },
+    {
+      "if": {
         "properties": { "type": { "const": "clarify" } }
       },
       "then": {
@@ -90,8 +106,8 @@
       "properties": {
         "actionType": {
           "type": "string",
-          "enum": ["create_task", "complete_task"],
-          "description": "Type of action to execute"
+          "enum": ["create_task", "complete_task", "add_shopping_item"],
+          "description": "Type of action to execute (upstream format)"
         },
         "parameters": {
           "type": "object",
