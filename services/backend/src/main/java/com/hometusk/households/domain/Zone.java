@@ -1,5 +1,6 @@
 package com.hometusk.households.domain;
 
+import com.hometusk.users.domain.User;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
@@ -15,6 +16,10 @@ public class Zone {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "household_id", nullable = false)
     private Household household;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    private User owner;
 
     @Column(name = "name", nullable = false)
     private String name;
@@ -48,6 +53,18 @@ public class Zone {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public User getOwner() {
+        return owner;
+    }
+
+    public void setOwner(User owner) {
+        this.owner = owner;
+    }
+
+    public UUID getOwnerId() {
+        return owner != null ? owner.getId() : null;
     }
 
     public Instant getCreatedAt() {

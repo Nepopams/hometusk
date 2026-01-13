@@ -1,6 +1,7 @@
 package com.hometusk.commands.pipeline.decision;
 
 import com.hometusk.commands.domain.DecisionSource;
+import com.hometusk.commands.metrics.DecisionMetrics;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,16 +24,19 @@ public class DecisionProviderSelector {
     private final Optional<AiPlatformDecisionProvider> aiPlatformProvider;
     private final String configuredProvider;
     private final boolean fallbackEnabled;
+    private final DecisionMetrics metrics;
 
     public DecisionProviderSelector(
             ManualDecisionProvider manualProvider,
             @Autowired(required = false) AiPlatformDecisionProvider aiPlatformProvider,
             @Value("${decision.provider:manual}") String configuredProvider,
-            @Value("${decision.fallback.enabled:true}") boolean fallbackEnabled) {
+            @Value("${decision.fallback.enabled:true}") boolean fallbackEnabled,
+            DecisionMetrics metrics) {
         this.manualProvider = manualProvider;
         this.aiPlatformProvider = Optional.ofNullable(aiPlatformProvider);
         this.configuredProvider = configuredProvider;
         this.fallbackEnabled = fallbackEnabled;
+        this.metrics = metrics;
 
         log.info("DecisionProviderSelector initialized: provider={}, fallback={}, aiPlatformAvailable={}",
                 configuredProvider, fallbackEnabled, this.aiPlatformProvider.isPresent());
@@ -46,10 +50,24 @@ public class DecisionProviderSelector {
      * @return Decision result (may have FALLBACK source if degraded)
      */
     public DecisionResult decide(DecisionContext context) {
+        long startTime = System.currentTimeMillis();
+        DecisionResult result;
+        String actualSource;
+
         if ("aiplatform".equals(configuredProvider)) {
-            return decideWithAiPlatform(context);
+            result = decideWithAiPlatform(context);
+            // Determine actual source based on result
+            actualSource = result.source() == DecisionSource.FALLBACK ? "fallback" : "aiplatform";
+        } else {
+            result = manualProvider.decide(context);
+            actualSource = "manual";
         }
-        return manualProvider.decide(context);
+
+        long duration = System.currentTimeMillis() - startTime;
+        metrics.recordDecisionLatency(actualSource, duration);
+        metrics.recordDecisionSource(actualSource);
+
+        return result;
     }
 
     private DecisionResult decideWithAiPlatform(DecisionContext context) {

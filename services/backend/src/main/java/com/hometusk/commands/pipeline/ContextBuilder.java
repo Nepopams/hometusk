@@ -37,12 +37,15 @@ public class ContextBuilder {
     private final MembershipRepository membershipRepository;
     private final ZoneRepository zoneRepository;
     private final TaskRepository taskRepository;
+    private final com.hometusk.commands.pipeline.guardrails.GuardrailsConfig guardrailsConfig;
 
     public ContextBuilder(
-            MembershipRepository membershipRepository, ZoneRepository zoneRepository, TaskRepository taskRepository) {
+            MembershipRepository membershipRepository, ZoneRepository zoneRepository, TaskRepository taskRepository,
+            com.hometusk.commands.pipeline.guardrails.GuardrailsConfig guardrailsConfig) {
         this.membershipRepository = membershipRepository;
         this.zoneRepository = zoneRepository;
         this.taskRepository = taskRepository;
+        this.guardrailsConfig = guardrailsConfig;
     }
 
     /**
@@ -71,7 +74,7 @@ public class ContextBuilder {
             // 2. Load zones
             List<Zone> zoneEntities = zoneRepository.findByHouseholdId(householdId);
             List<ZoneInfo> zones =
-                    zoneEntities.stream().map(z -> new ZoneInfo(z.getId(), z.getName())).toList();
+                    zoneEntities.stream().map(z -> new ZoneInfo(z.getId(), z.getName(), z.getOwnerId())).toList();
 
             // 3. Count open tasks per assignee (batch query)
             Map<UUID, Integer> taskCounts = countOpenTasksByAssignee(householdId);
@@ -104,18 +107,36 @@ public class ContextBuilder {
         log.debug("Building AI context: householdId={}, correlationId={}", householdId, correlationId);
 
         try {
-            // 1. Load members (simplified for AI - just id and name)
+            // 1. Count open tasks per assignee (needed for workload_score)
+            Map<UUID, Integer> taskCounts = countOpenTasksByAssignee(householdId);
+            int maxTasks = guardrailsConfig.getMaxOpenTasksPerAssignee();
+
+            // 2. Load members with workload_score
             List<Membership> memberships = membershipRepository.findByHouseholdId(householdId);
             List<Map<String, Object>> membersList = memberships.stream()
-                    .map(m -> Map.<String, Object>of(
-                            "id", m.getUserId().toString(),
-                            "name", m.getUser().getDisplayName()))
+                    .map(m -> {
+                        int openTasks = taskCounts.getOrDefault(m.getUserId(), 0);
+                        double workloadScore = calculateWorkloadScore(openTasks, maxTasks);
+                        Map<String, Object> memberMap = new HashMap<>();
+                        memberMap.put("id", m.getUserId().toString());
+                        memberMap.put("name", m.getUser().getDisplayName());
+                        memberMap.put("workload_score", workloadScore);
+                        return memberMap;
+                    })
                     .toList();
 
-            // 2. Load zones (simplified for AI - just id and name)
+            // 3. Load zones with owner_id (if present)
             List<Zone> zoneEntities = zoneRepository.findByHouseholdId(householdId);
             List<Map<String, Object>> zonesList = zoneEntities.stream()
-                    .map(z -> Map.<String, Object>of("id", z.getId().toString(), "name", z.getName()))
+                    .map(z -> {
+                        Map<String, Object> zoneMap = new HashMap<>();
+                        zoneMap.put("id", z.getId().toString());
+                        zoneMap.put("name", z.getName());
+                        if (z.getOwnerId() != null) {
+                            zoneMap.put("owner_id", z.getOwnerId().toString());
+                        }
+                        return zoneMap;
+                    })
                     .toList();
 
             log.debug(
@@ -145,5 +166,21 @@ public class ContextBuilder {
             counts.put(assigneeId, count.intValue());
         }
         return counts;
+    }
+
+    /**
+     * Calculate workload score for a member based on their open task count.
+     *
+     * @param openTasks number of open tasks assigned to the member
+     * @param maxTasks maximum allowed open tasks per assignee
+     * @return workload score between 0.0 (no tasks) and 1.0 (at or over capacity)
+     */
+    private double calculateWorkloadScore(int openTasks, int maxTasks) {
+        if (maxTasks <= 0) {
+            log.warn("Invalid maxTasks configuration: {}, defaulting to 10", maxTasks);
+            maxTasks = 10;
+        }
+        double score = (double) openTasks / maxTasks;
+        return Math.min(1.0, Math.max(0.0, score));
     }
 }

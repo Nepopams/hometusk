@@ -452,7 +452,6 @@ components:
         - commandId
         - correlationId
         - status
-        - result
         - executionMs
       properties:
         commandId:
@@ -467,9 +466,29 @@ components:
           type: string
           enum:
             - executed
-          description: Command execution status
+            - needs_input
+          description: |
+            Command execution status:
+            - executed: Task was created successfully
+            - needs_input: Guardrails require user clarification before proceeding
         result:
           $ref: '#/components/schemas/CommandResult'
+          description: Present when status=executed
+        question:
+          type: string
+          description: Present when status=needs_input - question to ask the user
+        requiredFields:
+          type: array
+          items:
+            type: string
+          description: Present when status=needs_input - fields that need user input
+        suggestions:
+          type: object
+          additionalProperties: true
+          description: Present when status=needs_input - suggested values for fields
+        policyName:
+          type: string
+          description: Present when status=needs_input - guardrail policy that requested clarification
         executionMs:
           type: integer
           minimum: 0

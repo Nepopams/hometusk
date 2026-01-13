@@ -1,5 +1,6 @@
 package com.hometusk.commands.pipeline.guardrails;
 
+import com.hometusk.commands.metrics.DecisionMetrics;
 import com.hometusk.commands.pipeline.ContextBuilder;
 import com.hometusk.commands.pipeline.decision.DecisionContext;
 import com.hometusk.commands.pipeline.decision.DecisionResult;
@@ -34,15 +35,18 @@ public class GuardrailsOrchestrator {
     private final List<GuardrailPolicy> policies;
     private final GuardrailsConfig config;
     private final ContextBuilder contextBuilder;
+    private final DecisionMetrics metrics;
 
     public GuardrailsOrchestrator(
-            List<GuardrailPolicy> policies, GuardrailsConfig config, ContextBuilder contextBuilder) {
+            List<GuardrailPolicy> policies, GuardrailsConfig config, ContextBuilder contextBuilder,
+            DecisionMetrics metrics) {
         // Sort policies by order
         this.policies = policies.stream()
                 .sorted(Comparator.comparingInt(GuardrailPolicy::getOrder))
                 .toList();
         this.config = config;
         this.contextBuilder = contextBuilder;
+        this.metrics = metrics;
 
         log.info(
                 "Guardrails orchestrator initialized with {} policies: {}",
@@ -104,11 +108,13 @@ public class GuardrailsOrchestrator {
             switch (outcome) {
                 case GuardrailOutcome.Accept ignored -> {
                     log.debug("Policy {} accepted", policy.getName());
+                    metrics.recordGuardrailOutcome(policy.getName(), "accept");
                 }
 
                 case GuardrailOutcome.Modify modify -> {
                     log.info("Policy {} suggests modification: {}", policy.getName(), modify.reason());
                     modifications.add(policy.getName() + ": " + modify.reason());
+                    metrics.recordGuardrailOutcome(policy.getName(), "modify");
                     // Update the decision with modified actions
                     currentDecision = new DecisionResult.StartJob(
                             currentDecision.source(),
@@ -126,6 +132,7 @@ public class GuardrailsOrchestrator {
                             policy.getName(),
                             originalContext.correlationId(),
                             clarify.question());
+                    metrics.recordGuardrailOutcome(policy.getName(), "clarify");
                     return new GuardrailResult.NeedsClarification(
                             clarify.question(), clarify.requiredFields(), clarify.suggestions(), policy.getName());
                 }
@@ -136,6 +143,7 @@ public class GuardrailsOrchestrator {
                             policy.getName(),
                             originalContext.correlationId(),
                             reject.reason());
+                    metrics.recordGuardrailOutcome(policy.getName(), "reject");
                     return new GuardrailResult.Rejected(reject.reason(), reject.errorCode(), policy.getName());
                 }
             }

@@ -84,7 +84,12 @@ aiplatform:
   timeout-ms: ${AI_PLATFORM_TIMEOUT_MS:5000}
   api-key: ${AI_PLATFORM_API_KEY:}
 
-# Guardrails Configuration (Stage 3)
+# Guardrails Configuration (Stage 3+)
 guardrails:
   enabled: ${GUARDRAILS_ENABLED:true}
   max-open-tasks-per-assignee: ${GUARDRAILS_MAX_OPEN_TASKS:10}
+  max-deadline-days: ${GUARDRAILS_MAX_DEADLINE_DAYS:365}
+  # Availability checking (Stage 5 feature, OFF by default in Stage 4)
+  availability-enabled: ${GUARDRAILS_AVAILABILITY_ENABLED:false}
+  quiet-hours-start: ${GUARDRAILS_QUIET_HOURS_START:22:00}
+  quiet-hours-end: ${GUARDRAILS_QUIET_HOURS_END:07:00}

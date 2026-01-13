@@ -29,17 +29,18 @@ public record CommandResponse(
                 commandId, correlationId, "executed_degraded", result, executionMs, initiatorId, degradedReason, null);
     }
 
-    /** Stage 2: AI needs clarification from user */
+    /** Stage 2+: AI/Guardrails need clarification from user */
     public static CommandResponseBase needsInput(
             UUID commandId,
             UUID correlationId,
             String question,
             List<String> requiredFields,
             Map<String, Object> suggestions,
+            String policyName,
             int executionMs,
             UUID initiatorId) {
         return new CommandNeedsInputResponse(
-                commandId, correlationId, "needs_input", question, requiredFields, suggestions, executionMs, initiatorId);
+                commandId, correlationId, "needs_input", question, requiredFields, suggestions, policyName, executionMs, initiatorId);
     }
 
     public record CommandResult(UUID taskId, UUID assigneeId, Double decisionConfidence) {
