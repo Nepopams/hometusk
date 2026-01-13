@@ -279,6 +279,7 @@ public class CommandService {
                         clarify.question(),
                         clarify.requiredFields(),
                         clarify.suggestions(),
+                        clarify.triggeredPolicy(),
                         executionMs,
                         requester.getId());
             }
