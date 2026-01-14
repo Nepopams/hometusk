@@ -45,6 +45,29 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
             UUID householdId, TaskStatus status, UUID assigneeId);
 
     /**
+     * List tasks by zone in a household.
+     */
+    List<Task> findByHouseholdIdAndZoneIdOrderByCreatedAtDesc(UUID householdId, UUID zoneId);
+
+    /**
+     * List tasks by status and zone.
+     */
+    List<Task> findByHouseholdIdAndStatusAndZoneIdOrderByCreatedAtDesc(
+            UUID householdId, TaskStatus status, UUID zoneId);
+
+    /**
+     * List tasks by assignee and zone.
+     */
+    List<Task> findByHouseholdIdAndAssigneeIdAndZoneIdOrderByCreatedAtDesc(
+            UUID householdId, UUID assigneeId, UUID zoneId);
+
+    /**
+     * List tasks by status, assignee and zone.
+     */
+    List<Task> findByHouseholdIdAndStatusAndAssigneeIdAndZoneIdOrderByCreatedAtDesc(
+            UUID householdId, TaskStatus status, UUID assigneeId, UUID zoneId);
+
+    /**
      * List open/in-progress tasks for a user across all their households.
      */
     @Query("SELECT t FROM Task t WHERE t.assignee.id = :userId AND t.status IN :statuses ORDER BY t.deadline ASC NULLS LAST, t.createdAt DESC")

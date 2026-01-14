@@ -127,16 +127,41 @@ public class TaskService {
 
     @Transactional(readOnly = true)
     public List<Task> findByHouseholdId(UUID householdId, TaskStatus status, UUID assigneeId) {
+        return findByHouseholdId(householdId, status, assigneeId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Task> findByHouseholdId(UUID householdId, TaskStatus status, UUID assigneeId, UUID zoneId) {
+        // All three filters
+        if (status != null && assigneeId != null && zoneId != null) {
+            return taskRepository.findByHouseholdIdAndStatusAndAssigneeIdAndZoneIdOrderByCreatedAtDesc(
+                    householdId, status, assigneeId, zoneId);
+        }
+        // Two filters
         if (status != null && assigneeId != null) {
             return taskRepository.findByHouseholdIdAndStatusAndAssigneeIdOrderByCreatedAtDesc(
                     householdId, status, assigneeId);
-        } else if (status != null) {
-            return taskRepository.findByHouseholdIdAndStatusOrderByCreatedAtDesc(householdId, status);
-        } else if (assigneeId != null) {
-            return taskRepository.findByHouseholdIdAndAssigneeIdOrderByCreatedAtDesc(householdId, assigneeId);
-        } else {
-            return taskRepository.findByHouseholdIdOrderByCreatedAtDesc(householdId);
         }
+        if (status != null && zoneId != null) {
+            return taskRepository.findByHouseholdIdAndStatusAndZoneIdOrderByCreatedAtDesc(
+                    householdId, status, zoneId);
+        }
+        if (assigneeId != null && zoneId != null) {
+            return taskRepository.findByHouseholdIdAndAssigneeIdAndZoneIdOrderByCreatedAtDesc(
+                    householdId, assigneeId, zoneId);
+        }
+        // Single filter
+        if (status != null) {
+            return taskRepository.findByHouseholdIdAndStatusOrderByCreatedAtDesc(householdId, status);
+        }
+        if (assigneeId != null) {
+            return taskRepository.findByHouseholdIdAndAssigneeIdOrderByCreatedAtDesc(householdId, assigneeId);
+        }
+        if (zoneId != null) {
+            return taskRepository.findByHouseholdIdAndZoneIdOrderByCreatedAtDesc(householdId, zoneId);
+        }
+        // No filters
+        return taskRepository.findByHouseholdIdOrderByCreatedAtDesc(householdId);
     }
 
     public record CreateTaskRequest(

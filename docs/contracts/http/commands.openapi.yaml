@@ -26,6 +26,8 @@ tags:
     description: User profile endpoints
   - name: Households
     description: Household data endpoints
+  - name: Shopping
+    description: Shopping list management endpoints
   - name: Internal
     description: Internal/admin endpoints (not for public use)
 
@@ -200,6 +202,13 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: zoneId
+          in: query
+          required: false
+          description: Filter by zone
+          schema:
+            type: string
+            format: uuid
       responses:
         '200':
           description: List of tasks
@@ -292,6 +301,204 @@ paths:
                   $ref: '#/components/schemas/Zone'
         '403':
           description: Not a member of this household
+
+  /households:
+    post:
+      operationId: createHouseholdPublic
+      summary: Create a new household
+      description: |
+        Creates a new household and automatically adds the current user as admin.
+        This is the user-facing endpoint for household creation.
+      tags:
+        - Households
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateHouseholdRequest'
+      responses:
+        '201':
+          description: Household created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Household'
+        '400':
+          description: Invalid request (name validation failed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+        '401':
+          description: Authentication required
+
+  /households/{householdId}/shopping-lists:
+    get:
+      operationId: listShoppingLists
+      summary: List shopping lists in a household
+      tags:
+        - Shopping
+      parameters:
+        - name: householdId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of shopping lists
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ShoppingList'
+        '403':
+          description: Not a member of this household
+
+  /households/{householdId}/shopping-lists/{listId}/items:
+    get:
+      operationId: listShoppingItems
+      summary: List items in a shopping list
+      tags:
+        - Shopping
+      parameters:
+        - name: householdId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: listId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: purchased
+          in: query
+          required: false
+          description: Filter by purchase status
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List of shopping items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ShoppingItem'
+        '403':
+          description: Not a member of this household
+        '404':
+          description: Shopping list not found
+    post:
+      operationId: addShoppingItem
+      summary: Add an item to a shopping list
+      description: |
+        Adds a new item to the shopping list. This is a direct REST endpoint
+        for simple form submissions (not via commands API).
+        See ADR-009 for the Commands vs CRUD boundary decision.
+      tags:
+        - Shopping
+      parameters:
+        - name: householdId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: listId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddShoppingItemRequest'
+      responses:
+        '201':
+          description: Item created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingItem'
+        '400':
+          description: Invalid request
+        '403':
+          description: Not a member of this household
+        '404':
+          description: Shopping list not found
+
+  /households/{householdId}/shopping-items/{itemId}:
+    patch:
+      operationId: updateShoppingItem
+      summary: Update a shopping item (mark purchased)
+      tags:
+        - Shopping
+      parameters:
+        - name: householdId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateShoppingItemRequest'
+      responses:
+        '200':
+          description: Item updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingItem'
+        '403':
+          description: Not a member of this household
+        '404':
+          description: Item not found
+    delete:
+      operationId: deleteShoppingItem
+      summary: Delete a shopping item
+      tags:
+        - Shopping
+      parameters:
+        - name: householdId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Item deleted
+        '403':
+          description: Not a member of this household
+        '404':
+          description: Item not found
 
   # Internal endpoints for setup/testing
   /internal/households:
@@ -788,7 +995,7 @@ components:
         displayName:
           type: string
 
-    # Internal request schemas
+    # Request schemas
     CreateHouseholdRequest:
       type: object
       required:
@@ -797,7 +1004,8 @@ components:
         name:
           type: string
           minLength: 1
-          maxLength: 255
+          maxLength: 80
+          description: Household name (trimmed, non-blank)
 
     AddMemberRequest:
       type: object
@@ -821,3 +1029,85 @@ components:
           type: string
           minLength: 1
           maxLength: 255
+
+    # Shopping schemas
+    ShoppingList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        householdId:
+          type: string
+          format: uuid
+        unpurchasedCount:
+          type: integer
+          description: Count of unpurchased items
+        createdAt:
+          type: string
+          format: date-time
+
+    ShoppingItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        quantity:
+          type: integer
+        unit:
+          type: string
+        purchased:
+          type: boolean
+        linkedTaskId:
+          type: string
+          format: uuid
+          description: Associated task (if any)
+        addedBy:
+          $ref: '#/components/schemas/UserSummary'
+        createdAt:
+          type: string
+          format: date-time
+        purchasedAt:
+          type: string
+          format: date-time
+
+    AddShoppingItemRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        quantity:
+          type: integer
+          minimum: 1
+          default: 1
+        unit:
+          type: string
+          maxLength: 50
+
+    UpdateShoppingItemRequest:
+      type: object
+      required:
+        - purchased
+      properties:
+        purchased:
+          type: boolean
+
+    # Task detail with linked shopping items
+    TaskDetail:
+      allOf:
+        - $ref: '#/components/schemas/Task'
+        - type: object
+          properties:
+            linkedShoppingItems:
+              type: array
+              items:
+                $ref: '#/components/schemas/ShoppingItem'
