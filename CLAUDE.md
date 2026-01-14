@@ -310,12 +310,39 @@ If a new agent is needed:
 
 ---
 
+## MVP User Journey Endpoints (Must Remain Stable)
+
+These endpoints are part of the MVP contract and **MUST NOT break** without versioning:
+
+| Endpoint | Method | Purpose | Controller |
+|----------|--------|---------|------------|
+| `/api/v1/users/me` | GET | User profile with household list | UserController |
+| `/api/v1/households` | POST | Create new household | HouseholdController |
+| `/api/v1/households/{id}/members` | GET | List household members | HouseholdController |
+| `/api/v1/households/{id}/zones` | GET | List household zones | HouseholdController |
+| `/api/v1/households/{id}/zones` | POST | Create zone (idempotent) | HouseholdController |
+| `/api/v1/households/{id}/tasks` | GET | List tasks (filters: status, assigneeId, zoneId) | TaskController |
+| `/api/v1/households/{id}/tasks/{taskId}` | GET | Task detail with linked shopping items | TaskController |
+| `/api/v1/households/{id}/shopping-lists` | GET | List shopping lists with counts | ShoppingController |
+| `/api/v1/households/{id}/shopping-lists/{listId}/items` | GET | List items (filter: purchased) | ShoppingController |
+| `/api/v1/households/{id}/shopping-lists/{listId}/items` | POST | Add shopping item | ShoppingController |
+| `/api/v1/households/{id}/shopping-items/{itemId}` | PATCH | Update item (mark purchased) | ShoppingController |
+| `/api/v1/households/{id}/shopping-items/{itemId}` | DELETE | Delete shopping item | ShoppingController |
+| `/api/v1/commands` | POST | Execute command (create task, etc.) | CommandController |
+
+**OpenAPI Contract:** `docs/contracts/http/commands.openapi.yaml`
+
+**Key Architectural Decision:** See [ADR-009](docs/architecture/decisions/009-mvp-commands-vs-crud-boundary.md) for Commands vs CRUD boundary rationale.
+
+---
+
 ## References
 
 - [ADR-001: Voice scenario (future)](docs/architecture/decisions/001-mvp-voice-task-scenario.md)
 - [ADR-002: Text MVP scenario](docs/architecture/decisions/002-mvp-text-command-scenario.md)
 - [ADR-003: Stage 1 Commands API](docs/architecture/decisions/003-stage1-commands-api.md)
 - [ADR-004: Stage 2 AI Platform Integration](docs/architecture/decisions/004-stage2-ai-platform-integration.md)
+- [ADR-009: Commands vs CRUD Boundary](docs/architecture/decisions/009-mvp-commands-vs-crud-boundary.md)
 - [C4 Diagrams](docs/architecture/decisions/mvp/)
 - [Commands API Contract](docs/contracts/http/commands.openapi.yaml)
 - [AI Platform External Contract](docs/contracts/external/ai-platform.decision.openapi.yaml)

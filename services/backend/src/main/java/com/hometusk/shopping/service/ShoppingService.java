@@ -190,6 +190,55 @@ public class ShoppingService {
     }
 
     /**
+     * Gets shopping list by ID (with household check).
+     */
+    @Transactional(readOnly = true)
+    public ShoppingList getListByIdAndHousehold(UUID listId, UUID householdId) {
+        return listRepository
+                .findByIdAndHouseholdId(listId, householdId)
+                .orElseThrow(
+                        () -> new NotFoundException(ErrorCode.SHOPPING_LIST_NOT_FOUND, "Shopping list not found: " + listId));
+    }
+
+    /**
+     * Counts unpurchased items in a shopping list.
+     */
+    @Transactional(readOnly = true)
+    public long countUnpurchasedItems(UUID listId) {
+        return itemRepository.countByShoppingListIdAndPurchasedFalse(listId);
+    }
+
+    /**
+     * Adds a shopping item directly (via REST, no command/idempotency).
+     * For direct user input, not AI-coordinated flows.
+     */
+    @Transactional
+    public ShoppingItem addItemDirect(UUID householdId, UUID listId, String name, Integer quantity, String unit, User addedBy) {
+        log.debug("Adding shopping item directly: name={}, householdId={}, listId={}", name, householdId, listId);
+
+        // Resolve shopping list (validates exists and belongs to household)
+        ShoppingList list = getListByIdAndHousehold(listId, householdId);
+
+        // Create new item (no idempotency key for direct adds)
+        ShoppingItem item = new ShoppingItem(list, name, addedBy);
+        item.setQuantity(quantity != null ? quantity : 1);
+        item.setUnit(unit);
+
+        ShoppingItem saved = itemRepository.save(item);
+        log.info("Shopping item added directly: id={}, name={}, listId={}", saved.getId(), name, listId);
+
+        return saved;
+    }
+
+    /**
+     * Gets item by ID with household check (for activity recording before delete).
+     */
+    @Transactional(readOnly = true)
+    public ShoppingItem getItemByIdAndHouseholdId(UUID itemId, UUID householdId) {
+        return getItemByIdAndHousehold(itemId, householdId);
+    }
+
+    /**
      * Gets or creates the default shopping list for a household.
      */
     @Transactional

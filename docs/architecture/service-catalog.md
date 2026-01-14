@@ -2,7 +2,7 @@
 
 Living registry of all services and applications in the HomeTusk monorepo.
 
-**Last updated:** 2026-01-13
+**Last updated:** 2026-01-14
 
 ---
 
@@ -70,6 +70,19 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 - `GET /api/v1/users/me` — Current user profile
 - `GET /api/v1/households/{id}/tasks` — List tasks
 - `POST /internal/households` — Create household (internal)
+
+**REST Controllers (MVP Hardening):**
+
+| Controller | Endpoints | Scope |
+|------------|-----------|-------|
+| CommandController | `POST /api/v1/commands` | Intent-driven command execution |
+| UserController | `GET /api/v1/users/me` | User profile with household memberships |
+| HouseholdController | `POST /api/v1/households`, `GET/POST /*/zones`, `GET /*/members` | Household administration |
+| TaskController | `GET /api/v1/households/{id}/tasks`, `GET /*/tasks/{taskId}` | Task reads (writes via commands) |
+| ShoppingController | `GET/POST /*/shopping-lists/*`, `PATCH/DELETE /*/shopping-items/*` | Shopping management (see ADR-009) |
+
+See [ADR-009](./decisions/009-mvp-commands-vs-crud-boundary.md) for Commands vs CRUD boundary decisions.
+See [API Coverage Matrix](../mvp/api-coverage.md) for full endpoint documentation.
 
 **Command Pipeline Flow (Stage 5):**
 ```

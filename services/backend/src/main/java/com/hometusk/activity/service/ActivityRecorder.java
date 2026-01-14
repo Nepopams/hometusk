@@ -147,6 +147,29 @@ public class ActivityRecorder {
         return saved;
     }
 
+    /**
+     * Records a shopping item deleted event (MVP hardening - direct REST).
+     */
+    @Transactional
+    public TaskActivity recordShoppingItemDeleted(
+            UUID itemId, String itemName, UUID listId, Household household, User actor, UUID correlationId) {
+        TaskActivity activity = new TaskActivity(
+                household,
+                null, // No commandId for direct REST operations
+                correlationId,
+                ActivityType.SHOPPING_ITEM_DELETED,
+                ENTITY_TYPE_SHOPPING_ITEM,
+                itemId,
+                actor);
+
+        activity.setMetadata(toJson(Map.of("name", itemName, "listId", listId.toString())));
+
+        TaskActivity saved = taskActivityRepository.save(activity);
+        log.debug("Recorded SHOPPING_ITEM_DELETED: itemId={}, correlationId={}", itemId, correlationId);
+
+        return saved;
+    }
+
     private String toJson(Object obj) {
         try {
             return objectMapper.writeValueAsString(obj);
