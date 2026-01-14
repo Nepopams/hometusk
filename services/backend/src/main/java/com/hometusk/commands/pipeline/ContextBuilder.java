@@ -5,6 +5,8 @@ import com.hometusk.commands.pipeline.guardrails.HouseholdSnapshot.MemberInfo;
 import com.hometusk.commands.pipeline.guardrails.HouseholdSnapshot.ZoneInfo;
 import com.hometusk.households.domain.Zone;
 import com.hometusk.households.repository.ZoneRepository;
+import com.hometusk.shopping.domain.ShoppingList;
+import com.hometusk.shopping.repository.ShoppingListRepository;
 import com.hometusk.tasks.domain.TaskStatus;
 import com.hometusk.tasks.repository.TaskRepository;
 import com.hometusk.users.domain.Membership;
@@ -37,14 +39,19 @@ public class ContextBuilder {
     private final MembershipRepository membershipRepository;
     private final ZoneRepository zoneRepository;
     private final TaskRepository taskRepository;
+    private final ShoppingListRepository shoppingListRepository;
     private final com.hometusk.commands.pipeline.guardrails.GuardrailsConfig guardrailsConfig;
 
     public ContextBuilder(
-            MembershipRepository membershipRepository, ZoneRepository zoneRepository, TaskRepository taskRepository,
+            MembershipRepository membershipRepository,
+            ZoneRepository zoneRepository,
+            TaskRepository taskRepository,
+            ShoppingListRepository shoppingListRepository,
             com.hometusk.commands.pipeline.guardrails.GuardrailsConfig guardrailsConfig) {
         this.membershipRepository = membershipRepository;
         this.zoneRepository = zoneRepository;
         this.taskRepository = taskRepository;
+        this.shoppingListRepository = shoppingListRepository;
         this.guardrailsConfig = guardrailsConfig;
     }
 
@@ -139,14 +146,27 @@ public class ContextBuilder {
                     })
                     .toList();
 
+            // 4. Load shopping lists (Stage 5)
+            List<ShoppingList> shoppingListEntities =
+                    shoppingListRepository.findByHouseholdIdOrderByCreatedAtDesc(householdId);
+            List<Map<String, Object>> shoppingLists = shoppingListEntities.stream()
+                    .map(l -> {
+                        Map<String, Object> listMap = new HashMap<>();
+                        listMap.put("id", l.getId().toString());
+                        listMap.put("name", l.getName());
+                        return listMap;
+                    })
+                    .toList();
+
             log.debug(
-                    "AI context built: householdId={}, members={}, zones={}, correlationId={}",
+                    "AI context built: householdId={}, members={}, zones={}, shoppingLists={}, correlationId={}",
                     householdId,
                     membersList.size(),
                     zonesList.size(),
+                    shoppingLists.size(),
                     correlationId);
 
-            return Map.of("members", membersList, "zones", zonesList);
+            return Map.of("members", membersList, "zones", zonesList, "shopping_lists", shoppingLists);
 
         } catch (Exception e) {
             log.error(

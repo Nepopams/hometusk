@@ -61,6 +61,7 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 - `tasks` — Task domain
 - `households` — Household and Zone management
 - `users` — User profiles and Memberships
+- `shopping` — Shopping lists and items (Stage 5)
 - `activity` — TaskActivity events
 - `shared` — Security, logging, exceptions, validation
 
@@ -70,21 +71,24 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 - `GET /api/v1/households/{id}/tasks` — List tasks
 - `POST /internal/households` — Create household (internal)
 
-**Command Pipeline Flow (Stage 3):**
+**Command Pipeline Flow (Stage 5):**
 ```
 Request → JWT Auth → UserResolver → MembershipValidator
        → CommandService.execute()
            ├─ SchemaValidator
            ├─ BusinessValidator
-           ├─ ContextBuilder (builds HouseholdSnapshot for guardrails)
+           ├─ ContextBuilder (builds HouseholdSnapshot for guardrails, includes shopping_lists)
            ├─ DecisionProviderSelector
            │   ├─ ManualDecisionProvider (rule-based, fallback)
            │   └─ AiPlatformDecisionProvider (external AI, optional)
            │       └─ AiResponseSchemaValidator (JSON Schema validation)
            ├─ GuardrailsOrchestrator (policy chain before execution)
+           │   ├─ ShoppingItemValidationPolicy (validate item names, Stage 5)
            │   ├─ ZoneOwnerFirstPolicy (assign zone owner if no assignee)
            │   └─ MaxOpenTasksPerAssigneePolicy (limit open tasks)
-           ├─ ActionExecutor
+           ├─ ActionExecutor (supports create_task, complete_task, add_shopping_item)
+           │   └─ ShoppingService (Stage 5)
+           ├─ Task-Shopping Linking (link items to task if both created, Stage 5)
            ├─ DecisionLogWriter (includes guardrails info)
            └─ ActivityRecorder
        → CommandResponse | NeedsInputResponse | DegradedResponse
@@ -254,9 +258,14 @@ HomeTusk is a **consumer** of an external AI Platform for intelligent decision-m
 **Upstream Response types:**
 - `start_job` - Execute proposed actions (full support)
 - `propose_create_task` - Propose task creation (mapped to start_job)
-- `propose_add_shopping_item` - Propose shopping item (unsupported → Clarify)
+- `propose_add_shopping_item` - Propose shopping item (mapped to start_job, Stage 5)
 - `clarify` - Need user clarification (full support)
 - `reject` - Cannot process command (full support)
+
+**Supported Action types:**
+- `create_task` - Create a new task
+- `complete_task` - Complete an existing task
+- `add_shopping_item` - Add item to shopping list (Stage 5)
 
 **Configuration:**
 ```yaml

@@ -41,6 +41,7 @@ public class AiDecisionResponseMapper {
     // Supported action types
     private static final String ACTION_CREATE_TASK = "create_task";
     private static final String ACTION_COMPLETE_TASK = "complete_task";
+    private static final String ACTION_ADD_SHOPPING_ITEM = "add_shopping_item";
 
     private final ObjectMapper objectMapper;
 
@@ -63,7 +64,7 @@ public class AiDecisionResponseMapper {
         return switch (response.type()) {
             case TYPE_START_JOB -> mapToStartJob(response, rawPayload);
             case TYPE_PROPOSE_CREATE_TASK -> mapProposeCreateTask(response, rawPayload);
-            case TYPE_PROPOSE_ADD_SHOPPING_ITEM -> unsupportedDecisionType(response, rawPayload);
+            case TYPE_PROPOSE_ADD_SHOPPING_ITEM -> mapProposeAddShoppingItem(response, rawPayload);
             case TYPE_CLARIFY -> mapToClarify(response, rawPayload);
             case TYPE_REJECT -> mapToReject(response, rawPayload);
             default -> unknownDecisionType(response, rawPayload);
@@ -112,22 +113,12 @@ public class AiDecisionResponseMapper {
     }
 
     /**
-     * Safe degradation for unsupported upstream decision types (e.g., propose_add_shopping_item).
-     * Returns Clarify with user-friendly message.
+     * Maps propose_add_shopping_item to StartJob (execute immediately, Stage 5).
+     * HomeTusk doesn't distinguish proposal from execution for shopping items.
      */
-    private DecisionResult unsupportedDecisionType(AiDecisionResponse response, String rawPayload) {
-        log.warn("Unsupported upstream decision type: type={}, decisionId={}",
-                response.type(), response.decisionId());
-
-        return new DecisionResult.Clarify(
-                DecisionSource.AI_PLATFORM,
-                BigDecimal.ZERO,
-                response.decisionId(),
-                rawPayload,
-                "Действие '" + response.type() + "' пока не поддерживается. "
-                        + "Попробуйте создать задачу вместо этого.",
-                List.of(),
-                Map.of("unsupported_type", response.type()));
+    private DecisionResult mapProposeAddShoppingItem(AiDecisionResponse response, String rawPayload) {
+        log.debug("Mapping propose_add_shopping_item to StartJob: decisionId={}", response.decisionId());
+        return mapToStartJob(response, rawPayload);
     }
 
     /**
@@ -173,7 +164,8 @@ public class AiDecisionResponseMapper {
      */
     private boolean isSupportedAction(AiDecisionResponse.ProposedActionDto action) {
         return ACTION_CREATE_TASK.equals(action.actionType())
-                || ACTION_COMPLETE_TASK.equals(action.actionType());
+                || ACTION_COMPLETE_TASK.equals(action.actionType())
+                || ACTION_ADD_SHOPPING_ITEM.equals(action.actionType());
     }
 
     /**

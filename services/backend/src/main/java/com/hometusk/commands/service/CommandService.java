@@ -20,7 +20,10 @@ import com.hometusk.shared.exception.BusinessException;
 import com.hometusk.shared.exception.ErrorCode;
 import com.hometusk.shared.exception.ValidationException;
 import com.hometusk.users.domain.User;
+import com.hometusk.shopping.service.ShoppingService;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -62,6 +65,7 @@ public class CommandService {
     private final ContextBuilder contextBuilder;
     private final GuardrailsOrchestrator guardrailsOrchestrator;
     private final DecisionMetrics metrics;
+    private final ShoppingService shoppingService;
 
     public CommandService(
             CommandRepository commandRepository,
@@ -74,7 +78,8 @@ public class CommandService {
             ActionExecutor actionExecutor,
             ContextBuilder contextBuilder,
             GuardrailsOrchestrator guardrailsOrchestrator,
-            DecisionMetrics metrics) {
+            DecisionMetrics metrics,
+            ShoppingService shoppingService) {
         this.commandRepository = commandRepository;
         this.householdService = householdService;
         this.objectMapper = objectMapper;
@@ -86,6 +91,7 @@ public class CommandService {
         this.contextBuilder = contextBuilder;
         this.guardrailsOrchestrator = guardrailsOrchestrator;
         this.metrics = metrics;
+        this.shoppingService = shoppingService;
     }
 
     @Transactional
@@ -345,10 +351,27 @@ public class CommandService {
                 .rawDecisionPayload(decision.rawPayload())
                 .build());
 
-        // Execute all actions
+        // Execute all actions and track created entities
         ActionExecutor.ActionResult lastResult = null;
+        UUID createdTaskId = null;
+        List<UUID> createdItemIds = new ArrayList<>();
+
         for (var action : decision.actions()) {
-            lastResult = actionExecutor.executeAction(action, command, correlationId);
+            ActionExecutor.ActionResult result = actionExecutor.executeAction(action, command, correlationId);
+            lastResult = result;
+
+            // Track created entities for linking
+            if ("create_task".equals(result.actionType())) {
+                createdTaskId = result.entityId();
+            } else if ("add_shopping_item".equals(result.actionType())) {
+                createdItemIds.add(result.entityId());
+            }
+        }
+
+        // Link shopping items to task if both created in same decision (Stage 5)
+        if (createdTaskId != null && !createdItemIds.isEmpty()) {
+            shoppingService.linkItemsToTask(createdItemIds, createdTaskId, command.getHouseholdId());
+            log.debug("Linked {} shopping items to task {}", createdItemIds.size(), createdTaskId);
         }
 
         // Mark executed

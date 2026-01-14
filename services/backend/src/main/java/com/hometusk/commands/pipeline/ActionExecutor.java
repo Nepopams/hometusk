@@ -7,6 +7,8 @@ import com.hometusk.households.domain.Household;
 import com.hometusk.households.domain.Zone;
 import com.hometusk.households.service.HouseholdService;
 import com.hometusk.households.service.ZoneService;
+import com.hometusk.shopping.domain.ShoppingItem;
+import com.hometusk.shopping.service.ShoppingService;
 import com.hometusk.tasks.domain.Task;
 import com.hometusk.tasks.service.TaskService;
 import com.hometusk.users.domain.User;
@@ -28,6 +30,7 @@ public class ActionExecutor {
     private static final Logger log = LoggerFactory.getLogger(ActionExecutor.class);
 
     private final TaskService taskService;
+    private final ShoppingService shoppingService;
     private final HouseholdService householdService;
     private final ZoneService zoneService;
     private final UserService userService;
@@ -35,11 +38,13 @@ public class ActionExecutor {
 
     public ActionExecutor(
             TaskService taskService,
+            ShoppingService shoppingService,
             HouseholdService householdService,
             ZoneService zoneService,
             UserService userService,
             ActivityRecorder activityRecorder) {
         this.taskService = taskService;
+        this.shoppingService = shoppingService;
         this.householdService = householdService;
         this.zoneService = zoneService;
         this.userService = userService;
@@ -107,13 +112,14 @@ public class ActionExecutor {
     }
 
     /**
-     * Executes a proposed action from DecisionResult (Stage 2).
+     * Executes a proposed action from DecisionResult (Stage 2+).
      */
     public ActionResult executeAction(
             DecisionResult.StartJob.ProposedAction action, Command command, UUID correlationId) {
         return switch (action.actionType()) {
             case "create_task" -> executeCreateTaskFromAction(action.parameters(), command, correlationId);
             case "complete_task" -> executeCompleteTaskFromAction(action.parameters(), command, correlationId);
+            case "add_shopping_item" -> executeAddShoppingItemFromAction(action.parameters(), command, correlationId);
             default -> throw new IllegalArgumentException("Unknown action type: " + action.actionType());
         };
     }
@@ -178,6 +184,46 @@ public class ActionExecutor {
         return new ActionResult("complete_task", task.getId(), null);
     }
 
+    private ActionResult executeAddShoppingItemFromAction(
+            Map<String, Object> params, Command command, UUID correlationId) {
+        log.debug("Executing add_shopping_item from action: commandId={}", command.getId());
+
+        Household household = householdService.getById(command.getHouseholdId());
+        User addedBy = command.getRequester();
+
+        // Parse parameters
+        String name = (String) params.get("name");
+        Integer quantity = parseInteger(params.get("quantity"));
+        String unit = (String) params.get("unit");
+        UUID listId = parseUuid(params.get("listId"));
+        UUID linkedTaskId = parseUuid(params.get("linkedTaskId"));
+
+        // Create the shopping item
+        ShoppingItem item = shoppingService.addItem(ShoppingService.AddItemRequest.builder()
+                .householdId(household.getId())
+                .household(household)
+                .listId(listId)
+                .name(name)
+                .quantity(quantity)
+                .unit(unit)
+                .addedBy(addedBy)
+                .commandId(command.getId())
+                .linkedTaskId(linkedTaskId)
+                .build());
+
+        // Record activity
+        activityRecorder.recordShoppingItemAdded(item, addedBy, command.getId(), correlationId);
+
+        log.info(
+                "Shopping item added via command: itemId={}, name={}, commandId={}, linkedTaskId={}",
+                item.getId(),
+                item.getName(),
+                command.getId(),
+                linkedTaskId);
+
+        return new ActionResult("add_shopping_item", item.getId(), null);
+    }
+
     private UUID parseUuid(Object value) {
         if (value == null) return null;
         if (value instanceof UUID uuid) return uuid;
@@ -192,10 +238,26 @@ public class ActionExecutor {
         return null;
     }
 
+    private Integer parseInteger(Object value) {
+        if (value == null) return null;
+        if (value instanceof Integer i) return i;
+        if (value instanceof Number n) return n.intValue();
+        if (value instanceof String s) return Integer.parseInt(s);
+        return null;
+    }
+
     public record CreateTaskResult(UUID taskId, UUID assigneeId) {}
 
     public record CompleteTaskResult(UUID taskId) {}
 
-    /** Generic result for any action type (Stage 2) */
-    public record ActionResult(String actionType, UUID taskId, UUID assigneeId) {}
+    /**
+     * Generic result for any action type (Stage 2+).
+     * entityId is taskId for tasks, itemId for shopping items.
+     */
+    public record ActionResult(String actionType, UUID entityId, UUID assigneeId) {
+        /** Convenience getter for task actions */
+        public UUID taskId() {
+            return entityId;
+        }
+    }
 }

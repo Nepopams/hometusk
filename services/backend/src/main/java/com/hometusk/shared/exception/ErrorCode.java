@@ -17,6 +17,12 @@ public enum ErrorCode {
     TASK_NOT_FOUND("Task not found"),
     USER_NOT_FOUND("User not found"),
     ZONE_NOT_FOUND("Zone not found"),
+    SHOPPING_LIST_NOT_FOUND("Shopping list not found"),
+    SHOPPING_ITEM_NOT_FOUND("Shopping item not found"),
+
+    // Shopping validation (Stage 5)
+    SHOPPING_ITEM_NAME_EMPTY("Shopping item name cannot be empty"),
+    SHOPPING_ITEM_NAME_TOO_LONG("Shopping item name is too long"),
 
     // Access control
     ACCESS_DENIED("Access denied to this resource"),
