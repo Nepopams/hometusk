@@ -1,7 +1,7 @@
 # MVP API Coverage Matrix
 
-**Last Updated:** 2026-01-16
-**Scope:** MVP Closure / Iteration 1 / Step 3
+**Last Updated:** 2026-01-17
+**Scope:** MVP Closure / Iteration 2 / Step 1
 **Source of truth:** `docs/contracts/http/commands.openapi.yaml`
 
 ## User Journey Mapping
@@ -78,7 +78,7 @@
 
 | Endpoint | Method | Request | Response | Errors |
 |----------|--------|---------|----------|--------|
-| `/api/v1/commands` | POST | `CommandRequest` | `CommandResponse` (200: executed / needs_input / rejected / executed_degraded) | 400, 401, 403 |
+| `/api/v1/commands` | POST | `CommandRequest` (+ optional `Idempotency-Key`) | `CommandResponse` (200: executed / needs_input / rejected / executed_degraded) | 400, 401, 403, 409 |
 
 ## Query Parameters
 
@@ -148,7 +148,7 @@
 | 401 | Unauthorized | Missing/invalid JWT |
 | 403 | Forbidden | Not a household member |
 | 404 | Not Found | Resource doesn't exist |
-| 409 | Conflict | Idempotency conflict (not used in Step 1) |
+| 409 | Conflict | Idempotency conflict (key reuse with different payload) |
 | 410 | Gone | Invite expired, redeemed, or revoked |
 
 ## Security

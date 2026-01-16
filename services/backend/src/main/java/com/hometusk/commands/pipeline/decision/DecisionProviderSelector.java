@@ -92,8 +92,7 @@ public class DecisionProviderSelector {
 
     private DecisionResult decideWithFallback(DecisionContext context, String reason) {
         if (!fallbackEnabled) {
-            throw new DecisionProviderUnavailableException(
-                    "AI Platform unavailable and fallback disabled: " + reason);
+            log.warn("Fallback disabled but required for degraded mode: {}", reason);
         }
 
         DecisionResult manualResult = manualProvider.decide(context);

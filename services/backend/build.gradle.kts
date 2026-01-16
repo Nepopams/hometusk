@@ -26,6 +26,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-aop")
 
     // Database
     runtimeOnly("org.postgresql:postgresql")
@@ -37,6 +38,9 @@ dependencies {
 
     // OpenAPI / Swagger
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
+
+    // Resilience
+    implementation("io.github.resilience4j:resilience4j-spring-boot3:2.2.0")
 
     // Jackson for JSON/JSONB
     implementation("com.fasterxml.jackson.core:jackson-databind")

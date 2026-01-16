@@ -6,10 +6,12 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.hometusk.integration.IntegrationTestBase;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Base class for AI Platform integration tests using WireMock.
@@ -19,6 +21,9 @@ import org.springframework.test.context.DynamicPropertySource;
 public abstract class AiPlatformIntegrationTestBase extends IntegrationTestBase {
 
     protected static WireMockServer wireMockServer;
+
+    @Autowired
+    private CircuitBreakerRegistry circuitBreakerRegistry;
 
     static {
         wireMockServer = new WireMockServer(wireMockConfig().dynamicPort());
@@ -30,7 +35,7 @@ public abstract class AiPlatformIntegrationTestBase extends IntegrationTestBase 
     static void configureAiPlatform(DynamicPropertyRegistry registry) {
         registry.add("decision.provider", () -> "aiplatform");
         registry.add("aiplatform.base-url", () -> "http://localhost:" + wireMockServer.port());
-        registry.add("aiplatform.timeout-ms", () -> "5000");
+        registry.add("aiplatform.timeout-ms", () -> "300");
         registry.add("decision.fallback.enabled", () -> "true");
         registry.add("guardrails.enabled", () -> "true");
         registry.add("guardrails.max-open-tasks-per-assignee", () -> "10");
@@ -46,6 +51,9 @@ public abstract class AiPlatformIntegrationTestBase extends IntegrationTestBase 
     @AfterEach
     void tearDownWireMock() {
         wireMockServer.resetAll();
+        if (circuitBreakerRegistry != null) {
+            circuitBreakerRegistry.circuitBreaker("aiPlatform").reset();
+        }
     }
 
     /**
@@ -136,8 +144,6 @@ public abstract class AiPlatformIntegrationTestBase extends IntegrationTestBase 
      */
     protected void stubTimeout() {
         stubFor(post(urlEqualTo("/decision")).willReturn(aResponse().withFixedDelay(10000)));
-        // Also mark health as unavailable
-        stubFor(get(urlEqualTo("/health")).willReturn(aResponse().withStatus(503)));
     }
 
     /**

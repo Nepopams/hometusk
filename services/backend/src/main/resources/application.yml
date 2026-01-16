@@ -83,6 +83,18 @@ aiplatform:
   decision-path: ${AI_PLATFORM_DECISION_PATH:/decision}  # /decision (default) or /decide (upstream)
   timeout-ms: ${AI_PLATFORM_TIMEOUT_MS:5000}
   api-key: ${AI_PLATFORM_API_KEY:}
+  resilience:
+    retry:
+      max-attempts: 2
+      initial-interval-ms: 200
+      backoff-multiplier: 2.0
+      jitter-factor: 0.5
+    circuit-breaker:
+      sliding-window-size: 10
+      minimum-number-of-calls: 5
+      failure-rate-threshold: 50
+      wait-duration-in-open-state-ms: 30000
+      permitted-calls-in-half-open-state: 2
 
 # Guardrails Configuration (Stage 3+)
 guardrails:

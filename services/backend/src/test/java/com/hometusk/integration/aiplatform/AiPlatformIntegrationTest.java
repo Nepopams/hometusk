@@ -12,6 +12,7 @@ import com.hometusk.tasks.domain.Task;
 import com.hometusk.tasks.repository.TaskRepository;
 import com.hometusk.users.domain.Membership;
 import com.hometusk.users.domain.MembershipRole;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +48,9 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
 
     @Autowired
     private DecisionLogRepository decisionLogRepository;
+
+    @Autowired
+    private CircuitBreakerRegistry circuitBreakerRegistry;
 
     private UUID correlationId;
 
@@ -212,6 +216,58 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
             var commands = commandRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(commands).isNotEmpty();
             org.assertj.core.api.Assertions.assertThat(commands.get(0).getStatus()).isEqualTo(CommandStatus.EXECUTED);
+        }
+    }
+
+    @Nested
+    @DisplayName("Scenario 4b: Timeout → Degraded")
+    class TimeoutRequestScenario {
+
+        @Test
+        @DisplayName("should degrade when AI decision request times out")
+        void usesFallbackOnDecisionTimeout() throws Exception {
+            stubTimeout();
+
+            String requestBody = objectMapper.writeValueAsString(Map.of(
+                    "type", "create_task",
+                    "householdId", testHousehold.getId(),
+                    "source", "text",
+                    "payload", Map.of("title", "Clean kitchen")));
+
+            mockMvc.perform(post("/api/v1/commands")
+                            .header("X-Correlation-ID", correlationId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestBody)
+                            .with(jwt()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("executed_degraded"))
+                    .andExpect(jsonPath("$.degradedReason").value("ai_unavailable"));
+        }
+    }
+
+    @Nested
+    @DisplayName("Scenario 4c: Circuit Open → Degraded")
+    class CircuitOpenScenario {
+
+        @Test
+        @DisplayName("should degrade when circuit breaker is open")
+        void usesFallbackWhenCircuitOpen() throws Exception {
+            circuitBreakerRegistry.circuitBreaker("aiPlatform").transitionToOpenState();
+
+            String requestBody = objectMapper.writeValueAsString(Map.of(
+                    "type", "create_task",
+                    "householdId", testHousehold.getId(),
+                    "source", "text",
+                    "payload", Map.of("title", "Clean kitchen")));
+
+            mockMvc.perform(post("/api/v1/commands")
+                            .header("X-Correlation-ID", correlationId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestBody)
+                            .with(jwt()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("executed_degraded"))
+                    .andExpect(jsonPath("$.degradedReason").value("ai_unavailable"));
         }
     }
 

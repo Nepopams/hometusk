@@ -2,7 +2,7 @@
 
 Living registry of all services and applications in the HomeTusk monorepo.
 
-**Last updated:** 2026-01-16
+**Last updated:** 2026-01-17
 
 ---
 
@@ -95,11 +95,12 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 
 See [ADR-009](./decisions/009-mvp-commands-vs-crud-boundary.md) for Commands vs CRUD boundary decisions.
 See [ADR-010](./decisions/010-household-invites.md) for household invite flow decisions.
+See [ADR-012](./decisions/012-command-reliability-idempotency.md) for command idempotency and resilience policy.
 See [API Coverage Matrix](../mvp/api-coverage.md) for full endpoint documentation.
 
-**Command Pipeline Flow (Step 1):**
+**Command Pipeline Flow (Iteration 2 / Step 1):**
 ```
-Request → JWT Auth → UserResolver → MembershipValidator
+Request → JWT Auth → UserResolver → Idempotency-Key Dedupe → MembershipValidator
        → CommandService.execute()
            ├─ SchemaValidator
            ├─ BusinessValidator
@@ -133,6 +134,11 @@ Request → JWT Auth → UserResolver → MembershipValidator
 - `X-Correlation-ID` header propagates through all layers
 - `correlationId` stored in Command, DecisionLog, TaskActivity
 - MDC logging with correlationId
+
+**Idempotency (Commands):**
+- Optional `Idempotency-Key` header, 24h TTL
+- Same key + same payload returns stored response
+- Same key + different payload returns 409 IDEMPOTENCY_CONFLICT
 
 ---
 

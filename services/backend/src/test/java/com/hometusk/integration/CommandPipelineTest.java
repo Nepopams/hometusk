@@ -356,6 +356,29 @@ class CommandPipelineTest extends IntegrationTestBase {
         }
 
         @Test
+        @DisplayName("Should write correlation ID to decision log")
+        void correlationId_writtenToDecisionLog() throws Exception {
+            String correlationId = UUID.randomUUID().toString();
+
+            var request = Map.of(
+                    "householdId", testHousehold.getId().toString(),
+                    "type", "create_task",
+                    "payload", Map.of("title", "Decision log test"),
+                    "source", "api"
+            );
+
+            mockMvc.perform(post("/api/v1/commands")
+                            .with(jwt())
+                            .header("X-Correlation-ID", correlationId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk());
+
+            var log = decisionLogRepository.findByCorrelationId(UUID.fromString(correlationId));
+            assertThat(log).isPresent();
+        }
+
+        @Test
         @DisplayName("Should generate correlation ID if not provided")
         void noCorrelationId_generated() throws Exception {
             var request = Map.of(

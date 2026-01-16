@@ -60,6 +60,17 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: |
+            Idempotency key for safe retries. Unique per user for 24 hours.
+            Reuse with a different payload returns 409 IDEMPOTENCY_CONFLICT.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+            pattern: '^[A-Za-z0-9._-]{1,128}$'
       requestBody:
         required: true
         content:
@@ -117,6 +128,17 @@ paths:
                 $ref: '#/components/schemas/AuthErrorResponse'
         '403':
           description: User does not have access to this household
+          headers:
+            X-Correlation-ID:
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+        '409':
+          description: Idempotency conflict (key reuse with different payload or in-progress)
           headers:
             X-Correlation-ID:
               schema:

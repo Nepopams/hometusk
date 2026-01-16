@@ -13,3 +13,4 @@ Index of ADRs in this repository. Summaries are derived from file titles; see ea
 - [ADR-009: Commands vs CRUD boundary (MVP)](009-mvp-commands-vs-crud-boundary.md) — Hybrid boundary for MVP REST vs commands.
 - [ADR-010: Household invites](010-household-invites.md) — Token-based invites, single-use, anti-IDOR.
 - [ADR-011: Notifications stub](011-notifications-stub.md) — Per-recipient in-app notifications API and storage model.
+- [ADR-012: Command reliability & idempotency](012-command-reliability-idempotency.md) — Idempotency-Key, resilience, and ordering guarantees.
