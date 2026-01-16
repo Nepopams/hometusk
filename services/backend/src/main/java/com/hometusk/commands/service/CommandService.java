@@ -316,10 +316,12 @@ public class CommandService {
                         .build());
 
                 int executionMs = (int) (System.currentTimeMillis() - startTime);
-                command.markRejected(rejected.errorCode(), rejected.reason(), executionMs);
+                String errorCode =
+                        rejected.errorCode() != null ? rejected.errorCode() : ErrorCode.GUARDRAILS_REJECTED.name();
+                command.markRejected(errorCode, rejected.reason(), executionMs);
                 commandRepository.save(command);
-
-                throw new BusinessException(ErrorCode.GUARDRAILS_REJECTED, rejected.reason());
+                yield CommandResponse.rejected(
+                        command.getId(), correlationId, errorCode, rejected.reason(), executionMs, requester.getId());
             }
         };
     }
@@ -466,16 +468,22 @@ public class CommandService {
 
         // Mark rejected
         int executionMs = (int) (System.currentTimeMillis() - startTime);
-        command.markRejected(decision.errorCode(), decision.reason(), executionMs);
+        String errorCode = decision.errorCode() != null ? decision.errorCode() : ErrorCode.AI_REJECTED.name();
+        String reason =
+                decision.reason() != null && !decision.reason().isBlank()
+                        ? decision.reason()
+                        : ErrorCode.AI_REJECTED.getDefaultMessage();
+        command.markRejected(errorCode, reason, executionMs);
         commandRepository.save(command);
 
         log.info(
                 "Command rejected by AI: id={}, correlationId={}, reason={}",
                 command.getId(),
                 correlationId,
-                decision.reason());
+                reason);
 
-        throw new BusinessException(ErrorCode.AI_REJECTED, decision.reason());
+        return CommandResponse.rejected(
+                command.getId(), correlationId, errorCode, reason, executionMs, requester.getId());
     }
 
     private String toJson(Object obj) {

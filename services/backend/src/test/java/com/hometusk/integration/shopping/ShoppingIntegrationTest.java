@@ -224,8 +224,9 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
                             .header("X-Correlation-ID", correlationId)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("GUARDRAILS_REJECTED"));
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("rejected"))
+                    .andExpect(jsonPath("$.errorCode").value("SHOPPING_ITEM_NAME_EMPTY"));
 
             // Then: No items created
             var items = shoppingItemRepository.findAll();
@@ -258,8 +259,8 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
                             .header("X-Correlation-ID", randomCorrelationId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").exists());
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.errorCode").value("ACCESS_DENIED"));
 
             // Then: No items created
             var items = shoppingItemRepository.findAll();

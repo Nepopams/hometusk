@@ -40,7 +40,26 @@ public record CommandResponse(
             int executionMs,
             UUID initiatorId) {
         return new CommandNeedsInputResponse(
-                commandId, correlationId, "needs_input", question, requiredFields, suggestions, policyName, executionMs, initiatorId);
+                commandId,
+                correlationId,
+                "needs_input",
+                question,
+                requiredFields,
+                suggestions,
+                policyName,
+                executionMs,
+                initiatorId);
+    }
+
+    public static CommandResponseBase rejected(
+            UUID commandId,
+            UUID correlationId,
+            String errorCode,
+            String reason,
+            int executionMs,
+            UUID initiatorId) {
+        return new CommandRejectedResponse(
+                commandId, correlationId, "rejected", errorCode, reason, executionMs, initiatorId);
     }
 
     public record CommandResult(UUID taskId, UUID assigneeId, Double decisionConfidence) {

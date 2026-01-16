@@ -7,6 +7,7 @@ import com.hometusk.households.domain.Household;
 import com.hometusk.households.domain.Zone;
 import com.hometusk.households.service.HouseholdService;
 import com.hometusk.households.service.ZoneService;
+import com.hometusk.notifications.service.NotificationService;
 import com.hometusk.shopping.domain.ShoppingItem;
 import com.hometusk.shopping.service.ShoppingService;
 import com.hometusk.tasks.domain.Task;
@@ -35,6 +36,7 @@ public class ActionExecutor {
     private final ZoneService zoneService;
     private final UserService userService;
     private final ActivityRecorder activityRecorder;
+    private final NotificationService notificationService;
 
     public ActionExecutor(
             TaskService taskService,
@@ -42,13 +44,15 @@ public class ActionExecutor {
             HouseholdService householdService,
             ZoneService zoneService,
             UserService userService,
-            ActivityRecorder activityRecorder) {
+            ActivityRecorder activityRecorder,
+            NotificationService notificationService) {
         this.taskService = taskService;
         this.shoppingService = shoppingService;
         this.householdService = householdService;
         this.zoneService = zoneService;
         this.userService = userService;
         this.activityRecorder = activityRecorder;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -88,6 +92,7 @@ public class ActionExecutor {
 
         // Record activity
         activityRecorder.recordTaskCreated(task, createdBy, command.getId(), correlationId);
+        notificationService.notifyTaskAssigned(task, createdBy, correlationId);
 
         log.info("Task created via command: taskId={}, commandId={}", task.getId(), command.getId());
 
@@ -105,6 +110,7 @@ public class ActionExecutor {
 
         // Record activity
         activityRecorder.recordTaskCompleted(task, command.getRequester(), command.getId(), correlationId);
+        notificationService.notifyTaskCompleted(task, command.getRequester(), correlationId);
 
         log.info("Task completed via command: taskId={}, commandId={}", task.getId(), command.getId());
 
@@ -163,6 +169,7 @@ public class ActionExecutor {
 
         // Record activity
         activityRecorder.recordTaskCreated(task, createdBy, command.getId(), correlationId);
+        notificationService.notifyTaskAssigned(task, createdBy, correlationId);
 
         log.info("Task created via command: taskId={}, commandId={}", task.getId(), command.getId());
 
@@ -178,6 +185,7 @@ public class ActionExecutor {
 
         // Record activity
         activityRecorder.recordTaskCompleted(task, command.getRequester(), command.getId(), correlationId);
+        notificationService.notifyTaskCompleted(task, command.getRequester(), correlationId);
 
         log.info("Task completed via command: taskId={}, commandId={}", task.getId(), command.getId());
 
@@ -209,6 +217,7 @@ public class ActionExecutor {
                 .addedBy(addedBy)
                 .commandId(command.getId())
                 .linkedTaskId(linkedTaskId)
+                .correlationId(correlationId)
                 .build());
 
         // Record activity

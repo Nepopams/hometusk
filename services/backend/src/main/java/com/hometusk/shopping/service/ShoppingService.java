@@ -1,6 +1,7 @@
 package com.hometusk.shopping.service;
 
 import com.hometusk.households.domain.Household;
+import com.hometusk.notifications.service.NotificationService;
 import com.hometusk.shared.exception.ErrorCode;
 import com.hometusk.shared.exception.NotFoundException;
 import com.hometusk.shopping.domain.ShoppingItem;
@@ -30,14 +31,17 @@ public class ShoppingService {
     private final ShoppingListRepository listRepository;
     private final ShoppingItemRepository itemRepository;
     private final TaskRepository taskRepository;
+    private final NotificationService notificationService;
 
     public ShoppingService(
             ShoppingListRepository listRepository,
             ShoppingItemRepository itemRepository,
-            TaskRepository taskRepository) {
+            TaskRepository taskRepository,
+            NotificationService notificationService) {
         this.listRepository = listRepository;
         this.itemRepository = itemRepository;
         this.taskRepository = taskRepository;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -82,6 +86,7 @@ public class ShoppingService {
         item.setIdempotencyKey(idempotencyKey);
 
         ShoppingItem saved = itemRepository.save(item);
+        notificationService.notifyShoppingItemAdded(saved, request.addedBy(), request.correlationId());
         log.info(
                 "Shopping item added: id={}, name={}, listId={}, linkedTaskId={}",
                 saved.getId(),
@@ -119,10 +124,14 @@ public class ShoppingService {
      * Marks a shopping item as purchased.
      */
     @Transactional
-    public ShoppingItem markPurchased(UUID itemId, UUID householdId) {
+    public ShoppingItem markPurchased(UUID itemId, UUID householdId, User actor, UUID correlationId) {
         ShoppingItem item = getItemByIdAndHousehold(itemId, householdId);
+        boolean wasPurchased = item.isPurchased();
         item.markPurchased();
         ShoppingItem saved = itemRepository.save(item);
+        if (!wasPurchased) {
+            notificationService.notifyShoppingItemPurchased(saved, actor, correlationId);
+        }
         log.info("Shopping item marked purchased: id={}", saved.getId());
         return saved;
     }
@@ -213,7 +222,14 @@ public class ShoppingService {
      * For direct user input, not AI-coordinated flows.
      */
     @Transactional
-    public ShoppingItem addItemDirect(UUID householdId, UUID listId, String name, Integer quantity, String unit, User addedBy) {
+    public ShoppingItem addItemDirect(
+            UUID householdId,
+            UUID listId,
+            String name,
+            Integer quantity,
+            String unit,
+            User addedBy,
+            UUID correlationId) {
         log.debug("Adding shopping item directly: name={}, householdId={}, listId={}", name, householdId, listId);
 
         // Resolve shopping list (validates exists and belongs to household)
@@ -225,6 +241,7 @@ public class ShoppingService {
         item.setUnit(unit);
 
         ShoppingItem saved = itemRepository.save(item);
+        notificationService.notifyShoppingItemAdded(saved, addedBy, correlationId);
         log.info("Shopping item added directly: id={}, name={}, listId={}", saved.getId(), name, listId);
 
         return saved;
@@ -309,7 +326,8 @@ public class ShoppingService {
             String unit,
             User addedBy,
             UUID commandId,
-            UUID linkedTaskId) {
+            UUID linkedTaskId,
+            UUID correlationId) {
 
         public static Builder builder() {
             return new Builder();
@@ -325,6 +343,7 @@ public class ShoppingService {
             private User addedBy;
             private UUID commandId;
             private UUID linkedTaskId;
+            private UUID correlationId;
 
             public Builder householdId(UUID householdId) {
                 this.householdId = householdId;
@@ -371,9 +390,23 @@ public class ShoppingService {
                 return this;
             }
 
+            public Builder correlationId(UUID correlationId) {
+                this.correlationId = correlationId;
+                return this;
+            }
+
             public AddItemRequest build() {
                 return new AddItemRequest(
-                        householdId, household, listId, name, quantity, unit, addedBy, commandId, linkedTaskId);
+                        householdId,
+                        household,
+                        listId,
+                        name,
+                        quantity,
+                        unit,
+                        addedBy,
+                        commandId,
+                        linkedTaskId,
+                        correlationId);
             }
         }
     }

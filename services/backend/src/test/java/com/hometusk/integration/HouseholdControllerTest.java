@@ -188,7 +188,7 @@ class HouseholdControllerTest extends IntegrationTestBase {
                             .with(jwt())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isOk())
+                    .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id").value(testZone.getId().toString()));
 
             // Verify no duplicate zones created

@@ -125,7 +125,8 @@ class Stage4GuardrailsIntegrationTest extends AiPlatformIntegrationTestBase {
                             .content(requestBody)
                             .with(jwt()))
                     // Then: MembershipPolicy should reject
-                    .andExpect(status().isBadRequest())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("rejected"))
                     .andExpect(jsonPath("$.errorCode").value("ASSIGNEE_NOT_MEMBER"));
 
             // Verify no task was created

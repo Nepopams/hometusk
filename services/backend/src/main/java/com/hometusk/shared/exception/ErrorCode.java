@@ -19,10 +19,17 @@ public enum ErrorCode {
     ZONE_NOT_FOUND("Zone not found"),
     SHOPPING_LIST_NOT_FOUND("Shopping list not found"),
     SHOPPING_ITEM_NOT_FOUND("Shopping item not found"),
+    INVALID_TOKEN("Invite token not found"),
+    NOTIFICATION_NOT_FOUND("Notification not found"),
 
     // Shopping validation (Stage 5)
     SHOPPING_ITEM_NAME_EMPTY("Shopping item name cannot be empty"),
     SHOPPING_ITEM_NAME_TOO_LONG("Shopping item name is too long"),
+
+    // Invites
+    INVITE_EXPIRED("Invite token expired"),
+    INVITE_REDEEMED("Invite token already redeemed"),
+    INVITE_REVOKED("Invite token revoked"),
 
     // Access control
     ACCESS_DENIED("Access denied to this resource"),

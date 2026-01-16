@@ -160,8 +160,9 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
                             .content(requestBody)
                             .with(jwt()))
                     // Then
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("AI_REJECTED"));
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("rejected"))
+                    .andExpect(jsonPath("$.errorCode").value("AI_RESPONSE_INVALID"));
 
             // Verify no task was created
             var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
@@ -350,11 +351,12 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
             mockMvc.perform(post("/api/v1/commands")
                             .header("X-Correlation-ID", correlationId)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(requestBody)
-                            .with(jwt()))
-                    // Then: Safe degradation to REJECTED (schema validation fails for unknown type)
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").exists());
+                    .content(requestBody)
+                    .with(jwt()))
+                    // Then: Safe degradation to rejected
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("rejected"))
+                    .andExpect(jsonPath("$.errorCode").value("UNKNOWN_DECISION_TYPE"));
         }
     }
 

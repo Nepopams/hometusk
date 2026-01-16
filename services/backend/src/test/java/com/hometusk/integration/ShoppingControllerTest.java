@@ -191,6 +191,26 @@ class ShoppingControllerTest extends IntegrationTestBase {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isNotFound());
         }
+
+        @Test
+        @DisplayName("Should include newly added item in list response")
+        void addItemAppearsInList() throws Exception {
+            var request = Map.of("name", "Apples", "quantity", 4);
+
+            mockMvc.perform(post("/api/v1/households/{id}/shopping-lists/{listId}/items",
+                            testHousehold.getId(), shoppingList.getId())
+                            .with(jwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isCreated());
+
+            mockMvc.perform(get("/api/v1/households/{id}/shopping-lists/{listId}/items",
+                            testHousehold.getId(), shoppingList.getId())
+                            .with(jwt()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(3))
+                    .andExpect(jsonPath("$[0].name").value("Apples"));
+        }
     }
 
     @Nested

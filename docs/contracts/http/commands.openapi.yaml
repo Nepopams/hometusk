@@ -26,10 +26,12 @@ tags:
     description: User profile endpoints
   - name: Households
     description: Household data endpoints
+  - name: Invites
+    description: Household invite endpoints
+  - name: Notifications
+    description: In-app notification endpoints
   - name: Shopping
     description: Shopping list management endpoints
-  - name: Internal
-    description: Internal/admin endpoints (not for public use)
 
 paths:
   /commands:
@@ -55,13 +57,6 @@ paths:
           in: header
           required: false
           description: Client-provided correlation ID for distributed tracing
-          schema:
-            type: string
-            format: uuid
-        - name: X-Idempotency-Key
-          in: header
-          required: false
-          description: Client-provided key for safe retries
           schema:
             type: string
             format: uuid
@@ -92,7 +87,7 @@ paths:
                   source: "mobile"
       responses:
         '200':
-          description: Command executed successfully
+          description: Command processed (status in response body)
           headers:
             X-Correlation-ID:
               schema:
@@ -102,20 +97,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CommandSuccessResponse'
-        '207':
-          description: Command executed with degraded mode (fallback used)
-          headers:
-            X-Correlation-ID:
-              schema:
-                type: string
-                format: uuid
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CommandDegradedResponse'
+                $ref: '#/components/schemas/CommandResponse'
         '400':
-          description: Invalid request (schema or business rule violation)
+          description: Invalid request (schema/validation/type errors)
           headers:
             X-Correlation-ID:
               schema:
@@ -142,17 +126,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CommandErrorResponse'
-        '429':
-          description: Rate limit exceeded
-          headers:
-            Retry-After:
-              schema:
-                type: integer
-              description: Seconds until rate limit resets
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RateLimitErrorResponse'
 
   /users/me:
     get:
@@ -218,6 +191,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Task'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
         '403':
           description: Not a member of this household
 
@@ -246,7 +225,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Task'
+                $ref: '#/components/schemas/TaskDetail'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
         '403':
           description: Not a member of this household
         '404':
@@ -274,6 +259,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/HouseholdMember'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
         '403':
           description: Not a member of this household
 
@@ -299,8 +290,221 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Zone'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
         '403':
           description: Not a member of this household
+    post:
+      operationId: createZone
+      summary: Create a zone in household
+      tags:
+        - Households
+      parameters:
+        - name: householdId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateZoneRequest'
+      responses:
+        '201':
+          description: Zone created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Zone'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '403':
+          description: Not a member of this household
+
+  /households/{householdId}/invites:
+    post:
+      operationId: createHouseholdInvite
+      summary: Create a household invite
+      tags:
+        - Invites
+      parameters:
+        - name: householdId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: Invite created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateInviteResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '403':
+          description: Not a member of this household
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+
+  /invites/accept:
+    post:
+      operationId: acceptHouseholdInvite
+      summary: Accept a household invite
+      tags:
+        - Invites
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptInviteRequest'
+      responses:
+        '200':
+          description: Invite accepted or no-op for existing member
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptInviteResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '404':
+          description: Invalid invite token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+        '410':
+          description: Invite expired, redeemed, or revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+
+  /households/{householdId}/notifications:
+    get:
+      operationId: listNotifications
+      summary: List notifications for a household
+      description: Returns notifications for the current user within the household.
+      tags:
+        - Notifications
+      parameters:
+        - name: householdId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: since
+          in: query
+          required: false
+          description: RFC3339 timestamp to filter notifications since this time
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          required: false
+          description: Max number of results (default 50, max 200)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        '200':
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '403':
+          description: Not a member of this household
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+
+  /notifications/{notificationId}/read:
+    post:
+      operationId: markNotificationRead
+      summary: Mark notification as read
+      tags:
+        - Notifications
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Notification updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '404':
+          description: Notification not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
 
   /households:
     post:
@@ -355,6 +559,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ShoppingList'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
         '403':
           description: Not a member of this household
 
@@ -392,6 +602,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ShoppingItem'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
         '403':
           description: Not a member of this household
         '404':
@@ -433,6 +649,16 @@ paths:
                 $ref: '#/components/schemas/ShoppingItem'
         '400':
           description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
         '403':
           description: Not a member of this household
         '404':
@@ -470,6 +696,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ShoppingItem'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
         '403':
           description: Not a member of this household
         '404':
@@ -495,81 +727,16 @@ paths:
       responses:
         '204':
           description: Item deleted
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
         '403':
           description: Not a member of this household
         '404':
           description: Item not found
-
-  # Internal endpoints for setup/testing
-  /internal/households:
-    post:
-      operationId: createHousehold
-      summary: Create a new household (internal)
-      tags:
-        - Internal
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateHouseholdRequest'
-      responses:
-        '201':
-          description: Household created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Household'
-
-  /internal/households/{householdId}/members:
-    post:
-      operationId: addHouseholdMember
-      summary: Add a member to household (internal)
-      tags:
-        - Internal
-      parameters:
-        - name: householdId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddMemberRequest'
-      responses:
-        '201':
-          description: Member added
-
-  /internal/households/{householdId}/zones:
-    post:
-      operationId: createZone
-      summary: Create a zone in household (internal)
-      tags:
-        - Internal
-      parameters:
-        - name: householdId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateZoneRequest'
-      responses:
-        '201':
-          description: Zone created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Zone'
 
 components:
   securitySchemes:
@@ -653,13 +820,29 @@ components:
           format: uuid
           description: ID of task to complete (must exist in household)
 
-    CommandSuccessResponse:
+    CommandResponse:
+      oneOf:
+        - $ref: '#/components/schemas/CommandExecutedResponse'
+        - $ref: '#/components/schemas/CommandNeedsInputResponse'
+        - $ref: '#/components/schemas/CommandRejectedResponse'
+        - $ref: '#/components/schemas/CommandDegradedResponse'
+      discriminator:
+        propertyName: status
+        mapping:
+          executed: '#/components/schemas/CommandExecutedResponse'
+          needs_input: '#/components/schemas/CommandNeedsInputResponse'
+          rejected: '#/components/schemas/CommandRejectedResponse'
+          executed_degraded: '#/components/schemas/CommandDegradedResponse'
+
+    CommandExecutedResponse:
       type: object
       required:
         - commandId
         - correlationId
         - status
+        - result
         - executionMs
+        - initiatorId
       properties:
         commandId:
           type: string
@@ -673,29 +856,9 @@ components:
           type: string
           enum:
             - executed
-            - needs_input
-          description: |
-            Command execution status:
-            - executed: Task was created successfully
-            - needs_input: Guardrails require user clarification before proceeding
+          description: Command executed successfully
         result:
           $ref: '#/components/schemas/CommandResult'
-          description: Present when status=executed
-        question:
-          type: string
-          description: Present when status=needs_input - question to ask the user
-        requiredFields:
-          type: array
-          items:
-            type: string
-          description: Present when status=needs_input - fields that need user input
-        suggestions:
-          type: object
-          additionalProperties: true
-          description: Present when status=needs_input - suggested values for fields
-        policyName:
-          type: string
-          description: Present when status=needs_input - guardrail policy that requested clarification
         executionMs:
           type: integer
           minimum: 0
@@ -705,6 +868,83 @@ components:
           format: uuid
           description: User who initiated this command (from JWT)
 
+    CommandNeedsInputResponse:
+      type: object
+      required:
+        - commandId
+        - correlationId
+        - status
+        - question
+        - requiredFields
+        - executionMs
+        - initiatorId
+      properties:
+        commandId:
+          type: string
+          format: uuid
+        correlationId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - needs_input
+        question:
+          type: string
+          description: Question to ask the user
+        requiredFields:
+          type: array
+          items:
+            type: string
+          description: Fields that need user input
+        suggestions:
+          type: object
+          additionalProperties: true
+          description: Suggested values for fields
+        policyName:
+          type: string
+          description: Guardrail policy that requested clarification
+        executionMs:
+          type: integer
+          minimum: 0
+        initiatorId:
+          type: string
+          format: uuid
+
+    CommandRejectedResponse:
+      type: object
+      required:
+        - commandId
+        - correlationId
+        - status
+        - errorCode
+        - reason
+        - executionMs
+        - initiatorId
+      properties:
+        commandId:
+          type: string
+          format: uuid
+        correlationId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - rejected
+        errorCode:
+          type: string
+          description: Machine-readable rejection code
+        reason:
+          type: string
+          description: Human-readable rejection reason
+        executionMs:
+          type: integer
+          minimum: 0
+        initiatorId:
+          type: string
+          format: uuid
+
     CommandDegradedResponse:
       type: object
       required:
@@ -713,6 +953,7 @@ components:
         - status
         - result
         - executionMs
+        - initiatorId
         - degradedReason
       properties:
         commandId:
@@ -730,6 +971,9 @@ components:
         executionMs:
           type: integer
           minimum: 0
+        initiatorId:
+          type: string
+          format: uuid
         degradedReason:
           type: string
           enum:
@@ -771,14 +1015,7 @@ components:
           format: uuid
         errorCode:
           type: string
-          enum:
-            - SCHEMA_INVALID
-            - BUSINESS_RULE_VIOLATION
-            - HOUSEHOLD_NOT_FOUND
-            - TASK_NOT_FOUND
-            - ACCESS_DENIED
-            - IDEMPOTENCY_CONFLICT
-          description: Machine-readable error code
+          description: Machine-readable error code (see ErrorCode enum)
         message:
           type: string
           description: Human-readable error message
@@ -843,23 +1080,6 @@ components:
             - AUTH_TOKEN_EXPIRED
         message:
           type: string
-
-    RateLimitErrorResponse:
-      type: object
-      required:
-        - errorCode
-        - message
-        - retryAfter
-      properties:
-        errorCode:
-          type: string
-          enum:
-            - RATE_LIMITED
-        message:
-          type: string
-        retryAfter:
-          type: integer
-          description: Seconds until rate limit resets
 
     # Domain entities
     UserProfile:
@@ -1007,19 +1227,6 @@ components:
           maxLength: 80
           description: Household name (trimmed, non-blank)
 
-    AddMemberRequest:
-      type: object
-      required:
-        - userId
-        - role
-      properties:
-        userId:
-          type: string
-          format: uuid
-        role:
-          type: string
-          enum: [admin, member]
-
     CreateZoneRequest:
       type: object
       required:
@@ -1029,6 +1236,120 @@ components:
           type: string
           minLength: 1
           maxLength: 255
+
+    AcceptInviteRequest:
+      type: object
+      required:
+        - inviteToken
+      properties:
+        inviteToken:
+          type: string
+          description: Invite token (hti_ prefix)
+
+    CreateInviteResponse:
+      type: object
+      required:
+        - inviteToken
+        - expiresAt
+        - status
+      properties:
+        inviteToken:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [active, redeemed, expired, revoked]
+        inviteLink:
+          type: string
+          nullable: true
+
+    InviteMembership:
+      type: object
+      required:
+        - id
+        - role
+        - joinedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [admin, member]
+        joinedAt:
+          type: string
+          format: date-time
+
+    AcceptInviteResponse:
+      type: object
+      required:
+        - membership
+        - household
+      properties:
+        membership:
+          $ref: '#/components/schemas/InviteMembership'
+        household:
+          $ref: '#/components/schemas/Household'
+
+    # Notification schemas
+    Notification:
+      type: object
+      required:
+        - id
+        - householdId
+        - userId
+        - type
+        - payload
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        householdId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum:
+            - invite_accepted
+            - task_assigned
+            - task_completed
+            - shopping_item_added
+            - shopping_item_purchased
+        payload:
+          $ref: '#/components/schemas/NotificationPayload'
+        createdAt:
+          type: string
+          format: date-time
+        readAt:
+          type: string
+          format: date-time
+          nullable: true
+        correlationId:
+          type: string
+          format: uuid
+          nullable: true
+
+    NotificationPayload:
+      type: object
+      properties:
+        actorUserId:
+          type: string
+          format: uuid
+        entityId:
+          type: string
+          format: uuid
+        entityType:
+          type: string
+          description: Entity type (task, shopping_item, invite)
+        summary:
+          type: string
+          description: Human-readable summary
 
     # Shopping schemas
     ShoppingList:

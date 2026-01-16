@@ -145,12 +145,19 @@ public class ShoppingController {
         // Get user entity
         User user = userService.getById(currentUser.id());
 
+        UUID correlationId = getCorrelationId();
+
         // Add item directly
-        ShoppingItem item =
-                shoppingService.addItemDirect(householdId, listId, request.name(), request.resolvedQuantity(), request.unit(), user);
+        ShoppingItem item = shoppingService.addItemDirect(
+                householdId,
+                listId,
+                request.name(),
+                request.resolvedQuantity(),
+                request.unit(),
+                user,
+                correlationId);
 
         // Record activity (no commandId for direct REST)
-        UUID correlationId = getCorrelationId();
         activityRecorder.recordShoppingItemAdded(item, user, null, correlationId);
 
         log.info("Item added: id={}, listId={}", item.getId(), listId);
@@ -183,9 +190,9 @@ public class ShoppingController {
         // Update item
         ShoppingItem item;
         if (Boolean.TRUE.equals(request.purchased())) {
-            item = shoppingService.markPurchased(itemId, householdId);
-            // Record activity
             UUID correlationId = getCorrelationId();
+            item = shoppingService.markPurchased(itemId, householdId, user, correlationId);
+            // Record activity
             activityRecorder.recordShoppingItemPurchased(item, user, null, correlationId);
         } else {
             item = shoppingService.unmarkPurchased(itemId, householdId);

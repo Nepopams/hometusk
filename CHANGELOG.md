@@ -53,6 +53,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Iteration 1] - 2026-01-16 - MVP Closure (Steps 1–3)
+
+### Added
+- Household invites: `/api/v1/households/{id}/invites`, `/api/v1/invites/accept` with token-based flow.
+- In-app notifications: `/api/v1/households/{id}/notifications`, `/api/v1/notifications/{id}/read`.
+- Integration tests for MVP journey, invites, and notifications.
+- ADR-009/010/011 documenting boundary, invites, and notifications.
+
+### Changed
+- `/api/v1/commands` now always returns 200 with explicit status (executed/needs_input/rejected/executed_degraded).
+- OpenAPI, service catalog, and MVP API coverage aligned with actual endpoints.
+
+---
+
 ## [Stage 4] - 2026-01-13 - Context-driven Autodelegation
 
 ### Added

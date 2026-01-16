@@ -1,7 +1,5 @@
 package com.hometusk.commands.api;
 
-import com.hometusk.commands.dto.CommandDegradedResponse;
-import com.hometusk.commands.dto.CommandNeedsInputResponse;
 import com.hometusk.commands.dto.CommandRequest;
 import com.hometusk.commands.dto.CommandResponseBase;
 import com.hometusk.commands.service.CommandService;
@@ -55,10 +53,15 @@ public class CommandController {
             **Supported command types:**
             - `create_task` — Create a new task
             - `complete_task` — Mark a task as done
+
+            **Response status values:**
+            - `executed` — Command executed successfully
+            - `needs_input` — Guardrails require user clarification
+            - `rejected` — Command rejected by AI or guardrails
+            - `executed_degraded` — Executed with fallback due to AI unavailability
             """)
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Command executed successfully"),
-        @ApiResponse(responseCode = "207", description = "Command executed with degraded mode"),
+        @ApiResponse(responseCode = "200", description = "Command processed (status in body)"),
         @ApiResponse(
                 responseCode = "400",
                 description = "Invalid request",
@@ -94,13 +97,6 @@ public class CommandController {
             // Return with correlation ID header
             HttpHeaders headers = new HttpHeaders();
             headers.set(CORRELATION_ID_HEADER, correlationId.toString());
-
-            // Determine HTTP status based on response type
-            if (response instanceof CommandDegradedResponse) {
-                return ResponseEntity.status(207).headers(headers).body(response);
-            } else if (response instanceof CommandNeedsInputResponse) {
-                return ResponseEntity.ok().headers(headers).body(response);
-            }
             return ResponseEntity.ok().headers(headers).body(response);
 
         } finally {

@@ -2,7 +2,7 @@
 
 Living registry of all services and applications in the HomeTusk monorepo.
 
-**Last updated:** 2026-01-14
+**Last updated:** 2026-01-16
 
 ---
 
@@ -59,17 +59,23 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 **Internal Packages:**
 - `commands` — Command pipeline (POST /api/v1/commands)
 - `tasks` — Task domain
-- `households` — Household and Zone management
+- `households` — Household, Zone, and Invite management
 - `users` — User profiles and Memberships
-- `shopping` — Shopping lists and items (Stage 5)
+- `shopping` — Shopping lists and items (Step 1 Web MVP)
 - `activity` — TaskActivity events
+- `notifications` — In-app notifications (Step 3)
 - `shared` — Security, logging, exceptions, validation
 
-**Key Endpoints:**
+**Key Endpoints (MVP Iteration 1):**
 - `POST /api/v1/commands` — Execute command (create_task, complete_task)
-- `GET /api/v1/users/me` — Current user profile
+- `GET /api/v1/users/me` — Current user profile with household memberships
+- `POST /api/v1/households` — Create household
+- `POST /api/v1/households/{id}/invites` — Create invite token
+- `POST /api/v1/invites/accept` — Accept invite token
 - `GET /api/v1/households/{id}/tasks` — List tasks
-- `POST /internal/households` — Create household (internal)
+- `GET /api/v1/households/{id}/shopping-lists` — List shopping lists
+- `GET /api/v1/households/{id}/notifications` — List notifications
+- `POST /api/v1/notifications/{id}/read` — Mark notification read
 
 **REST Controllers (MVP Hardening):**
 
@@ -77,14 +83,21 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 |------------|-----------|-------|
 | CommandController | `POST /api/v1/commands` | Intent-driven command execution |
 | UserController | `GET /api/v1/users/me` | User profile with household memberships |
-| HouseholdController | `POST /api/v1/households`, `GET/POST /*/zones`, `GET /*/members` | Household administration |
+| HouseholdController | `POST /api/v1/households`, `GET/POST /*/zones`, `GET /*/members`, `POST /*/invites` | Household administration |
+| HouseholdInviteController | `POST /api/v1/invites/accept` | Invite acceptance |
 | TaskController | `GET /api/v1/households/{id}/tasks`, `GET /*/tasks/{taskId}` | Task reads (writes via commands) |
 | ShoppingController | `GET/POST /*/shopping-lists/*`, `PATCH/DELETE /*/shopping-items/*` | Shopping management (see ADR-009) |
+| NotificationController | `GET /api/v1/households/{id}/notifications`, `POST /api/v1/notifications/{id}/read` | In-app notifications |
+
+**Invites:** Active (MVP Iteration 1 / Step 2)
+**Notifications:** Active (MVP Iteration 1 / Step 3)
+**Stability:** MVP (see OpenAPI for contract)
 
 See [ADR-009](./decisions/009-mvp-commands-vs-crud-boundary.md) for Commands vs CRUD boundary decisions.
+See [ADR-010](./decisions/010-household-invites.md) for household invite flow decisions.
 See [API Coverage Matrix](../mvp/api-coverage.md) for full endpoint documentation.
 
-**Command Pipeline Flow (Stage 5):**
+**Command Pipeline Flow (Step 1):**
 ```
 Request → JWT Auth → UserResolver → MembershipValidator
        → CommandService.execute()
@@ -96,15 +109,15 @@ Request → JWT Auth → UserResolver → MembershipValidator
            │   └─ AiPlatformDecisionProvider (external AI, optional)
            │       └─ AiResponseSchemaValidator (JSON Schema validation)
            ├─ GuardrailsOrchestrator (policy chain before execution)
-           │   ├─ ShoppingItemValidationPolicy (validate item names, Stage 5)
+           │   ├─ ShoppingItemValidationPolicy (validate item names)
            │   ├─ ZoneOwnerFirstPolicy (assign zone owner if no assignee)
            │   └─ MaxOpenTasksPerAssigneePolicy (limit open tasks)
            ├─ ActionExecutor (supports create_task, complete_task, add_shopping_item)
-           │   └─ ShoppingService (Stage 5)
-           ├─ Task-Shopping Linking (link items to task if both created, Stage 5)
+           │   └─ ShoppingService (Step 1)
+           ├─ Task-Shopping Linking (link items to task if both created)
            ├─ DecisionLogWriter (includes guardrails info)
            └─ ActivityRecorder
-       → CommandResponse | NeedsInputResponse | DegradedResponse
+       → CommandResponse | NeedsInputResponse | RejectedResponse | DegradedResponse
 ```
 
 **Decision Provider Configuration:**
@@ -271,14 +284,14 @@ HomeTusk is a **consumer** of an external AI Platform for intelligent decision-m
 **Upstream Response types:**
 - `start_job` - Execute proposed actions (full support)
 - `propose_create_task` - Propose task creation (mapped to start_job)
-- `propose_add_shopping_item` - Propose shopping item (mapped to start_job, Stage 5)
+- `propose_add_shopping_item` - Propose shopping item (mapped to start_job)
 - `clarify` - Need user clarification (full support)
 - `reject` - Cannot process command (full support)
 
 **Supported Action types:**
 - `create_task` - Create a new task
 - `complete_task` - Complete an existing task
-- `add_shopping_item` - Add item to shopping list (Stage 5)
+- `add_shopping_item` - Add item to shopping list
 
 **Configuration:**
 ```yaml

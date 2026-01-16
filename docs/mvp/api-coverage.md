@@ -1,7 +1,8 @@
 # MVP API Coverage Matrix
 
-**Last Updated:** 2026-01-14
-**Scope:** MVP Closure / Iteration 1 / Step 1
+**Last Updated:** 2026-01-16
+**Scope:** MVP Closure / Iteration 1 / Step 3
+**Source of truth:** `docs/contracts/http/commands.openapi.yaml`
 
 ## User Journey Mapping
 
@@ -10,16 +11,20 @@
 | 1 | Login | OIDC via Keycloak | - | External | N/A | Done |
 | 2 | Create household | `/api/v1/households` | POST | JWT | N/A (creates new) | **Implemented** |
 | 3 | List my households | `/api/v1/users/me` | GET | JWT | N/A (returns user's) | **Implemented** |
+| 3a | Create invite | `/api/v1/households/{id}/invites` | POST | JWT | requireMembership | **Implemented** |
+| 3b | Accept invite | `/api/v1/invites/accept` | POST | JWT | N/A (token-based) | **Implemented** |
 | 4 | Create zone | `/api/v1/households/{id}/zones` | POST | JWT | requireMembership | **Implemented** |
-| 5 | Create task (manual) | `/api/v1/commands` | POST | JWT | In payload | Done |
-| 6 | Complete task | `/api/v1/commands` | POST | JWT | In payload | Done |
-| 7 | Run command (AI) | `/api/v1/commands` | POST | JWT | In payload | Done |
+| 5 | Create task (manual) | `/api/v1/commands` | POST | JWT | In payload | **Implemented** |
+| 6 | Complete task | `/api/v1/commands` | POST | JWT | In payload | **Implemented** |
+| 7 | Run command (AI) | `/api/v1/commands` | POST | JWT | In payload | **Implemented** |
 | 8 | View tasks list | `/api/v1/households/{id}/tasks` | GET | JWT | requireMembership | **Implemented** |
 | 9a | List shopping items | `/api/v1/households/{id}/shopping-lists/{listId}/items` | GET | JWT | requireMembership | **Implemented** |
 | 9b | Add shopping item | `/api/v1/households/{id}/shopping-lists/{listId}/items` | POST | JWT | requireMembership | **Implemented** |
-| 9c | Mark purchased | `/api/v1/households/{id}/shopping-items/{itemId}` | PATCH | JWT | requireMembership + ownership | **Implemented** |
-| 9d | Delete item | `/api/v1/households/{id}/shopping-items/{itemId}` | DELETE | JWT | requireMembership + ownership | **Implemented** |
-| 10 | Task details | `/api/v1/households/{id}/tasks/{taskId}` | GET | JWT | requireMembership + ownership | **Implemented** |
+| 9c | Mark purchased | `/api/v1/households/{id}/shopping-items/{itemId}` | PATCH | JWT | requireMembership + household-scope | **Implemented** |
+| 9d | Delete item | `/api/v1/households/{id}/shopping-items/{itemId}` | DELETE | JWT | requireMembership + household-scope | **Implemented** |
+| 10 | Task details | `/api/v1/households/{id}/tasks/{taskId}` | GET | JWT | requireMembership + household-scope | **Implemented** |
+| 11 | View notifications | `/api/v1/households/{id}/notifications` | GET | JWT | requireMembership | **Implemented** |
+| 12 | Mark notification read | `/api/v1/notifications/{id}/read` | POST | JWT | ownership enforced | **Implemented** |
 
 ## Endpoint Reference
 
@@ -37,6 +42,13 @@
 | `/api/v1/households/{id}/members` | GET | - | `HouseholdMember[]` | 401, 403 |
 | `/api/v1/households/{id}/zones` | GET | - | `Zone[]` | 401, 403 |
 | `/api/v1/households/{id}/zones` | POST | `CreateZoneRequest` | `Zone` (201) | 400, 401, 403 |
+| `/api/v1/households/{id}/invites` | POST | - | `CreateInviteResponse` (201) | 401, 403 |
+
+### Invite Endpoints
+
+| Endpoint | Method | Request | Response | Errors |
+|----------|--------|---------|----------|--------|
+| `/api/v1/invites/accept` | POST | `AcceptInviteRequest` | `AcceptInviteResponse` | 400, 401, 404, 410 |
 
 ### Task Endpoints
 
@@ -55,11 +67,18 @@
 | `/api/v1/households/{id}/shopping-items/{itemId}` | PATCH | `UpdateShoppingItemRequest` | `ShoppingItem` | 401, 403, 404 |
 | `/api/v1/households/{id}/shopping-items/{itemId}` | DELETE | - | 204 No Content | 401, 403, 404 |
 
+### Notification Endpoints
+
+| Endpoint | Method | Request | Response | Errors |
+|----------|--------|---------|----------|--------|
+| `/api/v1/households/{id}/notifications` | GET | `since`, `limit` | `Notification[]` | 400, 401, 403 |
+| `/api/v1/notifications/{id}/read` | POST | - | `Notification` | 401, 404 |
+
 ### Command Endpoints (Existing)
 
 | Endpoint | Method | Request | Response | Errors |
 |----------|--------|---------|----------|--------|
-| `/api/v1/commands` | POST | `CommandRequest` | `CommandResponse` | 400, 401, 403, 404, 409 |
+| `/api/v1/commands` | POST | `CommandRequest` | `CommandResponse` (200: executed / needs_input / rejected / executed_degraded) | 400, 401, 403 |
 
 ## Query Parameters
 
@@ -76,6 +95,13 @@
 | Param | Type | Description | Example |
 |-------|------|-------------|---------|
 | `purchased` | boolean | Filter by purchase status | `?purchased=false` |
+
+### Notification List Filters
+
+| Param | Type | Description | Example |
+|-------|------|-------------|---------|
+| `since` | RFC3339 timestamp | Return notifications created after this time | `?since=2026-01-16T12:00:00Z` |
+| `limit` | integer | Max results (default 50, max 200) | `?limit=100` |
 
 ## Validation Rules
 
@@ -105,6 +131,12 @@
 |-------|------|------------|
 | `purchased` | boolean | Required |
 
+### AcceptInviteRequest
+
+| Field | Type | Validation |
+|-------|------|------------|
+| `inviteToken` | string | Required, non-blank |
+
 ## HTTP Status Codes
 
 | Code | Meaning | When |
@@ -116,13 +148,14 @@
 | 401 | Unauthorized | Missing/invalid JWT |
 | 403 | Forbidden | Not a household member |
 | 404 | Not Found | Resource doesn't exist |
-| 409 | Conflict | Idempotency conflict |
+| 409 | Conflict | Idempotency conflict (not used in Step 1) |
+| 410 | Gone | Invite expired, redeemed, or revoked |
 
 ## Security
 
 All endpoints require:
 1. **JWT Authentication** - Valid Keycloak token
 2. **Household Boundary Check** - User must be member of target household
-3. **Resource Ownership** - For single-resource endpoints, resource must belong to household
+3. **Household Scope** - Resource must belong to the household in the URL
 
 See ADR-009 for Commands vs CRUD boundary decisions.
