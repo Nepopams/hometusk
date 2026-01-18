@@ -19,6 +19,45 @@ It is an intelligent coordinator that converts natural-language commands into ho
 
 ---
 
+<!-- VIBE-KIT:BEGIN -->
+# Claude Arch/BA Kit (Project Overlay)
+
+## Mission
+- **Claude Code** = analytics/architecture/planning/artifacts
+- **Codex** = implementation by workpack + tests + minimal diff
+- **Human** = gates and final "GO/NO-GO"
+
+## Source of Truth Map
+- **MVP**: `docs/planning/mvp.md`
+- **DoR**: `docs/_governance/dor.md`
+- **DoD**: `docs/_governance/dod.md`
+- **Epics/Stories**: `docs/planning/epics/**`
+- **Workpacks**: `docs/planning/workpacks/**`
+- **Contracts**: `docs/contracts/**`
+- **ADR**: `docs/adr/**` (also `docs/architecture/decisions/` for existing ADRs)
+- **Diagrams**: `docs/diagrams/**` (also `docs/architecture/diagrams/` for existing diagrams)
+- **Indexes**: `docs/_indexes/**`
+
+## Pipeline (High Level)
+0. **Triage** → 1. **PI Planning** (optional) → 2. **Sprint Planning** → 3. **Epic Decomposition**
+→ 4. **Conditional Artifacts** (contracts/ADR/diagrams) → 5. **Workpack Creation**
+→ 6. **Codex Prompt Pack** (PLAN/APPLY) → 7. **Codex Implementation** → 8. **Review Gate** → 9. **Human Merge Gate**
+
+## Non-Negotiables
+- **DoR gate** before workpack creation
+- **Contract-first** for integration surfaces (run `contract-writer` agent)
+- **ADR only** for architecture-significant decisions (run `adr-designer` agent)
+- **Diagrams only** when structure/flow changes (run `diagram-steward` agent)
+- **Small batches**, minimal diff, **STOP-THE-LINE** when scope deviates
+
+## Imports (Keep CLAUDE.md Slim)
+- @docs/planning/mvp.md
+- @docs/_governance/dor.md
+- @docs/_governance/dod.md
+<!-- VIBE-KIT:END -->
+
+---
+
 ## MVP Goal
 
 Validate one key hypothesis:
