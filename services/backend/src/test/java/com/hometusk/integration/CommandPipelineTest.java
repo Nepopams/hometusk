@@ -91,7 +91,7 @@ class CommandPipelineTest extends IntegrationTestBase {
         @DisplayName("Should create task with all optional fields")
         void createTask_fullPayload_success() throws Exception {
             // Add testUser2 to household for assignee test
-            membershipRepository.save(new Membership(testUser2, testHousehold, MembershipRole.MEMBER));
+            membershipRepository.save(new Membership(testUser2, testHousehold, MembershipRole.member));
 
             var deadline = Instant.now().plus(1, ChronoUnit.DAYS).toString();
 

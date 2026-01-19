@@ -77,14 +77,14 @@ public class TaskService {
             throw new BusinessException(
                     ErrorCode.BUSINESS_RULE_VIOLATION,
                     "Task is already completed",
-                    BusinessException.violation("TASK_ALREADY_COMPLETED", "Task is already completed"));
+                    List.of(new BusinessException.Violation("TASK_ALREADY_COMPLETED", "Task is already completed")));
         }
 
         if (task.isCancelled()) {
             throw new BusinessException(
                     ErrorCode.BUSINESS_RULE_VIOLATION,
                     "Cannot complete cancelled task",
-                    BusinessException.violation("TASK_CANCELLED", "Cannot complete a cancelled task"));
+                    List.of(new BusinessException.Violation("TASK_CANCELLED", "Cannot complete a cancelled task")));
         }
 
         task.complete();

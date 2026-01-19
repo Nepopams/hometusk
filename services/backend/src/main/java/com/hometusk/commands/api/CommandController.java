@@ -13,9 +13,11 @@ import com.hometusk.shared.exception.ErrorCode;
 import com.hometusk.shared.exception.GlobalExceptionHandler;
 import com.hometusk.shared.exception.ValidationException;
 import com.hometusk.shared.logging.MdcKeys;
+import com.hometusk.shared.security.CurrentUser;
 import com.hometusk.users.domain.User;
 import com.hometusk.users.service.MembershipService;
 import com.hometusk.users.service.UserResolver;
+import com.hometusk.users.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -49,18 +51,21 @@ public class CommandController {
     private final UserResolver userResolver;
     private final MembershipService membershipService;
     private final ObjectMapper objectMapper;
+    private final UserService userService;
 
     public CommandController(
             CommandService commandService,
             CommandIdempotencyService idempotencyService,
             UserResolver userResolver,
             MembershipService membershipService,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            UserService userService) {
         this.commandService = commandService;
         this.idempotencyService = idempotencyService;
         this.userResolver = userResolver;
         this.membershipService = membershipService;
         this.objectMapper = objectMapper;
+        this.userService = userService;
     }
 
     @PostMapping
@@ -111,7 +116,8 @@ public class CommandController {
             log.info("Received command: type={}, householdId={}", request.type(), request.householdId());
 
             // Resolve current user from JWT
-            User user = userResolver.resolveCurrentUser();
+            CurrentUser currentUser = userResolver.resolveCurrentUser();
+            User user = userService.getById(currentUser.id());
 
             // Idempotency handling (optional)
             idempotencySession = idempotencyService.begin(idempotencyKeys, user.getId(), request).orElse(null);

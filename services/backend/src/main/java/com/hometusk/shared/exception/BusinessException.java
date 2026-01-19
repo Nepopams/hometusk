@@ -24,6 +24,13 @@ public class BusinessException extends RuntimeException {
         this.context = Collections.emptyMap();
     }
 
+    public BusinessException(ErrorCode errorCode, String message, List<Violation> violations) {
+        super(message);
+        this.errorCode = errorCode;
+        this.violations = violations;
+        this.context = Collections.emptyMap();
+    }
+
     public BusinessException(ErrorCode errorCode, List<Violation> violations) {
         super(errorCode.getDefaultMessage());
         this.errorCode = errorCode;

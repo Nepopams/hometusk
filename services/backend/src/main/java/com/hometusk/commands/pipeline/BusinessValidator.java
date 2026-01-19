@@ -79,7 +79,7 @@ public class BusinessValidator {
             throw new BusinessException(
                     ErrorCode.BUSINESS_RULE_VIOLATION,
                     "Business rule violation",
-                    violations.toArray(new BusinessException.Violation[0]));
+                    violations);
         }
 
         log.debug("Business validation passed for create_task");
@@ -100,8 +100,8 @@ public class BusinessValidator {
         if (taskOpt.isEmpty()) {
             throw new BusinessException(
                     ErrorCode.TASK_NOT_FOUND,
-                    "Task not found",
-                    new BusinessException.Violation("TASK_NOT_FOUND", "Task not found in this household"));
+                    "Task not found in this household",
+                    List.of(new BusinessException.Violation("TASK_NOT_FOUND", "Task not found in this household")));
         }
 
         var task = taskOpt.get();
@@ -122,7 +122,7 @@ public class BusinessValidator {
             throw new BusinessException(
                     ErrorCode.BUSINESS_RULE_VIOLATION,
                     "Business rule violation",
-                    violations.toArray(new BusinessException.Violation[0]));
+                    violations);
         }
 
         log.debug("Business validation passed for complete_task");

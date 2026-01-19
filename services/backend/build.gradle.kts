@@ -30,8 +30,8 @@ dependencies {
 
     // Database
     runtimeOnly("org.postgresql:postgresql")
+    // Flyway 9.x (via Spring Boot BOM) does not use modular DB artifacts like flyway-database-postgresql.
     implementation("org.flywaydb:flyway-core")
-    implementation("org.flywaydb:flyway-database-postgresql")
 
     // JSON Schema validation
     implementation("com.networknt:json-schema-validator:1.0.87")

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import com.github.tomakehurst.wiremock.client.WireMock;
 import com.hometusk.activity.domain.ActivityType;
 import com.hometusk.activity.repository.TaskActivityRepository;
 import com.hometusk.commands.repository.CommandRepository;
@@ -352,7 +353,7 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
                 """
                         .formatted(title, assigneeId);
 
-        stubFor(post(urlEqualTo("/decision"))
+        stubFor(WireMock.post(urlEqualTo("/decision"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -380,7 +381,7 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
                 """
                         .formatted(name, quantity, unitField);
 
-        stubFor(post(urlEqualTo("/decision"))
+        stubFor(WireMock.post(urlEqualTo("/decision"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -406,7 +407,7 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
                 }
                 """;
 
-        stubFor(post(urlEqualTo("/decision"))
+        stubFor(WireMock.post(urlEqualTo("/decision"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -440,7 +441,7 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
                 """
                         .formatted(taskTitle, assigneeId);
 
-        stubFor(post(urlEqualTo("/decision"))
+        stubFor(WireMock.post(urlEqualTo("/decision"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")

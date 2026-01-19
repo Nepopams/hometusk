@@ -157,7 +157,7 @@ class HouseholdInviteIntegrationTest extends IntegrationTestBase {
         String requestBody = objectMapper.writeValueAsString(Map.of("inviteToken", token));
 
         User user3 = new User("test-user-sub-789", "charlie@test.local", "Charlie Test");
-        user3 = userRepository.save(user3);
+        User savedUser3 = userRepository.save(user3);
 
         CountDownLatch ready = new CountDownLatch(2);
         CountDownLatch start = new CountDownLatch(1);
@@ -165,7 +165,7 @@ class HouseholdInviteIntegrationTest extends IntegrationTestBase {
 
         try {
             Future<Integer> first = executor.submit(() -> acceptInviteWithLatch(requestBody, testUser2, ready, start));
-            Future<Integer> second = executor.submit(() -> acceptInviteWithLatch(requestBody, user3, ready, start));
+            Future<Integer> second = executor.submit(() -> acceptInviteWithLatch(requestBody, savedUser3, ready, start));
 
             assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
             start.countDown();

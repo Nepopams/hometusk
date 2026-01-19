@@ -78,7 +78,7 @@ public class AiResponseSchemaValidator {
 
         if (errors.isEmpty()) {
             log.debug("AI response schema validation passed");
-            return ValidationResult.valid();
+            return ValidationResult.success();
         }
 
         log.warn("AI response schema validation failed: {} errors", errors.size());
@@ -109,7 +109,7 @@ public class AiResponseSchemaValidator {
      */
     public record ValidationResult(boolean valid, List<ValidationError> errors) {
 
-        public static ValidationResult valid() {
+        public static ValidationResult success() {
             return new ValidationResult(true, List.of());
         }
 

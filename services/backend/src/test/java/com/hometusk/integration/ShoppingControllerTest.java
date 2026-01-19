@@ -43,12 +43,14 @@ class ShoppingControllerTest extends IntegrationTestBase {
         shoppingList = new ShoppingList(testHousehold, "Grocery List");
         shoppingList = shoppingListRepository.save(shoppingList);
 
-        item1 = new ShoppingItem(shoppingList, "Milk", 2, testUser);
+        item1 = new ShoppingItem(shoppingList, "Milk", testUser);
+        item1.setQuantity(2);
         item1.setUnit("liters");
         item1 = shoppingItemRepository.save(item1);
 
-        item2Purchased = new ShoppingItem(shoppingList, "Bread", 1, testUser);
-        item2Purchased.setPurchased(true);
+        item2Purchased = new ShoppingItem(shoppingList, "Bread", testUser);
+        item2Purchased.setQuantity(1);
+        item2Purchased.markPurchased();
         item2Purchased = shoppingItemRepository.save(item2Purchased);
     }
 

@@ -1,6 +1,7 @@
 package com.hometusk.commands.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hometusk.commands.domain.Command;
 import com.hometusk.commands.domain.CommandType;
@@ -112,8 +113,8 @@ public class CommandService {
         try {
             commandType = request.getCommandType();
         } catch (IllegalArgumentException e) {
-            throw new ValidationException(
-                    new ValidationException.ValidationError("$.type", "INVALID_TYPE", "Unknown command type", null));
+            throw new ValidationException(List.of(new ValidationException.ValidationError(
+                    "$.type", "INVALID_TYPE", "Unknown command type", request.type())));
         }
 
         // 3. Create Command entity (status=received)
@@ -204,11 +205,14 @@ public class CommandService {
         Map<String, Object> householdContext =
                 contextBuilder.buildHouseholdContextForAi(request.householdId(), correlationId);
 
+        Map<String, Object> payload =
+                objectMapper.convertValue(request.payload(), new TypeReference<Map<String, Object>>() {});
+
         return DecisionContext.builder()
                 .commandId(command.getId())
                 .correlationId(correlationId)
                 .commandType(command.getType())
-                .payload(request.payload())
+                .payload(payload)
                 .requesterId(requesterId)
                 .householdId(request.householdId())
                 .householdContext(householdContext)
@@ -442,6 +446,7 @@ public class CommandService {
                 decision.question(),
                 decision.requiredFields(),
                 decision.suggestions(),
+                null,
                 executionMs,
                 requester.getId());
     }

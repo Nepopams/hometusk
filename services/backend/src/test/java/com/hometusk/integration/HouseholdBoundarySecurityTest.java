@@ -61,13 +61,13 @@ class HouseholdBoundarySecurityTest extends IntegrationTestBase {
         otherZone = zoneRepository.save(otherZone);
 
         otherTask = new Task(otherHousehold, "Other Task", testUser2);
-        otherTask.setStatus(TaskStatus.OPEN);
         otherTask = taskRepository.save(otherTask);
 
         otherShoppingList = new ShoppingList(otherHousehold, "Other Shopping List");
         otherShoppingList = shoppingListRepository.save(otherShoppingList);
 
-        otherShoppingItem = new ShoppingItem(otherShoppingList, "Other Item", 1, testUser2);
+        otherShoppingItem = new ShoppingItem(otherShoppingList, "Other Item", testUser2);
+        otherShoppingItem.setQuantity(1);
         otherShoppingItem = shoppingItemRepository.save(otherShoppingItem);
     }
 

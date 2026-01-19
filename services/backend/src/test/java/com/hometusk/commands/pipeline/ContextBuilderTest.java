@@ -6,15 +6,18 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import com.hometusk.commands.pipeline.guardrails.HouseholdSnapshot;
+import com.hometusk.commands.pipeline.guardrails.GuardrailsConfig;
 import com.hometusk.households.domain.Household;
 import com.hometusk.households.domain.Zone;
 import com.hometusk.households.repository.ZoneRepository;
+import com.hometusk.shopping.repository.ShoppingListRepository;
 import com.hometusk.tasks.domain.TaskStatus;
 import com.hometusk.tasks.repository.TaskRepository;
 import com.hometusk.users.domain.Membership;
 import com.hometusk.users.domain.MembershipRole;
 import com.hometusk.users.domain.User;
 import com.hometusk.users.repository.MembershipRepository;
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,7 +40,12 @@ class ContextBuilderTest {
     @Mock
     private TaskRepository taskRepository;
 
+    @Mock
+    private ShoppingListRepository shoppingListRepository;
+
     private ContextBuilder contextBuilder;
+
+    private GuardrailsConfig guardrailsConfig;
 
     private UUID householdId;
     private UUID correlationId;
@@ -45,7 +53,9 @@ class ContextBuilderTest {
 
     @BeforeEach
     void setUp() {
-        contextBuilder = new ContextBuilder(membershipRepository, zoneRepository, taskRepository);
+        guardrailsConfig = new GuardrailsConfig();
+        contextBuilder = new ContextBuilder(
+                membershipRepository, zoneRepository, taskRepository, shoppingListRepository, guardrailsConfig);
         householdId = UUID.randomUUID();
         correlationId = UUID.randomUUID();
         household = new Household("Test Household");
@@ -66,6 +76,8 @@ class ContextBuilderTest {
 
             Zone kitchen = new Zone(household, "Kitchen");
             Zone bathroom = new Zone(household, "Bathroom");
+            setZoneId(kitchen, UUID.randomUUID());
+            setZoneId(bathroom, UUID.randomUUID());
 
             when(membershipRepository.findByHouseholdId(householdId)).thenReturn(List.of(membership1, membership2));
             when(zoneRepository.findByHouseholdId(householdId)).thenReturn(List.of(kitchen, bathroom));
@@ -165,9 +177,11 @@ class ContextBuilderTest {
             User user = createUser("user@test.com", "Alice");
             Membership membership = new Membership(user, household, MembershipRole.member);
             Zone kitchen = new Zone(household, "Kitchen");
+            setZoneId(kitchen, UUID.randomUUID());
 
             when(membershipRepository.findByHouseholdId(householdId)).thenReturn(List.of(membership));
             when(zoneRepository.findByHouseholdId(householdId)).thenReturn(List.of(kitchen));
+            when(shoppingListRepository.findByHouseholdIdOrderByCreatedAtDesc(householdId)).thenReturn(List.of());
 
             // When
             var context = contextBuilder.buildHouseholdContextForAi(householdId, correlationId);
@@ -202,6 +216,7 @@ class ContextBuilderTest {
 
             when(membershipRepository.findByHouseholdId(householdId)).thenReturn(List.of(membership));
             when(zoneRepository.findByHouseholdId(householdId)).thenReturn(List.of());
+            when(shoppingListRepository.findByHouseholdIdOrderByCreatedAtDesc(householdId)).thenReturn(List.of());
 
             // When
             var context = contextBuilder.buildHouseholdContextForAi(householdId, correlationId);
@@ -213,6 +228,28 @@ class ContextBuilderTest {
     }
 
     private User createUser(String email, String name) {
-        return new User(UUID.randomUUID().toString(), email, name);
+        User user = new User(UUID.randomUUID().toString(), email, name);
+        setUserId(user, UUID.randomUUID());
+        return user;
+    }
+
+    private void setUserId(User user, UUID id) {
+        try {
+            Field idField = User.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(user, id);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Failed to set user id for tests", e);
+        }
+    }
+
+    private void setZoneId(Zone zone, UUID id) {
+        try {
+            Field idField = Zone.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(zone, id);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Failed to set zone id for tests", e);
+        }
     }
 }

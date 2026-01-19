@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import com.github.tomakehurst.wiremock.client.WireMock;
 import com.hometusk.commands.repository.CommandRepository;
 import com.hometusk.commands.repository.DecisionLogRepository;
 import com.hometusk.households.domain.Zone;
@@ -482,7 +483,7 @@ class Stage4GuardrailsIntegrationTest extends AiPlatformIntegrationTestBase {
                 """
                         .formatted(UUID.randomUUID(), title, assigneeId, deadline);
 
-        stubFor(post(urlEqualTo("/decision"))
+        stubFor(WireMock.post(urlEqualTo("/decision"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -512,7 +513,7 @@ class Stage4GuardrailsIntegrationTest extends AiPlatformIntegrationTestBase {
                 """
                         .formatted(UUID.randomUUID(), title, zoneId);
 
-        stubFor(post(urlEqualTo("/decision"))
+        stubFor(WireMock.post(urlEqualTo("/decision"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -544,7 +545,7 @@ class Stage4GuardrailsIntegrationTest extends AiPlatformIntegrationTestBase {
                 """
                         .formatted(UUID.randomUUID(), title, assigneeId, zoneId, deadline);
 
-        stubFor(post(urlEqualTo("/decision"))
+        stubFor(WireMock.post(urlEqualTo("/decision"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")

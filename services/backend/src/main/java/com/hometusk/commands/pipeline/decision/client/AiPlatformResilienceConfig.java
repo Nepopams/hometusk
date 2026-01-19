@@ -2,7 +2,7 @@ package com.hometusk.commands.pipeline.decision.client;
 
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
-import io.github.resilience4j.retry.IntervalFunction;
+import io.github.resilience4j.core.IntervalFunction;
 import io.github.resilience4j.retry.RetryConfig;
 import io.github.resilience4j.retry.RetryRegistry;
 import java.time.Duration;

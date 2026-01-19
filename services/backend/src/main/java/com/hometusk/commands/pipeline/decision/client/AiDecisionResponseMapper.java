@@ -71,7 +71,7 @@ public class AiDecisionResponseMapper {
         };
     }
 
-    private DecisionResult.StartJob mapToStartJob(AiDecisionResponse response, String rawPayload) {
+    private DecisionResult mapToStartJob(AiDecisionResponse response, String rawPayload) {
         // Filter to only supported action types, return Clarify if any unsupported
         if (response.actions() != null && hasUnsupportedActions(response.actions())) {
             log.warn("start_job contains unsupported action types, filtering: decisionId={}",

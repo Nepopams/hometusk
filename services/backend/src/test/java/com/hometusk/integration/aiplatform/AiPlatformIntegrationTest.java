@@ -280,7 +280,7 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
         void returnsNeedsInputOnGuardrailsClarify() throws Exception {
             // Given: Create 10 tasks for testUser to hit MaxOpenTasks limit
             for (int i = 0; i < 10; i++) {
-                Task task = new Task(testHousehold, "Task " + i);
+                Task task = new Task(testHousehold, "Task " + i, testUser);
                 task.setAssignee(testUser);
                 taskRepository.save(task);
             }
@@ -425,7 +425,7 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
         void adapterToGuardrailsFlow() throws Exception {
             // Given: Create 10 tasks for testUser to trigger guardrails
             for (int i = 0; i < 10; i++) {
-                Task task = new Task(testHousehold, "Existing Task " + i);
+                Task task = new Task(testHousehold, "Existing Task " + i, testUser);
                 task.setAssignee(testUser);
                 taskRepository.save(task);
             }

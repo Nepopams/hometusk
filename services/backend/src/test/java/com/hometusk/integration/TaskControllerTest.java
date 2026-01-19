@@ -47,18 +47,17 @@ class TaskControllerTest extends IntegrationTestBase {
 
         // Create tasks
         task1 = new Task(testHousehold, "Task 1 - Open", testUser);
-        task1.setStatus(TaskStatus.OPEN);
         task1.setAssignee(testUser);
         task1.setZone(testZone);
         task1 = taskRepository.save(task1);
 
         task2 = new Task(testHousehold, "Task 2 - In Progress", testUser);
-        task2.setStatus(TaskStatus.IN_PROGRESS);
+        task2.start();
         task2.setAssignee(testUser2);
         task2 = taskRepository.save(task2);
 
         task3 = new Task(testHousehold, "Task 3 - Done", testUser);
-        task3.setStatus(TaskStatus.DONE);
+        task3.complete();
         task3.setAssignee(testUser);
         task3.setZone(testZone);
         task3 = taskRepository.save(task3);
@@ -67,7 +66,8 @@ class TaskControllerTest extends IntegrationTestBase {
         shoppingList = new ShoppingList(testHousehold, "Default");
         shoppingList = shoppingListRepository.save(shoppingList);
 
-        linkedItem = new ShoppingItem(shoppingList, "Linked Item", 2, testUser);
+        linkedItem = new ShoppingItem(shoppingList, "Linked Item", testUser);
+        linkedItem.setQuantity(2);
         linkedItem.setLinkedTask(task1);
         linkedItem = shoppingItemRepository.save(linkedItem);
     }

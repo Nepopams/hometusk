@@ -1,6 +1,6 @@
 package com.hometusk.commands.pipeline.guardrails;
 
-import com.hometusk.commands.pipeline.decision.DecisionResult.ProposedAction;
+import com.hometusk.commands.pipeline.decision.DecisionResult.StartJob.ProposedAction;
 import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
