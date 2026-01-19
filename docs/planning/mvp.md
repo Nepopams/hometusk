@@ -1,57 +1,68 @@
-# MVP Scope
+# MVP: Hometusk (API-first) — Объём и критерии выхода
 
-## What This MVP Validates
+## Что этот MVP проверяет
+Пользователь может создавать и назначать домашние задачи через текстовую “естественную” команду, не изучая структурный интерфейс.
+Дополнительно:
+- работает связка «задача ↔ покупки» end-to-end,
+- домохозяйство можно “шарить” через инвайты,
+- система остаётся пригодной при недоступности AI Platform (degraded mode).
 
-> Users can create and assign household tasks by typing natural language, without learning a structured interface.
+## В объёме (In Scope)
+- Ввод команд текстом (API-first): `POST /api/v1/commands`
+- MVP-набор интентов:
+  - создать задачу
+  - обновить статус задачи
+  - добавить позиции в список покупок
+  - отметить купленным
+- Зоны внутри домохозяйства (household-scoped zones)
+- Назначение исполнителя по простым политикам (без обещаний “умной доступности”)
+- Жизненный цикл задачи (минимально): created → assigned → in_progress → completed
+- Общий список покупок на домохозяйство + жизненный цикл позиции: added → purchased
+- Связка «задача ↔ покупки» (задача может ссылаться на позиции покупок)
+- Приглашения в домохозяйство (одноразовые токены): create invite → accept → membership created
+- In-app уведомления (хранение в БД) + API list/mark read (без внешней доставки)
+- Трассируемость команд: DecisionLog + correlationId на каждую команду
+- Degraded mode при недоступности AI Platform (детерминированное поведение)
+- Guardrails до выполнения: membership enforcement, household-scoped lookups и т.п.
+- Надёжность команд:
+  - идемпотентность через Idempotency-Key (replay safe)
+  - таймауты/ретраи/circuit на AI-клиенте
 
-## In Scope
+## Вне объёма (Non-goals)
+- Голосовой ввод
+- Мобильное приложение
+- Push/email/SMS уведомления
+- Realtime (WebSocket/SSE)
+- Сложное планирование (повторы, зависимости, календарь)
+- Шаблоны задач / rules engine
+- Интеграции с внешними календарями
+- Вложения (фото/файлы)
+- Расширенный RBAC/роли
+- Брокеры/аутбокс/eventing “как в энтерпрайзе” (в MVP всё синхронно и транзакционно)
 
-- [ ] Natural language command input via text
-- [ ] Intent recognition (create task, assign task, update status)
-- [ ] Zone-based task organization
-- [ ] Automatic assignee selection based on availability
-- [ ] Task lifecycle: created → assigned → in_progress → completed
-- [ ] Command traceability (DecisionLog for every command)
-- [ ] Degraded mode (fallback when AI unavailable)
+## Критерии выхода MVP (Exit Criteria)
 
-## Out of Scope (Non-Goals)
+### Must-have
+1) Команда отправляется через API (`POST /api/v1/commands`) и возвращает бизнес-статус (без “падаем 500” на бизнес-сценариях)
+2) Интенты приводят к корректным изменениям доменных объектов (минимум: create task + update status; add/purchase shopping; task↔shopping link)
+3) Создание задачи: корректный household scope + zone + assignee policy
+4) Решение/исполнение трассируются (DecisionLog + correlationId; сохраняем внешние payload где применимо)
+5) При недоступности AI Platform система ведёт себя детерминированно (degraded mode)
+6) Идемпотентность `/commands`:
+   - одинаковый Idempotency-Key + одинаковый payload → возвращаем сохранённый ответ
+   - одинаковый Idempotency-Key + другой payload → конфликт (явный)
+7) Инвайты: create + accept → membership; expired/redeemed/revoked обрабатываются явно (в т.ч. 410 Gone по контракту)
+8) In-app уведомления: list + mark read; события по ключевым MVP-операциям
+9) Все публичные эндпоинты описаны в OpenAPI и соответствуют реализации
+10) Интеграционные тесты покрывают: happy path + degraded + idempotency + границы домохозяйства (no leaks)
 
-- Voice input (Stage 3+)
-- Mobile app (Stage 3+)
-- Push notifications (Stage 3)
-- Multi-household switching in UI (Stage 2+)
-- Advanced scheduling (recurring tasks, dependencies)
-- Task templates or automation
-- Integration with external calendars
-- Rich media attachments
+### Метрики (ориентиры)
+- 80%+ корректности распознавания на курируемом наборе команд (ручная валидация)
+- p95 latency:
+  - degraded: < 2s
+  - AI path: целевой < 5s (фактические цифры фиксируем в Exit Review)
+- 100% трассируемость команд (каждый `/commands` → DecisionLog)
+- 0 cross-household leaks (негативные тесты + ревью точек enforcement)
 
-## MVP Exit Criteria
-
-### Must Have
-1. User can submit command via API: `POST /api/v1/commands`
-2. System resolves intent and creates task with correct zone and assignee
-3. Command decision is logged and traceable
-4. System works with AI timeout (degraded mode)
-5. All endpoints documented in OpenAPI contract
-6. Integration tests cover happy path + degraded mode
-
-### Success Metrics
-- 80%+ intent recognition accuracy (manual validation)
-- < 2s p95 response time for command processing
-- 100% command traceability (every command → DecisionLog entry)
-- Zero cross-household data leaks (verified by security-reviewer)
-
-## Milestones (Optional)
-
-*(To be filled if project follows PI/Sprint cadence)*
-
-## Glossary
-
-| Term | Definition |
-|------|------------|
-| Command | Natural language input from user (e.g., "Clean kitchen tonight") |
-| Intent | Structured interpretation of command (e.g., `create_task`) |
-| Zone | Location tag within household (e.g., kitchen, bedroom) |
-| DecisionLog | Audit trail of AI decision-making process |
-| Degraded mode | Fallback behavior when AI Platform unavailable |
-| Household | Container entity; all data scoped to household |
+## Глоссарий
+(можно оставить как есть, переведя термины по месту)
