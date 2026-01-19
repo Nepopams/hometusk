@@ -1,73 +1,94 @@
 # PI Roadmap: 2026Q1-PI01
 
-## Sprint Overview
+## Iteration Overview
 
-| Sprint | Goal | Stories |
-|--------|------|---------|
-| S01 | Feature completion + Accuracy validation | ST-001, ST-002 |
-| S02 | Performance validation + MVP closure | ST-003, ST-004 |
-
----
-
-## Sprint 1 (S01): Feature & Accuracy
-
-**Sprint Goal:** Complete availability heuristic and validate intent accuracy
-
-### Stories
-
-| ID | Title | Points | Priority |
-|----|-------|--------|----------|
-| ST-001 | Implement simple availability-based assignee selection | 3 | P1 |
-| ST-002 | Validate intent recognition accuracy (80%+ target) | 2 | P1 |
-
-### Deliverables
-- Working availability heuristic in DecisionEngine
-- Intent accuracy test results documented
-- Updated integration tests
+| Iteration | Goal | Stories | Blocker? |
+|-----------|------|---------|----------|
+| **Iter-2a** | Unblock + Clarification Loop | ST-101, ST-102 | Yes |
+| **Iter-2b** | Scope decision + Validation + Closure | ST-103, ST-104, ST-105 | No |
 
 ---
 
-## Sprint 2 (S02): Performance & Closure
+## Iteration 2a: Unblock & Core Loop
 
-**Sprint Goal:** Validate performance and close MVP
+**Iteration Goal:** Enable test execution and complete clarification loop.
 
 ### Stories
 
-| ID | Title | Points | Priority |
-|----|-------|--------|----------|
-| ST-003 | Validate response time performance (< 2s p95) | 2 | P1 |
-| ST-004 | MVP closure documentation | 1 | P1 |
+| ID | Title | Points | Priority | DoR |
+|----|-------|--------|----------|-----|
+| ST-101 | Setup JDK/CI environment | 1 | P0 (BLOCKER) | Ready |
+| ST-102 | Implement command continuation endpoint | 3 | P0 (CRITICAL) | Ready |
 
 ### Deliverables
-- Performance test results documented
-- Updated `docs/planning/mvp.md` with all items checked
+- Working test environment
+- `POST /commands/{id}/continue` endpoint
+- Updated OpenAPI contract
+- Integration test for full clarification flow
+
+### Exit Gate
+- [ ] `./scripts/test.sh` runs
+- [ ] Clarification loop test passes
+
+---
+
+## Iteration 2b: Validation & Closure
+
+**Iteration Goal:** Complete scope decisions and close MVP.
+
+### Stories
+
+| ID | Title | Points | Priority | DoR |
+|----|-------|--------|----------|-----|
+| ST-103 | Decide start_task scope | 1 | P1 | Ready |
+| ST-104 | (Conditional) Implement start_task | 2 | P2 | Blocked by ST-103 |
+| ST-105 | MVP validation & closure | 2 | P1 | Blocked by ST-101, ST-102 |
+
+### Deliverables
+- Scope decision documented
+- (If needed) start_task command
+- All tests passing
 - MVP Closure Report
 
----
-
-## Timeline
-
-```
-Week 1-2: Sprint 1
-  - ST-001: Availability heuristic
-  - ST-002: Accuracy validation
-
-Week 3-4: Sprint 2
-  - ST-003: Performance validation
-  - ST-004: MVP closure docs
-```
+### Exit Gate
+- [ ] All exit criteria verified
+- [ ] Human approval for MVP closure
 
 ---
 
-## Dependencies Between Stories
+## Dependencies Graph
 
 ```
-ST-001 (availability) ──┐
-                        ├──> ST-004 (MVP closure)
-ST-002 (accuracy) ──────┤
-                        │
-ST-003 (performance) ───┘
+ST-101 (JDK setup) ─────────────┐
+                                ├──> ST-105 (Validation & Closure)
+ST-102 (Continuation endpoint) ─┘
+
+ST-103 (start_task decision) ──> ST-104 (implement, conditional)
+                                      │
+                                      └──> ST-105
 ```
 
-ST-001, ST-002, ST-003 can run in parallel.
-ST-004 depends on all validation stories being complete.
+---
+
+## Timeline (No Dates, Just Sequence)
+
+```
+Week 1:
+  ├─ ST-101: JDK setup (parallel)
+  └─ ST-102: Continuation endpoint (main work)
+
+Week 2:
+  ├─ ST-103: start_task decision (quick)
+  ├─ ST-104: start_task implementation (if decided yes)
+  └─ ST-105: Validation & closure
+```
+
+---
+
+## Risk Mitigation
+
+| Risk | Mitigation |
+|------|------------|
+| JDK setup fails | Document exact steps, fallback to Docker |
+| Continuation endpoint complex | Keep minimal: just resume with new input |
+| start_task delays MVP | Scope it out if decision is "defer" |

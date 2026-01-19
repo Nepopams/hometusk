@@ -4,49 +4,45 @@
 
 | Role | Allocation | Notes |
 |------|------------|-------|
-| Claude Code (Arch/BA) | Analysis & artifacts | Produces workpacks, prompt packs |
-| Codex (Dev) | Implementation | Executes workpacks |
-| Human (PO) | Approvals | Human gates |
+| Human | Environment setup, gates | Part-time, gates only |
+| Claude Code | Artifacts, workpacks | On-demand |
+| Codex | Implementation | Per workpack |
 
 ---
 
 ## Story Point Budget
 
-| Sprint | Available Points | Committed | Buffer |
-|--------|------------------|-----------|--------|
-| S01 | 8 | 5 (ST-001: 3, ST-002: 2) | 3 |
-| S02 | 8 | 3 (ST-003: 2, ST-004: 1) | 5 |
-| **Total** | **16** | **8** | **8 (50%)** |
+| Iteration | Available | Committed | Buffer |
+|-----------|-----------|-----------|--------|
+| Iter-2a | 6 | 4 (ST-101: 1, ST-102: 3) | 2 (33%) |
+| Iter-2b | 6 | 5 (ST-103: 1, ST-104: 2, ST-105: 2) | 1 (17%) |
+| **Total** | **12** | **9** | **3 (25%)** |
+
+Note: ST-104 is conditional. If "defer", budget frees up.
 
 ---
 
 ## Capacity Assumptions
 
-1. **Codex execution time:** Each story can be completed within 1-2 Codex sessions
-2. **Human availability:** Timely approvals for human gates
-3. **No blockers:** Test infrastructure is ready, no external dependencies
-
----
-
-## Buffer Allocation
-
-50% buffer is intentional for:
-- Unexpected issues during validation
-- Human gate delays
-- Rework if validation fails targets
-
----
-
-## Risk-Adjusted Capacity
-
-| Scenario | Points Used | Outcome |
-|----------|-------------|---------|
-| Best case | 8 | MVP closed in 2 sprints |
-| Likely case | 10-12 | Minor rework needed |
-| Worst case | 16 | Significant validation failures require fixes |
+1. **JDK setup:** 1 Codex session or human manual setup
+2. **Continuation endpoint:** 2-3 Codex sessions (design + implement + test)
+3. **start_task (if yes):** 1-2 Codex sessions (similar to complete_task)
+4. **Validation:** Manual verification + test runs
+5. **Human availability:** Timely gates (< 24h turnaround)
 
 ---
 
 ## Velocity Baseline
 
-This is the first PI with structured tracking. Baseline velocity will be established after S01 completion.
+No historical velocity. This PI establishes baseline.
+
+Expected throughput: 4-5 SP per iteration.
+
+---
+
+## Buffer Allocation
+
+25% buffer for:
+- Environment issues
+- Test failures requiring fixes
+- Rework from review feedback

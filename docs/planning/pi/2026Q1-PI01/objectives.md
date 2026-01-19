@@ -1,65 +1,79 @@
 # PI Objectives: 2026Q1-PI01
 
-## Objective 1: Complete MVP Feature Gap
+## Objective 1: Unblock Test Execution (BLOCKER)
 
-**Description:** Implement simple availability-based assignee selection
+**Description:** Setup JDK/CI to enable running integration tests.
 
 **Key Results:**
-- [ ] Heuristic implemented: "assign to member with minimum open tasks"
-- [ ] Unit tests cover edge cases (all members equal, single member, etc.)
-- [ ] Integration test verifies auto-assignment behavior
-- [ ] DecisionEngine updated without breaking existing behavior
+- [ ] JDK 21 available (`java -version` works)
+- [ ] `./scripts/test.sh` runs without environment errors
+- [ ] All existing tests execute (pass/fail determined)
 
-**Acceptance:** When no assigneeId provided, system assigns to household member with fewest open tasks (deterministic).
+**Acceptance:** `./gradlew test` completes with test results.
+
+**Reference:** Gap Analysis GAP-1
 
 ---
 
-## Objective 2: Validate Intent Recognition Accuracy
+## Objective 2: Complete Clarification Loop (CRITICAL)
 
-**Description:** Verify MVP success metric: 80%+ intent recognition accuracy
+**Description:** Implement endpoint to continue NEEDS_INPUT commands with user-provided input.
 
 **Key Results:**
-- [ ] Test dataset created (minimum 50 sample commands)
-- [ ] Accuracy measurement script/test implemented
-- [ ] Results documented (actual % vs 80% target)
-- [ ] If below 80%, root cause identified
+- [ ] `POST /api/v1/commands/{commandId}/continue` endpoint exists
+- [ ] Endpoint accepts additional input and resumes processing
+- [ ] Resumed command can reach `executed` status
+- [ ] OpenAPI contract updated
+- [ ] Integration test covers full flow: command → needs_input → continue → executed
 
-**Acceptance:** Documented evidence that intent recognition meets or exceeds 80% accuracy threshold.
+**Acceptance:** User can answer clarification questions and complete commands.
+
+**Reference:**
+- Gap Analysis GAP-2
+- ADR-004 (AI Platform clarify flow)
+- ADR-005 (Guardrails clarification)
 
 ---
 
-## Objective 3: Validate Response Time Performance
+## Objective 3: Resolve start_task Scope (DECISION)
 
-**Description:** Verify MVP success metric: < 2s p95 response time
+**Description:** Decide if `start_task` command (→ IN_PROGRESS) is required for MVP exit.
+
+**Options:**
+1. **Clarify MVP:** "обновить статус" = only `complete_task`. Defer start_task to post-MVP.
+2. **Implement:** Add `start_task` command type to complete task lifecycle.
 
 **Key Results:**
-- [ ] Performance test scenario created
-- [ ] p95 response time measured under realistic load
-- [ ] Results documented
-- [ ] If above 2s, bottlenecks identified
+- [ ] Decision documented (in this PI or ADR-lite)
+- [ ] If implement: story added to backlog
 
-**Acceptance:** Documented evidence that p95 response time is under 2 seconds.
+**Acceptance:** Clear scope boundary for exit review.
+
+**Reference:** Gap Analysis GAP-3, MVP.md line 14
 
 ---
 
-## Objective 4: MVP Documentation Closure
+## Objective 4: Validate & Close MVP
 
-**Description:** Update MVP documentation to reflect completion status
+**Description:** Run all tests, validate metrics, produce closure report.
 
 **Key Results:**
+- [ ] All integration tests pass
+- [ ] Traceability verified (100% commands → DecisionLog)
+- [ ] Security verified (0 cross-household leaks)
 - [ ] `docs/planning/mvp.md` checkboxes updated
-- [ ] MVP Closure Report created with validation results
-- [ ] Scope clarifications documented
+- [ ] `docs/planning/mvp-closure-report.md` produced
 
-**Acceptance:** MVP.md shows all items checked, closure report exists.
+**Acceptance:** Exit review can proceed.
 
 ---
 
-## Success Metrics Summary
+## Success Metrics (from MVP.md)
 
-| Metric | Target | How Measured |
-|--------|--------|--------------|
-| Intent recognition accuracy | 80%+ | Test dataset validation |
-| Response time p95 | < 2s | Performance test |
-| Command traceability | 100% | Existing DecisionLog verification |
-| Cross-household security | 0 leaks | Existing security tests |
+| Metric | Target | Validation Method |
+|--------|--------|-------------------|
+| Intent accuracy | 80%+ | Manual test dataset |
+| p95 latency (degraded) | < 2s | Test timing |
+| p95 latency (AI path) | < 5s | Test timing |
+| Traceability | 100% | DecisionLog query |
+| Security | 0 leaks | HouseholdBoundarySecurityTest |

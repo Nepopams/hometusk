@@ -2,16 +2,17 @@
 
 ## Risk Register
 
-| ID | Risk | Likelihood | Impact | Status | Mitigation |
-|----|------|------------|--------|--------|------------|
-| R1 | Intent accuracy below 80% | Low | Medium | ACCEPTED | Current implementation is rule-based (100% deterministic for supported commands). Risk is minimal. |
-| R2 | Performance p95 above 2s | Low | Medium | ACCEPTED | Current codebase is straightforward Spring Boot. No known performance issues. |
-| R3 | Availability heuristic introduces regression | Medium | Low | MITIGATED | Existing tests provide safety net. New tests required. |
-| R4 | Scope creep during MVP closure | Low | Medium | OWNED | Human gates enforce scope boundaries. |
+| ID | Risk | L | I | Status | Owner | Mitigation |
+|----|------|---|---|--------|-------|------------|
+| R1 | JDK/CI setup fails | M | H | **OWNED** | Human | Docker fallback, document exact steps |
+| R2 | Continuation endpoint breaks idempotency | L | H | **MITIGATED** | Claude/Codex | Review ADR-012, preserve idempotency semantics |
+| R3 | start_task decision delays exit | M | M | **OWNED** | PO | Make decision early in Iter-2b |
+| R4 | Tests fail after long time not running | M | M | **ACCEPTED** | — | Fix as discovered, small scope |
+| R5 | Scope creep during closure | L | M | **MITIGATED** | Claude | Strict adherence to mvp.md |
 
 ---
 
-## ROAM Status Definitions
+## ROAM Definitions
 
 | Status | Meaning |
 |--------|---------|
@@ -24,45 +25,77 @@
 
 ## Risk Details
 
-### R1: Intent Accuracy Below 80%
+### R1: JDK/CI Setup Fails
 
-**Description:** MVP success metric requires 80%+ intent recognition accuracy.
+**Description:** Environment may have issues preventing JDK installation.
 
-**Analysis:** Current implementation uses rule-based decision engine (not AI). For supported command types (create_task, complete_task), accuracy is 100% deterministic. Risk applies only if testing reveals edge cases.
-
-**Mitigation:** If accuracy issues found, document specific failure cases for Stage 2 improvement.
-
----
-
-### R2: Performance p95 Above 2s
-
-**Description:** MVP success metric requires < 2s p95 response time.
-
-**Analysis:** Command pipeline is straightforward: validation → decision → action → log. No external calls in manual mode. With AI Platform, external call is the main latency source (handled by fallback).
-
-**Mitigation:** If performance issues found, profile and document bottlenecks. Fallback mode already provides degraded-but-fast path.
-
----
-
-### R3: Availability Heuristic Regression
-
-**Description:** Adding availability logic to DecisionEngine could break existing behavior.
-
-**Analysis:** DecisionEngine is well-tested. Change is additive (new logic when assignee not specified).
+**Likelihood:** Medium (unknown environment state)
+**Impact:** High (blocks all testing)
 
 **Mitigation:**
-- Keep existing "default to initiator" as fallback
-- Add unit tests for new heuristic
-- Integration test for auto-assignment scenario
+1. Document exact installation steps for Ubuntu/macOS
+2. Provide Docker-based fallback: `docker run gradle:jdk21`
+3. Test in isolated environment first
+
+**Owner:** Human (environment access)
 
 ---
 
-### R4: Scope Creep
+### R2: Continuation Endpoint Breaks Idempotency
 
-**Description:** Additional features requested during MVP closure.
+**Description:** New `/continue` endpoint may conflict with idempotency semantics.
 
-**Analysis:** Human gates are in place. Scope is defined in this PI charter.
+**Likelihood:** Low (careful design)
+**Impact:** High (replay safety compromised)
 
 **Mitigation:**
-- Refer new requests to Stage 2+ backlog
-- Human gate approval required for any scope changes
+1. Review ADR-012 before implementation
+2. Continuation uses commandId, not new Idempotency-Key
+3. Original command's idempotency key still protects initial request
+4. Test both paths in integration test
+
+**Reference:** ADR-012 section on "Command Continuation"
+
+---
+
+### R3: start_task Decision Delays Exit
+
+**Description:** Lengthy debate on whether start_task is MVP-required.
+
+**Likelihood:** Medium
+**Impact:** Medium (delays Iter-2b)
+
+**Mitigation:**
+1. Make decision at start of Iter-2b, not end
+2. Default to "defer" if no strong product requirement
+3. Document decision clearly for future reference
+
+**Owner:** Product Owner
+
+---
+
+### R4: Tests Fail After Long Time
+
+**Description:** Tests may fail due to accumulated drift or environment changes.
+
+**Likelihood:** Medium
+**Impact:** Medium (debugging time)
+
+**Mitigation:**
+1. Accept as normal
+2. Fix issues as discovered
+3. Small iteration scope allows focus
+
+---
+
+### R5: Scope Creep During Closure
+
+**Description:** Temptation to add "one more feature" during MVP closure.
+
+**Likelihood:** Low (discipline enforced)
+**Impact:** Medium (delays exit)
+
+**Mitigation:**
+1. Strict adherence to mvp.md scope
+2. Human gates enforce boundaries
+3. New requests → backlog for post-MVP

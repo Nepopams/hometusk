@@ -165,6 +165,12 @@ Project subagents live in: `.claude/agents/*.md` (YAML frontmatter + prompt).
 
 ---
 
+## Planning guardrails
+Все planning-артефакты должны соответствовать правилам: `.claude/rules/planning.md`.
+Шаблоны: `docs/planning/_templates/`.
+
+---
+
 ## Codex handoff policy (non-negotiables)
 Codex is fast but must be constrained.
 
