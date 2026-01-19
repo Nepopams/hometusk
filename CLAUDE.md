@@ -1,388 +1,208 @@
-# HomeTusk Development Guide
-
-This document provides context and rules for AI-assisted development on this project.
-
----
-
-## What This Project Is
-
-**HomeTusk** is an AI-coordinated home task manager.
-
-- **NOT** a todo app
-- **NOT** a chatbot
-- **NOT** a smart speaker clone
-
-It is an intelligent coordinator that converts natural-language commands into household actions.
-
-**Core value proposition:**
-> Natural language commands → structured decisions → real domain actions.
-
----
-
-<!-- VIBE-KIT:BEGIN -->
-# Claude Arch/BA Kit (Project Overlay)
+# CLAUDE.md — Hometusk + AI Platform delivery pipeline (Claude=Arch/BA, Codex=Dev)
 
 ## Mission
-- **Claude Code** = analytics/architecture/planning/artifacts
-- **Codex** = implementation by workpack + tests + minimal diff
-- **Human** = gates and final "GO/NO-GO"
+This repo is developed via a controlled “vibe-coding” pipeline:
+- **Claude Code = Analysis & Architecture department** (triage → planning → decomposition → artifacts).
+- **Codex = Development department** (implementation + tests + docs-as-code).
+- **Human = Product owner & final gate** (approve decisions, plans, scope, and merges).
 
-## Source of Truth Map
-- **MVP**: `docs/planning/mvp.md`
-- **DoR**: `docs/_governance/dor.md`
-- **DoD**: `docs/_governance/dod.md`
-- **Epics/Stories**: `docs/planning/epics/**`
-- **Workpacks**: `docs/planning/workpacks/**`
-- **Contracts**: `docs/contracts/**`
-- **ADR**: `docs/adr/**` (also `docs/architecture/decisions/` for existing ADRs)
-- **Diagrams**: `docs/diagrams/**` (also `docs/architecture/diagrams/` for existing diagrams)
-- **Indexes**: `docs/_indexes/**`
-
-## Pipeline (High Level)
-0. **Triage** → 1. **PI Planning** (optional) → 2. **Sprint Planning** → 3. **Epic Decomposition**
-→ 4. **Conditional Artifacts** (contracts/ADR/diagrams) → 5. **Workpack Creation**
-→ 6. **Codex Prompt Pack** (PLAN/APPLY) → 7. **Codex Implementation** → 8. **Review Gate** → 9. **Human Merge Gate**
-
-## Non-Negotiables
-- **DoR gate** before workpack creation
-- **Contract-first** for integration surfaces (run `contract-writer` agent)
-- **ADR only** for architecture-significant decisions (run `adr-designer` agent)
-- **Diagrams only** when structure/flow changes (run `diagram-steward` agent)
-- **Small batches**, minimal diff, **STOP-THE-LINE** when scope deviates
-
-## Imports (Keep CLAUDE.md Slim)
-- @docs/planning/mvp.md
-- @docs/_governance/dor.md
-- @docs/_governance/dod.md
-<!-- VIBE-KIT:END -->
+Primary objective: **close MVP in small batches with strong governance**:
+- explicit scope boundaries,
+- contract-first for integrations,
+- decision log (ADR) only when architecture-significant,
+- diagrams as code only when structural/flow changes matter,
+- pre-merge review gate.
 
 ---
 
-## MVP Goal
+## Source of truth (always anchor)
+Project truth lives in repo artifacts. Claude must reference files, not “memory”.
 
-Validate one key hypothesis:
+### Planning
+- MVP scope: `docs/planning/mvp.md`
+- PI plans: `docs/planning/pi/<PI_ID>/`
+- Epics & stories: `docs/planning/epics/<EPIC_ID>/`
+- Work packages (delivery plans): `docs/planning/workpacks/<STORY_ID>/`
 
-> Users can create and assign household tasks by typing natural language, without learning a structured interface.
+### Governance
+- DoR (Definition of Ready): `docs/_governance/dor.md`
+- DoD (Definition of Done): `docs/_governance/dod.md`
 
-### Example Flow
+### Contracts / Decisions / Diagrams
+- Contracts (API/DTO/events): `docs/contracts/**`
+- ADR decision log: `docs/adr/**`
+- Diagrams as code (PlantUML): `docs/diagrams/**`
 
-**Input:** "Убрать кухню сегодня вечером"
-
-**Processing:**
-1. Intent: clean
-2. Zone: kitchen
-3. Deadline: today evening (18:00–22:00)
-4. Decision: assign to Maria (highest availability score)
-
-**Output:**
-- `TaskCreated` event
-- `TaskAssigned` event
-- Push notification to assignee
-
----
-
-## Architectural Rules
-
-These rules **must never be violated**. They are invariants of the system.
-
-### 1. AI is a decision engine, not source of truth
-
-- AI output **must** be schema-validated before use
-- Business rules are enforced in code, not in prompts
-- If AI returns invalid data, reject it — do not auto-fix
-
-### 2. Intent-driven API
-
-- Users submit **commands**, not CRUD operations
-- Endpoint: `POST /api/v1/commands` (not `POST /tasks`)
-- Commands are first-class entities with their own lifecycle
-
-### 3. Command traceability is mandatory
-
-Every command must be traceable:
-```
-input → intent → context → decision → action
-```
-
-- Store `DecisionLog` for every command
-- Include confidence scores, alternatives considered
-- Enable replay and debugging
-
-### 4. Degraded mode is required
-
-- System **must** work if AI is unavailable
-- Use heuristics as fallback (e.g., assign to initiator)
-- Never hard-fail on LLM timeout
-- Log degraded decisions for later analysis
-
-### 5. Domain invariants over prompts
-
-Prompts may evolve. Domain rules must remain stable.
-
-**Always validate in code:**
-- Assignee belongs to the household
-- Zone exists in the household
-- Deadline is in the future (or "no deadline")
-- Initiator has permission to create tasks
-
-### 6. Decision logic lives in external AI Platform (Stage 2+)
-
-- HomeTusk is a **consumer** of an external AI Platform
-- No LLM/AI code in this repository
-- AI output is a **suggestion**, validated by code before execution
-- If AI returns invalid data (non-existent assignee, invalid zone), reject
-- Log all AI responses for audit (`rawDecisionPayload` in DecisionLog)
-- External contract: `docs/contracts/external/ai-platform.decision.openapi.yaml`
-
-### 7. AI Platform Contracts are Canonical (Stage 2 Enhancement)
-
-- Upstream contracts at `docs/integration/ai-platform/v1/upstream/` are **READ-ONLY**
-- Any contract change requires ADR and coordination with AI Platform team
-- HomeTusk **adapts** to upstream, never the reverse
-- Unsupported upstream types degrade safely (Clarify or Reject, no exceptions)
-- Endpoint is configurable: `/decision` (default) or `/decide` (upstream canonical)
-- See: `docs/integration/ai-platform/v1/mapping/hometusk-to-upstream.md`
+### Indexes (navigation)
+- ADR index: `docs/_indexes/adr-index.md`
+- Contracts index: `docs/_indexes/contracts-index.md`
+- Diagrams index: `docs/_indexes/diagrams-index.md`
 
 ---
 
-## Required Domain Concepts
+## Imports (keep this file slim)
+When helpful, Claude should pull exact docs into context via imports (fast + stable):
+- MVP: @docs/planning/mvp.md
+- DoR: @docs/_governance/dor.md
+- DoD: @docs/_governance/dod.md
 
-| Entity | Purpose | Key Fields |
-|--------|---------|------------|
-| Household | Container for everything | id, name, created_at |
-| User | External identity reference | id, external_id, name |
-| Membership | User's role in household | user_id, household_id, role |
-| Zone | Location tag | id, household_id, name |
-| Task | Work item | id, title, status, assignee_id, deadline, zone_id |
-| Command | NL input entity | id, raw_text, source, household_id, initiator_id |
-| DecisionLog | AI decision audit | command_id, intent, context_snapshot, decision, confidence |
+(Claude Code supports `@path` imports in CLAUDE.md.) 
 
 ---
 
-## How to Reason About Changes
+## Artifact map & naming conventions
+### IDs
+- PI: `YYYYQn-PI##`  (e.g., `2026Q1-PI01`)
+- Sprint: `S##`      (e.g., `S01`)
+- Epic: `EP-###`
+- Story: `ST-###`
 
-When modifying code, ask yourself:
-
-1. **Does this maintain command traceability?**
-   - Can I trace from input to action?
-   - Is the decision logged?
-
-2. **Is AI output validated before execution?**
-   - Schema validation present?
-   - Business rules checked in code?
-
-3. **Can this work without AI?**
-   - What happens if LLM times out?
-   - Is there a fallback path?
-
-4. **Are domain invariants enforced in code?**
-   - Not just in prompts
-   - Not just in frontend validation
-
----
-
-## Project Context Documents
-
-These files are the source of truth for the project:
-
-| Document | Purpose |
-|----------|---------|
-| `README.md` | Project overview, MVP scope |
-| `CLAUDE.md` | This file — development rules |
-| `docs/architecture/service-catalog.md` | Service registry |
-| `docs/architecture/decisions/` | Architecture Decision Records |
-| `docs/architecture/decisions/mvp/` | C4 diagrams |
-| `docs/contracts/` | API contracts |
-
-### Update Policy
-
-- **This file (CLAUDE.md):** Update when architectural rules or domain concepts change
-- **service-catalog.md:** Update when services are added, removed, or change status
-- **README.md:** Update when project structure or scope changes
+### Standard folders
+- `docs/planning/pi/<PI_ID>/`
+  - `pi.md` — PI charter (goals/non-goals/exit criteria)
+  - `objectives.md` — PI objectives (measurable)
+  - `backlog.md` — initiatives/epics list (links)
+  - `roadmap.md` — rough mapping Sprints → Epics
+  - `risks.md` — risk register (ROAM-lite)
+  - `capacity.md` — capacity assumptions + buffers
+  - `decisions.md` — links to ADR/contracts/diagrams relevant to PI
+  - `sprints/Sxx/`
+    - `sprint.md` — sprint goal + committed scope + deps + risks
+    - `scope.md` — in/out + readiness notes
+    - `demo.md` — demo plan
+    - `retro.md` — retro template
+- `docs/planning/epics/<EPIC_ID>/`
+  - `epic.md` — epic charter + boundaries + story list
+  - `stories/ST-###-*.md` — story specs (AC, scope, flags)
+- `docs/planning/workpacks/<STORY_ID>/`
+  - `workpack.md` — executable delivery plan (steps/files/checks/rollout)
+  - `checklist.md` — AC/DoD verification checklist
+  - `risks.md` — optional per-story risks (ROAM-lite)
 
 ---
 
-## Technology Stack
+## Pipeline (end-to-end operating model)
+> Principle: **minimal process that preserves correctness**, with explicit gates.
 
-### Stage 1 (Current)
+### 0) Intake (Human → Claude)
+Human provides:
+- goal & constraints,
+- success criteria (DoD expectations),
+- urgency & risk tolerance.
 
-| Layer | Technology | Notes |
-|-------|------------|-------|
-| Backend | Java 21 + Spring Boot 3.x | Single service: `services/backend/` |
-| Build | Gradle (Kotlin DSL) | With Spotless for formatting |
-| Database | PostgreSQL 15 | Via Flyway migrations |
-| ORM | Spring Data JPA | With JSONB support |
-| Auth | Keycloak | JWT validation (Resource Server) |
-| API Docs | springdoc-openapi | Swagger UI at `/swagger-ui.html` |
-| Testing | JUnit 5 + Testcontainers | PostgreSQL container for integration tests |
+### 1) Triage (Claude: triage-manager)
+Output: **Triage Summary** (type/level/risk/impacts) + next step.
+If out-of-scope → propose defer/swap/next-PI candidate.
 
-### Stage 2 (Current)
+### 2) PI Planning (Claude: pi-planner) — only for “close MVP / quarter plan”
+Output: PI charter + objectives + backlog + roadmap + risks + capacity.
+**Human Gate A:** approve PI scope/objectives/roadmap/risk posture.
 
-| Layer | Technology | Notes |
-|-------|------------|-------|
-| AI Integration | RestClient + WireMock | External AI Platform consumer |
-| Decision Provider | DecisionProvider interface | Manual + AiPlatform implementations |
-| Fallback | ManualDecisionProvider | Automatic when AI Platform unavailable |
+### 3) Sprint Planning (Claude: sprint-planner)
+Output: sprint goal + committed scope (DoR-ready only) + out-of-scope + deps/risks.
+**Human Gate B:** approve sprint goal + committed scope.
 
-### Future (TBD)
+### 4) Decomposition (Claude: epic-decomposer)
+Epic → sprint-sized stories with:
+- In/Out of scope,
+- Acceptance Criteria,
+- test strategy,
+- flags: contract_impact / adr_needed / diagrams_needed,
+- readiness report (ready vs blocked).
 
-| Layer | Status |
-|-------|--------|
-| Frontend framework | TBD |
-| Push notifications | Stage 3 |
+### 5) Conditional artifact “workhorses” (Claude)
+Triggered by story flags:
+- contract_impact=yes → **contract-owner** (contract-first pack)
+- adr_needed!=none → **adr-designer** (decision log)
+- diagrams_needed!=none → **diagram-steward** (minimal valuable diagrams)
 
-### Local Development
+Each artifact requires a quick **Human Gate** when it changes external behavior:
+- contract changes must be approved before implementation.
 
-```bash
-# Start infrastructure
-cd infra/compose && docker-compose up -d
+### 6) Work package (Claude: plan-generator)
+For each **DoR-ready story in committed scope**:
+- produce `workpack.md` + `checklist.md` (and risks if needed).
+Output is the authoritative “implementation packet” for Codex.
 
-# Run backend
-cd services/backend && ./gradlew bootRun
+### 7) Codex prompt pack (Claude: dev-prompt-engineer)
+Produce two prompts per story:
+- **PLAN prompt**: explicitly “NO EDITS / NO COMMANDS” (plan-only).
+- **APPLY prompt**: execute approved plan with minimal diff, tests, report.
+Critical constraints MUST be repeated in prompts (do not rely on hidden context).
 
-# Run tests
-./scripts/test.sh
-```
+### 8) Implementation (Codex)
+- Run PLAN (read-only)
+- **Human Gate C:** approve plan
+- Run APPLY (workspace-write), run tests, update docs-as-code.
 
----
-
-## Common Development Patterns
-
-### Processing a Command
-
-```
-1. Receive NL command via API
-2. Create Command entity
-3. Call AI pipeline:
-   a. Resolve intent
-   b. Enrich context (household state, member availability)
-   c. Make decision (who, when, confidence)
-4. Validate decision (schema + business rules)
-5. Execute action (create task, assign)
-6. Log decision
-7. Publish events
-8. Send notifications
-```
-
-### Handling Low Confidence
-
-### Service and Contract Changes
-**CRITICAL RULE:** When making changes to services, contracts, or pipelines, you MUST:
-1. Update the service catalog (`docs/architecture/service-catalog.md`)
-2. Update or create the relevant API contract in `docs/contracts/`
-3. Create or update an Architecture Decision Record (ADR) in `docs/architecture/decisions/` if the change involves architectural decisions
-
-This ensures consistency between code, documentation, and architectural decisions. Always check and update these artifacts as part of any service/contract/pipeline change.
-
-### Code Quality
-> TODO: Define code style and linting rules
-If AI confidence < threshold:
-1. Return decision with `needs_confirmation: true`
-2. Show user the interpretation
-3. Allow user to confirm or modify
-4. Re-execute with user input
-
-### Fallback Without AI
-
-If AI is unavailable:
-1. Log the failure
-2. Use heuristic: assign to initiator, no deadline
-3. Mark task as `created_via_fallback`
-4. Return success with warning
+### 9) Review gate (Claude: codex-review-gate + Codex /review)
+- Use Codex `/review` on current diff for correctness/edge cases/security/contracts.
+- Output GO/NO-GO with Must-fix / Should-fix.
+**Human Gate D:** merge / ship / rollback decision.
 
 ---
 
-## Claude Code Configuration
+## Subagents (Claude Code)
+Project subagents live in: `.claude/agents/*.md` (YAML frontmatter + prompt). 
 
-Custom commands: `.claude/commands/`
-Custom agents: `.claude/agents/`
+### Mandatory sequence (happy path)
+1. `triage-manager`
+2. `pi-planner` (only for PI-sized asks)
+3. `sprint-planner`
+4. `epic-decomposer`
+5. `plan-generator`
+6. `dev-prompt-engineer`
+7. `codex-review-gate`
 
----
+### Conditional (flag-driven)
+- `contract-owner`
+- `adr-designer`
+- `diagram-steward`
 
-## Sub-agents and When to Use Them
-
-This project uses specialized sub-agents for quality gates. **All agents are read-only** — they analyze and recommend, but do not modify code directly.
-
-### Agent Registry
-
-| Agent | Purpose | Invoke When | Output |
-|-------|---------|-------------|--------|
-| `arch-reviewer` | Prevents overengineering, enforces stage scope | Before structural changes, new services | Review verdict + boundary analysis |
-| `contract-writer` | Creates OpenAPI/JSON Schema specs | Before new commands/intents/endpoints | Contract specifications |
-| `test-writer` | Writes test specifications | Before marking task done | Test code + fixtures |
-| `security-reviewer` | Validates auth/authz, prevents IDOR | Before auth changes, data access | Security verdict + actions |
-| `observability-reviewer` | Ensures command traceability | Before command pipeline changes | Traceability analysis |
-
-### Hard Rules (Mandatory Checks)
-
-1. **Before any architecture change:**
-   - Run `arch-reviewer`
-   - Update `docs/architecture/service-catalog.md` if boundaries change
-   - Create ADR if significant decision
-
-2. **Before introducing new commands/intents:**
-   - Run `contract-writer`
-   - Add schemas to `docs/contracts/`
-
-3. **Before marking a task done:**
-   - Run `test-writer`
-   - Ensure tests exist and pass
-
-4. **Before any auth/data boundary change:**
-   - Run `security-reviewer`
-   - BLOCK if cross-household access is possible
-
-5. **Before claiming "command traceable":**
-   - Run `observability-reviewer`
-   - Verify correlationId propagation
-   - Verify DecisionLog completeness
-
-### Agent Guardrail
-
-> **Do not create new agents without justification.** Prefer improving existing agents. Maximum 8 agents total for this project.
-
-If a new agent is needed:
-1. Document why existing agents cannot cover the use case
-2. Ensure no overlap with existing agent responsibilities
-3. Add to this registry
-4. Update `.claude/agents/` directory
+### Invocation rules
+- Claude MUST proactively pick the right subagent when a trigger matches.
+- If ambiguity exists, Claude outputs a **blocked list** and requests the minimal missing info.
 
 ---
 
-## MVP User Journey Endpoints (Must Remain Stable)
+## Codex handoff policy (non-negotiables)
+Codex is fast but must be constrained.
 
-These endpoints are part of the MVP contract and **MUST NOT break** without versioning:
+### For every story prompt pack:
+Dev prompts MUST include:
+- allowed files/paths,
+- forbidden paths,
+- invariants (contracts/schemas/public behaviors),
+- acceptance criteria summary,
+- test commands + expected outcome,
+- “STOP-THE-LINE” rule: if deviation needed → stop and ask.
 
-| Endpoint | Method | Purpose | Controller |
-|----------|--------|---------|------------|
-| `/api/v1/users/me` | GET | User profile with household list | UserController |
-| `/api/v1/households` | POST | Create new household | HouseholdController |
-| `/api/v1/households/{id}/members` | GET | List household members | HouseholdController |
-| `/api/v1/households/{id}/zones` | GET | List household zones | HouseholdController |
-| `/api/v1/households/{id}/zones` | POST | Create zone (idempotent) | HouseholdController |
-| `/api/v1/households/{id}/tasks` | GET | List tasks (filters: status, assigneeId, zoneId) | TaskController |
-| `/api/v1/households/{id}/tasks/{taskId}` | GET | Task detail with linked shopping items | TaskController |
-| `/api/v1/households/{id}/shopping-lists` | GET | List shopping lists with counts | ShoppingController |
-| `/api/v1/households/{id}/shopping-lists/{listId}/items` | GET | List items (filter: purchased) | ShoppingController |
-| `/api/v1/households/{id}/shopping-lists/{listId}/items` | POST | Add shopping item | ShoppingController |
-| `/api/v1/households/{id}/shopping-items/{itemId}` | PATCH | Update item (mark purchased) | ShoppingController |
-| `/api/v1/households/{id}/shopping-items/{itemId}` | DELETE | Delete shopping item | ShoppingController |
-| `/api/v1/commands` | POST | Execute command (create task, etc.) | CommandController |
-
-**OpenAPI Contract:** `docs/contracts/http/commands.openapi.yaml`
-
-**Key Architectural Decision:** See [ADR-009](docs/architecture/decisions/009-mvp-commands-vs-crud-boundary.md) for Commands vs CRUD boundary rationale.
+### Plan-only enforcement
+Codex CLI does not guarantee a separate “plan mode” by itself, so prompts must:
+- explicitly forbid edits/commands for PLAN,
+- and (optionally) recommend running PLAN under read-only sandbox/approvals.
 
 ---
 
-## References
+## Automation (optional but recommended)
+### Custom slash commands
+Store reusable prompts in `.claude/commands/` (project scope). 
+Candidates:
+- `/project:triage`
+- `/project:pi_plan`
+- `/project:sprint_plan`
+- `/project:workpack`
+- `/project:codex_prompt_pack`
 
-- [ADR-001: Voice scenario (future)](docs/architecture/decisions/001-mvp-voice-task-scenario.md)
-- [ADR-002: Text MVP scenario](docs/architecture/decisions/002-mvp-text-command-scenario.md)
-- [ADR-003: Stage 1 Commands API](docs/architecture/decisions/003-stage1-commands-api.md)
-- [ADR-004: Stage 2 AI Platform Integration](docs/architecture/decisions/004-stage2-ai-platform-integration.md)
-- [ADR-009: Commands vs CRUD Boundary](docs/architecture/decisions/009-mvp-commands-vs-crud-boundary.md)
-- [C4 Diagrams](docs/architecture/decisions/mvp/)
-- [Commands API Contract](docs/contracts/http/commands.openapi.yaml)
-- [AI Platform External Contract](docs/contracts/external/ai-platform.decision.openapi.yaml)
-- [AI Platform Integration Package](docs/integration/ai-platform/v1/) — Schemas, examples, and field mappings
+(Claude Code supports custom slash commands defined as Markdown in `.claude/commands/`.) 
+
+### Hooks (guardrails)
+If/when needed, enforce gates via `.claude/settings.json` hooks (PreToolUse/UserPromptSubmit etc.). 
+
+---
+
+## Working agreement
+- Prefer small batches, keep docs close to code, avoid speculative refactors.
+- ADR only when the decision is architecture-significant.
+- Diagrams only when they reduce risk or improve shared understanding.
+- Every merge must have a clear GO/NO-GO decision backed by artifacts.
