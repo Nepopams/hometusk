@@ -4,9 +4,10 @@
 **Epic:** EP-002 (MVP Iteration 2)
 **Iteration:** 2b
 **Points:** 2
-**Status:** in_progress
-**Unblocked:** ST-101 ✓, ST-102 ✓, ST-103 ✓
+**Status:** done
+**Completed:** 2026-01-20
 **Priority:** P1
+**Exit Review:** `docs/planning/releases/reviews/MVP-exit-review.md`
 
 ---
 
