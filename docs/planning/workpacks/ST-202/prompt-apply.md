@@ -15,10 +15,23 @@ You are implementing ST-202: Auth Integration + Household Selector for the HomeT
 - Your approved PLAN output (if available)
 
 **Prerequisite files (verify exist):**
-- `clients/web/src/lib/api.ts`
-- `clients/web/src/routes/Login.tsx`
-- `clients/web/src/routes/index.tsx`
-- `clients/web/src/App.tsx`
+- `clients/web/src/lib/api.ts` (apiFetch function - to extend with auth)
+- `clients/web/src/routes/Login.tsx` (placeholder - to replace)
+- `clients/web/src/routes/index.tsx` (router - to add /households route)
+- `clients/web/src/App.tsx` (RouterProvider - to wrap with AuthProvider)
+
+**ST-201 Baseline (Actual State):**
+```
+clients/web/src/lib/api.ts:
+- Exports: apiFetch<T>(path, options)
+- Has: Base URL from env, generic error handling
+- Missing: Auth header injection, 401 handling, typed getMe()
+```
+
+**IMPORTANT:** Do NOT rewrite api.ts from scratch. EXTEND it:
+1. Add auth header to existing apiFetch function
+2. Add AuthError handling on 401
+3. Add getMe() function using apiFetch
 
 ---
 
@@ -68,28 +81,48 @@ Implement auth integration according to the workpack.
 ## Key Implementations
 
 ### 1. Types (src/types/api.ts)
+
+**From OpenAPI contract:**
 ```typescript
+export type AuthErrorCode = 'AUTH_TOKEN_MISSING' | 'AUTH_TOKEN_INVALID' | 'AUTH_TOKEN_EXPIRED';
+
+export interface AuthErrorResponse {
+  errorCode: AuthErrorCode;
+  message: string;
+}
+
+export type HouseholdRole = 'admin' | 'member';
+
+export interface HouseholdSummary {
+  id: string;        // uuid
+  name: string;
+  role: HouseholdRole;
+}
+
 export interface UserProfile {
-  id: string;
+  id: string;        // uuid
   externalId: string;
   email: string;
   displayName: string;
   avatarUrl?: string;
   households: HouseholdSummary[];
-  createdAt: string;
-}
-
-export interface HouseholdSummary {
-  id: string;
-  name: string;
-  role: 'admin' | 'member';
+  createdAt: string; // date-time (ISO 8601)
 }
 ```
 
+**Notes:**
+- OpenAPI doesn't mark fields as required; treat all as required in app logic
+- Guard for missing values with fallbacks (e.g., `households: []`)
+
 ### 2. Error Classes (src/lib/errors.ts)
 ```typescript
+import type { AuthErrorCode } from '../types/api';
+
 export class AuthError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    public code?: AuthErrorCode
+  ) {
     super(message);
     this.name = 'AuthError';
   }
@@ -107,61 +140,108 @@ export class ApiError extends Error {
 }
 ```
 
-### 3. API Client (src/lib/api.ts)
+### 3. API Client Updates (src/lib/api.ts)
+
+**CRITICAL:** EXTEND the existing api.ts, do NOT rewrite from scratch.
+
+**Storage key constant:**
 ```typescript
-import { AuthError, ApiError } from './errors';
-import type { UserProfile } from '../types/api';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
-
-function getToken(): string | null {
-  return localStorage.getItem('auth_token');
-}
-
-async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const token = getToken();
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-    ...options?.headers,
-  };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers,
-  });
-
-  if (response.status === 401) {
-    throw new AuthError('Unauthorized');
-  }
-
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({}));
-    throw new ApiError(response.status, body);
-  }
-
-  return response.json();
-}
-
-export const api = {
-  getMe: () => apiFetch<UserProfile>('/users/me'),
-  // Add more methods as needed
-};
+const AUTH_TOKEN_KEY = 'hometusk_auth_token';
 ```
 
+**Current state (from ST-201):**
+```typescript
+export type ApiOptions = {
+  method?: string;
+  body?: unknown;
+  headers?: HeadersInit;
+};
+
+export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
+  // existing implementation
+}
+```
+
+**Changes to make:**
+
+1. Add imports at top:
+```typescript
+import { AuthError, ApiError } from './errors';
+import type { UserProfile, AuthErrorResponse } from '../types/api';
+```
+
+2. Add storage constant:
+```typescript
+const AUTH_TOKEN_KEY = 'hometusk_auth_token';
+```
+
+3. Modify existing apiFetch function:
+   - Add token retrieval: `const token = localStorage.getItem(AUTH_TOKEN_KEY)`
+   - Add Authorization header if token exists:
+     ```typescript
+     const headers: HeadersInit = {
+       ...(options.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+       ...(token && { Authorization: `Bearer ${token}` }),  // ADD THIS
+       ...options.headers,
+     };
+     ```
+   - Replace generic error handling with typed 401 handling:
+     ```typescript
+     // BEFORE:
+     if (!response.ok) {
+       throw new Error(`Request failed with status ${response.status}`);
+     }
+
+     // AFTER:
+     if (response.status === 401) {
+       // Try to parse AuthErrorResponse
+       const errorBody = await response.json().catch(() => null) as AuthErrorResponse | null;
+       throw new AuthError(
+         errorBody?.message || 'Unauthorized',
+         errorBody?.errorCode
+       );
+     }
+
+     if (!response.ok) {
+       const body = await response.json().catch(() => ({}));
+       throw new ApiError(response.status, body);
+     }
+     ```
+
+4. Add getMe() function at the end of the file:
+```typescript
+export async function getMe(): Promise<UserProfile> {
+  return apiFetch<UserProfile>('/users/me');
+}
+```
+
+**Result:** api.ts will export both apiFetch and getMe, with auth header injection.
+
+---
+
 ### 4. Auth Context (src/context/AuthContext.tsx)
+
+**Storage keys (constants):**
+```typescript
+const AUTH_TOKEN_KEY = 'hometusk_auth_token';
+const HOUSEHOLD_ID_KEY = 'hometusk_household_id';
+```
+
+**Implementation:**
 ```typescript
 import { createContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { api } from '../lib/api';
+import { getMe } from '../lib/api';
 import { AuthError } from '../lib/errors';
 import type { UserProfile } from '../types/api';
 
+const AUTH_TOKEN_KEY = 'hometusk_auth_token';
+const HOUSEHOLD_ID_KEY = 'hometusk_household_id';
+
+type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated';
+
 interface AuthContextType {
-  isAuthenticated: boolean;
-  isLoading: boolean;
+  status: AuthStatus;
+  isAuthenticated: boolean; // derived: status === 'authenticated'
   user: UserProfile | null;
   token: string | null;
   householdId: string | null;
@@ -173,35 +253,38 @@ interface AuthContextType {
 export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const [status, setStatus] = useState<AuthStatus>('loading');
   const [token, setToken] = useState<string | null>(() =>
-    localStorage.getItem('auth_token')
+    localStorage.getItem(AUTH_TOKEN_KEY)
   );
   const [user, setUser] = useState<UserProfile | null>(null);
   const [householdId, setHouseholdId] = useState<string | null>(() =>
-    localStorage.getItem('selected_household')
+    localStorage.getItem(HOUSEHOLD_ID_KEY)
   );
-  const [isLoading, setIsLoading] = useState(true);
 
   const logout = useCallback(() => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('selected_household');
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(HOUSEHOLD_ID_KEY);
     setToken(null);
     setUser(null);
     setHouseholdId(null);
+    setStatus('unauthenticated');
   }, []);
 
   const login = useCallback(async (newToken: string) => {
-    localStorage.setItem('auth_token', newToken);
+    setStatus('loading');
+    localStorage.setItem(AUTH_TOKEN_KEY, newToken);
     setToken(newToken);
 
     try {
-      const profile = await api.getMe();
+      const profile = await getMe();
       setUser(profile);
+      setStatus('authenticated');
 
       // Auto-select if single household
       if (profile.households.length === 1) {
         const hid = profile.households[0].id;
-        localStorage.setItem('selected_household', hid);
+        localStorage.setItem(HOUSEHOLD_ID_KEY, hid);
         setHouseholdId(hid);
       }
     } catch (error) {
@@ -211,31 +294,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [logout]);
 
   const selectHousehold = useCallback((id: string) => {
-    localStorage.setItem('selected_household', id);
+    localStorage.setItem(HOUSEHOLD_ID_KEY, id);
     setHouseholdId(id);
   }, []);
 
   // Load user on mount if token exists
   useEffect(() => {
     if (token && !user) {
-      api.getMe()
-        .then(setUser)
+      getMe()
+        .then((profile) => {
+          setUser(profile);
+          setStatus('authenticated');
+        })
         .catch((error) => {
           if (error instanceof AuthError) {
             logout();
+          } else {
+            setStatus('unauthenticated');
           }
-        })
-        .finally(() => setIsLoading(false));
-    } else {
-      setIsLoading(false);
+        });
+    } else if (!token) {
+      setStatus('unauthenticated');
     }
   }, [token, user, logout]);
+
+  const isAuthenticated = status === 'authenticated';
 
   return (
     <AuthContext.Provider
       value={{
-        isAuthenticated: !!token && !!user,
-        isLoading,
+        status,
+        isAuthenticated,
         user,
         token,
         householdId,
@@ -265,23 +354,39 @@ export function useAuth() {
 ```
 
 ### 6. Protected Route (src/components/ProtectedRoute.tsx)
+
+**Props:**
+```typescript
+interface ProtectedRouteProps {
+  requireHousehold?: boolean; // default: false
+}
+```
+
+**Implementation:**
 ```typescript
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
-export function ProtectedRoute() {
-  const { isAuthenticated, isLoading, householdId } = useAuth();
+interface ProtectedRouteProps {
+  requireHousehold?: boolean;
+}
+
+export function ProtectedRoute({ requireHousehold = false }: ProtectedRouteProps) {
+  const { status, isAuthenticated, householdId } = useAuth();
   const location = useLocation();
 
-  if (isLoading) {
-    return <div>Loading...</div>;
+  // Loading state - prevent flash redirects
+  if (status === 'loading') {
+    return <div className="page">Loading...</div>;
   }
 
+  // Not authenticated - redirect to login
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (!householdId && !location.pathname.includes('/households')) {
+  // Authenticated but household required and not selected
+  if (requireHousehold && !householdId) {
     return <Navigate to="/households" replace />;
   }
 
@@ -289,10 +394,229 @@ export function ProtectedRoute() {
 }
 ```
 
-### 7. Route Updates (src/routes/index.tsx)
-Add:
-- `/households` route for HouseholdSelector
-- Wrap household routes with ProtectedRoute
+### 7. Login Page (src/routes/Login.tsx)
+
+**Replace existing placeholder with:**
+```typescript
+import { useState, FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+
+export default function Login() {
+  const [token, setToken] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { login, user } = useAuth();
+  const navigate = useNavigate();
+
+  // Dev-only guard
+  const authProvider = import.meta.env.VITE_AUTH_PROVIDER;
+  if (authProvider !== 'dev') {
+    return (
+      <div className="page">
+        <h1>Authentication Not Available</h1>
+        <p>VITE_AUTH_PROVIDER must be 'dev' for token paste login.</p>
+        <p>Current: {authProvider || 'not set'}</p>
+      </div>
+    );
+  }
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      await login(token.trim());
+
+      // IMPORTANT: After login(), the auth context is updated but local `user` state
+      // may not reflect the new value immediately due to React's async state updates.
+      // The navigation logic relies on auto-select happening in AuthContext.login().
+      // Strategy: If login succeeds, check user.households.length after context updates.
+
+      // Option 1 (simpler): Always navigate to /households, let HouseholdSelector auto-redirect
+      navigate('/households');
+
+      // Option 2 (explicit): Make login() return UserProfile and use that for navigation
+      // const profile = await login(token.trim());
+      // if (profile.households.length === 1) {
+      //   navigate(`/households/${profile.households[0].id}/tasks`);
+      // } else {
+      //   navigate('/households');
+      // }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="page">
+      <h1>Login (Dev Mode)</h1>
+      <p>Paste your JWT token to authenticate.</p>
+
+      <form onSubmit={handleSubmit} className="card">
+        <label>
+          JWT Token:
+          <textarea
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            rows={6}
+            disabled={loading}
+            required
+          />
+        </label>
+
+        {error && <div className="error">{error}</div>}
+
+        <button type="submit" disabled={loading || !token.trim()}>
+          {loading ? 'Logging in...' : 'Login'}
+        </button>
+      </form>
+    </div>
+  );
+}
+```
+
+### 8. Household Selector (src/routes/HouseholdSelector.tsx)
+
+```typescript
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+import HouseholdCard from '../components/HouseholdCard';
+
+export default function HouseholdSelector() {
+  const { user, selectHousehold } = useAuth();
+  const navigate = useNavigate();
+
+  // Auto-select if only one household
+  useEffect(() => {
+    if (user && user.households.length === 1) {
+      const hid = user.households[0].id;
+      selectHousehold(hid);
+      navigate(`/households/${hid}/tasks`, { replace: true });
+    }
+  }, [user, selectHousehold, navigate]);
+
+  if (!user || user.households.length === 0) {
+    return (
+      <div className="page">
+        <h1>No Households</h1>
+        <p>You are not a member of any households yet.</p>
+      </div>
+    );
+  }
+
+  const handleSelect = (id: string) => {
+    selectHousehold(id);
+    navigate(`/households/${id}/tasks`);
+  };
+
+  return (
+    <div className="page">
+      <h1>Select Household</h1>
+      <p>Choose a household to continue:</p>
+
+      <div className="household-list">
+        {user.households.map((household) => (
+          <HouseholdCard
+            key={household.id}
+            household={household}
+            onSelect={() => handleSelect(household.id)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### 9. Household Card (src/components/HouseholdCard.tsx)
+
+```typescript
+import type { HouseholdSummary } from '../types/api';
+
+interface HouseholdCardProps {
+  household: HouseholdSummary;
+  onSelect: () => void;
+}
+
+export default function HouseholdCard({ household, onSelect }: HouseholdCardProps) {
+  return (
+    <div className="card household-card" onClick={onSelect}>
+      <h3>{household.name}</h3>
+      <p className="chip">{household.role}</p>
+      <button type="button">Select</button>
+    </div>
+  );
+}
+```
+
+### 10. Route Updates (src/routes/index.tsx)
+
+**Modify existing router:**
+```typescript
+import { Navigate, createBrowserRouter } from 'react-router-dom';
+import { ProtectedRoute } from '../components/ProtectedRoute';
+import HouseholdLayout from './HouseholdLayout';
+import HouseholdSelector from './HouseholdSelector';
+import Login from './Login';
+// ... other imports
+
+export const router = createBrowserRouter([
+  { path: '/', element: <Navigate to="/login" replace /> },
+  { path: '/login', element: <Login /> },
+
+  // Household selector (protected, no household required)
+  {
+    path: '/households',
+    element: <ProtectedRoute />,
+    children: [
+      { index: true, element: <HouseholdSelector /> },
+    ],
+  },
+
+  // Household routes (protected + require household)
+  {
+    path: '/households/:householdId',
+    element: <ProtectedRoute requireHousehold />,
+    children: [
+      {
+        element: <HouseholdLayout />,
+        children: [
+          { index: true, element: <Navigate to="tasks" replace /> },
+          { path: 'tasks', element: <TasksList /> },
+          { path: 'tasks/:taskId', element: <TaskDetail /> },
+          { path: 'zones', element: <ZonesList /> },
+          { path: 'notifications', element: <Notifications /> },
+        ],
+      },
+    ],
+  },
+
+  { path: '*', element: <NotFound /> },
+]);
+```
+
+### 11. App.tsx Update
+
+**Wrap RouterProvider with AuthProvider:**
+```typescript
+import { RouterProvider } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { router } from './routes';
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  );
+}
+```
 
 ---
 

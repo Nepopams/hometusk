@@ -16,6 +16,31 @@ You are implementing ST-202: Auth Integration + Household Selector for the HomeT
 **Prerequisite:**
 - ST-201 completed (web foundation exists at `clients/web/`)
 
+**ST-201 Baseline (Actual):**
+```
+clients/web/
+├── package.json (hometusk-web, dependencies installed)
+├── tsconfig.json (strict: true)
+├── vite.config.ts (port: 5173, host: 0.0.0.0)
+├── src/
+│   ├── main.tsx, App.tsx (RouterProvider)
+│   ├── vite-env.d.ts (VITE_* types)
+│   ├── routes/
+│   │   ├── index.tsx (router with /households/:householdId/*)
+│   │   ├── Login.tsx (placeholder - to modify)
+│   │   └── [other routes...]
+│   ├── components/Layout/ (Header, Sidebar, Layout)
+│   ├── lib/
+│   │   └── api.ts (apiFetch<T> function - NO auth yet)
+│   └── styles/index.css
+```
+
+**Existing api.ts signature:**
+```typescript
+export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T>
+// Currently: NO auth header, generic error handling
+```
+
 ---
 
 ## Your Task

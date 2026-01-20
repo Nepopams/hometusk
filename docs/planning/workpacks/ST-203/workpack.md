@@ -7,6 +7,24 @@
 - DoD: `docs/_governance/dod.md`
 - OpenAPI: `docs/contracts/http/commands.openapi.yaml` (Task, listTasks, Zone, HouseholdMember)
 - API Coverage: `docs/mvp/api-coverage.md` (GET /households/{id}/tasks, zones, members)
+- ST-201 + ST-202 Baseline: `clients/web/` (completed)
+
+## Baseline from ST-201 + ST-202 (Actual State)
+
+**Available infrastructure:**
+- `src/types/api.ts`: UserProfile, HouseholdSummary, AuthErrorResponse (to extend)
+- `src/lib/api.ts`: apiFetch<T> with auth header, getMe() (to extend with getTasks, getZones, getMembers)
+- `src/lib/errors.ts`: AuthError, ApiError
+- `src/context/AuthContext.tsx`: useAuth() → { householdId, user, status }
+- `src/hooks/useAuth.ts`: access auth context
+- `src/routes/TasksList.tsx`: placeholder (to replace with full implementation)
+- `src/components/ProtectedRoute.tsx`: route guard (already wrapping /households/:householdId/tasks)
+
+**Dependency versions (actual):**
+- react@18.2.0, react-router-dom@6.16.0
+- typescript@5.4.5
+
+**IMPORTANT:** Extend existing types/api.ts, do NOT rewrite from scratch.
 
 ## Outcome
 User can view tasks in their household with filters:

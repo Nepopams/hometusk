@@ -17,6 +17,31 @@ You are implementing ST-203: Tasks List & Filters for the HomeTusk web client.
 - ST-201 completed (web foundation)
 - ST-202 completed (auth integration)
 
+**ST-202 Baseline (Actual State):**
+```
+clients/web/src/
+├── types/api.ts          (UserProfile, HouseholdSummary, AuthErrorResponse)
+├── lib/
+│   ├── api.ts            (apiFetch with auth, getMe)
+│   └── errors.ts         (AuthError, ApiError)
+├── context/AuthContext.tsx (status, user, token, householdId, login/logout/selectHousehold)
+├── hooks/useAuth.ts      (hook to access auth context)
+├── routes/
+│   ├── index.tsx         (router with /households/:householdId/*)
+│   ├── Login.tsx         (dev token paste)
+│   ├── HouseholdSelector.tsx (selector page)
+│   ├── TasksList.tsx     (placeholder - to implement)
+│   └── ...
+└── components/
+    ├── ProtectedRoute.tsx (requireHousehold prop)
+    └── HouseholdCard.tsx
+```
+
+**Available for ST-203:**
+- `useAuth()` → `{ householdId, user }` (for current household context)
+- `apiFetch<T>(path, options)` → Promise<T> (with auth header)
+- `ProtectedRoute` → already wrapping /households/:householdId routes
+
 ---
 
 ## Your Task
