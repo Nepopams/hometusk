@@ -95,8 +95,7 @@ public class ZoneOwnerFirstPolicy implements GuardrailPolicy {
         }
 
         if (anyModification) {
-            return new GuardrailOutcome.Modify(
-                    modifiedActions, "Assigned to zone owner based on zone preference");
+            return new GuardrailOutcome.Modify(modifiedActions, "Assigned to zone owner based on zone preference");
         }
 
         return GuardrailOutcome.accept();

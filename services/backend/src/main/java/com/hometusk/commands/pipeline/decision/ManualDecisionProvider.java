@@ -1,6 +1,5 @@
 package com.hometusk.commands.pipeline.decision;
 
-import com.hometusk.commands.domain.CommandType;
 import com.hometusk.commands.domain.DecisionSource;
 import java.math.BigDecimal;
 import java.util.HashMap;

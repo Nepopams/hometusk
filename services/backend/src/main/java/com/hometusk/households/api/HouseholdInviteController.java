@@ -47,9 +47,7 @@ public class HouseholdInviteController {
     }
 
     @PostMapping("/invites/accept")
-    @Operation(
-            summary = "Accept a household invite",
-            description = "Accepts an invite token and joins the household.")
+    @Operation(summary = "Accept a household invite", description = "Accepts an invite token and joins the household.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Invite accepted or no-op for existing member"),
         @ApiResponse(responseCode = "401", description = "Authentication required"),

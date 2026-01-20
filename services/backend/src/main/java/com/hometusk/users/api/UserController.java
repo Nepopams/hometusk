@@ -30,8 +30,7 @@ public class UserController {
     private final UserService userService;
     private final MembershipService membershipService;
 
-    public UserController(
-            UserResolver userResolver, UserService userService, MembershipService membershipService) {
+    public UserController(UserResolver userResolver, UserService userService, MembershipService membershipService) {
         this.userResolver = userResolver;
         this.userService = userService;
         this.membershipService = membershipService;

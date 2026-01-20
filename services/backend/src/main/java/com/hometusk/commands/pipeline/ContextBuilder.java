@@ -80,8 +80,9 @@ public class ContextBuilder {
 
             // 2. Load zones
             List<Zone> zoneEntities = zoneRepository.findByHouseholdId(householdId);
-            List<ZoneInfo> zones =
-                    zoneEntities.stream().map(z -> new ZoneInfo(z.getId(), z.getName(), z.getOwnerId())).toList();
+            List<ZoneInfo> zones = zoneEntities.stream()
+                    .map(z -> new ZoneInfo(z.getId(), z.getName(), z.getOwnerId()))
+                    .toList();
 
             // 3. Count open tasks per assignee (batch query)
             Map<UUID, Integer> taskCounts = countOpenTasksByAssignee(householdId);
@@ -97,7 +98,9 @@ public class ContextBuilder {
 
         } catch (Exception e) {
             log.error(
-                    "Failed to build household snapshot: householdId={}, correlationId={}", householdId, correlationId,
+                    "Failed to build household snapshot: householdId={}, correlationId={}",
+                    householdId,
+                    correlationId,
                     e);
             return HouseholdSnapshot.incomplete(householdId, "Database error: " + e.getMessage());
         }
@@ -169,8 +172,7 @@ public class ContextBuilder {
             return Map.of("members", membersList, "zones", zonesList, "shopping_lists", shoppingLists);
 
         } catch (Exception e) {
-            log.error(
-                    "Failed to build AI context: householdId={}, correlationId={}", householdId, correlationId, e);
+            log.error("Failed to build AI context: householdId={}, correlationId={}", householdId, correlationId, e);
             // Return empty context - AI Platform will work with limited info
             // The actual guardrails will catch incomplete context later
             return Map.of();

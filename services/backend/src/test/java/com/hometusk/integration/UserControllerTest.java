@@ -23,14 +23,14 @@ class UserControllerTest extends IntegrationTestBase {
         @Test
         @DisplayName("Should return user profile with household memberships")
         void authenticatedUserCanGetProfile() throws Exception {
-            mockMvc.perform(get("/api/v1/users/me")
-                            .with(jwt()))
+            mockMvc.perform(get("/api/v1/users/me").with(jwt()))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(testUser.getId().toString()))
                     .andExpect(jsonPath("$.email").value(testUser.getEmail()))
                     .andExpect(jsonPath("$.displayName").value(testUser.getDisplayName()))
                     .andExpect(jsonPath("$.households").isArray())
-                    .andExpect(jsonPath("$.households[0].id").value(testHousehold.getId().toString()))
+                    .andExpect(jsonPath("$.households[0].id")
+                            .value(testHousehold.getId().toString()))
                     .andExpect(jsonPath("$.households[0].name").value(testHousehold.getName()))
                     .andExpect(jsonPath("$.households[0].role").value("admin"));
         }
@@ -45,8 +45,7 @@ class UserControllerTest extends IntegrationTestBase {
             Membership membership2 = new Membership(testUser, anotherHousehold, MembershipRole.member);
             membershipRepository.save(membership2);
 
-            mockMvc.perform(get("/api/v1/users/me")
-                            .with(jwt()))
+            mockMvc.perform(get("/api/v1/users/me").with(jwt()))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.households.length()").value(2));
         }
@@ -55,8 +54,7 @@ class UserControllerTest extends IntegrationTestBase {
         @DisplayName("Should return empty households array for user with no memberships")
         void profileWithNoMembershipsReturnsEmptyHouseholds() throws Exception {
             // testUser2 has no memberships
-            mockMvc.perform(get("/api/v1/users/me")
-                            .with(jwtForUser(testUser2)))
+            mockMvc.perform(get("/api/v1/users/me").with(jwtForUser(testUser2)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(testUser2.getId().toString()))
                     .andExpect(jsonPath("$.households").isArray())
@@ -66,8 +64,7 @@ class UserControllerTest extends IntegrationTestBase {
         @Test
         @DisplayName("Should reject unauthenticated request")
         void unauthenticatedRequestRejected() throws Exception {
-            mockMvc.perform(get("/api/v1/users/me"))
-                    .andExpect(status().isUnauthorized());
+            mockMvc.perform(get("/api/v1/users/me")).andExpect(status().isUnauthorized());
         }
     }
 }

@@ -53,12 +53,14 @@ class NotificationIntegrationTest extends IntegrationTestBase {
         membershipRepository.save(new Membership(user3, testHousehold, MembershipRole.member));
 
         var createCommand = Map.of(
-                "householdId", testHousehold.getId().toString(),
-                "type", "create_task",
-                "payload", Map.of(
-                        "title", "Mop the floor",
-                        "assigneeId", testUser2.getId().toString()),
-                "source", "web");
+                "householdId",
+                testHousehold.getId().toString(),
+                "type",
+                "create_task",
+                "payload",
+                Map.of("title", "Mop the floor", "assigneeId", testUser2.getId().toString()),
+                "source",
+                "web");
 
         MvcResult createResult = mockMvc.perform(post("/api/v1/commands")
                         .with(jwt())
@@ -67,14 +69,21 @@ class NotificationIntegrationTest extends IntegrationTestBase {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        UUID taskId = UUID.fromString(
-                objectMapper.readTree(createResult.getResponse().getContentAsString()).get("result").get("taskId").asText());
+        UUID taskId = UUID.fromString(objectMapper
+                .readTree(createResult.getResponse().getContentAsString())
+                .get("result")
+                .get("taskId")
+                .asText());
 
         var completeCommand = Map.of(
-                "householdId", testHousehold.getId().toString(),
-                "type", "complete_task",
-                "payload", Map.of("taskId", taskId.toString()),
-                "source", "web");
+                "householdId",
+                testHousehold.getId().toString(),
+                "type",
+                "complete_task",
+                "payload",
+                Map.of("taskId", taskId.toString()),
+                "source",
+                "web");
 
         mockMvc.perform(post("/api/v1/commands")
                         .with(jwtForUser(user3))
@@ -98,7 +107,10 @@ class NotificationIntegrationTest extends IntegrationTestBase {
 
         var request = Map.of("name", "Milk", "quantity", 1);
 
-        mockMvc.perform(post("/api/v1/households/{id}/shopping-lists/{listId}/items", testHousehold.getId(), list.getId())
+        mockMvc.perform(post(
+                                "/api/v1/households/{id}/shopping-lists/{listId}/items",
+                                testHousehold.getId(),
+                                list.getId())
                         .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -125,7 +137,10 @@ class NotificationIntegrationTest extends IntegrationTestBase {
         ShoppingList list = shoppingListRepository.save(new ShoppingList(testHousehold, "Default"));
         var request = Map.of("name", "Bread");
 
-        mockMvc.perform(post("/api/v1/households/{id}/shopping-lists/{listId}/items", testHousehold.getId(), list.getId())
+        mockMvc.perform(post(
+                                "/api/v1/households/{id}/shopping-lists/{listId}/items",
+                                testHousehold.getId(),
+                                list.getId())
                         .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -135,18 +150,15 @@ class NotificationIntegrationTest extends IntegrationTestBase {
         assertThat(notifications.size()).isGreaterThan(0);
         UUID notificationId = UUID.fromString(notifications.get(0).get("id").asText());
 
-        mockMvc.perform(post("/api/v1/notifications/{id}/read", notificationId)
-                        .with(jwtForUser(testUser2)))
+        mockMvc.perform(post("/api/v1/notifications/{id}/read", notificationId).with(jwtForUser(testUser2)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.readAt").exists());
 
-        mockMvc.perform(post("/api/v1/notifications/{id}/read", notificationId)
-                        .with(jwtForUser(testUser2)))
+        mockMvc.perform(post("/api/v1/notifications/{id}/read", notificationId).with(jwtForUser(testUser2)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(notificationId.toString()));
 
-        mockMvc.perform(post("/api/v1/notifications/{id}/read", notificationId)
-                        .with(jwt()))
+        mockMvc.perform(post("/api/v1/notifications/{id}/read", notificationId).with(jwt()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errorCode").value("NOTIFICATION_NOT_FOUND"));
     }
@@ -157,7 +169,10 @@ class NotificationIntegrationTest extends IntegrationTestBase {
                 .andExpect(status().isCreated())
                 .andReturn();
 
-        return objectMapper.readTree(result.getResponse().getContentAsString()).get("inviteToken").asText();
+        return objectMapper
+                .readTree(result.getResponse().getContentAsString())
+                .get("inviteToken")
+                .asText();
     }
 
     private JsonNode listNotifications(UUID householdId, User user) throws Exception {

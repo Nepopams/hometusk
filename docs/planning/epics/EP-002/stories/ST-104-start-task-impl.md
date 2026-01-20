@@ -2,11 +2,11 @@
 
 **ID:** ST-104
 **Epic:** EP-002 (MVP Iteration 2)
-**Iteration:** 2b
+**Iteration:** 2b (deferred)
 **Points:** 2
-**Status:** blocked
-**Blocked By:** ST-103 (decision must be "implement")
-**Priority:** P2 (conditional)
+**Status:** deferred
+**Decision:** ST-103 decided DEFER — start_task not needed for MVP
+**Priority:** Post-MVP
 
 ---
 

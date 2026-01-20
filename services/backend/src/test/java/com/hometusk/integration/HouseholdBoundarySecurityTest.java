@@ -10,7 +10,6 @@ import com.hometusk.shopping.domain.ShoppingList;
 import com.hometusk.shopping.repository.ShoppingItemRepository;
 import com.hometusk.shopping.repository.ShoppingListRepository;
 import com.hometusk.tasks.domain.Task;
-import com.hometusk.tasks.domain.TaskStatus;
 import com.hometusk.tasks.repository.TaskRepository;
 import com.hometusk.users.domain.Membership;
 import com.hometusk.users.domain.MembershipRole;
@@ -149,8 +148,10 @@ class HouseholdBoundarySecurityTest extends IntegrationTestBase {
         @Test
         @DisplayName("Should reject listing items from other household's shopping list")
         void cannotListOtherHouseholdShoppingItems() throws Exception {
-            mockMvc.perform(get("/api/v1/households/{id}/shopping-lists/{listId}/items",
-                            otherHousehold.getId(), otherShoppingList.getId())
+            mockMvc.perform(get(
+                                    "/api/v1/households/{id}/shopping-lists/{listId}/items",
+                                    otherHousehold.getId(),
+                                    otherShoppingList.getId())
                             .with(jwt()))
                     .andExpect(status().isForbidden());
         }
@@ -160,8 +161,10 @@ class HouseholdBoundarySecurityTest extends IntegrationTestBase {
         void cannotAddItemToOtherHouseholdShoppingList() throws Exception {
             var request = Map.of("name", "Hacked Item", "quantity", 1);
 
-            mockMvc.perform(post("/api/v1/households/{id}/shopping-lists/{listId}/items",
-                            otherHousehold.getId(), otherShoppingList.getId())
+            mockMvc.perform(post(
+                                    "/api/v1/households/{id}/shopping-lists/{listId}/items",
+                                    otherHousehold.getId(),
+                                    otherShoppingList.getId())
                             .with(jwt())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
@@ -173,8 +176,10 @@ class HouseholdBoundarySecurityTest extends IntegrationTestBase {
         void cannotUpdateOtherHouseholdShoppingItem() throws Exception {
             var request = Map.of("purchased", true);
 
-            mockMvc.perform(patch("/api/v1/households/{id}/shopping-items/{itemId}",
-                            otherHousehold.getId(), otherShoppingItem.getId())
+            mockMvc.perform(patch(
+                                    "/api/v1/households/{id}/shopping-items/{itemId}",
+                                    otherHousehold.getId(),
+                                    otherShoppingItem.getId())
                             .with(jwt())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
@@ -184,8 +189,10 @@ class HouseholdBoundarySecurityTest extends IntegrationTestBase {
         @Test
         @DisplayName("Should reject deleting item from other household")
         void cannotDeleteOtherHouseholdShoppingItem() throws Exception {
-            mockMvc.perform(delete("/api/v1/households/{id}/shopping-items/{itemId}",
-                            otherHousehold.getId(), otherShoppingItem.getId())
+            mockMvc.perform(delete(
+                                    "/api/v1/households/{id}/shopping-items/{itemId}",
+                                    otherHousehold.getId(),
+                                    otherShoppingItem.getId())
                             .with(jwt()))
                     .andExpect(status().isForbidden());
         }
@@ -196,8 +203,10 @@ class HouseholdBoundarySecurityTest extends IntegrationTestBase {
             var request = Map.of("purchased", true);
 
             // Try to update otherShoppingItem but through testHousehold's URL - should return 404
-            mockMvc.perform(patch("/api/v1/households/{id}/shopping-items/{itemId}",
-                            testHousehold.getId(), otherShoppingItem.getId())
+            mockMvc.perform(patch(
+                                    "/api/v1/households/{id}/shopping-items/{itemId}",
+                                    testHousehold.getId(),
+                                    otherShoppingItem.getId())
                             .with(jwt())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
@@ -208,8 +217,10 @@ class HouseholdBoundarySecurityTest extends IntegrationTestBase {
         @DisplayName("Should reject deleting other household's item via own household URL")
         void cannotDeleteOtherHouseholdItemViaOwnHouseholdUrl() throws Exception {
             // Try to delete otherShoppingItem but through testHousehold's URL - should return 404
-            mockMvc.perform(delete("/api/v1/households/{id}/shopping-items/{itemId}",
-                            testHousehold.getId(), otherShoppingItem.getId())
+            mockMvc.perform(delete(
+                                    "/api/v1/households/{id}/shopping-items/{itemId}",
+                                    testHousehold.getId(),
+                                    otherShoppingItem.getId())
                             .with(jwt()))
                     .andExpect(status().isNotFound());
         }
@@ -236,8 +247,7 @@ class HouseholdBoundarySecurityTest extends IntegrationTestBase {
         @Test
         @DisplayName("Should reject unauthenticated user profile access")
         void unauthenticatedAccessToUserProfileDenied() throws Exception {
-            mockMvc.perform(get("/api/v1/users/me"))
-                    .andExpect(status().isUnauthorized());
+            mockMvc.perform(get("/api/v1/users/me")).andExpect(status().isUnauthorized());
         }
 
         @Test

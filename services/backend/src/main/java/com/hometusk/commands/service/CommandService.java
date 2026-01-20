@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hometusk.commands.domain.Command;
+import com.hometusk.commands.domain.CommandStatus;
 import com.hometusk.commands.domain.CommandType;
 import com.hometusk.commands.domain.DecisionSource;
 import com.hometusk.commands.dto.*;
@@ -17,11 +18,13 @@ import com.hometusk.commands.pipeline.guardrails.GuardrailsOrchestrator;
 import com.hometusk.commands.repository.CommandRepository;
 import com.hometusk.households.domain.Household;
 import com.hometusk.households.service.HouseholdService;
+import com.hometusk.shared.exception.AccessDeniedException;
 import com.hometusk.shared.exception.BusinessException;
 import com.hometusk.shared.exception.ErrorCode;
+import com.hometusk.shared.exception.NotFoundException;
 import com.hometusk.shared.exception.ValidationException;
-import com.hometusk.users.domain.User;
 import com.hometusk.shopping.service.ShoppingService;
+import com.hometusk.users.domain.User;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -145,7 +148,8 @@ public class CommandService {
                     businessValidator.validateCreateTask(payload, request.householdId());
                 }
                 case COMPLETE_TASK -> {
-                    CompleteTaskPayload payload = objectMapper.convertValue(request.payload(), CompleteTaskPayload.class);
+                    CompleteTaskPayload payload =
+                            objectMapper.convertValue(request.payload(), CompleteTaskPayload.class);
                     businessValidator.validateCompleteTask(payload, request.householdId());
                 }
             }
@@ -166,11 +170,7 @@ public class CommandService {
 
             // Log the validation failure
             decisionLogWriter.writeValidationFailure(
-                    command,
-                    correlationId,
-                    Map.of("type", commandType.name()),
-                    e.getErrors(),
-                    true);
+                    command, correlationId, Map.of("type", commandType.name()), e.getErrors(), true);
 
             throw e;
 
@@ -181,11 +181,7 @@ public class CommandService {
 
             // Log the business validation failure
             decisionLogWriter.writeValidationFailure(
-                    command,
-                    correlationId,
-                    Map.of("type", commandType.name()),
-                    e.getViolations(),
-                    false);
+                    command, correlationId, Map.of("type", commandType.name()), e.getViolations(), false);
 
             throw e;
 
@@ -197,6 +193,35 @@ public class CommandService {
             log.error("Command failed: id={}, correlationId={}", command.getId(), correlationId, e);
             throw e;
         }
+    }
+
+    @Transactional
+    public CommandResponseBase continueCommand(
+            UUID commandId, ContinueCommandRequest request, User requester, UUID correlationId) {
+        long startTime = System.currentTimeMillis();
+        log.info("Continuing command: commandId={}, correlationId={}", commandId, correlationId);
+
+        Command command = commandRepository
+                .findById(commandId)
+                .orElseThrow(
+                        () -> new NotFoundException(ErrorCode.COMMAND_NOT_FOUND, "Command not found: " + commandId));
+
+        if (!command.getRequesterId().equals(requester.getId())) {
+            throw new AccessDeniedException("User is not the initiator of this command");
+        }
+
+        if (command.getStatus() != CommandStatus.NEEDS_INPUT) {
+            throw new BusinessException(ErrorCode.COMMAND_NOT_CONTINUABLE);
+        }
+
+        Map<String, Object> originalPayload = readPayload(command.getPayload());
+        Map<String, Object> mergedPayload = new HashMap<>(originalPayload);
+        mergedPayload.putAll(request.additionalInput());
+
+        DecisionContext context = buildDecisionContext(command, mergedPayload, requester.getId(), correlationId);
+        DecisionResult result = decisionProviderSelector.decide(context);
+
+        return handleDecisionResult(result, command, context, correlationId, requester, startTime);
     }
 
     private DecisionContext buildDecisionContext(
@@ -219,6 +244,22 @@ public class CommandService {
                 .build();
     }
 
+    private DecisionContext buildDecisionContext(
+            Command command, Map<String, Object> payload, UUID requesterId, UUID correlationId) {
+        Map<String, Object> householdContext =
+                contextBuilder.buildHouseholdContextForAi(command.getHouseholdId(), correlationId);
+
+        return DecisionContext.builder()
+                .commandId(command.getId())
+                .correlationId(correlationId)
+                .commandType(command.getType())
+                .payload(payload)
+                .requesterId(requesterId)
+                .householdId(command.getHouseholdId())
+                .householdContext(householdContext)
+                .build();
+    }
+
     private CommandResponseBase handleDecisionResult(
             DecisionResult result,
             Command command,
@@ -230,10 +271,8 @@ public class CommandService {
         return switch (result) {
             case DecisionResult.StartJob startJob -> handleStartJob(
                     startJob, command, context, correlationId, requester, startTime);
-            case DecisionResult.Clarify clarify -> handleClarify(
-                    clarify, command, correlationId, requester, startTime);
-            case DecisionResult.Reject reject -> handleReject(
-                    reject, command, correlationId, requester, startTime);
+            case DecisionResult.Clarify clarify -> handleClarify(clarify, command, correlationId, requester, startTime);
+            case DecisionResult.Reject reject -> handleReject(reject, command, correlationId, requester, startTime);
         };
     }
 
@@ -407,11 +446,7 @@ public class CommandService {
     }
 
     private CommandResponseBase handleClarify(
-            DecisionResult.Clarify decision,
-            Command command,
-            UUID correlationId,
-            User requester,
-            long startTime) {
+            DecisionResult.Clarify decision, Command command, UUID correlationId, User requester, long startTime) {
 
         // Log decision
         decisionLogWriter.write(DecisionLogWriter.DecisionLogEntry.builder()
@@ -452,11 +487,7 @@ public class CommandService {
     }
 
     private CommandResponseBase handleReject(
-            DecisionResult.Reject decision,
-            Command command,
-            UUID correlationId,
-            User requester,
-            long startTime) {
+            DecisionResult.Reject decision, Command command, UUID correlationId, User requester, long startTime) {
 
         // Log decision
         decisionLogWriter.write(DecisionLogWriter.DecisionLogEntry.builder()
@@ -474,18 +505,13 @@ public class CommandService {
         // Mark rejected
         int executionMs = (int) (System.currentTimeMillis() - startTime);
         String errorCode = decision.errorCode() != null ? decision.errorCode() : ErrorCode.AI_REJECTED.name();
-        String reason =
-                decision.reason() != null && !decision.reason().isBlank()
-                        ? decision.reason()
-                        : ErrorCode.AI_REJECTED.getDefaultMessage();
+        String reason = decision.reason() != null && !decision.reason().isBlank()
+                ? decision.reason()
+                : ErrorCode.AI_REJECTED.getDefaultMessage();
         command.markRejected(errorCode, reason, executionMs);
         commandRepository.save(command);
 
-        log.info(
-                "Command rejected by AI: id={}, correlationId={}, reason={}",
-                command.getId(),
-                correlationId,
-                reason);
+        log.info("Command rejected by AI: id={}, correlationId={}, reason={}", command.getId(), correlationId, reason);
 
         return CommandResponse.rejected(
                 command.getId(), correlationId, errorCode, reason, executionMs, requester.getId());
@@ -496,6 +522,14 @@ public class CommandService {
             return objectMapper.writeValueAsString(obj);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Failed to serialize to JSON", e);
+        }
+    }
+
+    private Map<String, Object> readPayload(String payloadJson) {
+        try {
+            return objectMapper.readValue(payloadJson, new TypeReference<Map<String, Object>>() {});
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to deserialize payload", e);
         }
     }
 }

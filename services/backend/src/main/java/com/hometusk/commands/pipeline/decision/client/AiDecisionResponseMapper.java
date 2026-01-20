@@ -74,8 +74,7 @@ public class AiDecisionResponseMapper {
     private DecisionResult mapToStartJob(AiDecisionResponse response, String rawPayload) {
         // Filter to only supported action types, return Clarify if any unsupported
         if (response.actions() != null && hasUnsupportedActions(response.actions())) {
-            log.warn("start_job contains unsupported action types, filtering: decisionId={}",
-                    response.decisionId());
+            log.warn("start_job contains unsupported action types, filtering: decisionId={}", response.decisionId());
         }
 
         List<DecisionResult.StartJob.ProposedAction> actions = response.actions() == null
@@ -86,9 +85,10 @@ public class AiDecisionResponseMapper {
                         .toList();
 
         // If all actions were filtered out, return Clarify
-        if (actions.isEmpty() && response.actions() != null && !response.actions().isEmpty()) {
-            log.warn("All actions filtered as unsupported, returning Clarify: decisionId={}",
-                    response.decisionId());
+        if (actions.isEmpty()
+                && response.actions() != null
+                && !response.actions().isEmpty()) {
+            log.warn("All actions filtered as unsupported, returning Clarify: decisionId={}", response.decisionId());
             return new DecisionResult.Clarify(
                     DecisionSource.AI_PLATFORM,
                     BigDecimal.ZERO,
@@ -126,8 +126,10 @@ public class AiDecisionResponseMapper {
      * Returns Reject with error code.
      */
     private DecisionResult unknownDecisionType(AiDecisionResponse response, String rawPayload) {
-        log.error("Unknown decision type from AI Platform: type={}, decisionId={}",
-                response.type(), response.decisionId());
+        log.error(
+                "Unknown decision type from AI Platform: type={}, decisionId={}",
+                response.type(),
+                response.decisionId());
 
         return new DecisionResult.Reject(
                 DecisionSource.AI_PLATFORM,

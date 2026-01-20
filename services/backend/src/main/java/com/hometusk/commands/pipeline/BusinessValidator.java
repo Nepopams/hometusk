@@ -31,9 +31,7 @@ public class BusinessValidator {
     private final TaskRepository taskRepository;
 
     public BusinessValidator(
-            MembershipRepository membershipRepository,
-            ZoneRepository zoneRepository,
-            TaskRepository taskRepository) {
+            MembershipRepository membershipRepository, ZoneRepository zoneRepository, TaskRepository taskRepository) {
         this.membershipRepository = membershipRepository;
         this.zoneRepository = zoneRepository;
         this.taskRepository = taskRepository;
@@ -76,10 +74,7 @@ public class BusinessValidator {
 
         if (!violations.isEmpty()) {
             log.debug("Business validation failed for create_task: {} violations", violations.size());
-            throw new BusinessException(
-                    ErrorCode.BUSINESS_RULE_VIOLATION,
-                    "Business rule violation",
-                    violations);
+            throw new BusinessException(ErrorCode.BUSINESS_RULE_VIOLATION, "Business rule violation", violations);
         }
 
         log.debug("Business validation passed for create_task");
@@ -113,16 +108,12 @@ public class BusinessValidator {
 
         // Rule: Task must not be cancelled
         if (task.isCancelled()) {
-            violations.add(
-                    new BusinessException.Violation("TASK_CANCELLED", "Cannot complete a cancelled task"));
+            violations.add(new BusinessException.Violation("TASK_CANCELLED", "Cannot complete a cancelled task"));
         }
 
         if (!violations.isEmpty()) {
             log.debug("Business validation failed for complete_task: {} violations", violations.size());
-            throw new BusinessException(
-                    ErrorCode.BUSINESS_RULE_VIOLATION,
-                    "Business rule violation",
-                    violations);
+            throw new BusinessException(ErrorCode.BUSINESS_RULE_VIOLATION, "Business rule violation", violations);
         }
 
         log.debug("Business validation passed for complete_task");

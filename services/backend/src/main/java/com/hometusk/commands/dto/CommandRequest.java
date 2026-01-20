@@ -1,7 +1,5 @@
 package com.hometusk.commands.dto;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.hometusk.commands.domain.CommandType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;

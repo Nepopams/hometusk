@@ -149,6 +149,85 @@ paths:
               schema:
                 $ref: '#/components/schemas/CommandErrorResponse'
 
+  /commands/{commandId}/continue:
+    post:
+      operationId: continueCommand
+      summary: Continue a command awaiting input
+      tags:
+        - Commands
+      parameters:
+        - name: commandId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: X-Correlation-ID
+          in: header
+          required: false
+          description: Client-provided correlation ID for distributed tracing
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContinueCommandRequest'
+      responses:
+        '200':
+          description: Command processed (status in response body)
+          headers:
+            X-Correlation-ID:
+              schema:
+                type: string
+                format: uuid
+              description: Correlation ID for this request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandResponse'
+        '400':
+          description: Command cannot be continued in current state
+          headers:
+            X-Correlation-ID:
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+        '401':
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '403':
+          description: Access denied for this command
+          headers:
+            X-Correlation-ID:
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+        '404':
+          description: Command not found
+          headers:
+            X-Correlation-ID:
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+
   /users/me:
     get:
       operationId: getCurrentUser
@@ -804,6 +883,16 @@ components:
           type: string
           format: date-time
           description: Client-side timestamp (ISO 8601)
+
+    ContinueCommandRequest:
+      type: object
+      required:
+        - additionalInput
+      properties:
+        additionalInput:
+          type: object
+          additionalProperties: true
+          description: Additional input to merge with original command payload
 
     CreateTaskPayload:
       type: object

@@ -177,17 +177,15 @@ public class ShoppingItem {
      * @param linkedTaskId optional linked task ID
      * @return 64-char hex string
      */
-    public static String generateIdempotencyKey(
-            UUID commandId, UUID listId, String itemName, UUID linkedTaskId) {
+    public static String generateIdempotencyKey(UUID commandId, UUID listId, String itemName, UUID linkedTaskId) {
         String normalizedName = normalizeName(itemName);
-        String input =
-                String.valueOf(commandId)
-                        + "|"
-                        + listId
-                        + "|"
-                        + normalizedName
-                        + "|"
-                        + (linkedTaskId != null ? linkedTaskId : "null");
+        String input = String.valueOf(commandId)
+                + "|"
+                + listId
+                + "|"
+                + normalizedName
+                + "|"
+                + (linkedTaskId != null ? linkedTaskId : "null");
 
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

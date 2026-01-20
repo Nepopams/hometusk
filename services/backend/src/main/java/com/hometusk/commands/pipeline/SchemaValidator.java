@@ -26,10 +26,9 @@ public class SchemaValidator {
 
     private static final Logger log = LoggerFactory.getLogger(SchemaValidator.class);
 
-    private static final Map<CommandType, String> SCHEMA_PATHS =
-            Map.of(
-                    CommandType.CREATE_TASK, "/schemas/create-task.schema.json",
-                    CommandType.COMPLETE_TASK, "/schemas/complete-task.schema.json");
+    private static final Map<CommandType, String> SCHEMA_PATHS = Map.of(
+            CommandType.CREATE_TASK, "/schemas/create-task.schema.json",
+            CommandType.COMPLETE_TASK, "/schemas/complete-task.schema.json");
 
     private final ObjectMapper objectMapper;
     private final JsonSchemaFactory schemaFactory;

@@ -36,9 +36,7 @@ public class NotificationController {
     private final MembershipService membershipService;
 
     public NotificationController(
-            NotificationService notificationService,
-            UserResolver userResolver,
-            MembershipService membershipService) {
+            NotificationService notificationService, UserResolver userResolver, MembershipService membershipService) {
         this.notificationService = notificationService;
         this.userResolver = userResolver;
         this.membershipService = membershipService;
@@ -59,8 +57,7 @@ public class NotificationController {
             @RequestParam(required = false)
                     @Parameter(description = "RFC3339 timestamp to filter notifications since this time")
                     String since,
-            @RequestParam(required = false)
-                    @Parameter(description = "Max number of results (default 50, max 200)")
+            @RequestParam(required = false) @Parameter(description = "Max number of results (default 50, max 200)")
                     Integer limit) {
         CurrentUser currentUser = userResolver.resolveCurrentUser();
         membershipService.requireMembership(currentUser.id(), householdId);

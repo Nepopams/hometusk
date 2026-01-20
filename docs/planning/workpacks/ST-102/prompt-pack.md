@@ -117,6 +117,16 @@ Now read the repository and produce the plan.
 
 You are Codex CLI acting as a software engineer. Execute the approved plan with minimal diff.
 
+## APPROVED PLAN SUMMARY (from PLAN phase)
+
+Key decisions from approved plan:
+- Continuation uses original commandId (not new Idempotency-Key)
+- Only NEEDS_INPUT status is continuable
+- additionalInput is merged ADDITIVELY with original payload (putAll, not replace)
+- Ownership verified: only command initiator can continue
+- Re-run decision pipeline with merged context
+- DecisionLog captures continuation with correlationId
+
 ## STOP-THE-LINE RULE
 
 If execution requires deviating from the plan or changing scope, STOP and ask for human decision.
@@ -124,14 +134,15 @@ Do not proceed if:
 - You need to modify files not in "Allowed to edit" list
 - Tests require changes to unrelated code
 - Architecture decisions need reconsideration
+- Merge strategy differs from "additive merge"
 
 ## Anchor Block — Read These First
 
-1. `AGENTS.md` (project instructions)
+1. `AGENTS.MD` (project instructions) — note: file is named AGENTS.MD
 2. `docs/planning/workpacks/ST-102/workpack.md` — authoritative workpack
-3. The approved PLAN output from previous phase
-4. `docs/contracts/http/commands.openapi.yaml` — to update
-5. `docs/_governance/dod.md` — Definition of Done
+3. `docs/contracts/http/commands.openapi.yaml` — to update
+4. `docs/_governance/dod.md` — Definition of Done
+5. Existing patterns in `CommandService.java` and `CommandController.java`
 
 ## Source of Truth
 
@@ -140,30 +151,34 @@ Do not proceed if:
 | Workpack | `docs/planning/workpacks/ST-102/workpack.md` |
 | Story | `docs/planning/epics/EP-002/stories/ST-102-command-continuation.md` |
 | Commands Contract | `docs/contracts/http/commands.openapi.yaml` |
+| ErrorCode enum | `services/backend/src/main/java/com/hometusk/shared/exception/ErrorCode.java` |
+| CommandStatus enum | `services/backend/src/main/java/com/hometusk/commands/domain/CommandStatus.java` |
 
 ## Scope Controls
 
 ### Allowed to edit:
 - `services/backend/src/main/java/com/hometusk/commands/api/CommandController.java`
 - `services/backend/src/main/java/com/hometusk/commands/service/CommandService.java`
-- `services/backend/src/main/java/com/hometusk/commands/dto/` (new file ContinueCommandRequest.java)
-- `services/backend/src/main/java/com/hometusk/shared/ErrorCode.java` (add COMMAND_NOT_CONTINUABLE if needed)
-- `services/backend/src/test/java/com/hometusk/integration/commands/` (new test file)
+- `services/backend/src/main/java/com/hometusk/commands/dto/ContinueCommandRequest.java` (NEW)
+- `services/backend/src/main/java/com/hometusk/shared/exception/ErrorCode.java` (add COMMAND_NOT_CONTINUABLE)
+- `services/backend/src/test/java/com/hometusk/integration/commands/CommandContinuationIntegrationTest.java` (NEW)
 - `docs/contracts/http/commands.openapi.yaml`
 
 ### Forbidden to edit:
 - `services/backend/src/main/java/com/hometusk/commands/pipeline/**` (guardrails pipeline)
 - `services/backend/src/main/java/com/hometusk/commands/domain/Command.java` (domain model)
+- `services/backend/src/main/java/com/hometusk/commands/domain/CommandStatus.java`
 - `services/backend/src/main/java/com/hometusk/tasks/**` (task domain)
 - `services/backend/src/main/java/com/hometusk/shopping/**` (shopping domain)
-- Any existing tests (except to add new test class)
+- `docs/architecture/service-catalog.md` (not needed for this change)
+- Any existing test files
 
 ### Invariants / must-hold:
 - Existing `POST /api/v1/commands` endpoint unchanged
 - `CommandResponse` schema backward compatible
 - `DecisionLog` structure unchanged
 - correlationId propagation pattern maintained
-- Ownership check: only command initiator can continue
+- Ownership check: only command.getInitiator() can continue
 
 ## Implementation Constraints
 
@@ -171,37 +186,82 @@ Do not proceed if:
 - Keep naming and style consistent with repo (Java 21, Spring Boot idioms).
 - Update docs/tests only as required by AC.
 - Follow existing patterns in CommandController and CommandService.
+- **Unit tests optional** — focus on integration tests for AC coverage.
+
+## CRITICAL: Implementation Details
+
+### ErrorCode Location
+**IMPORTANT:** ErrorCode is at `com.hometusk.shared.exception.ErrorCode` (not `shared.ErrorCode`)
+
+Add to ErrorCode enum (after GUARDRAILS_REJECTED):
+```java
+// Command continuation
+COMMAND_NOT_CONTINUABLE("Command cannot be continued in current state"),
+```
+
+### Merge Strategy for additionalInput
+**IMPORTANT:** Use ADDITIVE merge, not replace:
+```java
+Map<String, Object> mergedPayload = new HashMap<>(originalPayload);
+mergedPayload.putAll(request.additionalInput()); // additionalInput overrides/adds, doesn't clear
+```
+
+### HTTP Status Codes
+- COMMAND_NOT_CONTINUABLE → **400 Bad Request** (not 409)
+- ACCESS_DENIED → 403 Forbidden
+- COMMAND_NOT_FOUND → 404 Not Found
+
+### continueCommand() signature
+```java
+@Transactional
+public CommandResponseBase continueCommand(
+    UUID commandId,
+    ContinueCommandRequest request,
+    User requester,
+    UUID correlationId
+)
+```
 
 ## Execution Steps (follow exactly)
 
-### Step 1: Create ContinueCommandRequest DTO
+### Step 1: Add COMMAND_NOT_CONTINUABLE to ErrorCode
+
+File: `services/backend/src/main/java/com/hometusk/shared/exception/ErrorCode.java`
+
+Add after `GUARDRAILS_REJECTED`:
+```java
+// Command continuation
+COMMAND_NOT_CONTINUABLE("Command cannot be continued in current state"),
+```
+
+### Step 2: Create ContinueCommandRequest DTO
 
 File: `services/backend/src/main/java/com/hometusk/commands/dto/ContinueCommandRequest.java`
 
 ```java
+package com.hometusk.commands.dto;
+
+import jakarta.validation.constraints.NotNull;
+import java.util.Map;
+
 public record ContinueCommandRequest(
     @NotNull Map<String, Object> additionalInput
 ) {}
 ```
-
-### Step 2: Add COMMAND_NOT_CONTINUABLE error code
-
-File: `services/backend/src/main/java/com/hometusk/shared/ErrorCode.java`
-Add: `COMMAND_NOT_CONTINUABLE` (if not exists)
 
 ### Step 3: Add continueCommand() to CommandService
 
 File: `services/backend/src/main/java/com/hometusk/commands/service/CommandService.java`
 
 Logic:
-1. Find command by ID (throw NotFoundException if not found)
-2. Verify command.initiator == currentUser (throw AccessDeniedException if not)
-3. Verify command.status == NEEDS_INPUT (throw BusinessException with COMMAND_NOT_CONTINUABLE if not)
-4. Merge additionalInput with original payload
-5. Re-run decision pipeline
-6. Apply guardrails
-7. Execute action
-8. Update DecisionLog
+1. Find command by ID → throw NotFoundException(COMMAND_NOT_FOUND) if not found
+2. Verify command.getInitiator().getId().equals(requester.getId()) → throw AccessDeniedException if not
+3. Verify command.getStatus() == CommandStatus.NEEDS_INPUT → throw BusinessException(COMMAND_NOT_CONTINUABLE) if not
+4. Parse original payload from command.getPayloadJson()
+5. Merge additionalInput ADDITIVELY (putAll)
+6. Rebuild DecisionContext with merged payload
+7. Re-run decisionProviderSelector.decide(context)
+8. handleDecisionResult() — reuse existing method
 9. Return CommandResponseBase
 
 ### Step 4: Add endpoint to CommandController
@@ -214,29 +274,55 @@ public ResponseEntity<CommandResponseBase> continueCommand(
     @PathVariable UUID commandId,
     @RequestBody @Valid ContinueCommandRequest request,
     @RequestHeader(value = "X-Correlation-ID", required = false) UUID correlationId
-)
+) {
+    User currentUser = getCurrentUser();
+    UUID corrId = correlationId != null ? correlationId : UUID.randomUUID();
+    CommandResponseBase response = commandService.continueCommand(
+        commandId, request, currentUser, corrId
+    );
+    return ResponseEntity.ok(response);
+}
 ```
 
 ### Step 5: Update OpenAPI contract
 
 File: `docs/contracts/http/commands.openapi.yaml`
 
-Add:
-- Path: `/commands/{commandId}/continue`
+Add path `/commands/{commandId}/continue`:
 - Method: POST
-- Request body: `ContinueCommandRequest` schema
-- Responses: 200, 400 (COMMAND_NOT_CONTINUABLE), 403 (ACCESS_DENIED), 404 (COMMAND_NOT_FOUND)
+- Parameters: commandId (path, UUID), X-Correlation-ID (header, optional)
+- Request body: ContinueCommandRequest schema
+- Responses:
+  - 200: CommandResponse (reuse existing)
+  - 400: ErrorResponse with code COMMAND_NOT_CONTINUABLE
+  - 403: ErrorResponse with code ACCESS_DENIED
+  - 404: ErrorResponse with code COMMAND_NOT_FOUND
+
+Add schema ContinueCommandRequest:
+```yaml
+ContinueCommandRequest:
+  type: object
+  required:
+    - additionalInput
+  properties:
+    additionalInput:
+      type: object
+      additionalProperties: true
+      description: Additional input to merge with original command payload
+```
 
 ### Step 6: Create integration test
 
 File: `services/backend/src/test/java/com/hometusk/integration/commands/CommandContinuationIntegrationTest.java`
 
-Test cases:
-1. Happy path: NEEDS_INPUT → continue → EXECUTED
-2. Invalid state: EXECUTED → 400 COMMAND_NOT_CONTINUABLE
-3. Not found: non-existent commandId → 404
-4. Auth error: different user → 403 ACCESS_DENIED
-5. DecisionLog updated after continuation
+Test cases (use existing test patterns from CommandPipelineTest):
+1. `testContinueCommand_HappyPath`: NEEDS_INPUT → continue → EXECUTED
+2. `testContinueCommand_InvalidState_Returns400`: EXECUTED command → 400
+3. `testContinueCommand_NotFound_Returns404`: non-existent commandId → 404
+4. `testContinueCommand_DifferentUser_Returns403`: other user → 403
+5. `testContinueCommand_DecisionLogUpdated`: verify DecisionLog entry created
+
+Setup: Use guardrail that triggers NEEDS_INPUT (e.g., MaxOpenTasksPerAssigneePolicy)
 
 ## Verification Commands
 
@@ -265,9 +351,13 @@ After implementation, run:
 
 - [ ] Code compiles without warnings
 - [ ] Spotless formatting applied
-- [ ] All AC tests pass
+- [ ] AC1: Endpoint exists and accepts body
+- [ ] AC2: NEEDS_INPUT → continue → EXECUTED works
+- [ ] AC3: Non-NEEDS_INPUT → 400 COMMAND_NOT_CONTINUABLE
+- [ ] AC4: Non-existent commandId → 404
+- [ ] AC5: Different user → 403 ACCESS_DENIED
+- [ ] AC6: OpenAPI contract updated
 - [ ] No regression in existing tests
-- [ ] OpenAPI contract updated
 - [ ] correlationId propagated
 - [ ] DecisionLog updated on continuation
 
@@ -275,8 +365,9 @@ After implementation, run:
 
 1. Show concise diff summary
 2. Instruct user to review via `/diff`
-3. List any remaining risks or TODOs
+3. List files touched
 4. Confirm verification commands passed
+5. List any remaining risks (expect none if plan followed)
 ```
 
 ---
@@ -416,6 +507,57 @@ Produce the exit review report based on the current state of the repository.
 ```
 
 **Human Gate:** GO/NO-GO decision based on review report.
+
+---
+
+## FIX Prompt (Should-Fix Issues)
+
+```markdown
+# Codex FIX Prompt — ST-102: Should-Fix Issues
+
+You are Codex CLI. Apply minimal fixes for should-fix issues identified in code review.
+
+## HARD RULES
+
+- Only fix the specific issues listed below.
+- DO NOT refactor or change anything else.
+- Minimal diff only.
+
+## Issues to Fix
+
+### Issue 1: Add logging at continueCommand() start
+
+**File:** `services/backend/src/main/java/com/hometusk/commands/service/CommandService.java`
+
+**Location:** Beginning of `continueCommand()` method (after line 211)
+
+**Fix:** Add logging statement similar to execute() method:
+
+```java
+log.info(
+        "Continuing command: commandId={}, correlationId={}",
+        commandId,
+        correlationId);
+```
+
+Insert after `long startTime = System.currentTimeMillis();` (line 211).
+
+## Verification
+
+After fix, run:
+
+```bash
+./gradlew compileJava
+./gradlew spotlessApply
+```
+
+Expected: Compiles without errors.
+
+## After Changes
+
+1. Show diff summary
+2. Confirm fix applied
+```
 
 ---
 

@@ -4,7 +4,6 @@ import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import com.hometusk.commands.domain.Command;
 import com.hometusk.commands.domain.CommandStatus;
 import com.hometusk.commands.repository.CommandRepository;
 import com.hometusk.commands.repository.DecisionLogRepository;
@@ -86,7 +85,8 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value("executed"))
                     .andExpect(jsonPath("$.result.taskId").exists())
-                    .andExpect(jsonPath("$.result.assigneeId").value(testUser.getId().toString()));
+                    .andExpect(jsonPath("$.result.assigneeId")
+                            .value(testUser.getId().toString()));
 
             // Verify task was created
             var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
@@ -96,7 +96,8 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
             // Verify decision log
             var log = decisionLogRepository.findByCorrelationId(correlationId);
             org.assertj.core.api.Assertions.assertThat(log).isPresent();
-            org.assertj.core.api.Assertions.assertThat(log.get().getExternalDecisionId()).isNotNull();
+            org.assertj.core.api.Assertions.assertThat(log.get().getExternalDecisionId())
+                    .isNotNull();
         }
     }
 
@@ -136,7 +137,8 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
             // Verify command status
             var commands = commandRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(commands).isNotEmpty();
-            org.assertj.core.api.Assertions.assertThat(commands.get(0).getStatus()).isEqualTo(CommandStatus.NEEDS_INPUT);
+            org.assertj.core.api.Assertions.assertThat(commands.get(0).getStatus())
+                    .isEqualTo(CommandStatus.NEEDS_INPUT);
         }
     }
 
@@ -175,7 +177,8 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
             // Verify command was rejected
             var commands = commandRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(commands).isNotEmpty();
-            org.assertj.core.api.Assertions.assertThat(commands.get(0).getStatus()).isEqualTo(CommandStatus.REJECTED);
+            org.assertj.core.api.Assertions.assertThat(commands.get(0).getStatus())
+                    .isEqualTo(CommandStatus.REJECTED);
         }
     }
 
@@ -215,7 +218,8 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
             // Verify command was executed
             var commands = commandRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(commands).isNotEmpty();
-            org.assertj.core.api.Assertions.assertThat(commands.get(0).getStatus()).isEqualTo(CommandStatus.EXECUTED);
+            org.assertj.core.api.Assertions.assertThat(commands.get(0).getStatus())
+                    .isEqualTo(CommandStatus.EXECUTED);
         }
     }
 
@@ -229,10 +233,14 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
             stubTimeout();
 
             String requestBody = objectMapper.writeValueAsString(Map.of(
-                    "type", "create_task",
-                    "householdId", testHousehold.getId(),
-                    "source", "text",
-                    "payload", Map.of("title", "Clean kitchen")));
+                    "type",
+                    "create_task",
+                    "householdId",
+                    testHousehold.getId(),
+                    "source",
+                    "text",
+                    "payload",
+                    Map.of("title", "Clean kitchen")));
 
             mockMvc.perform(post("/api/v1/commands")
                             .header("X-Correlation-ID", correlationId)
@@ -255,10 +263,14 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
             circuitBreakerRegistry.circuitBreaker("aiPlatform").transitionToOpenState();
 
             String requestBody = objectMapper.writeValueAsString(Map.of(
-                    "type", "create_task",
-                    "householdId", testHousehold.getId(),
-                    "source", "text",
-                    "payload", Map.of("title", "Clean kitchen")));
+                    "type",
+                    "create_task",
+                    "householdId",
+                    testHousehold.getId(),
+                    "source",
+                    "text",
+                    "payload",
+                    Map.of("title", "Clean kitchen")));
 
             mockMvc.perform(post("/api/v1/commands")
                             .header("X-Correlation-ID", correlationId)
@@ -407,8 +419,8 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
             mockMvc.perform(post("/api/v1/commands")
                             .header("X-Correlation-ID", correlationId)
                             .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestBody)
-                    .with(jwt()))
+                            .content(requestBody)
+                            .with(jwt()))
                     // Then: Safe degradation to rejected
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value("rejected"))

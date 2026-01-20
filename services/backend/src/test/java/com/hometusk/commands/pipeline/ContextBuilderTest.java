@@ -5,13 +5,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import com.hometusk.commands.pipeline.guardrails.HouseholdSnapshot;
 import com.hometusk.commands.pipeline.guardrails.GuardrailsConfig;
+import com.hometusk.commands.pipeline.guardrails.HouseholdSnapshot;
 import com.hometusk.households.domain.Household;
 import com.hometusk.households.domain.Zone;
 import com.hometusk.households.repository.ZoneRepository;
 import com.hometusk.shopping.repository.ShoppingListRepository;
-import com.hometusk.tasks.domain.TaskStatus;
 import com.hometusk.tasks.repository.TaskRepository;
 import com.hometusk.users.domain.Membership;
 import com.hometusk.users.domain.MembershipRole;
@@ -133,7 +132,8 @@ class ContextBuilderTest {
 
             when(membershipRepository.findByHouseholdId(householdId)).thenReturn(List.of(membership));
             when(zoneRepository.findByHouseholdId(householdId)).thenReturn(List.of());
-            when(taskRepository.countTasksByAssigneeAndStatuses(eq(householdId), any())).thenReturn(List.of());
+            when(taskRepository.countTasksByAssigneeAndStatuses(eq(householdId), any()))
+                    .thenReturn(List.of());
 
             // When
             HouseholdSnapshot snapshot = contextBuilder.buildSnapshot(householdId, correlationId);
@@ -155,7 +155,8 @@ class ContextBuilderTest {
             when(membershipRepository.findByHouseholdId(householdId))
                     .thenReturn(List.of(adminMembership, memberMembership));
             when(zoneRepository.findByHouseholdId(householdId)).thenReturn(List.of());
-            when(taskRepository.countTasksByAssigneeAndStatuses(eq(householdId), any())).thenReturn(List.of());
+            when(taskRepository.countTasksByAssigneeAndStatuses(eq(householdId), any()))
+                    .thenReturn(List.of());
 
             // When
             HouseholdSnapshot snapshot = contextBuilder.buildSnapshot(householdId, correlationId);
@@ -181,7 +182,8 @@ class ContextBuilderTest {
 
             when(membershipRepository.findByHouseholdId(householdId)).thenReturn(List.of(membership));
             when(zoneRepository.findByHouseholdId(householdId)).thenReturn(List.of(kitchen));
-            when(shoppingListRepository.findByHouseholdIdOrderByCreatedAtDesc(householdId)).thenReturn(List.of());
+            when(shoppingListRepository.findByHouseholdIdOrderByCreatedAtDesc(householdId))
+                    .thenReturn(List.of());
 
             // When
             var context = contextBuilder.buildHouseholdContextForAi(householdId, correlationId);
@@ -197,8 +199,7 @@ class ContextBuilderTest {
         @DisplayName("should return empty context on database error")
         void returnsEmptyOnError() {
             // Given
-            when(membershipRepository.findByHouseholdId(householdId))
-                    .thenThrow(new RuntimeException("Database error"));
+            when(membershipRepository.findByHouseholdId(householdId)).thenThrow(new RuntimeException("Database error"));
 
             // When
             var context = contextBuilder.buildHouseholdContextForAi(householdId, correlationId);
@@ -216,7 +217,8 @@ class ContextBuilderTest {
 
             when(membershipRepository.findByHouseholdId(householdId)).thenReturn(List.of(membership));
             when(zoneRepository.findByHouseholdId(householdId)).thenReturn(List.of());
-            when(shoppingListRepository.findByHouseholdIdOrderByCreatedAtDesc(householdId)).thenReturn(List.of());
+            when(shoppingListRepository.findByHouseholdIdOrderByCreatedAtDesc(householdId))
+                    .thenReturn(List.of());
 
             // When
             var context = contextBuilder.buildHouseholdContextForAi(householdId, correlationId);

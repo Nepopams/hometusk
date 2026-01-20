@@ -10,6 +10,7 @@ import com.hometusk.users.domain.MembershipRole;
 import com.hometusk.users.domain.User;
 import com.hometusk.users.repository.MembershipRepository;
 import com.hometusk.users.repository.UserRepository;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -23,8 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
-import java.util.UUID;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -98,11 +97,9 @@ public abstract class IntegrationTestBase {
      * Creates a JWT mock for the given user.
      */
     protected RequestPostProcessor jwtForUser(User user) {
-        return SecurityMockMvcRequestPostProcessors.jwt()
-                .jwt(jwt -> jwt
-                        .subject(user.getExternalId())
-                        .claim("email", user.getEmail())
-                        .claim("name", user.getDisplayName()));
+        return SecurityMockMvcRequestPostProcessors.jwt().jwt(jwt -> jwt.subject(user.getExternalId())
+                .claim("email", user.getEmail())
+                .claim("name", user.getDisplayName()));
     }
 
     /**

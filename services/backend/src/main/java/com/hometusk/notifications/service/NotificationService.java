@@ -55,7 +55,8 @@ public class NotificationService {
         Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         List<Notification> notifications = since != null
-                ? notificationRepository.findByHouseholdIdAndUserIdAndCreatedAtAfter(householdId, userId, since, pageable)
+                ? notificationRepository.findByHouseholdIdAndUserIdAndCreatedAtAfter(
+                        householdId, userId, since, pageable)
                 : notificationRepository.findByHouseholdIdAndUserId(householdId, userId, pageable);
 
         return notifications.stream().map(this::toDto).toList();
@@ -65,8 +66,8 @@ public class NotificationService {
     public NotificationDto markRead(UUID notificationId, UUID userId) {
         Notification notification = notificationRepository
                 .findByIdAndUserId(notificationId, userId)
-                .orElseThrow(
-                        () -> new NotFoundException(ErrorCode.NOTIFICATION_NOT_FOUND, "Notification not found: " + notificationId));
+                .orElseThrow(() -> new NotFoundException(
+                        ErrorCode.NOTIFICATION_NOT_FOUND, "Notification not found: " + notificationId));
 
         if (notification.getReadAt() == null) {
             notification.markRead(Instant.now());
@@ -89,7 +90,12 @@ public class NotificationService {
         NotificationPayloadDto payload =
                 new NotificationPayloadDto(acceptedBy.getId(), invite.getId(), ENTITY_TYPE_INVITE, summary);
 
-        createNotification(invite.getHousehold(), invite.getCreatedByUser(), NotificationType.INVITE_ACCEPTED, payload, correlationId);
+        createNotification(
+                invite.getHousehold(),
+                invite.getCreatedByUser(),
+                NotificationType.INVITE_ACCEPTED,
+                payload,
+                correlationId);
     }
 
     @Transactional
@@ -97,15 +103,18 @@ public class NotificationService {
         if (task == null || task.getAssignee() == null) {
             return;
         }
-        if (actor != null && task.getAssigneeId() != null && task.getAssigneeId().equals(actor.getId())) {
+        if (actor != null
+                && task.getAssigneeId() != null
+                && task.getAssigneeId().equals(actor.getId())) {
             return;
         }
 
         String summary = "Task assigned: " + safeText(task.getTitle());
-        NotificationPayloadDto payload =
-                new NotificationPayloadDto(actor != null ? actor.getId() : null, task.getId(), ENTITY_TYPE_TASK, summary);
+        NotificationPayloadDto payload = new NotificationPayloadDto(
+                actor != null ? actor.getId() : null, task.getId(), ENTITY_TYPE_TASK, summary);
 
-        createNotification(task.getHousehold(), task.getAssignee(), NotificationType.TASK_ASSIGNED, payload, correlationId);
+        createNotification(
+                task.getHousehold(), task.getAssignee(), NotificationType.TASK_ASSIGNED, payload, correlationId);
     }
 
     @Transactional
@@ -115,8 +124,8 @@ public class NotificationService {
         }
 
         String summary = "Task completed: " + safeText(task.getTitle());
-        NotificationPayloadDto payload =
-                new NotificationPayloadDto(actor != null ? actor.getId() : null, task.getId(), ENTITY_TYPE_TASK, summary);
+        NotificationPayloadDto payload = new NotificationPayloadDto(
+                actor != null ? actor.getId() : null, task.getId(), ENTITY_TYPE_TASK, summary);
 
         Set<UUID> recipients = new HashSet<>();
         if (task.getCreatedBy() != null) {
@@ -132,7 +141,8 @@ public class NotificationService {
         for (UUID recipientId : recipients) {
             User recipient = recipientId.equals(task.getCreatedById()) ? task.getCreatedBy() : task.getAssignee();
             if (recipient != null && recipient.getId().equals(recipientId)) {
-                createNotification(task.getHousehold(), recipient, NotificationType.TASK_COMPLETED, payload, correlationId);
+                createNotification(
+                        task.getHousehold(), recipient, NotificationType.TASK_COMPLETED, payload, correlationId);
             }
         }
     }
@@ -149,7 +159,12 @@ public class NotificationService {
                 ENTITY_TYPE_SHOPPING_ITEM,
                 "Shopping item added: " + safeText(item.getName()));
 
-        notifyHouseholdMembers(household, actor != null ? actor.getId() : null, NotificationType.SHOPPING_ITEM_ADDED, payload, correlationId);
+        notifyHouseholdMembers(
+                household,
+                actor != null ? actor.getId() : null,
+                NotificationType.SHOPPING_ITEM_ADDED,
+                payload,
+                correlationId);
     }
 
     @Transactional

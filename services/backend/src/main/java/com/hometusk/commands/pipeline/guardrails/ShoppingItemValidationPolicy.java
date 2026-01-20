@@ -40,12 +40,8 @@ public class ShoppingItemValidationPolicy implements GuardrailPolicy {
 
             // Validate non-empty
             if (name == null || name.isBlank()) {
-                log.warn(
-                        "ShoppingItemValidationPolicy: empty item name, correlationId={}",
-                        context.correlationId());
-                return GuardrailOutcome.reject(
-                        "Название товара не может быть пустым.",
-                        "SHOPPING_ITEM_NAME_EMPTY");
+                log.warn("ShoppingItemValidationPolicy: empty item name, correlationId={}", context.correlationId());
+                return GuardrailOutcome.reject("Название товара не может быть пустым.", "SHOPPING_ITEM_NAME_EMPTY");
             }
 
             // Validate length

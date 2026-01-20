@@ -8,7 +8,6 @@ import com.hometusk.shopping.domain.ShoppingList;
 import com.hometusk.shopping.repository.ShoppingItemRepository;
 import com.hometusk.shopping.repository.ShoppingListRepository;
 import com.hometusk.tasks.domain.Task;
-import com.hometusk.tasks.domain.TaskStatus;
 import com.hometusk.tasks.repository.TaskRepository;
 import com.hometusk.users.domain.Membership;
 import com.hometusk.users.domain.MembershipRole;
@@ -138,7 +137,8 @@ class TaskControllerTest extends IntegrationTestBase {
         void listTasksRejectsNonMember() throws Exception {
             // Remove testUser2 from members for this test
             membershipRepository.deleteAll(
-                    membershipRepository.findByUserIdAndHouseholdId(testUser2.getId(), testHousehold.getId()).stream().toList());
+                    membershipRepository.findByUserIdAndHouseholdId(testUser2.getId(), testHousehold.getId()).stream()
+                            .toList());
 
             mockMvc.perform(get("/api/v1/households/{id}/tasks", testHousehold.getId())
                             .with(jwtForUser(testUser2)))
@@ -153,8 +153,7 @@ class TaskControllerTest extends IntegrationTestBase {
         @Test
         @DisplayName("Should return task detail with linked shopping items")
         void getTaskDetailIncludesLinkedItems() throws Exception {
-            mockMvc.perform(get("/api/v1/households/{id}/tasks/{taskId}",
-                            testHousehold.getId(), task1.getId())
+            mockMvc.perform(get("/api/v1/households/{id}/tasks/{taskId}", testHousehold.getId(), task1.getId())
                             .with(jwt()))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(task1.getId().toString()))
@@ -170,8 +169,7 @@ class TaskControllerTest extends IntegrationTestBase {
         @Test
         @DisplayName("Should return task detail without linked items")
         void getTaskDetailWithoutLinkedItems() throws Exception {
-            mockMvc.perform(get("/api/v1/households/{id}/tasks/{taskId}",
-                            testHousehold.getId(), task2.getId())
+            mockMvc.perform(get("/api/v1/households/{id}/tasks/{taskId}", testHousehold.getId(), task2.getId())
                             .with(jwt()))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(task2.getId().toString()))
@@ -182,8 +180,10 @@ class TaskControllerTest extends IntegrationTestBase {
         @Test
         @DisplayName("Should return 404 for non-existent task")
         void getTaskDetailReturnsNotFoundForMissingTask() throws Exception {
-            mockMvc.perform(get("/api/v1/households/{id}/tasks/{taskId}",
-                            testHousehold.getId(), java.util.UUID.randomUUID())
+            mockMvc.perform(get(
+                                    "/api/v1/households/{id}/tasks/{taskId}",
+                                    testHousehold.getId(),
+                                    java.util.UUID.randomUUID())
                             .with(jwt()))
                     .andExpect(status().isNotFound());
         }
@@ -193,10 +193,10 @@ class TaskControllerTest extends IntegrationTestBase {
         void getTaskDetailRejectsNonMember() throws Exception {
             // Remove testUser2 from members
             membershipRepository.deleteAll(
-                    membershipRepository.findByUserIdAndHouseholdId(testUser2.getId(), testHousehold.getId()).stream().toList());
+                    membershipRepository.findByUserIdAndHouseholdId(testUser2.getId(), testHousehold.getId()).stream()
+                            .toList());
 
-            mockMvc.perform(get("/api/v1/households/{id}/tasks/{taskId}",
-                            testHousehold.getId(), task1.getId())
+            mockMvc.perform(get("/api/v1/households/{id}/tasks/{taskId}", testHousehold.getId(), task1.getId())
                             .with(jwtForUser(testUser2)))
                     .andExpect(status().isForbidden());
         }

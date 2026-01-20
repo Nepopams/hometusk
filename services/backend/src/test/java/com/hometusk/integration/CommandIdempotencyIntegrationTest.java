@@ -7,7 +7,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.hometusk.tasks.repository.TaskRepository;
 import java.util.Map;
-import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,10 +26,14 @@ class CommandIdempotencyIntegrationTest extends IntegrationTestBase {
         String correlationId = randomCorrelationId();
 
         var request = Map.of(
-                "householdId", testHousehold.getId().toString(),
-                "type", "create_task",
-                "payload", Map.of("title", "Clean kitchen"),
-                "source", "api");
+                "householdId",
+                testHousehold.getId().toString(),
+                "type",
+                "create_task",
+                "payload",
+                Map.of("title", "Clean kitchen"),
+                "source",
+                "api");
 
         MvcResult first = mockMvc.perform(post("/api/v1/commands")
                         .with(jwt())
@@ -65,16 +68,24 @@ class CommandIdempotencyIntegrationTest extends IntegrationTestBase {
         String idempotencyKey = "idem_key_2";
 
         var request = Map.of(
-                "householdId", testHousehold.getId().toString(),
-                "type", "create_task",
-                "payload", Map.of("title", "Clean kitchen"),
-                "source", "api");
+                "householdId",
+                testHousehold.getId().toString(),
+                "type",
+                "create_task",
+                "payload",
+                Map.of("title", "Clean kitchen"),
+                "source",
+                "api");
 
         var changedRequest = Map.of(
-                "householdId", testHousehold.getId().toString(),
-                "type", "create_task",
-                "payload", Map.of("title", "Clean bathroom"),
-                "source", "api");
+                "householdId",
+                testHousehold.getId().toString(),
+                "type",
+                "create_task",
+                "payload",
+                Map.of("title", "Clean bathroom"),
+                "source",
+                "api");
 
         mockMvc.perform(post("/api/v1/commands")
                         .with(jwt())

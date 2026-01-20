@@ -4,8 +4,8 @@
 **Epic:** EP-002 (MVP Iteration 2)
 **Iteration:** 2b
 **Points:** 2
-**Status:** blocked
-**Blocked By:** ST-101 (tests must run), ST-102 (clarification loop)
+**Status:** in_progress
+**Unblocked:** ST-101 ✓, ST-102 ✓, ST-103 ✓
 **Priority:** P1
 
 ---

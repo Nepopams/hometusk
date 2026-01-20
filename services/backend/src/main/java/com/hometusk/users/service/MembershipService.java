@@ -56,7 +56,8 @@ public class MembershipService {
     @Transactional
     public Membership addMember(User user, Household household, MembershipRole role) {
         // Check if membership already exists
-        Optional<Membership> existing = membershipRepository.findByUserIdAndHouseholdId(user.getId(), household.getId());
+        Optional<Membership> existing =
+                membershipRepository.findByUserIdAndHouseholdId(user.getId(), household.getId());
 
         if (existing.isPresent()) {
             return existing.get();
@@ -68,8 +69,6 @@ public class MembershipService {
 
     @Transactional
     public void removeMember(UUID userId, UUID householdId) {
-        membershipRepository
-                .findByUserIdAndHouseholdId(userId, householdId)
-                .ifPresent(membershipRepository::delete);
+        membershipRepository.findByUserIdAndHouseholdId(userId, householdId).ifPresent(membershipRepository::delete);
     }
 }

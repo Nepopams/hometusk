@@ -68,13 +68,7 @@ public record DecisionContext(
 
         public DecisionContext build() {
             return new DecisionContext(
-                    commandId,
-                    correlationId,
-                    commandType,
-                    payload,
-                    requesterId,
-                    householdId,
-                    householdContext);
+                    commandId, correlationId, commandType, payload, requesterId, householdId, householdContext);
         }
     }
 }

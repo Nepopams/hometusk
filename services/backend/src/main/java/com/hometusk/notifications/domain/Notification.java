@@ -10,7 +10,9 @@ import java.util.UUID;
 @Table(
         name = "notifications",
         indexes = {
-            @Index(name = "idx_notifications_household_user_created_at", columnList = "household_id,user_id,created_at"),
+            @Index(
+                    name = "idx_notifications_household_user_created_at",
+                    columnList = "household_id,user_id,created_at"),
             @Index(name = "idx_notifications_household_user_read_at", columnList = "household_id,user_id,read_at")
         })
 public class Notification {
@@ -45,12 +47,7 @@ public class Notification {
 
     protected Notification() {}
 
-    public Notification(
-            Household household,
-            User user,
-            NotificationType type,
-            String payloadJson,
-            UUID correlationId) {
+    public Notification(Household household, User user, NotificationType type, String payloadJson, UUID correlationId) {
         this.household = household;
         this.user = user;
         this.type = type;

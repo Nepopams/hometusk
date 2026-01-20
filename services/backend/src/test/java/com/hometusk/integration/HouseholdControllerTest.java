@@ -4,8 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import com.hometusk.households.domain.Household;
-import com.hometusk.households.domain.Zone;
 import com.hometusk.users.domain.Membership;
 import com.hometusk.users.domain.MembershipRole;
 import java.util.Map;

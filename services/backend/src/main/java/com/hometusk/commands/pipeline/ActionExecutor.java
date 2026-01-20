@@ -130,8 +130,7 @@ public class ActionExecutor {
         };
     }
 
-    private ActionResult executeCreateTaskFromAction(
-            Map<String, Object> params, Command command, UUID correlationId) {
+    private ActionResult executeCreateTaskFromAction(Map<String, Object> params, Command command, UUID correlationId) {
         log.debug("Executing create_task from action: commandId={}", command.getId());
 
         Household household = householdService.getById(command.getHouseholdId());

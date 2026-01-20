@@ -4,8 +4,9 @@
 **Epic:** EP-002 (MVP Iteration 2)
 **Iteration:** 2b
 **Points:** 1
-**Status:** ready
+**Status:** done
 **Priority:** P1
+**Decision:** DEFER — start_task not needed for MVP (2026-01-19)
 
 ---
 
@@ -102,3 +103,25 @@ No code changes in this story. Decision only.
 - [x] Options defined
 - [x] Decision criteria listed
 - [x] No blocking dependencies
+
+---
+
+## Decision Record (2026-01-19)
+
+### Decision: DEFER
+
+### Rationale
+1. MVP scope "обновить статус" is satisfied by `complete_task` (→ DONE)
+2. IN_PROGRESS status is implicit — assigned task = "in progress"
+3. No UI in MVP to display/use IN_PROGRESS distinctly
+4. Domain is ready for post-MVP expansion (Task.start() method exists)
+5. Deferring accelerates MVP closure (ST-105)
+
+### Impact
+- **MVP.md:** Updated with clarification note
+- **ST-104:** Marked as deferred (post-MVP)
+- **ST-105:** Unblocked — can proceed with validation
+
+### Artifacts Updated
+- `docs/planning/mvp.md` — clarification added
+- `docs/planning/epics/EP-002/stories/ST-104-start-task-impl.md` — status: deferred

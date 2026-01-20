@@ -39,7 +39,10 @@ class HouseholdInviteIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.status").value("active"))
                 .andReturn();
 
-        String token = objectMapper.readTree(result.getResponse().getContentAsString()).get("inviteToken").asText();
+        String token = objectMapper
+                .readTree(result.getResponse().getContentAsString())
+                .get("inviteToken")
+                .asText();
         assertThat(token).startsWith("hti_");
         assertThat(token.length()).isEqualTo(47);
 
@@ -69,7 +72,8 @@ class HouseholdInviteIntegrationTest extends IntegrationTestBase {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.membership.id").exists())
-                .andExpect(jsonPath("$.household.id").value(testHousehold.getId().toString()));
+                .andExpect(
+                        jsonPath("$.household.id").value(testHousehold.getId().toString()));
 
         assertThat(membershipRepository.existsByUserIdAndHouseholdId(testUser2.getId(), testHousehold.getId()))
                 .isTrue();
@@ -165,7 +169,8 @@ class HouseholdInviteIntegrationTest extends IntegrationTestBase {
 
         try {
             Future<Integer> first = executor.submit(() -> acceptInviteWithLatch(requestBody, testUser2, ready, start));
-            Future<Integer> second = executor.submit(() -> acceptInviteWithLatch(requestBody, savedUser3, ready, start));
+            Future<Integer> second =
+                    executor.submit(() -> acceptInviteWithLatch(requestBody, savedUser3, ready, start));
 
             assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
             start.countDown();
@@ -182,8 +187,8 @@ class HouseholdInviteIntegrationTest extends IntegrationTestBase {
         }
     }
 
-    private int acceptInviteWithLatch(
-            String requestBody, User user, CountDownLatch ready, CountDownLatch start) throws Exception {
+    private int acceptInviteWithLatch(String requestBody, User user, CountDownLatch ready, CountDownLatch start)
+            throws Exception {
         ready.countDown();
         if (!start.await(5, TimeUnit.SECONDS)) {
             return 0;
@@ -204,6 +209,9 @@ class HouseholdInviteIntegrationTest extends IntegrationTestBase {
                 .andExpect(status().isCreated())
                 .andReturn();
 
-        return objectMapper.readTree(result.getResponse().getContentAsString()).get("inviteToken").asText();
+        return objectMapper
+                .readTree(result.getResponse().getContentAsString())
+                .get("inviteToken")
+                .asText();
     }
 }

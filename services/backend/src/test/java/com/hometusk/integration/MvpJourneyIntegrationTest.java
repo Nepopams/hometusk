@@ -27,8 +27,10 @@ class MvpJourneyIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.id").exists())
                 .andReturn();
 
-        UUID householdId = UUID.fromString(
-                objectMapper.readTree(householdResult.getResponse().getContentAsString()).get("id").asText());
+        UUID householdId = UUID.fromString(objectMapper
+                .readTree(householdResult.getResponse().getContentAsString())
+                .get("id")
+                .asText());
 
         var zoneRequest = Map.of("name", "Entry");
         var zoneResult = mockMvc.perform(post("/api/v1/households/{id}/zones", householdId)
@@ -39,16 +41,20 @@ class MvpJourneyIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.id").exists())
                 .andReturn();
 
-        UUID zoneId = UUID.fromString(
-                objectMapper.readTree(zoneResult.getResponse().getContentAsString()).get("id").asText());
+        UUID zoneId = UUID.fromString(objectMapper
+                .readTree(zoneResult.getResponse().getContentAsString())
+                .get("id")
+                .asText());
 
         var commandRequest = Map.of(
-                "householdId", householdId.toString(),
-                "type", "create_task",
-                "payload", Map.of(
-                        "title", "Sweep entryway",
-                        "zoneId", zoneId.toString()),
-                "source", "web");
+                "householdId",
+                householdId.toString(),
+                "type",
+                "create_task",
+                "payload",
+                Map.of("title", "Sweep entryway", "zoneId", zoneId.toString()),
+                "source",
+                "web");
 
         mockMvc.perform(post("/api/v1/commands")
                         .with(jwt())
@@ -58,8 +64,7 @@ class MvpJourneyIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.status").value("executed"))
                 .andExpect(jsonPath("$.result.taskId").exists());
 
-        mockMvc.perform(get("/api/v1/households/{id}/tasks", householdId)
-                        .with(jwt()))
+        mockMvc.perform(get("/api/v1/households/{id}/tasks", householdId).with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].title").value("Sweep entryway"));

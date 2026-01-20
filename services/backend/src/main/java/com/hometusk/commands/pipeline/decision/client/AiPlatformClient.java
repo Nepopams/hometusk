@@ -66,8 +66,11 @@ public class AiPlatformClient {
         this.restClient = builder.build();
         this.retry = retryRegistry.retry("aiPlatform");
         this.circuitBreaker = circuitBreakerRegistry.circuitBreaker("aiPlatform");
-        log.info("AI Platform client initialized: baseUrl={}, decisionPath={}, timeoutMs={}",
-                baseUrl, decisionPath, timeoutMs);
+        log.info(
+                "AI Platform client initialized: baseUrl={}, decisionPath={}, timeoutMs={}",
+                baseUrl,
+                decisionPath,
+                timeoutMs);
     }
 
     /**
@@ -78,8 +81,7 @@ public class AiPlatformClient {
      * @throws AiPlatformException if request fails
      */
     public AiDecisionResponse requestDecision(AiDecisionRequest request) {
-        log.debug("Requesting decision from AI Platform: commandId={}, path={}",
-                request.commandId(), decisionPath);
+        log.debug("Requesting decision from AI Platform: commandId={}, path={}", request.commandId(), decisionPath);
 
         try {
             Supplier<AiDecisionResponse> supplier = () -> executeRequest(request);
@@ -109,12 +111,10 @@ public class AiPlatformClient {
 
         return spec.body(request)
                 .retrieve()
-                .onStatus(
-                        HttpStatusCode::isError,
-                        (req, resp) -> {
-                            throw new AiPlatformException(
-                                    "AI Platform returned error: " + resp.getStatusCode(), resp.getStatusCode());
-                        })
+                .onStatus(HttpStatusCode::isError, (req, resp) -> {
+                    throw new AiPlatformException(
+                            "AI Platform returned error: " + resp.getStatusCode(), resp.getStatusCode());
+                })
                 .body(AiDecisionResponse.class);
     }
 

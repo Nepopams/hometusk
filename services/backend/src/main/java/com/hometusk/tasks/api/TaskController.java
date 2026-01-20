@@ -60,7 +60,8 @@ public class TaskController {
     })
     public ResponseEntity<List<TaskDto>> listTasks(
             @PathVariable UUID householdId,
-            @RequestParam(required = false) @Parameter(description = "Filter by status (open, in_progress, done, cancelled)")
+            @RequestParam(required = false)
+                    @Parameter(description = "Filter by status (open, in_progress, done, cancelled)")
                     String status,
             @RequestParam(required = false) @Parameter(description = "Filter by assignee ID") UUID assigneeId,
             @RequestParam(required = false) @Parameter(description = "Filter by zone ID") UUID zoneId) {
@@ -89,9 +90,7 @@ public class TaskController {
     }
 
     @GetMapping("/{taskId}")
-    @Operation(
-            summary = "Get task details",
-            description = "Returns task details including linked shopping items.")
+    @Operation(summary = "Get task details", description = "Returns task details including linked shopping items.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Task details"),
         @ApiResponse(responseCode = "401", description = "Authentication required"),

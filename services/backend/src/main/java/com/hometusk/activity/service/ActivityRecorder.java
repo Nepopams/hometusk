@@ -38,11 +38,18 @@ public class ActivityRecorder {
     @Transactional
     public TaskActivity recordTaskCreated(Task task, User actor, UUID commandId, UUID correlationId) {
         TaskActivity activity = new TaskActivity(
-                task.getHousehold(), commandId, correlationId, ActivityType.TASK_CREATED, ENTITY_TYPE_TASK, task.getId(), actor);
+                task.getHousehold(),
+                commandId,
+                correlationId,
+                ActivityType.TASK_CREATED,
+                ENTITY_TYPE_TASK,
+                task.getId(),
+                actor);
 
         activity.setMetadata(toJson(Map.of(
                 "title", task.getTitle(),
-                "assigneeId", task.getAssigneeId() != null ? task.getAssigneeId().toString() : "null",
+                "assigneeId",
+                        task.getAssigneeId() != null ? task.getAssigneeId().toString() : "null",
                 "zoneId", task.getZoneId() != null ? task.getZoneId().toString() : "null",
                 "deadline", task.getDeadline() != null ? task.getDeadline().toString() : "null")));
 
@@ -53,15 +60,28 @@ public class ActivityRecorder {
     }
 
     @Transactional
-    public TaskActivity recordTaskAssigned(Task task, User actor, User previousAssignee, UUID commandId, UUID correlationId) {
+    public TaskActivity recordTaskAssigned(
+            Task task, User actor, User previousAssignee, UUID commandId, UUID correlationId) {
         TaskActivity activity = new TaskActivity(
-                task.getHousehold(), commandId, correlationId, ActivityType.TASK_ASSIGNED, ENTITY_TYPE_TASK, task.getId(), actor);
+                task.getHousehold(),
+                commandId,
+                correlationId,
+                ActivityType.TASK_ASSIGNED,
+                ENTITY_TYPE_TASK,
+                task.getId(),
+                actor);
 
         activity.setChanges(toJson(Map.of(
                 "assigneeId",
                 Map.of(
-                        "old", previousAssignee != null ? previousAssignee.getId().toString() : "null",
-                        "new", task.getAssigneeId() != null ? task.getAssigneeId().toString() : "null"))));
+                        "old",
+                                previousAssignee != null
+                                        ? previousAssignee.getId().toString()
+                                        : "null",
+                        "new",
+                                task.getAssigneeId() != null
+                                        ? task.getAssigneeId().toString()
+                                        : "null"))));
 
         TaskActivity saved = taskActivityRepository.save(activity);
         log.debug("Recorded TASK_ASSIGNED: taskId={}, correlationId={}", task.getId(), correlationId);
@@ -72,7 +92,13 @@ public class ActivityRecorder {
     @Transactional
     public TaskActivity recordTaskCompleted(Task task, User actor, UUID commandId, UUID correlationId) {
         TaskActivity activity = new TaskActivity(
-                task.getHousehold(), commandId, correlationId, ActivityType.TASK_COMPLETED, ENTITY_TYPE_TASK, task.getId(), actor);
+                task.getHousehold(),
+                commandId,
+                correlationId,
+                ActivityType.TASK_COMPLETED,
+                ENTITY_TYPE_TASK,
+                task.getId(),
+                actor);
 
         activity.setChanges(toJson(Map.of("status", Map.of("old", "open", "new", "done"))));
 
@@ -87,9 +113,16 @@ public class ActivityRecorder {
     @Transactional
     public TaskActivity recordTaskCancelled(Task task, User actor, UUID commandId, UUID correlationId) {
         TaskActivity activity = new TaskActivity(
-                task.getHousehold(), commandId, correlationId, ActivityType.TASK_CANCELLED, ENTITY_TYPE_TASK, task.getId(), actor);
+                task.getHousehold(),
+                commandId,
+                correlationId,
+                ActivityType.TASK_CANCELLED,
+                ENTITY_TYPE_TASK,
+                task.getId(),
+                actor);
 
-        activity.setChanges(toJson(Map.of("status", Map.of("old", task.getStatus().name(), "new", "cancelled"))));
+        activity.setChanges(
+                toJson(Map.of("status", Map.of("old", task.getStatus().name(), "new", "cancelled"))));
 
         return taskActivityRepository.save(activity);
     }
@@ -114,7 +147,8 @@ public class ActivityRecorder {
                 "quantity", item.getQuantity() != null ? item.getQuantity() : 1,
                 "unit", item.getUnit() != null ? item.getUnit() : "",
                 "listId", item.getShoppingList().getId().toString(),
-                "linkedTaskId", item.getLinkedTaskId() != null ? item.getLinkedTaskId().toString() : "null")));
+                "linkedTaskId",
+                        item.getLinkedTaskId() != null ? item.getLinkedTaskId().toString() : "null")));
 
         TaskActivity saved = taskActivityRepository.save(activity);
         log.debug("Recorded SHOPPING_ITEM_ADDED: itemId={}, correlationId={}", item.getId(), correlationId);
@@ -138,8 +172,10 @@ public class ActivityRecorder {
                 actor);
 
         activity.setMetadata(toJson(Map.of(
-                "purchasedAt", item.getPurchasedAt() != null ? item.getPurchasedAt().toString() : "null",
-                "name", item.getName())));
+                "purchasedAt",
+                item.getPurchasedAt() != null ? item.getPurchasedAt().toString() : "null",
+                "name",
+                item.getName())));
 
         TaskActivity saved = taskActivityRepository.save(activity);
         log.debug("Recorded SHOPPING_ITEM_PURCHASED: itemId={}, correlationId={}", item.getId(), correlationId);

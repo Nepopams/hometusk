@@ -149,13 +149,7 @@ public class ShoppingController {
 
         // Add item directly
         ShoppingItem item = shoppingService.addItemDirect(
-                householdId,
-                listId,
-                request.name(),
-                request.resolvedQuantity(),
-                request.unit(),
-                user,
-                correlationId);
+                householdId, listId, request.name(), request.resolvedQuantity(), request.unit(), user, correlationId);
 
         // Record activity (no commandId for direct REST)
         activityRecorder.recordShoppingItemAdded(item, user, null, correlationId);

@@ -86,8 +86,10 @@ class ShoppingControllerTest extends IntegrationTestBase {
         @Test
         @DisplayName("Should list all items in shopping list")
         void listItemsReturnsAllItems() throws Exception {
-            mockMvc.perform(get("/api/v1/households/{id}/shopping-lists/{listId}/items",
-                            testHousehold.getId(), shoppingList.getId())
+            mockMvc.perform(get(
+                                    "/api/v1/households/{id}/shopping-lists/{listId}/items",
+                                    testHousehold.getId(),
+                                    shoppingList.getId())
                             .with(jwt()))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.length()").value(2))
@@ -98,8 +100,10 @@ class ShoppingControllerTest extends IntegrationTestBase {
         @Test
         @DisplayName("Should filter items by purchased=false")
         void listItemsFiltersByPurchasedFalse() throws Exception {
-            mockMvc.perform(get("/api/v1/households/{id}/shopping-lists/{listId}/items",
-                            testHousehold.getId(), shoppingList.getId())
+            mockMvc.perform(get(
+                                    "/api/v1/households/{id}/shopping-lists/{listId}/items",
+                                    testHousehold.getId(),
+                                    shoppingList.getId())
                             .with(jwt())
                             .param("purchased", "false"))
                     .andExpect(status().isOk())
@@ -110,8 +114,10 @@ class ShoppingControllerTest extends IntegrationTestBase {
         @Test
         @DisplayName("Should return 404 for non-existent list")
         void listItemsReturnsNotFoundForMissingList() throws Exception {
-            mockMvc.perform(get("/api/v1/households/{id}/shopping-lists/{listId}/items",
-                            testHousehold.getId(), UUID.randomUUID())
+            mockMvc.perform(get(
+                                    "/api/v1/households/{id}/shopping-lists/{listId}/items",
+                                    testHousehold.getId(),
+                                    UUID.randomUUID())
                             .with(jwt()))
                     .andExpect(status().isNotFound());
         }
@@ -131,8 +137,10 @@ class ShoppingControllerTest extends IntegrationTestBase {
 
             String correlationId = randomCorrelationId();
 
-            mockMvc.perform(post("/api/v1/households/{id}/shopping-lists/{listId}/items",
-                            testHousehold.getId(), shoppingList.getId())
+            mockMvc.perform(post(
+                                    "/api/v1/households/{id}/shopping-lists/{listId}/items",
+                                    testHousehold.getId(),
+                                    shoppingList.getId())
                             .with(jwt())
                             .header("X-Correlation-ID", correlationId)
                             .contentType(MediaType.APPLICATION_JSON)
@@ -150,7 +158,8 @@ class ShoppingControllerTest extends IntegrationTestBase {
             assertThat(items).anyMatch(i -> i.getName().equals("Eggs"));
 
             // Verify activity recorded
-            var activities = taskActivityRepository.findByCorrelationIdOrderByCreatedAtDesc(UUID.fromString(correlationId));
+            var activities =
+                    taskActivityRepository.findByCorrelationIdOrderByCreatedAtDesc(UUID.fromString(correlationId));
             assertThat(activities).anyMatch(a -> a.getActivityType() == ActivityType.SHOPPING_ITEM_ADDED);
         }
 
@@ -159,8 +168,10 @@ class ShoppingControllerTest extends IntegrationTestBase {
         void addItemWithDefaultQuantity() throws Exception {
             var request = Map.of("name", "Butter");
 
-            mockMvc.perform(post("/api/v1/households/{id}/shopping-lists/{listId}/items",
-                            testHousehold.getId(), shoppingList.getId())
+            mockMvc.perform(post(
+                                    "/api/v1/households/{id}/shopping-lists/{listId}/items",
+                                    testHousehold.getId(),
+                                    shoppingList.getId())
                             .with(jwt())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
@@ -173,8 +184,10 @@ class ShoppingControllerTest extends IntegrationTestBase {
         void addItemRejectsBlankName() throws Exception {
             var request = Map.of("name", "   ");
 
-            mockMvc.perform(post("/api/v1/households/{id}/shopping-lists/{listId}/items",
-                            testHousehold.getId(), shoppingList.getId())
+            mockMvc.perform(post(
+                                    "/api/v1/households/{id}/shopping-lists/{listId}/items",
+                                    testHousehold.getId(),
+                                    shoppingList.getId())
                             .with(jwt())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
@@ -186,8 +199,10 @@ class ShoppingControllerTest extends IntegrationTestBase {
         void addItemRejectsNonExistentList() throws Exception {
             var request = Map.of("name", "Cheese");
 
-            mockMvc.perform(post("/api/v1/households/{id}/shopping-lists/{listId}/items",
-                            testHousehold.getId(), UUID.randomUUID())
+            mockMvc.perform(post(
+                                    "/api/v1/households/{id}/shopping-lists/{listId}/items",
+                                    testHousehold.getId(),
+                                    UUID.randomUUID())
                             .with(jwt())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
@@ -199,15 +214,19 @@ class ShoppingControllerTest extends IntegrationTestBase {
         void addItemAppearsInList() throws Exception {
             var request = Map.of("name", "Apples", "quantity", 4);
 
-            mockMvc.perform(post("/api/v1/households/{id}/shopping-lists/{listId}/items",
-                            testHousehold.getId(), shoppingList.getId())
+            mockMvc.perform(post(
+                                    "/api/v1/households/{id}/shopping-lists/{listId}/items",
+                                    testHousehold.getId(),
+                                    shoppingList.getId())
                             .with(jwt())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isCreated());
 
-            mockMvc.perform(get("/api/v1/households/{id}/shopping-lists/{listId}/items",
-                            testHousehold.getId(), shoppingList.getId())
+            mockMvc.perform(get(
+                                    "/api/v1/households/{id}/shopping-lists/{listId}/items",
+                                    testHousehold.getId(),
+                                    shoppingList.getId())
                             .with(jwt()))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.length()").value(3))
@@ -225,8 +244,10 @@ class ShoppingControllerTest extends IntegrationTestBase {
             var request = Map.of("purchased", true);
             String correlationId = randomCorrelationId();
 
-            mockMvc.perform(patch("/api/v1/households/{id}/shopping-items/{itemId}",
-                            testHousehold.getId(), item1.getId())
+            mockMvc.perform(patch(
+                                    "/api/v1/households/{id}/shopping-items/{itemId}",
+                                    testHousehold.getId(),
+                                    item1.getId())
                             .with(jwt())
                             .header("X-Correlation-ID", correlationId)
                             .contentType(MediaType.APPLICATION_JSON)
@@ -240,7 +261,8 @@ class ShoppingControllerTest extends IntegrationTestBase {
             assertThat(updated.isPurchased()).isTrue();
 
             // Verify activity recorded
-            var activities = taskActivityRepository.findByCorrelationIdOrderByCreatedAtDesc(UUID.fromString(correlationId));
+            var activities =
+                    taskActivityRepository.findByCorrelationIdOrderByCreatedAtDesc(UUID.fromString(correlationId));
             assertThat(activities).anyMatch(a -> a.getActivityType() == ActivityType.SHOPPING_ITEM_PURCHASED);
         }
 
@@ -249,8 +271,10 @@ class ShoppingControllerTest extends IntegrationTestBase {
         void unmarkPurchasedUpdatesItem() throws Exception {
             var request = Map.of("purchased", false);
 
-            mockMvc.perform(patch("/api/v1/households/{id}/shopping-items/{itemId}",
-                            testHousehold.getId(), item2Purchased.getId())
+            mockMvc.perform(patch(
+                                    "/api/v1/households/{id}/shopping-items/{itemId}",
+                                    testHousehold.getId(),
+                                    item2Purchased.getId())
                             .with(jwt())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
@@ -258,7 +282,8 @@ class ShoppingControllerTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$.purchased").value(false));
 
             // Verify DB updated
-            var updated = shoppingItemRepository.findById(item2Purchased.getId()).orElseThrow();
+            var updated =
+                    shoppingItemRepository.findById(item2Purchased.getId()).orElseThrow();
             assertThat(updated.isPurchased()).isFalse();
         }
 
@@ -267,8 +292,10 @@ class ShoppingControllerTest extends IntegrationTestBase {
         void updateItemReturnsNotFoundForMissingItem() throws Exception {
             var request = Map.of("purchased", true);
 
-            mockMvc.perform(patch("/api/v1/households/{id}/shopping-items/{itemId}",
-                            testHousehold.getId(), UUID.randomUUID())
+            mockMvc.perform(patch(
+                                    "/api/v1/households/{id}/shopping-items/{itemId}",
+                                    testHousehold.getId(),
+                                    UUID.randomUUID())
                             .with(jwt())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
@@ -285,8 +312,10 @@ class ShoppingControllerTest extends IntegrationTestBase {
         void deleteItemRemovesItem() throws Exception {
             String correlationId = randomCorrelationId();
 
-            mockMvc.perform(delete("/api/v1/households/{id}/shopping-items/{itemId}",
-                            testHousehold.getId(), item1.getId())
+            mockMvc.perform(delete(
+                                    "/api/v1/households/{id}/shopping-items/{itemId}",
+                                    testHousehold.getId(),
+                                    item1.getId())
                             .with(jwt())
                             .header("X-Correlation-ID", correlationId))
                     .andExpect(status().isNoContent());
@@ -295,15 +324,18 @@ class ShoppingControllerTest extends IntegrationTestBase {
             assertThat(shoppingItemRepository.findById(item1.getId())).isEmpty();
 
             // Verify activity recorded
-            var activities = taskActivityRepository.findByCorrelationIdOrderByCreatedAtDesc(UUID.fromString(correlationId));
+            var activities =
+                    taskActivityRepository.findByCorrelationIdOrderByCreatedAtDesc(UUID.fromString(correlationId));
             assertThat(activities).anyMatch(a -> a.getActivityType() == ActivityType.SHOPPING_ITEM_DELETED);
         }
 
         @Test
         @DisplayName("Should return 404 for non-existent item")
         void deleteItemReturnsNotFoundForMissingItem() throws Exception {
-            mockMvc.perform(delete("/api/v1/households/{id}/shopping-items/{itemId}",
-                            testHousehold.getId(), UUID.randomUUID())
+            mockMvc.perform(delete(
+                                    "/api/v1/households/{id}/shopping-items/{itemId}",
+                                    testHousehold.getId(),
+                                    UUID.randomUUID())
                             .with(jwt()))
                     .andExpect(status().isNotFound());
         }
@@ -311,8 +343,10 @@ class ShoppingControllerTest extends IntegrationTestBase {
         @Test
         @DisplayName("Should reject delete for non-member")
         void deleteItemRejectsNonMember() throws Exception {
-            mockMvc.perform(delete("/api/v1/households/{id}/shopping-items/{itemId}",
-                            testHousehold.getId(), item1.getId())
+            mockMvc.perform(delete(
+                                    "/api/v1/households/{id}/shopping-items/{itemId}",
+                                    testHousehold.getId(),
+                                    item1.getId())
                             .with(jwtForUser(testUser2)))
                     .andExpect(status().isForbidden());
         }

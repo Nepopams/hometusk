@@ -103,7 +103,8 @@ public class HouseholdController {
 
         // Get all members
         List<Membership> memberships = membershipService.findByHouseholdId(householdId);
-        List<HouseholdMemberDto> members = memberships.stream().map(HouseholdMemberDto::from).toList();
+        List<HouseholdMemberDto> members =
+                memberships.stream().map(HouseholdMemberDto::from).toList();
 
         return ResponseEntity.ok(members);
     }

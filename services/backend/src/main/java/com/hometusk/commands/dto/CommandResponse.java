@@ -5,12 +5,7 @@ import java.util.Map;
 import java.util.UUID;
 
 public record CommandResponse(
-        UUID commandId,
-        UUID correlationId,
-        String status,
-        CommandResult result,
-        Integer executionMs,
-        UUID initiatorId)
+        UUID commandId, UUID correlationId, String status, CommandResult result, Integer executionMs, UUID initiatorId)
         implements CommandResponseBase {
 
     public static CommandResponse success(
@@ -52,12 +47,7 @@ public record CommandResponse(
     }
 
     public static CommandResponseBase rejected(
-            UUID commandId,
-            UUID correlationId,
-            String errorCode,
-            String reason,
-            int executionMs,
-            UUID initiatorId) {
+            UUID commandId, UUID correlationId, String errorCode, String reason, int executionMs, UUID initiatorId) {
         return new CommandRejectedResponse(
                 commandId, correlationId, "rejected", errorCode, reason, executionMs, initiatorId);
     }

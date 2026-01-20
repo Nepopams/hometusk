@@ -83,10 +83,14 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
 
             // When: Execute command
             var request = Map.of(
-                    "householdId", testHousehold.getId().toString(),
-                    "type", "create_task",
-                    "payload", Map.of("title", "Grocery shopping"),
-                    "source", "api");
+                    "householdId",
+                    testHousehold.getId().toString(),
+                    "type",
+                    "create_task",
+                    "payload",
+                    Map.of("title", "Grocery shopping"),
+                    "source",
+                    "api");
 
             mockMvc.perform(post("/api/v1/commands")
                             .with(jwt())
@@ -110,7 +114,8 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
             assertThat(items).extracting(ShoppingItem::getName).containsExactlyInAnyOrder("Milk", "Bread");
 
             // Then: Activities recorded
-            var activities = taskActivityRepository.findByCorrelationIdOrderByCreatedAtDesc(UUID.fromString(correlationId));
+            var activities =
+                    taskActivityRepository.findByCorrelationIdOrderByCreatedAtDesc(UUID.fromString(correlationId));
             assertThat(activities).anyMatch(a -> a.getActivityType() == ActivityType.TASK_CREATED);
             assertThat(activities).anyMatch(a -> a.getActivityType() == ActivityType.SHOPPING_ITEM_ADDED);
         }
@@ -130,10 +135,14 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
 
             // When: Execute command
             var request = Map.of(
-                    "householdId", testHousehold.getId().toString(),
-                    "type", "create_task",
-                    "payload", Map.of("title", "Купить молоко"),
-                    "source", "api");
+                    "householdId",
+                    testHousehold.getId().toString(),
+                    "type",
+                    "create_task",
+                    "payload",
+                    Map.of("title", "Купить молоко"),
+                    "source",
+                    "api");
 
             mockMvc.perform(post("/api/v1/commands")
                             .with(jwt())
@@ -164,10 +173,14 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
             stubAddShoppingItemOnly("Test Item", 1, null);
 
             var request = Map.of(
-                    "householdId", testHousehold.getId().toString(),
-                    "type", "create_task",
-                    "payload", Map.of("title", "Add test item"),
-                    "source", "api");
+                    "householdId",
+                    testHousehold.getId().toString(),
+                    "type",
+                    "create_task",
+                    "payload",
+                    Map.of("title", "Add test item"),
+                    "source",
+                    "api");
 
             // When: First call
             mockMvc.perform(post("/api/v1/commands")
@@ -214,10 +227,14 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
             String correlationId = randomCorrelationId();
 
             var request = Map.of(
-                    "householdId", testHousehold.getId().toString(),
-                    "type", "create_task",
-                    "payload", Map.of("title", "Empty item"),
-                    "source", "api");
+                    "householdId",
+                    testHousehold.getId().toString(),
+                    "type",
+                    "create_task",
+                    "payload",
+                    Map.of("title", "Empty item"),
+                    "source",
+                    "api");
 
             // When: Execute command
             mockMvc.perform(post("/api/v1/commands")
@@ -246,13 +263,18 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
             stubAddShoppingItemOnly("Item", 1, null);
 
             // Create another household that testUser is NOT a member of
-            var otherHousehold = householdRepository.save(new com.hometusk.households.domain.Household("Other Household"));
+            var otherHousehold =
+                    householdRepository.save(new com.hometusk.households.domain.Household("Other Household"));
 
             var request = Map.of(
-                    "householdId", otherHousehold.getId().toString(),
-                    "type", "create_task",
-                    "payload", Map.of("title", "Should fail"),
-                    "source", "api");
+                    "householdId",
+                    otherHousehold.getId().toString(),
+                    "type",
+                    "create_task",
+                    "payload",
+                    Map.of("title", "Should fail"),
+                    "source",
+                    "api");
 
             // When: Execute command for other household
             mockMvc.perform(post("/api/v1/commands")
@@ -282,10 +304,14 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
             String correlationId = randomCorrelationId();
 
             var request = Map.of(
-                    "householdId", testHousehold.getId().toString(),
-                    "type", "create_task",
-                    "payload", Map.of("title", "Full chain test"),
-                    "source", "api");
+                    "householdId",
+                    testHousehold.getId().toString(),
+                    "type",
+                    "create_task",
+                    "payload",
+                    Map.of("title", "Full chain test"),
+                    "source",
+                    "api");
 
             // When: Execute command
             mockMvc.perform(post("/api/v1/commands")
@@ -310,7 +336,8 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
             assertThat(items).isNotEmpty();
 
             // Then: Activities recorded with correlationId
-            var activities = taskActivityRepository.findByCorrelationIdOrderByCreatedAtDesc(UUID.fromString(correlationId));
+            var activities =
+                    taskActivityRepository.findByCorrelationIdOrderByCreatedAtDesc(UUID.fromString(correlationId));
             assertThat(activities).anyMatch(a -> a.getActivityType() == ActivityType.TASK_CREATED);
             assertThat(activities).anyMatch(a -> a.getActivityType() == ActivityType.SHOPPING_ITEM_ADDED);
         }

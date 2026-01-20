@@ -43,8 +43,7 @@ public class MembershipPolicy implements GuardrailPolicy {
                 assigneeId = UUID.fromString(assigneeIdObj.toString());
             } catch (IllegalArgumentException e) {
                 log.warn("Invalid assigneeId format: {}", assigneeIdObj);
-                return GuardrailOutcome.reject(
-                        "Assignee ID is not a valid UUID", "INVALID_ASSIGNEE_ID");
+                return GuardrailOutcome.reject("Assignee ID is not a valid UUID", "INVALID_ASSIGNEE_ID");
             }
 
             // Validate that assignee is a household member
@@ -55,8 +54,7 @@ public class MembershipPolicy implements GuardrailPolicy {
                         assigneeId,
                         context.householdSnapshot().householdId());
                 return GuardrailOutcome.reject(
-                        "Выбранный пользователь не является участником этого домохозяйства",
-                        "ASSIGNEE_NOT_MEMBER");
+                        "Выбранный пользователь не является участником этого домохозяйства", "ASSIGNEE_NOT_MEMBER");
             }
 
             log.debug("MembershipPolicy: assignee {} is valid member", member.name());

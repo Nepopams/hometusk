@@ -143,8 +143,7 @@ public class TaskService {
                     householdId, status, assigneeId);
         }
         if (status != null && zoneId != null) {
-            return taskRepository.findByHouseholdIdAndStatusAndZoneIdOrderByCreatedAtDesc(
-                    householdId, status, zoneId);
+            return taskRepository.findByHouseholdIdAndStatusAndZoneIdOrderByCreatedAtDesc(householdId, status, zoneId);
         }
         if (assigneeId != null && zoneId != null) {
             return taskRepository.findByHouseholdIdAndAssigneeIdAndZoneIdOrderByCreatedAtDesc(

@@ -14,6 +14,7 @@ public enum ErrorCode {
 
     // Not found
     HOUSEHOLD_NOT_FOUND("Household not found"),
+    COMMAND_NOT_FOUND("Command not found"),
     TASK_NOT_FOUND("Task not found"),
     USER_NOT_FOUND("User not found"),
     ZONE_NOT_FOUND("Zone not found"),
@@ -40,6 +41,8 @@ public enum ErrorCode {
 
     // Guardrails (Stage 3)
     GUARDRAILS_REJECTED("Command rejected by guardrails policy"),
+    // Command continuation
+    COMMAND_NOT_CONTINUABLE("Command cannot be continued in current state"),
 
     // Other
     IDEMPOTENCY_CONFLICT("Request with this idempotency key already processed"),

@@ -6,7 +6,7 @@ This repo is developed via a controlled “vibe-coding” pipeline:
 - **Codex = Development department** (implementation + tests + docs-as-code).
 - **Human = Product owner & final gate** (approve decisions, plans, scope, and merges).
 
-Primary objective: **close MVP in small batches with strong governance**:
+Primary objective: **deliver in small batches with strong governance**:
 - explicit scope boundaries,
 - contract-first for integrations,
 - decision log (ADR) only when architecture-significant,
@@ -18,9 +18,17 @@ Primary objective: **close MVP in small batches with strong governance**:
 ## Source of truth (always anchor)
 Project truth lives in repo artifacts. Claude must reference files, not “memory”.
 
-### Planning
-- MVP scope: `docs/planning/mvp.md`
-- PI plans: `docs/planning/pi/<PI_ID>/`
+### Planning anchors (always)
+- Product goal (target state): `docs/planning/strategy/product-goal.md`
+- Roadmap (Now/Next/Later): `docs/planning/strategy/roadmap.md`
+- Scope anchor (choose exactly one per planning cycle):
+  - Release scope: `docs/planning/releases/<RELEASE>.md` (e.g., `docs/planning/releases/MVP.md`)
+  - Initiative scope: `docs/planning/initiatives/INIT-*.md`
+
+> Note: `docs/planning/mvp.md` is legacy/redirect only. Use `docs/planning/releases/MVP.md` as canonical.
+
+### Planning (delivery hierarchy)
+- PI plans (optional): `docs/planning/pi/<PI_ID>/`
 - Epics & stories: `docs/planning/epics/<EPIC_ID>/`
 - Work packages (delivery plans): `docs/planning/workpacks/<STORY_ID>/`
 
@@ -30,8 +38,10 @@ Project truth lives in repo artifacts. Claude must reference files, not “memor
 
 ### Contracts / Decisions / Diagrams
 - Contracts (API/DTO/events): `docs/contracts/**`
-- ADR decision log: `docs/adr/**`
-- Diagrams as code (PlantUML): `docs/diagrams/**`
+- ADR decision log (canonical): `docs/adr/**`
+  - legacy (if not migrated): `docs/architecture/decisions/**`
+- Diagrams as code (PlantUML) (canonical): `docs/diagrams/**`
+  - legacy (if not migrated): `docs/architecture/diagrams/**`
 
 ### Indexes (navigation)
 - ADR index: `docs/_indexes/adr-index.md`
@@ -42,7 +52,9 @@ Project truth lives in repo artifacts. Claude must reference files, not “memor
 
 ## Imports (keep this file slim)
 When helpful, Claude should pull exact docs into context via imports (fast + stable):
-- MVP: @docs/planning/mvp.md
+- Product goal: @docs/planning/strategy/product-goal.md
+- Roadmap: @docs/planning/strategy/roadmap.md
+- Current scope anchor: @docs/planning/releases/MVP.md
 - DoR: @docs/_governance/dor.md
 - DoD: @docs/_governance/dod.md
 
@@ -51,13 +63,26 @@ When helpful, Claude should pull exact docs into context via imports (fast + sta
 ---
 
 ## Artifact map & naming conventions
+
 ### IDs
 - PI: `YYYYQn-PI##`  (e.g., `2026Q1-PI01`)
 - Sprint: `S##`      (e.g., `S01`)
 - Epic: `EP-###`
 - Story: `ST-###`
+- Initiative: `INIT-YYYYQn-<slug>` (e.g., `INIT-2026Q2-reliability`)
 
 ### Standard folders
+
+#### Strategy / Portfolio (long-lived anchors)
+- `docs/planning/strategy/`
+  - `product-goal.md` — target state (always referenced)
+  - `roadmap.md` — Now/Next/Later or quarter map
+- `docs/planning/releases/`
+  - `<RELEASE>.md` — release scope, exit criteria, non-goals (e.g., `MVP.md`)
+- `docs/planning/initiatives/`
+  - `INIT-*.md` — initiative scope (alternative to release scope)
+
+#### PI planning (optional)
 - `docs/planning/pi/<PI_ID>/`
   - `pi.md` — PI charter (goals/non-goals/exit criteria)
   - `objectives.md` — PI objectives (measurable)
@@ -67,17 +92,24 @@ When helpful, Claude should pull exact docs into context via imports (fast + sta
   - `capacity.md` — capacity assumptions + buffers
   - `decisions.md` — links to ADR/contracts/diagrams relevant to PI
   - `sprints/Sxx/`
-    - `sprint.md` — sprint goal + committed scope + deps + risks
+    - `sprint.md` — sprint goal + committed scope + deps + risks + anchors
     - `scope.md` — in/out + readiness notes
     - `demo.md` — demo plan
     - `retro.md` — retro template
+
+#### Epics & Stories
 - `docs/planning/epics/<EPIC_ID>/`
   - `epic.md` — epic charter + boundaries + story list
   - `stories/ST-###-*.md` — story specs (AC, scope, flags)
+
+#### Workpacks (implementation packets for Codex)
 - `docs/planning/workpacks/<STORY_ID>/`
   - `workpack.md` — executable delivery plan (steps/files/checks/rollout)
   - `checklist.md` — AC/DoD verification checklist
   - `risks.md` — optional per-story risks (ROAM-lite)
+  - `prompt-plan.md` — Codex PLAN prompt (generated after workpack approval)
+  - `prompt-apply.md` — Codex APPLY prompt (generated after plan approval)
+  - `prompt-review.md` — Codex REVIEW prompt (generated after apply completion)
 
 ---
 
@@ -88,18 +120,23 @@ When helpful, Claude should pull exact docs into context via imports (fast + sta
 Human provides:
 - goal & constraints,
 - success criteria (DoD expectations),
-- urgency & risk tolerance.
+- urgency & risk tolerance,
+- identifies current scope anchor (Release or Initiative).
 
 ### 1) Triage (Claude: triage-manager)
 Output: **Triage Summary** (type/level/risk/impacts) + next step.
 If out-of-scope → propose defer/swap/next-PI candidate.
 
-### 2) PI Planning (Claude: pi-planner) — only for “close MVP / quarter plan”
+### 2) Portfolio/PI Planning (Claude: pi-planner) — optional for quarter-sized work
+Use when the ask spans multiple epics/sprints.
 Output: PI charter + objectives + backlog + roadmap + risks + capacity.
 **Human Gate A:** approve PI scope/objectives/roadmap/risk posture.
 
 ### 3) Sprint Planning (Claude: sprint-planner)
 Output: sprint goal + committed scope (DoR-ready only) + out-of-scope + deps/risks.
+Must include Planning anchors:
+- Product goal
+- Scope anchor (Release/Initiative)
 **Human Gate B:** approve sprint goal + committed scope.
 
 ### 4) Decomposition (Claude: epic-decomposer)
@@ -124,11 +161,31 @@ For each **DoR-ready story in committed scope**:
 - produce `workpack.md` + `checklist.md` (and risks if needed).
 Output is the authoritative “implementation packet” for Codex.
 
-### 7) Codex prompt pack (Claude: dev-prompt-engineer)
-Produce two prompts per story:
-- **PLAN prompt**: explicitly “NO EDITS / NO COMMANDS” (plan-only).
-- **APPLY prompt**: execute approved plan with minimal diff, tests, report.
+### 7) Codex prompts (Claude: dev-prompt-engineer) — stage-gated generation
+Prompts are generated in three steps (not as one bundle):
+1) **PLAN prompt** (`prompt-plan.md`) → for planning only  
+2) **APPLY prompt** (`prompt-apply.md`) → generated after plan approval  
+3) **REVIEW prompt** (`prompt-review.md`) → generated after apply completion  
+
 Critical constraints MUST be repeated in prompts (do not rely on hidden context).
+
+PLAN prompt rules:
+- NO edits, NO file writes.
+- Allow only read-only commands required to inspect sources-of-truth (whitelist below).
+- If required input is missing → stop and request it (do not invent details).
+
+Allowed read-only commands (PLAN):
+- `ls`, `find`
+- `cat`
+- `rg` / `grep`
+- `sed -n`, `head`, `tail`
+- `git status`, `git diff` (read-only inspection)
+
+Forbidden in PLAN:
+- any file modifications (edit/write/move/delete)
+- any network access
+- package install / system changes
+- `git commit/push`, migrations, DB ops
 
 ### 8) Implementation (Codex)
 - Run PLAN (read-only)
@@ -169,12 +226,17 @@ Project subagents live in: `.claude/agents/*.md` (YAML frontmatter + prompt).
 Все planning-артефакты должны соответствовать правилам: `.claude/rules/planning.md`.
 Шаблоны: `docs/planning/_templates/`.
 
+### Anchor non-negotiable
+Every Sprint/Workpack/Gate/Review MUST include "## Sources of Truth" with:
+- Product goal: `docs/planning/strategy/product-goal.md`
+- Scope anchor: `docs/planning/releases/<...>.md` OR `docs/planning/initiatives/INIT-*.md`
+
 ---
 
 ## Codex handoff policy (non-negotiables)
 Codex is fast but must be constrained.
 
-### For every story prompt pack:
+### For every story prompt:
 Dev prompts MUST include:
 - allowed files/paths,
 - forbidden paths,
@@ -183,14 +245,17 @@ Dev prompts MUST include:
 - test commands + expected outcome,
 - “STOP-THE-LINE” rule: if deviation needed → stop and ask.
 
-### Plan-only enforcement
-Codex CLI does not guarantee a separate “plan mode” by itself, so prompts must:
-- explicitly forbid edits/commands for PLAN,
+### Plan-only enforcement (practical)
+Codex planning requires reading repo sources-of-truth.
+Therefore PLAN prompts must:
+- forbid edits/writes,
+- allow strictly whitelisted read-only commands,
 - and (optionally) recommend running PLAN under read-only sandbox/approvals.
 
 ---
 
 ## Automation (optional but recommended)
+
 ### Custom slash commands
 Store reusable prompts in `.claude/commands/` (project scope). 
 Candidates:
@@ -198,7 +263,9 @@ Candidates:
 - `/project:pi_plan`
 - `/project:sprint_plan`
 - `/project:workpack`
-- `/project:codex_prompt_pack`
+- `/project:codex_prompt_plan`
+- `/project:codex_prompt_apply`
+- `/project:codex_prompt_review`
 
 (Claude Code supports custom slash commands defined as Markdown in `.claude/commands/`.) 
 

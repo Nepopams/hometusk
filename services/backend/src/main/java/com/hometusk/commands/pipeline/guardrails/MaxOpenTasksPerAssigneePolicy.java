@@ -54,7 +54,8 @@ public class MaxOpenTasksPerAssigneePolicy implements GuardrailPolicy {
             int currentCount = context.householdSnapshot().getOpenTaskCount(assigneeId);
 
             if (currentCount >= maxTasks) {
-                HouseholdSnapshot.MemberInfo member = context.householdSnapshot().findMember(assigneeId);
+                HouseholdSnapshot.MemberInfo member =
+                        context.householdSnapshot().findMember(assigneeId);
                 String memberName = member != null ? member.name() : "выбранный пользователь";
 
                 log.info(

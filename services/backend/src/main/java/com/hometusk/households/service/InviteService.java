@@ -75,7 +75,8 @@ public class InviteService {
 
     @Transactional
     public AcceptInviteResponse acceptInvite(String inviteToken, UUID userId, UUID correlationId) {
-        HouseholdInvite invite = inviteRepository.findByInviteTokenForUpdate(inviteToken)
+        HouseholdInvite invite = inviteRepository
+                .findByInviteTokenForUpdate(inviteToken)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.INVALID_TOKEN, "Invite token not found"));
 
         Instant now = Instant.now();
@@ -90,8 +91,8 @@ public class InviteService {
             throw new BusinessException(ErrorCode.INVITE_EXPIRED, "Invite token expired");
         }
 
-        Optional<Membership> existing =
-                membershipRepository.findByUserIdAndHouseholdId(userId, invite.getHousehold().getId());
+        Optional<Membership> existing = membershipRepository.findByUserIdAndHouseholdId(
+                userId, invite.getHousehold().getId());
         if (existing.isPresent()) {
             log.info("Invite accept no-op: user already member, invite remains active");
             return AcceptInviteResponse.from(existing.get());

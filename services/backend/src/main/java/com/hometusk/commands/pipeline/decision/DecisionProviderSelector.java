@@ -38,8 +38,11 @@ public class DecisionProviderSelector {
         this.fallbackEnabled = fallbackEnabled;
         this.metrics = metrics;
 
-        log.info("DecisionProviderSelector initialized: provider={}, fallback={}, aiPlatformAvailable={}",
-                configuredProvider, fallbackEnabled, this.aiPlatformProvider.isPresent());
+        log.info(
+                "DecisionProviderSelector initialized: provider={}, fallback={}, aiPlatformAvailable={}",
+                configuredProvider,
+                fallbackEnabled,
+                this.aiPlatformProvider.isPresent());
     }
 
     /**
@@ -99,8 +102,7 @@ public class DecisionProviderSelector {
 
         // Convert to fallback source
         if (manualResult instanceof DecisionResult.StartJob startJob) {
-            return new DecisionResult.StartJob(
-                    DecisionSource.FALLBACK, startJob.confidence(), startJob.actions());
+            return new DecisionResult.StartJob(DecisionSource.FALLBACK, startJob.confidence(), startJob.actions());
         }
         // Clarify and Reject shouldn't happen from manual provider, but handle anyway
         return manualResult;

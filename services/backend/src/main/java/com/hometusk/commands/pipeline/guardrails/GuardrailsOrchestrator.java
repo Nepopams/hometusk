@@ -38,7 +38,9 @@ public class GuardrailsOrchestrator {
     private final DecisionMetrics metrics;
 
     public GuardrailsOrchestrator(
-            List<GuardrailPolicy> policies, GuardrailsConfig config, ContextBuilder contextBuilder,
+            List<GuardrailPolicy> policies,
+            GuardrailsConfig config,
+            ContextBuilder contextBuilder,
             DecisionMetrics metrics) {
         // Sort policies by order
         this.policies = policies.stream()
@@ -73,8 +75,8 @@ public class GuardrailsOrchestrator {
                 policies.size());
 
         // Build household snapshot for policy evaluation
-        HouseholdSnapshot snapshot = contextBuilder.buildSnapshot(
-                originalContext.householdId(), originalContext.correlationId());
+        HouseholdSnapshot snapshot =
+                contextBuilder.buildSnapshot(originalContext.householdId(), originalContext.correlationId());
 
         // CRITICAL: Check context completeness first
         if (!snapshot.complete()) {

@@ -205,8 +205,8 @@ public class ShoppingService {
     public ShoppingList getListByIdAndHousehold(UUID listId, UUID householdId) {
         return listRepository
                 .findByIdAndHouseholdId(listId, householdId)
-                .orElseThrow(
-                        () -> new NotFoundException(ErrorCode.SHOPPING_LIST_NOT_FOUND, "Shopping list not found: " + listId));
+                .orElseThrow(() ->
+                        new NotFoundException(ErrorCode.SHOPPING_LIST_NOT_FOUND, "Shopping list not found: " + listId));
     }
 
     /**
@@ -275,8 +275,8 @@ public class ShoppingService {
     private ShoppingItem getItemByIdAndHousehold(UUID itemId, UUID householdId) {
         return itemRepository
                 .findByIdAndHouseholdId(itemId, householdId)
-                .orElseThrow(
-                        () -> new NotFoundException(ErrorCode.SHOPPING_ITEM_NOT_FOUND, "Shopping item not found: " + itemId));
+                .orElseThrow(() ->
+                        new NotFoundException(ErrorCode.SHOPPING_ITEM_NOT_FOUND, "Shopping item not found: " + itemId));
     }
 
     private ShoppingList resolveList(UUID householdId, UUID listId, Household household) {

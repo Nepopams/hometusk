@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hometusk.commands.dto.CommandRequest;
 import com.hometusk.commands.dto.CommandResponseBase;
+import com.hometusk.commands.dto.ContinueCommandRequest;
 import com.hometusk.commands.idempotency.CommandIdempotencyService;
 import com.hometusk.commands.idempotency.CommandIdempotencyService.IdempotencySession;
 import com.hometusk.commands.idempotency.CommandIdempotencyService.StoredResponse;
@@ -105,8 +106,7 @@ public class CommandController {
                     List<String> idempotencyKeys) {
 
         // Generate or use provided correlation ID
-        UUID correlationId =
-                correlationIdHeader != null ? parseUuidOrGenerate(correlationIdHeader) : UUID.randomUUID();
+        UUID correlationId = correlationIdHeader != null ? parseUuidOrGenerate(correlationIdHeader) : UUID.randomUUID();
 
         // Set correlation ID in MDC for logging
         MDC.put(MdcKeys.CORRELATION_ID, correlationId.toString());
@@ -120,7 +120,9 @@ public class CommandController {
             User user = userService.getById(currentUser.id());
 
             // Idempotency handling (optional)
-            idempotencySession = idempotencyService.begin(idempotencyKeys, user.getId(), request).orElse(null);
+            idempotencySession = idempotencyService
+                    .begin(idempotencyKeys, user.getId(), request)
+                    .orElse(null);
             if (idempotencySession != null && idempotencySession.isReplay()) {
                 return replayResponse(idempotencySession.storedResponse());
             }
@@ -142,7 +144,8 @@ public class CommandController {
         } catch (ValidationException e) {
             if (idempotencySession != null) {
                 var errorResponse = toValidationErrorResponse(correlationId, e);
-                idempotencyService.storeResponse(idempotencySession.recordId(), HttpStatus.BAD_REQUEST.value(), errorResponse);
+                idempotencyService.storeResponse(
+                        idempotencySession.recordId(), HttpStatus.BAD_REQUEST.value(), errorResponse);
             }
             throw e;
         } catch (BusinessException e) {
@@ -155,15 +158,50 @@ public class CommandController {
         } catch (Exception e) {
             if (idempotencySession != null) {
                 var errorResponse = new GlobalExceptionHandler.ErrorResponse(
-                        correlationId,
-                        ErrorCode.INTERNAL_ERROR.name(),
-                        "An unexpected error occurred",
-                        null,
-                        null);
+                        correlationId, ErrorCode.INTERNAL_ERROR.name(), "An unexpected error occurred", null, null);
                 idempotencyService.storeResponse(
                         idempotencySession.recordId(), HttpStatus.INTERNAL_SERVER_ERROR.value(), errorResponse);
             }
             throw e;
+        } finally {
+            MDC.remove(MdcKeys.CORRELATION_ID);
+        }
+    }
+
+    @PostMapping("/{commandId}/continue")
+    @Operation(summary = "Continue a command", description = "Continues a command that is awaiting additional input.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Command processed (status in body)"),
+        @ApiResponse(
+                responseCode = "400",
+                description = "Command cannot be continued in current state",
+                content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "401", description = "Authentication required"),
+        @ApiResponse(
+                responseCode = "403",
+                description = "Access denied",
+                content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(
+                responseCode = "404",
+                description = "Command not found",
+                content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<CommandResponseBase> continueCommand(
+            @PathVariable UUID commandId,
+            @RequestBody @Valid ContinueCommandRequest request,
+            @RequestHeader(value = CORRELATION_ID_HEADER, required = false)
+                    @Parameter(description = "Client-provided correlation ID")
+                    String correlationIdHeader) {
+        UUID correlationId = correlationIdHeader != null ? parseUuidOrGenerate(correlationIdHeader) : UUID.randomUUID();
+
+        MDC.put(MdcKeys.CORRELATION_ID, correlationId.toString());
+        try {
+            User currentUser = getCurrentUser();
+            CommandResponseBase response =
+                    commandService.continueCommand(commandId, request, currentUser, correlationId);
+            HttpHeaders headers = new HttpHeaders();
+            headers.set(CORRELATION_ID_HEADER, correlationId.toString());
+            return ResponseEntity.ok().headers(headers).body(response);
         } finally {
             MDC.remove(MdcKeys.CORRELATION_ID);
         }
@@ -192,7 +230,9 @@ public class CommandController {
             log.warn("Failed to parse idempotency response JSON", e);
             headers.setContentType(MediaType.APPLICATION_JSON);
         }
-        return ResponseEntity.status(storedResponse.httpStatus()).headers(headers).body(body);
+        return ResponseEntity.status(storedResponse.httpStatus())
+                .headers(headers)
+                .body(body);
     }
 
     private UUID extractCorrelationId(JsonNode node) {
@@ -205,6 +245,11 @@ public class CommandController {
             }
         }
         return null;
+    }
+
+    private User getCurrentUser() {
+        CurrentUser currentUser = userResolver.resolveCurrentUser();
+        return userService.getById(currentUser.id());
     }
 
     private GlobalExceptionHandler.ErrorResponse toValidationErrorResponse(UUID correlationId, ValidationException ex) {
@@ -237,8 +282,7 @@ public class CommandController {
                     TASK_NOT_FOUND,
                     USER_NOT_FOUND,
                     ZONE_NOT_FOUND,
-                    NOTIFICATION_NOT_FOUND ->
-                HttpStatus.NOT_FOUND;
+                    NOTIFICATION_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case INVITE_EXPIRED, INVITE_REDEEMED, INVITE_REVOKED -> HttpStatus.GONE;
             case IDEMPOTENCY_CONFLICT -> HttpStatus.CONFLICT;
             case INTERNAL_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR;

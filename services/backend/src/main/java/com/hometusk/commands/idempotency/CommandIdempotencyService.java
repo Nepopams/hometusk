@@ -45,9 +45,7 @@ public class CommandIdempotencyService {
         }
         if (idempotencyKeys.size() > 1) {
             throw new ValidationException(
-                    "$.headers.Idempotency-Key",
-                    "MULTIPLE_HEADERS",
-                    "Idempotency-Key must be provided once");
+                    "$.headers.Idempotency-Key", "MULTIPLE_HEADERS", "Idempotency-Key must be provided once");
         }
 
         String idempotencyKey = idempotencyKeys.get(0);

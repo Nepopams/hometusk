@@ -52,21 +52,16 @@ public class DeadlineSanityPolicy implements GuardrailPolicy {
             } catch (Exception e) {
                 log.warn("Invalid deadline format: {}", deadlineObj, e);
                 return GuardrailOutcome.clarify(
-                        "Не удалось распознать указанный срок. Пожалуйста, укажите дату и время.",
-                        List.of("deadline"));
+                        "Не удалось распознать указанный срок. Пожалуйста, укажите дату и время.", List.of("deadline"));
             }
 
             Instant now = Instant.now();
 
             // Check if deadline is in the past
             if (deadline.isBefore(now)) {
-                log.warn(
-                        "DeadlineSanityPolicy: deadline in past: deadline={}, now={}",
-                        deadline,
-                        now);
+                log.warn("DeadlineSanityPolicy: deadline in past: deadline={}, now={}", deadline, now);
                 return GuardrailOutcome.clarify(
-                        "Указанный срок уже прошёл. Пожалуйста, выберите будущую дату.",
-                        List.of("deadline"));
+                        "Указанный срок уже прошёл. Пожалуйста, выберите будущую дату.", List.of("deadline"));
             }
 
             // Check if deadline is too far in the future

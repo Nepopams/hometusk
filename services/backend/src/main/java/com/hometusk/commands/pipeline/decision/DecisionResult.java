@@ -12,8 +12,7 @@ import java.util.UUID;
  * - Clarify: Need more information from user
  * - Reject: Cannot process this command
  */
-public sealed interface DecisionResult
-        permits DecisionResult.StartJob, DecisionResult.Clarify, DecisionResult.Reject {
+public sealed interface DecisionResult permits DecisionResult.StartJob, DecisionResult.Clarify, DecisionResult.Reject {
 
     DecisionSource source();
 

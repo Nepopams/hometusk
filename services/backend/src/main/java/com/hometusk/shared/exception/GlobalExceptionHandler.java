@@ -2,7 +2,6 @@ package com.hometusk.shared.exception;
 
 import com.hometusk.shared.logging.MdcKeys;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -127,8 +126,7 @@ public class GlobalExceptionHandler {
                     TASK_NOT_FOUND,
                     USER_NOT_FOUND,
                     ZONE_NOT_FOUND,
-                    NOTIFICATION_NOT_FOUND ->
-                HttpStatus.NOT_FOUND;
+                    NOTIFICATION_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case INVITE_EXPIRED, INVITE_REDEEMED, INVITE_REVOKED -> HttpStatus.GONE;
             case IDEMPOTENCY_CONFLICT -> HttpStatus.CONFLICT;
             case INTERNAL_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR;

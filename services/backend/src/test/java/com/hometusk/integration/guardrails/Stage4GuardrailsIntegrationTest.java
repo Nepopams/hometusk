@@ -11,7 +11,6 @@ import com.hometusk.commands.repository.DecisionLogRepository;
 import com.hometusk.households.domain.Zone;
 import com.hometusk.integration.aiplatform.AiPlatformIntegrationTestBase;
 import com.hometusk.tasks.domain.Task;
-import com.hometusk.tasks.domain.TaskStatus;
 import com.hometusk.tasks.repository.TaskRepository;
 import com.hometusk.users.domain.Membership;
 import com.hometusk.users.domain.MembershipRole;
@@ -88,15 +87,18 @@ class Stage4GuardrailsIntegrationTest extends AiPlatformIntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value("executed"))
                     .andExpect(jsonPath("$.result.taskId").exists())
-                    .andExpect(jsonPath("$.result.assigneeId").value(testUser.getId().toString()));
+                    .andExpect(jsonPath("$.result.assigneeId")
+                            .value(testUser.getId().toString()));
 
             // Verify task has both fields
             var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(tasks).hasSize(1);
             org.assertj.core.api.Assertions.assertThat(tasks.get(0).getAssigneeId())
                     .isEqualTo(testUser.getId());
-            org.assertj.core.api.Assertions.assertThat(tasks.get(0).getDeadline()).isNotNull();
-            org.assertj.core.api.Assertions.assertThat(tasks.get(0).getDeadline().toString())
+            org.assertj.core.api.Assertions.assertThat(tasks.get(0).getDeadline())
+                    .isNotNull();
+            org.assertj.core.api.Assertions.assertThat(
+                            tasks.get(0).getDeadline().toString())
                     .isEqualTo(deadline);
         }
     }
@@ -277,12 +279,11 @@ class Stage4GuardrailsIntegrationTest extends AiPlatformIntegrationTestBase {
                     // Then: MaxOpenTasksPerAssigneePolicy should clarify
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value("needs_input"))
-                    .andExpect(
-                            jsonPath("$.question")
-                                    .value(anyOf(
-                                            containsString("открытых задач"),
-                                            containsString("максимум"),
-                                            containsString("tasks"))))
+                    .andExpect(jsonPath("$.question")
+                            .value(anyOf(
+                                    containsString("открытых задач"),
+                                    containsString("максимум"),
+                                    containsString("tasks"))))
                     .andExpect(jsonPath("$.requiredFields", hasItem("assigneeId")));
 
             // Verify no additional task was created
@@ -309,7 +310,8 @@ class Stage4GuardrailsIntegrationTest extends AiPlatformIntegrationTestBase {
         @DisplayName("should assign zone owner when no assignee specified")
         void assignsZoneOwner() throws Exception {
             // Given: AI Platform returns start_job with zone but NO assignee
-            stubStartJobWithZoneNoAssignee("Clean bedroom", zoneWithOwner.getId().toString());
+            stubStartJobWithZoneNoAssignee(
+                    "Clean bedroom", zoneWithOwner.getId().toString());
 
             String requestBody = objectMapper.writeValueAsString(Map.of(
                     "type", "create_task",
@@ -328,15 +330,15 @@ class Stage4GuardrailsIntegrationTest extends AiPlatformIntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value("executed"))
                     .andExpect(jsonPath("$.result.taskId").exists())
-                    .andExpect(jsonPath("$.result.assigneeId").value(testUser.getId().toString()));
+                    .andExpect(jsonPath("$.result.assigneeId")
+                            .value(testUser.getId().toString()));
 
             // Verify task assigned to zone owner
             var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(tasks).hasSize(1);
             org.assertj.core.api.Assertions.assertThat(tasks.get(0).getAssigneeId())
                     .isEqualTo(testUser.getId());
-            org.assertj.core.api.Assertions.assertThat(tasks.get(0).getZoneId())
-                    .isEqualTo(zoneWithOwner.getId());
+            org.assertj.core.api.Assertions.assertThat(tasks.get(0).getZoneId()).isEqualTo(zoneWithOwner.getId());
         }
     }
 
@@ -375,9 +377,8 @@ class Stage4GuardrailsIntegrationTest extends AiPlatformIntegrationTestBase {
 
             // Then: Verify request to AI Platform included workload_score
             // WireMock should have received request with context.members[].workload_score
-            wireMockServer.verify(
-                    postRequestedFor(urlEqualTo("/decision"))
-                            .withRequestBody(matchingJsonPath("$.context.members[?(@.workload_score)]")));
+            wireMockServer.verify(postRequestedFor(urlEqualTo("/decision"))
+                    .withRequestBody(matchingJsonPath("$.context.members[?(@.workload_score)]")));
         }
     }
 
@@ -416,7 +417,10 @@ class Stage4GuardrailsIntegrationTest extends AiPlatformIntegrationTestBase {
             // Given: AI Platform returns start_job with all fields
             String deadline = "2026-01-25T14:00:00Z";
             stubStartJobWithFullParams(
-                    testUser2.getId().toString(), "Deep clean kitchen", testZone.getId().toString(), deadline);
+                    testUser2.getId().toString(),
+                    "Deep clean kitchen",
+                    testZone.getId().toString(),
+                    deadline);
 
             String requestBody = objectMapper.writeValueAsString(Map.of(
                     "type", "create_task",
@@ -435,7 +439,8 @@ class Stage4GuardrailsIntegrationTest extends AiPlatformIntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value("executed"))
                     .andExpect(jsonPath("$.result.taskId").exists())
-                    .andExpect(jsonPath("$.result.assigneeId").value(testUser2.getId().toString()));
+                    .andExpect(jsonPath("$.result.assigneeId")
+                            .value(testUser2.getId().toString()));
 
             // Verify task persisted with all fields
             var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
@@ -443,8 +448,7 @@ class Stage4GuardrailsIntegrationTest extends AiPlatformIntegrationTestBase {
 
             Task newTask = tasks.get(0); // Most recent
             org.assertj.core.api.Assertions.assertThat(newTask.getTitle()).isEqualTo("Deep clean kitchen");
-            org.assertj.core.api.Assertions.assertThat(newTask.getAssigneeId())
-                    .isEqualTo(testUser2.getId());
+            org.assertj.core.api.Assertions.assertThat(newTask.getAssigneeId()).isEqualTo(testUser2.getId());
             org.assertj.core.api.Assertions.assertThat(newTask.getZoneId()).isEqualTo(testZone.getId());
             org.assertj.core.api.Assertions.assertThat(newTask.getDeadline()).isNotNull();
             org.assertj.core.api.Assertions.assertThat(newTask.getDeadline().toString())
@@ -453,7 +457,8 @@ class Stage4GuardrailsIntegrationTest extends AiPlatformIntegrationTestBase {
             // Verify DecisionLog exists with external_decision_id
             var log = decisionLogRepository.findByCorrelationId(correlationId);
             org.assertj.core.api.Assertions.assertThat(log).isPresent();
-            org.assertj.core.api.Assertions.assertThat(log.get().getExternalDecisionId()).isNotNull();
+            org.assertj.core.api.Assertions.assertThat(log.get().getExternalDecisionId())
+                    .isNotNull();
         }
     }
 

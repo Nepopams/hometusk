@@ -28,8 +28,9 @@ public record TaskDetailDto(
         @Schema(description = "Shopping items linked to this task") List<ShoppingItemDto> linkedShoppingItems) {
 
     public static TaskDetailDto from(Task task, List<ShoppingItem> linkedItems) {
-        List<ShoppingItemDto> itemDtos =
-                linkedItems != null ? linkedItems.stream().map(ShoppingItemDto::from).toList() : List.of();
+        List<ShoppingItemDto> itemDtos = linkedItems != null
+                ? linkedItems.stream().map(ShoppingItemDto::from).toList()
+                : List.of();
 
         return new TaskDetailDto(
                 task.getId(),

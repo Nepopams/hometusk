@@ -9,9 +9,9 @@ import com.hometusk.integration.IntegrationTestBase;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Base class for AI Platform integration tests using WireMock.
