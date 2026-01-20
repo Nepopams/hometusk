@@ -35,6 +35,7 @@ Implement the web client foundation according to the workpack.
 ### Files to create
 - `clients/web/package.json`
 - `clients/web/tsconfig.json`
+- `clients/web/tsconfig.node.json` (for Vite config)
 - `clients/web/vite.config.ts`
 - `clients/web/.eslintrc.cjs`
 - `clients/web/.prettierrc`
@@ -42,6 +43,7 @@ Implement the web client foundation according to the workpack.
 - `clients/web/.gitignore`
 - `clients/web/index.html`
 - `clients/web/README.md`
+- `clients/web/src/vite-env.d.ts` (Vite types)
 - `clients/web/src/**/*.tsx`
 - `clients/web/src/**/*.ts`
 - `clients/web/src/**/*.css`
@@ -73,24 +75,26 @@ npm init -y
 ### Step 2: Install dependencies
 ```bash
 # Production
-npm install react@^18 react-dom@^18 react-router-dom@^6
+npm install react@18.2.0 react-dom@18.2.0 react-router-dom@6.16.0
 
 # Development
-npm install -D typescript @types/react @types/react-dom
-npm install -D vite @vitejs/plugin-react
-npm install -D eslint @typescript-eslint/eslint-plugin @typescript-eslint/parser
-npm install -D eslint-plugin-react-hooks eslint-config-prettier prettier
+npm install -D typescript@5.4.0 @types/react@18.2.0 @types/react-dom@18.2.0
+npm install -D vite@5.0.0 @vitejs/plugin-react@4.0.0
+npm install -D eslint@8.56.0 @typescript-eslint/eslint-plugin@7.0.0 @typescript-eslint/parser@7.0.0
+npm install -D eslint-plugin-react@7.33.2 eslint-plugin-react-hooks@4.6.0 eslint-plugin-react-refresh@0.4.5
+npm install -D prettier@3.2.5 eslint-config-prettier@9.1.0
 ```
 
 ### Step 3: Create config files
 Create in order:
 1. `tsconfig.json`
-2. `vite.config.ts`
-3. `.eslintrc.cjs`
-4. `.prettierrc`
-5. `.gitignore`
-6. `.env.example`
-7. `index.html`
+2. `tsconfig.node.json` (for Vite config)
+3. `vite.config.ts`
+4. `.eslintrc.cjs`
+5. `.prettierrc`
+6. `.gitignore`
+7. `.env.example`
+8. `index.html`
 
 ### Step 4: Create source files
 Create directory structure:
@@ -98,6 +102,7 @@ Create directory structure:
 src/
 ├── main.tsx
 ├── App.tsx
+├── vite-env.d.ts (Vite environment types)
 ├── routes/
 │   ├── index.tsx
 │   ├── Login.tsx
@@ -121,11 +126,15 @@ src/
 ### Step 5: Update package.json scripts
 ```json
 {
+  "name": "hometusk-web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "lint": "eslint src --ext .ts,.tsx",
+    "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings=0",
     "format": "prettier --write src"
   }
 }
@@ -162,11 +171,67 @@ npm run dev    # manual: dev server starts
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "types": ["vite/client"]
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
+```
+
+### tsconfig.node.json
+```json
+{
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["vite.config.ts"]
+}
+```
+
+### src/vite-env.d.ts
+```typescript
+/// <reference types="vite/client" />
+
+interface ImportMetaEnv {
+  readonly VITE_API_BASE_URL: string;
+  readonly VITE_AUTH_PROVIDER: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+```
+
+### .gitignore
+```
+# dependencies
+node_modules
+
+# production build
+dist
+
+# local env files
+.env
+.env.local
+
+# editor
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
+npm-debug.log*
 ```
 
 ### vite.config.ts
@@ -180,6 +245,39 @@ export default defineConfig({
     port: 5173,
   },
 });
+```
+
+### .eslintrc.cjs
+```javascript
+module.exports = {
+  root: true,
+  env: { browser: true, es2022: true },
+  parser: '@typescript-eslint/parser',
+  plugins: ['@typescript-eslint', 'react', 'react-hooks', 'react-refresh'],
+  extends: [
+    'eslint:recommended',
+    'plugin:@typescript-eslint/recommended',
+    'plugin:react/recommended',
+    'plugin:react-hooks/recommended',
+    'plugin:react-refresh/recommended',
+    'prettier',
+  ],
+  settings: {
+    react: { version: 'detect' },
+  },
+  rules: {
+    'react/react-in-jsx-scope': 'off', // React 17+ doesn't need import React
+  },
+};
+```
+
+### .prettierrc
+```json
+{
+  "singleQuote": true,
+  "trailingComma": "all",
+  "printWidth": 100
+}
 ```
 
 ### Route structure (src/routes/index.tsx)

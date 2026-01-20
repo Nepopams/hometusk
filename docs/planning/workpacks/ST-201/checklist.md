@@ -10,9 +10,11 @@
 
 - [ ] **AC1:** Project initialized
   - [ ] `clients/web/package.json` exists with name "hometusk-web"
-  - [ ] TypeScript configured (tsconfig.json)
+  - [ ] TypeScript configured (tsconfig.json + tsconfig.node.json)
   - [ ] React 18+ installed
   - [ ] Vite as build tool
+  - [ ] `src/vite-env.d.ts` exists with environment types
+  - [ ] `.gitignore` excludes node_modules, dist, .env
 
 - [ ] **AC2:** Build commands work
   - [ ] `npm ci` installs without errors
