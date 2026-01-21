@@ -16,55 +16,55 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     /**
      * Find task by ID scoped to household (IDOR prevention).
      */
-    Optional<Task> findByIdAndHouseholdId(UUID id, UUID householdId);
+    Optional<Task> findByIdAndHousehold_Id(UUID id, UUID householdId);
 
     /**
      * Check if task exists in household.
      */
-    boolean existsByIdAndHouseholdId(UUID id, UUID householdId);
+    boolean existsByIdAndHousehold_Id(UUID id, UUID householdId);
 
     /**
      * List all tasks in a household.
      */
-    List<Task> findByHouseholdIdOrderByCreatedAtDesc(UUID householdId);
+    List<Task> findByHousehold_IdOrderByCreatedAtDesc(UUID householdId);
 
     /**
      * List tasks by status in a household.
      */
-    List<Task> findByHouseholdIdAndStatusOrderByCreatedAtDesc(UUID householdId, TaskStatus status);
+    List<Task> findByHousehold_IdAndStatusOrderByCreatedAtDesc(UUID householdId, TaskStatus status);
 
     /**
      * List tasks assigned to a user in a household.
      */
-    List<Task> findByHouseholdIdAndAssigneeIdOrderByCreatedAtDesc(UUID householdId, UUID assigneeId);
+    List<Task> findByHousehold_IdAndAssignee_IdOrderByCreatedAtDesc(UUID householdId, UUID assigneeId);
 
     /**
      * List tasks by status and assignee.
      */
-    List<Task> findByHouseholdIdAndStatusAndAssigneeIdOrderByCreatedAtDesc(
+    List<Task> findByHousehold_IdAndStatusAndAssignee_IdOrderByCreatedAtDesc(
             UUID householdId, TaskStatus status, UUID assigneeId);
 
     /**
      * List tasks by zone in a household.
      */
-    List<Task> findByHouseholdIdAndZoneIdOrderByCreatedAtDesc(UUID householdId, UUID zoneId);
+    List<Task> findByHousehold_IdAndZone_IdOrderByCreatedAtDesc(UUID householdId, UUID zoneId);
 
     /**
      * List tasks by status and zone.
      */
-    List<Task> findByHouseholdIdAndStatusAndZoneIdOrderByCreatedAtDesc(
+    List<Task> findByHousehold_IdAndStatusAndZone_IdOrderByCreatedAtDesc(
             UUID householdId, TaskStatus status, UUID zoneId);
 
     /**
      * List tasks by assignee and zone.
      */
-    List<Task> findByHouseholdIdAndAssigneeIdAndZoneIdOrderByCreatedAtDesc(
+    List<Task> findByHousehold_IdAndAssignee_IdAndZone_IdOrderByCreatedAtDesc(
             UUID householdId, UUID assigneeId, UUID zoneId);
 
     /**
      * List tasks by status, assignee and zone.
      */
-    List<Task> findByHouseholdIdAndStatusAndAssigneeIdAndZoneIdOrderByCreatedAtDesc(
+    List<Task> findByHousehold_IdAndStatusAndAssignee_IdAndZone_IdOrderByCreatedAtDesc(
             UUID householdId, TaskStatus status, UUID assigneeId, UUID zoneId);
 
     /**
@@ -77,7 +77,7 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     /**
      * Count tasks by status in a household.
      */
-    long countByHouseholdIdAndStatus(UUID householdId, TaskStatus status);
+    long countByHousehold_IdAndStatus(UUID householdId, TaskStatus status);
 
     /**
      * Find tasks created by a specific command.

@@ -48,6 +48,7 @@ public class ShoppingList {
         return household;
     }
 
+    @Transient
     public UUID getHouseholdId() {
         return household.getId();
     }

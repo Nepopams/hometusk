@@ -13,25 +13,25 @@ public interface ShoppingListRepository extends JpaRepository<ShoppingList, UUID
     /**
      * Find list by ID scoped to household (IDOR prevention).
      */
-    Optional<ShoppingList> findByIdAndHouseholdId(UUID id, UUID householdId);
+    Optional<ShoppingList> findByIdAndHousehold_Id(UUID id, UUID householdId);
 
     /**
      * Find list by name in a household.
      */
-    Optional<ShoppingList> findByHouseholdIdAndName(UUID householdId, String name);
+    Optional<ShoppingList> findByHousehold_IdAndName(UUID householdId, String name);
 
     /**
      * List all shopping lists in a household.
      */
-    List<ShoppingList> findByHouseholdIdOrderByCreatedAtDesc(UUID householdId);
+    List<ShoppingList> findByHousehold_IdOrderByCreatedAtDesc(UUID householdId);
 
     /**
      * Find the first (default) shopping list for a household.
      */
-    Optional<ShoppingList> findFirstByHouseholdIdOrderByCreatedAtAsc(UUID householdId);
+    Optional<ShoppingList> findFirstByHousehold_IdOrderByCreatedAtAsc(UUID householdId);
 
     /**
      * Check if a list exists in a household.
      */
-    boolean existsByIdAndHouseholdId(UUID id, UUID householdId);
+    boolean existsByIdAndHousehold_Id(UUID id, UUID householdId);
 }

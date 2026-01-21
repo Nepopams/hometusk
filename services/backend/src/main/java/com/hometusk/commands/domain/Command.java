@@ -27,7 +27,6 @@ public class Command {
     @JoinColumn(name = "requester_id", nullable = false)
     private User requester;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false)
     private CommandType type;
 
@@ -35,7 +34,6 @@ public class Command {
     @Column(name = "payload", nullable = false, columnDefinition = "jsonb")
     private String payload;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private CommandStatus status;
 
@@ -94,6 +92,7 @@ public class Command {
         return household;
     }
 
+    @Transient
     public UUID getHouseholdId() {
         return household.getId();
     }
@@ -102,6 +101,7 @@ public class Command {
         return requester;
     }
 
+    @Transient
     public UUID getRequesterId() {
         return requester.getId();
     }

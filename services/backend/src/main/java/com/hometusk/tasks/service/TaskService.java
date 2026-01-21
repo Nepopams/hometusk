@@ -111,18 +111,18 @@ public class TaskService {
     @Transactional(readOnly = true)
     public Task getByIdAndHouseholdId(UUID taskId, UUID householdId) {
         return taskRepository
-                .findByIdAndHouseholdId(taskId, householdId)
+                .findByIdAndHousehold_Id(taskId, householdId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.TASK_NOT_FOUND, "Task not found: " + taskId));
     }
 
     @Transactional(readOnly = true)
     public Optional<Task> findByIdAndHouseholdId(UUID taskId, UUID householdId) {
-        return taskRepository.findByIdAndHouseholdId(taskId, householdId);
+        return taskRepository.findByIdAndHousehold_Id(taskId, householdId);
     }
 
     @Transactional(readOnly = true)
     public boolean existsInHousehold(UUID taskId, UUID householdId) {
-        return taskRepository.existsByIdAndHouseholdId(taskId, householdId);
+        return taskRepository.existsByIdAndHousehold_Id(taskId, householdId);
     }
 
     @Transactional(readOnly = true)
@@ -134,33 +134,34 @@ public class TaskService {
     public List<Task> findByHouseholdId(UUID householdId, TaskStatus status, UUID assigneeId, UUID zoneId) {
         // All three filters
         if (status != null && assigneeId != null && zoneId != null) {
-            return taskRepository.findByHouseholdIdAndStatusAndAssigneeIdAndZoneIdOrderByCreatedAtDesc(
+            return taskRepository.findByHousehold_IdAndStatusAndAssignee_IdAndZone_IdOrderByCreatedAtDesc(
                     householdId, status, assigneeId, zoneId);
         }
         // Two filters
         if (status != null && assigneeId != null) {
-            return taskRepository.findByHouseholdIdAndStatusAndAssigneeIdOrderByCreatedAtDesc(
+            return taskRepository.findByHousehold_IdAndStatusAndAssignee_IdOrderByCreatedAtDesc(
                     householdId, status, assigneeId);
         }
         if (status != null && zoneId != null) {
-            return taskRepository.findByHouseholdIdAndStatusAndZoneIdOrderByCreatedAtDesc(householdId, status, zoneId);
+            return taskRepository.findByHousehold_IdAndStatusAndZone_IdOrderByCreatedAtDesc(
+                    householdId, status, zoneId);
         }
         if (assigneeId != null && zoneId != null) {
-            return taskRepository.findByHouseholdIdAndAssigneeIdAndZoneIdOrderByCreatedAtDesc(
+            return taskRepository.findByHousehold_IdAndAssignee_IdAndZone_IdOrderByCreatedAtDesc(
                     householdId, assigneeId, zoneId);
         }
         // Single filter
         if (status != null) {
-            return taskRepository.findByHouseholdIdAndStatusOrderByCreatedAtDesc(householdId, status);
+            return taskRepository.findByHousehold_IdAndStatusOrderByCreatedAtDesc(householdId, status);
         }
         if (assigneeId != null) {
-            return taskRepository.findByHouseholdIdAndAssigneeIdOrderByCreatedAtDesc(householdId, assigneeId);
+            return taskRepository.findByHousehold_IdAndAssignee_IdOrderByCreatedAtDesc(householdId, assigneeId);
         }
         if (zoneId != null) {
-            return taskRepository.findByHouseholdIdAndZoneIdOrderByCreatedAtDesc(householdId, zoneId);
+            return taskRepository.findByHousehold_IdAndZone_IdOrderByCreatedAtDesc(householdId, zoneId);
         }
         // No filters
-        return taskRepository.findByHouseholdIdOrderByCreatedAtDesc(householdId);
+        return taskRepository.findByHousehold_IdOrderByCreatedAtDesc(householdId);
     }
 
     public record CreateTaskRequest(

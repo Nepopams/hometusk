@@ -91,7 +91,7 @@ public class InviteService {
             throw new BusinessException(ErrorCode.INVITE_EXPIRED, "Invite token expired");
         }
 
-        Optional<Membership> existing = membershipRepository.findByUserIdAndHouseholdId(
+        Optional<Membership> existing = membershipRepository.findByUser_IdAndHousehold_Id(
                 userId, invite.getHousehold().getId());
         if (existing.isPresent()) {
             log.info("Invite accept no-op: user already member, invite remains active");

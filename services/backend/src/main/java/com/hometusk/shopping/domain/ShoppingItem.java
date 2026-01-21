@@ -127,6 +127,7 @@ public class ShoppingItem {
         return linkedTask;
     }
 
+    @Transient
     public UUID getLinkedTaskId() {
         return linkedTask != null ? linkedTask.getId() : null;
     }

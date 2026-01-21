@@ -25,7 +25,6 @@ public class Task {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private TaskStatus status;
 
@@ -80,6 +79,7 @@ public class Task {
         return household;
     }
 
+    @Transient
     public UUID getHouseholdId() {
         return household.getId();
     }
@@ -100,6 +100,7 @@ public class Task {
         return assignee;
     }
 
+    @Transient
     public UUID getAssigneeId() {
         return assignee != null ? assignee.getId() : null;
     }
@@ -108,6 +109,7 @@ public class Task {
         return zone;
     }
 
+    @Transient
     public UUID getZoneId() {
         return zone != null ? zone.getId() : null;
     }
@@ -120,6 +122,7 @@ public class Task {
         return createdBy;
     }
 
+    @Transient
     public UUID getCreatedById() {
         return createdBy.getId();
     }

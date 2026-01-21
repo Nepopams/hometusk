@@ -41,7 +41,7 @@ class HouseholdControllerTest extends IntegrationTestBase {
             var householdId = java.util.UUID.fromString(response.get("id").asText());
 
             // Verify creator is auto-added as admin
-            var memberships = membershipRepository.findByHouseholdId(householdId);
+            var memberships = membershipRepository.findByHousehold_Id(householdId);
             assertThat(memberships).hasSize(1);
             assertThat(memberships.get(0).getUser().getId()).isEqualTo(testUser.getId());
             assertThat(memberships.get(0).getRole()).isEqualTo(MembershipRole.admin);
@@ -158,7 +158,7 @@ class HouseholdControllerTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$.name").value("Living Room"));
 
             // Verify zone was created
-            var zones = zoneRepository.findByHouseholdId(testHousehold.getId());
+            var zones = zoneRepository.findByHousehold_Id(testHousehold.getId());
             assertThat(zones).hasSize(2);
             assertThat(zones).anyMatch(z -> z.getName().equals("Living Room"));
         }
@@ -190,7 +190,7 @@ class HouseholdControllerTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$.id").value(testZone.getId().toString()));
 
             // Verify no duplicate zones created
-            var zones = zoneRepository.findByHouseholdId(testHousehold.getId());
+            var zones = zoneRepository.findByHousehold_Id(testHousehold.getId());
             assertThat(zones).hasSize(1);
         }
 

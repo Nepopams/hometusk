@@ -75,7 +75,7 @@ class HouseholdInviteIntegrationTest extends IntegrationTestBase {
                 .andExpect(
                         jsonPath("$.household.id").value(testHousehold.getId().toString()));
 
-        assertThat(membershipRepository.existsByUserIdAndHouseholdId(testUser2.getId(), testHousehold.getId()))
+        assertThat(membershipRepository.existsByUser_IdAndHousehold_Id(testUser2.getId(), testHousehold.getId()))
                 .isTrue();
 
         var invite = inviteRepository.findByInviteToken(token).orElseThrow();

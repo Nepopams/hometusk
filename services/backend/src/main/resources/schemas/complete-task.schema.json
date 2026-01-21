@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "complete-task",
+  "$id": "https://hometusk.app/schemas/complete-task.schema.json",
   "title": "CompleteTaskPayload",
   "type": "object",
   "required": ["taskId"],

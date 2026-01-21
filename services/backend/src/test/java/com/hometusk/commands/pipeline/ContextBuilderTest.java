@@ -78,8 +78,8 @@ class ContextBuilderTest {
             setZoneId(kitchen, UUID.randomUUID());
             setZoneId(bathroom, UUID.randomUUID());
 
-            when(membershipRepository.findByHouseholdId(householdId)).thenReturn(List.of(membership1, membership2));
-            when(zoneRepository.findByHouseholdId(householdId)).thenReturn(List.of(kitchen, bathroom));
+            when(membershipRepository.findByHousehold_Id(householdId)).thenReturn(List.of(membership1, membership2));
+            when(zoneRepository.findByHousehold_Id(householdId)).thenReturn(List.of(kitchen, bathroom));
             when(taskRepository.countTasksByAssigneeAndStatuses(eq(householdId), any()))
                     .thenReturn(List.of(new Object[] {user1.getId(), 3L}, new Object[] {user2.getId(), 5L}));
 
@@ -99,7 +99,7 @@ class ContextBuilderTest {
         @DisplayName("should return incomplete snapshot when no members found")
         void returnsIncompleteWhenNoMembers() {
             // Given
-            when(membershipRepository.findByHouseholdId(householdId)).thenReturn(List.of());
+            when(membershipRepository.findByHousehold_Id(householdId)).thenReturn(List.of());
 
             // When
             HouseholdSnapshot snapshot = contextBuilder.buildSnapshot(householdId, correlationId);
@@ -113,7 +113,7 @@ class ContextBuilderTest {
         @DisplayName("should return incomplete snapshot on database error")
         void returnsIncompleteOnDatabaseError() {
             // Given
-            when(membershipRepository.findByHouseholdId(householdId))
+            when(membershipRepository.findByHousehold_Id(householdId))
                     .thenThrow(new RuntimeException("Database connection failed"));
 
             // When
@@ -130,8 +130,8 @@ class ContextBuilderTest {
             User user = createUser("user@test.com", "Alice");
             Membership membership = new Membership(user, household, MembershipRole.member);
 
-            when(membershipRepository.findByHouseholdId(householdId)).thenReturn(List.of(membership));
-            when(zoneRepository.findByHouseholdId(householdId)).thenReturn(List.of());
+            when(membershipRepository.findByHousehold_Id(householdId)).thenReturn(List.of(membership));
+            when(zoneRepository.findByHousehold_Id(householdId)).thenReturn(List.of());
             when(taskRepository.countTasksByAssigneeAndStatuses(eq(householdId), any()))
                     .thenReturn(List.of());
 
@@ -152,9 +152,9 @@ class ContextBuilderTest {
             Membership adminMembership = new Membership(admin, household, MembershipRole.admin);
             Membership memberMembership = new Membership(member, household, MembershipRole.member);
 
-            when(membershipRepository.findByHouseholdId(householdId))
+            when(membershipRepository.findByHousehold_Id(householdId))
                     .thenReturn(List.of(adminMembership, memberMembership));
-            when(zoneRepository.findByHouseholdId(householdId)).thenReturn(List.of());
+            when(zoneRepository.findByHousehold_Id(householdId)).thenReturn(List.of());
             when(taskRepository.countTasksByAssigneeAndStatuses(eq(householdId), any()))
                     .thenReturn(List.of());
 
@@ -180,9 +180,9 @@ class ContextBuilderTest {
             Zone kitchen = new Zone(household, "Kitchen");
             setZoneId(kitchen, UUID.randomUUID());
 
-            when(membershipRepository.findByHouseholdId(householdId)).thenReturn(List.of(membership));
-            when(zoneRepository.findByHouseholdId(householdId)).thenReturn(List.of(kitchen));
-            when(shoppingListRepository.findByHouseholdIdOrderByCreatedAtDesc(householdId))
+            when(membershipRepository.findByHousehold_Id(householdId)).thenReturn(List.of(membership));
+            when(zoneRepository.findByHousehold_Id(householdId)).thenReturn(List.of(kitchen));
+            when(shoppingListRepository.findByHousehold_IdOrderByCreatedAtDesc(householdId))
                     .thenReturn(List.of());
 
             // When
@@ -199,7 +199,7 @@ class ContextBuilderTest {
         @DisplayName("should return empty context on database error")
         void returnsEmptyOnError() {
             // Given
-            when(membershipRepository.findByHouseholdId(householdId)).thenThrow(new RuntimeException("Database error"));
+            when(membershipRepository.findByHousehold_Id(householdId)).thenThrow(new RuntimeException("Database error"));
 
             // When
             var context = contextBuilder.buildHouseholdContextForAi(householdId, correlationId);
@@ -215,9 +215,9 @@ class ContextBuilderTest {
             User user = createUser("user@test.com", "Alice");
             Membership membership = new Membership(user, household, MembershipRole.member);
 
-            when(membershipRepository.findByHouseholdId(householdId)).thenReturn(List.of(membership));
-            when(zoneRepository.findByHouseholdId(householdId)).thenReturn(List.of());
-            when(shoppingListRepository.findByHouseholdIdOrderByCreatedAtDesc(householdId))
+            when(membershipRepository.findByHousehold_Id(householdId)).thenReturn(List.of(membership));
+            when(zoneRepository.findByHousehold_Id(householdId)).thenReturn(List.of());
+            when(shoppingListRepository.findByHousehold_IdOrderByCreatedAtDesc(householdId))
                     .thenReturn(List.of());
 
             // When

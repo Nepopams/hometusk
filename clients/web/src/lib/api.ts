@@ -1,5 +1,12 @@
 import { ApiError, AuthError } from './errors';
-import type { AuthErrorResponse, UserProfile } from '../types/api';
+import type {
+  AuthErrorResponse,
+  HouseholdMember,
+  Task,
+  TaskFilters,
+  UserProfile,
+  Zone,
+} from '../types/api';
 
 export type ApiOptions = {
   method?: string;
@@ -46,4 +53,28 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
 
 export async function getMe(): Promise<UserProfile> {
   return apiFetch<UserProfile>('/users/me');
+}
+
+function buildQueryString(filters: TaskFilters): string {
+  const params = new URLSearchParams();
+
+  if (filters.status) params.set('status', filters.status);
+  if (filters.assigneeId) params.set('assigneeId', filters.assigneeId);
+  if (filters.zoneId) params.set('zoneId', filters.zoneId);
+
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
+
+export async function getTasks(householdId: string, filters: TaskFilters = {}): Promise<Task[]> {
+  const query = buildQueryString(filters);
+  return apiFetch<Task[]>(`/households/${householdId}/tasks${query}`);
+}
+
+export async function getZones(householdId: string): Promise<Zone[]> {
+  return apiFetch<Zone[]>(`/households/${householdId}/zones`);
+}
+
+export async function getMembers(householdId: string): Promise<HouseholdMember[]> {
+  return apiFetch<HouseholdMember[]>(`/households/${householdId}/members`);
 }

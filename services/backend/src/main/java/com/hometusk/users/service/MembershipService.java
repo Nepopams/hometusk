@@ -23,7 +23,7 @@ public class MembershipService {
 
     @Transactional(readOnly = true)
     public boolean isMember(UUID userId, UUID householdId) {
-        return membershipRepository.existsByUserIdAndHouseholdId(userId, householdId);
+        return membershipRepository.existsByUser_IdAndHousehold_Id(userId, householdId);
     }
 
     @Transactional(readOnly = true)
@@ -35,17 +35,17 @@ public class MembershipService {
 
     @Transactional(readOnly = true)
     public Optional<Membership> findMembership(UUID userId, UUID householdId) {
-        return membershipRepository.findByUserIdAndHouseholdId(userId, householdId);
+        return membershipRepository.findByUser_IdAndHousehold_Id(userId, householdId);
     }
 
     @Transactional(readOnly = true)
     public List<Membership> findByUserId(UUID userId) {
-        return membershipRepository.findByUserId(userId);
+        return membershipRepository.findByUser_Id(userId);
     }
 
     @Transactional(readOnly = true)
     public List<Membership> findByHouseholdId(UUID householdId) {
-        return membershipRepository.findByHouseholdId(householdId);
+        return membershipRepository.findByHousehold_Id(householdId);
     }
 
     @Transactional(readOnly = true)
@@ -57,7 +57,7 @@ public class MembershipService {
     public Membership addMember(User user, Household household, MembershipRole role) {
         // Check if membership already exists
         Optional<Membership> existing =
-                membershipRepository.findByUserIdAndHouseholdId(user.getId(), household.getId());
+                membershipRepository.findByUser_IdAndHousehold_Id(user.getId(), household.getId());
 
         if (existing.isPresent()) {
             return existing.get();
@@ -69,6 +69,6 @@ public class MembershipService {
 
     @Transactional
     public void removeMember(UUID userId, UUID householdId) {
-        membershipRepository.findByUserIdAndHouseholdId(userId, householdId).ifPresent(membershipRepository::delete);
+        membershipRepository.findByUser_IdAndHousehold_Id(userId, householdId).ifPresent(membershipRepository::delete);
     }
 }

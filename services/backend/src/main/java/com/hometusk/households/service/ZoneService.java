@@ -22,30 +22,30 @@ public class ZoneService {
 
     @Transactional(readOnly = true)
     public List<Zone> findByHouseholdId(UUID householdId) {
-        return zoneRepository.findByHouseholdId(householdId);
+        return zoneRepository.findByHousehold_Id(householdId);
     }
 
     @Transactional(readOnly = true)
     public Optional<Zone> findByIdAndHouseholdId(UUID id, UUID householdId) {
-        return zoneRepository.findByIdAndHouseholdId(id, householdId);
+        return zoneRepository.findByIdAndHousehold_Id(id, householdId);
     }
 
     @Transactional(readOnly = true)
     public Zone getByIdAndHouseholdId(UUID id, UUID householdId) {
         return zoneRepository
-                .findByIdAndHouseholdId(id, householdId)
+                .findByIdAndHousehold_Id(id, householdId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.ZONE_NOT_FOUND, "Zone not found: " + id));
     }
 
     @Transactional(readOnly = true)
     public boolean existsInHousehold(UUID id, UUID householdId) {
-        return zoneRepository.existsByIdAndHouseholdId(id, householdId);
+        return zoneRepository.existsByIdAndHousehold_Id(id, householdId);
     }
 
     @Transactional
     public Zone create(Household household, String name) {
         // Check for duplicate name
-        Optional<Zone> existing = zoneRepository.findByHouseholdIdAndName(household.getId(), name);
+        Optional<Zone> existing = zoneRepository.findByHousehold_IdAndName(household.getId(), name);
         if (existing.isPresent()) {
             return existing.get();
         }

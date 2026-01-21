@@ -34,7 +34,6 @@ public class DecisionLog {
     @Column(name = "decision", nullable = false, columnDefinition = "jsonb")
     private String decision;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "source", nullable = false)
     private DecisionSource source;
 
@@ -88,6 +87,7 @@ public class DecisionLog {
         return command;
     }
 
+    @Transient
     public UUID getCommandId() {
         return command.getId();
     }

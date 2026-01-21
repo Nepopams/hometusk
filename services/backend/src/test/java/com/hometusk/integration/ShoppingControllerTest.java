@@ -153,7 +153,7 @@ class ShoppingControllerTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$.purchased").value(false));
 
             // Verify item was created
-            var items = shoppingItemRepository.findByShoppingListIdOrderByCreatedAtDesc(shoppingList.getId());
+            var items = shoppingItemRepository.findByShoppingList_IdOrderByCreatedAtDesc(shoppingList.getId());
             assertThat(items).hasSize(3);
             assertThat(items).anyMatch(i -> i.getName().equals("Eggs"));
 

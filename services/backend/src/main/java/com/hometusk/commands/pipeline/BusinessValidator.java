@@ -50,7 +50,7 @@ public class BusinessValidator {
 
         // Rule: Assignee must be member of household
         if (payload.assigneeId() != null) {
-            if (!membershipRepository.existsByUserIdAndHouseholdId(payload.assigneeId(), householdId)) {
+            if (!membershipRepository.existsByUser_IdAndHousehold_Id(payload.assigneeId(), householdId)) {
                 violations.add(new BusinessException.Violation(
                         "ASSIGNEE_MUST_BE_MEMBER", "Assignee is not a member of this household"));
             }
@@ -58,7 +58,7 @@ public class BusinessValidator {
 
         // Rule: Zone must exist in household
         if (payload.zoneId() != null) {
-            if (!zoneRepository.existsByIdAndHouseholdId(payload.zoneId(), householdId)) {
+            if (!zoneRepository.existsByIdAndHousehold_Id(payload.zoneId(), householdId)) {
                 violations.add(
                         new BusinessException.Violation("ZONE_MUST_EXIST", "Zone does not exist in this household"));
             }
@@ -91,7 +91,7 @@ public class BusinessValidator {
         List<BusinessException.Violation> violations = new ArrayList<>();
 
         // Rule: Task must exist in household (IDOR prevention)
-        var taskOpt = taskRepository.findByIdAndHouseholdId(payload.taskId(), householdId);
+        var taskOpt = taskRepository.findByIdAndHousehold_Id(payload.taskId(), householdId);
         if (taskOpt.isEmpty()) {
             throw new BusinessException(
                     ErrorCode.TASK_NOT_FOUND,

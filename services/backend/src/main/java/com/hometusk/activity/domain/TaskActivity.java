@@ -26,7 +26,6 @@ public class TaskActivity {
     @Column(name = "correlation_id", nullable = false)
     private UUID correlationId;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "activity_type", nullable = false)
     private ActivityType activityType;
 
@@ -80,6 +79,7 @@ public class TaskActivity {
         return household;
     }
 
+    @Transient
     public UUID getHouseholdId() {
         return household.getId();
     }
@@ -108,6 +108,7 @@ public class TaskActivity {
         return actor;
     }
 
+    @Transient
     public UUID getActorId() {
         return actor.getId();
     }

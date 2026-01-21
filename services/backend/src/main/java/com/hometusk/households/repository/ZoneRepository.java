@@ -10,11 +10,11 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ZoneRepository extends JpaRepository<Zone, UUID> {
 
-    List<Zone> findByHouseholdId(UUID householdId);
+    List<Zone> findByHousehold_Id(UUID householdId);
 
-    Optional<Zone> findByIdAndHouseholdId(UUID id, UUID householdId);
+    Optional<Zone> findByIdAndHousehold_Id(UUID id, UUID householdId);
 
-    boolean existsByIdAndHouseholdId(UUID id, UUID householdId);
+    boolean existsByIdAndHousehold_Id(UUID id, UUID householdId);
 
-    Optional<Zone> findByHouseholdIdAndName(UUID householdId, String name);
+    Optional<Zone> findByHousehold_IdAndName(UUID householdId, String name);
 }

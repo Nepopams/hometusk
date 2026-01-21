@@ -16,22 +16,22 @@ public interface ShoppingItemRepository extends JpaRepository<ShoppingItem, UUID
      * Find item by ID scoped to household (IDOR prevention via list relationship).
      */
     @Query("SELECT i FROM ShoppingItem i WHERE i.id = :id AND i.shoppingList.household.id = :householdId")
-    Optional<ShoppingItem> findByIdAndHouseholdId(@Param("id") UUID id, @Param("householdId") UUID householdId);
+    Optional<ShoppingItem> findByIdAndHousehold_Id(@Param("id") UUID id, @Param("householdId") UUID householdId);
 
     /**
      * Find items in a shopping list that are not yet purchased.
      */
-    List<ShoppingItem> findByShoppingListIdAndPurchasedFalseOrderByCreatedAtDesc(UUID listId);
+    List<ShoppingItem> findByShoppingList_IdAndPurchasedFalseOrderByCreatedAtDesc(UUID listId);
 
     /**
      * Find all items in a shopping list.
      */
-    List<ShoppingItem> findByShoppingListIdOrderByCreatedAtDesc(UUID listId);
+    List<ShoppingItem> findByShoppingList_IdOrderByCreatedAtDesc(UUID listId);
 
     /**
      * Find items linked to a specific task.
      */
-    List<ShoppingItem> findByLinkedTaskId(UUID taskId);
+    List<ShoppingItem> findByLinkedTask_Id(UUID taskId);
 
     /**
      * Check if an item with this idempotency key already exists.
@@ -50,11 +50,11 @@ public interface ShoppingItemRepository extends JpaRepository<ShoppingItem, UUID
      */
     @Query(
             "SELECT i FROM ShoppingItem i WHERE i.linkedTask.id = :taskId AND i.shoppingList.household.id = :householdId")
-    List<ShoppingItem> findByLinkedTaskIdAndHouseholdId(
+    List<ShoppingItem> findByLinkedTask_IdAndHouseholdId(
             @Param("taskId") UUID taskId, @Param("householdId") UUID householdId);
 
     /**
      * Count unpurchased items in a list.
      */
-    long countByShoppingListIdAndPurchasedFalse(UUID listId);
+    long countByShoppingList_IdAndPurchasedFalse(UUID listId);
 }

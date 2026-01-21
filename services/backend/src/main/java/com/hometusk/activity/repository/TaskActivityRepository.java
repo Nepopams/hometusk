@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface TaskActivityRepository extends JpaRepository<TaskActivity, UUID> {
 
-    List<TaskActivity> findByHouseholdIdOrderByCreatedAtDesc(UUID householdId);
+    List<TaskActivity> findByHousehold_IdOrderByCreatedAtDesc(UUID householdId);
 
     List<TaskActivity> findByEntityTypeAndEntityIdOrderByCreatedAtDesc(String entityType, UUID entityId);
 
@@ -18,6 +18,6 @@ public interface TaskActivityRepository extends JpaRepository<TaskActivity, UUID
 
     List<TaskActivity> findByCommandIdOrderByCreatedAtDesc(UUID commandId);
 
-    List<TaskActivity> findByHouseholdIdAndActivityTypeOrderByCreatedAtDesc(
+    List<TaskActivity> findByHousehold_IdAndActivityTypeOrderByCreatedAtDesc(
             UUID householdId, ActivityType activityType);
 }

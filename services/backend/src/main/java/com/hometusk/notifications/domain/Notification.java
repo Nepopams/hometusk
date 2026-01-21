@@ -70,6 +70,7 @@ public class Notification {
         return household;
     }
 
+    @Transient
     public UUID getHouseholdId() {
         return household.getId();
     }
@@ -78,6 +79,7 @@ public class Notification {
         return user;
     }
 
+    @Transient
     public UUID getUserId() {
         return user.getId();
     }

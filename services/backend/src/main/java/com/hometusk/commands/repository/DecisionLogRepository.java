@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface DecisionLogRepository extends JpaRepository<DecisionLog, UUID> {
 
-    Optional<DecisionLog> findByCommandId(UUID commandId);
+    Optional<DecisionLog> findByCommand_Id(UUID commandId);
 
     Optional<DecisionLog> findByCorrelationId(UUID correlationId);
 

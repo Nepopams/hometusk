@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "create-task",
+  "$id": "https://hometusk.app/schemas/create-task.schema.json",
   "title": "CreateTaskPayload",
   "type": "object",
   "required": ["title"],

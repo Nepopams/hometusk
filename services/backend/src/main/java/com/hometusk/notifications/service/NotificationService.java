@@ -55,9 +55,9 @@ public class NotificationService {
         Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         List<Notification> notifications = since != null
-                ? notificationRepository.findByHouseholdIdAndUserIdAndCreatedAtAfter(
+                ? notificationRepository.findByHousehold_IdAndUser_IdAndCreatedAtAfter(
                         householdId, userId, since, pageable)
-                : notificationRepository.findByHouseholdIdAndUserId(householdId, userId, pageable);
+                : notificationRepository.findByHousehold_IdAndUser_Id(householdId, userId, pageable);
 
         return notifications.stream().map(this::toDto).toList();
     }
@@ -65,7 +65,7 @@ public class NotificationService {
     @Transactional
     public NotificationDto markRead(UUID notificationId, UUID userId) {
         Notification notification = notificationRepository
-                .findByIdAndUserId(notificationId, userId)
+                .findByIdAndUser_Id(notificationId, userId)
                 .orElseThrow(() -> new NotFoundException(
                         ErrorCode.NOTIFICATION_NOT_FOUND, "Notification not found: " + notificationId));
 
@@ -193,7 +193,7 @@ public class NotificationService {
             NotificationType type,
             NotificationPayloadDto payload,
             UUID correlationId) {
-        List<Membership> memberships = membershipRepository.findByHouseholdId(household.getId());
+        List<Membership> memberships = membershipRepository.findByHousehold_Id(household.getId());
 
         for (Membership membership : memberships) {
             User recipient = membership.getUser();

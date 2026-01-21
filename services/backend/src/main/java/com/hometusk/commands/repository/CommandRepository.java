@@ -15,9 +15,9 @@ public interface CommandRepository extends JpaRepository<Command, UUID> {
 
     boolean existsByCorrelationId(UUID correlationId);
 
-    List<Command> findByHouseholdIdOrderByCreatedAtDesc(UUID householdId);
+    List<Command> findByHousehold_IdOrderByCreatedAtDesc(UUID householdId);
 
-    List<Command> findByHouseholdIdAndStatusOrderByCreatedAtDesc(UUID householdId, CommandStatus status);
+    List<Command> findByHousehold_IdAndStatusOrderByCreatedAtDesc(UUID householdId, CommandStatus status);
 
-    List<Command> findByRequesterIdOrderByCreatedAtDesc(UUID requesterId);
+    List<Command> findByRequester_IdOrderByCreatedAtDesc(UUID requesterId);
 }

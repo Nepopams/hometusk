@@ -89,7 +89,7 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
                             .value(testUser.getId().toString()));
 
             // Verify task was created
-            var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            var tasks = taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(tasks).hasSize(1);
             org.assertj.core.api.Assertions.assertThat(tasks.get(0).getTitle()).isEqualTo("Clean the kitchen");
 
@@ -131,11 +131,11 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
                     .andExpect(jsonPath("$.requiredFields", hasItem("zoneId")));
 
             // Verify no task was created
-            var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            var tasks = taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(tasks).isEmpty();
 
             // Verify command status
-            var commands = commandRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            var commands = commandRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(commands).isNotEmpty();
             org.assertj.core.api.Assertions.assertThat(commands.get(0).getStatus())
                     .isEqualTo(CommandStatus.NEEDS_INPUT);
@@ -171,11 +171,11 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
                     .andExpect(jsonPath("$.errorCode").value("AI_RESPONSE_INVALID"));
 
             // Verify no task was created
-            var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            var tasks = taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(tasks).isEmpty();
 
             // Verify command was rejected
-            var commands = commandRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            var commands = commandRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(commands).isNotEmpty();
             org.assertj.core.api.Assertions.assertThat(commands.get(0).getStatus())
                     .isEqualTo(CommandStatus.REJECTED);
@@ -212,11 +212,11 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
                     .andExpect(jsonPath("$.result.taskId").exists());
 
             // Verify task was created via fallback
-            var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            var tasks = taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(tasks).hasSize(1);
 
             // Verify command was executed
-            var commands = commandRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            var commands = commandRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(commands).isNotEmpty();
             org.assertj.core.api.Assertions.assertThat(commands.get(0).getStatus())
                     .isEqualTo(CommandStatus.EXECUTED);
@@ -322,7 +322,7 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
                     .andExpect(jsonPath("$.question", containsString("tasks")));
 
             // Verify no additional task was created
-            var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            var tasks = taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(tasks).hasSize(10); // Only the pre-created tasks
         }
     }
@@ -358,7 +358,7 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
                     .andExpect(jsonPath("$.result.taskId").exists());
 
             // Verify task was created
-            var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            var tasks = taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(tasks).hasSize(1);
             org.assertj.core.api.Assertions.assertThat(tasks.get(0).getTitle()).isEqualTo("Buy groceries");
         }
@@ -393,7 +393,7 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
                     .andExpect(jsonPath("$.question", containsString("не поддерживается")));
 
             // Verify no task was created
-            var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            var tasks = taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(tasks).isEmpty();
         }
     }
@@ -468,7 +468,7 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
                     .andExpect(jsonPath("$.status").value("needs_input"));
 
             // Verify no new task was created (guardrails blocked it)
-            var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            var tasks = taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(tasks).hasSize(10);
         }
     }

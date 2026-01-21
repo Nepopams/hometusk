@@ -137,7 +137,7 @@ class TaskControllerTest extends IntegrationTestBase {
         void listTasksRejectsNonMember() throws Exception {
             // Remove testUser2 from members for this test
             membershipRepository.deleteAll(
-                    membershipRepository.findByUserIdAndHouseholdId(testUser2.getId(), testHousehold.getId()).stream()
+                    membershipRepository.findByUser_IdAndHousehold_Id(testUser2.getId(), testHousehold.getId()).stream()
                             .toList());
 
             mockMvc.perform(get("/api/v1/households/{id}/tasks", testHousehold.getId())
@@ -193,7 +193,7 @@ class TaskControllerTest extends IntegrationTestBase {
         void getTaskDetailRejectsNonMember() throws Exception {
             // Remove testUser2 from members
             membershipRepository.deleteAll(
-                    membershipRepository.findByUserIdAndHouseholdId(testUser2.getId(), testHousehold.getId()).stream()
+                    membershipRepository.findByUser_IdAndHousehold_Id(testUser2.getId(), testHousehold.getId()).stream()
                             .toList());
 
             mockMvc.perform(get("/api/v1/households/{id}/tasks/{taskId}", testHousehold.getId(), task1.getId())

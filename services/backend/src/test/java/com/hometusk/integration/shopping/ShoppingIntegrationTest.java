@@ -102,13 +102,13 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
                     .andExpect(jsonPath("$.result.taskId").exists());
 
             // Then: Task created
-            var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            var tasks = taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
             assertThat(tasks).hasSize(1);
             var task = tasks.get(0);
             assertThat(task.getTitle()).isEqualTo("Grocery shopping");
 
             // Then: Shopping items created and linked to task
-            var items = shoppingItemRepository.findByLinkedTaskId(task.getId());
+            var items = shoppingItemRepository.findByLinkedTask_Id(task.getId());
             assertThat(items).hasSize(2);
             assertThat(items).allMatch(i -> i.getLinkedTaskId().equals(task.getId()));
             assertThat(items).extracting(ShoppingItem::getName).containsExactlyInAnyOrder("Milk", "Bread");
@@ -153,7 +153,7 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
                     .andExpect(jsonPath("$.status").value("executed"));
 
             // Then: Shopping item created without task link
-            var items = shoppingItemRepository.findByShoppingListIdOrderByCreatedAtDesc(testShoppingList.getId());
+            var items = shoppingItemRepository.findByShoppingList_IdOrderByCreatedAtDesc(testShoppingList.getId());
             assertThat(items).hasSize(1);
             assertThat(items.get(0).getName()).isEqualTo("Молоко");
             assertThat(items.get(0).getQuantity()).isEqualTo(2);
@@ -323,16 +323,16 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
                     .andExpect(jsonPath("$.status").value("executed"));
 
             // Then: Command created and executed
-            var commands = commandRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            var commands = commandRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
             assertThat(commands).isNotEmpty();
             assertThat(commands.get(0).getStatus().name()).isEqualTo("EXECUTED");
 
             // Then: Task created
-            var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            var tasks = taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
             assertThat(tasks).hasSize(1);
 
             // Then: Shopping items created and linked
-            var items = shoppingItemRepository.findByLinkedTaskId(tasks.get(0).getId());
+            var items = shoppingItemRepository.findByLinkedTask_Id(tasks.get(0).getId());
             assertThat(items).isNotEmpty();
 
             // Then: Activities recorded with correlationId

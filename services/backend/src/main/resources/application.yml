@@ -5,7 +5,7 @@ spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/hometusk}
     username: ${SPRING_DATASOURCE_USERNAME:hometusk}
-    password: ${SPRING_DATASOURCE_PASSWORD:hometusk_dev}
+    password: ${SPRING_DATASOURCE_PASSWORD:hometusk_pass_change_me}
     driver-class-name: org.postgresql.Driver
 
   jpa:

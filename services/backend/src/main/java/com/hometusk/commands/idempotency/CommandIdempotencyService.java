@@ -18,7 +18,6 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,40 +70,40 @@ public class CommandIdempotencyService {
         Instant now = Instant.now();
 
         for (int attempt = 0; attempt < 2; attempt++) {
-            try {
-                CommandIdempotency record =
-                        new CommandIdempotency(idempotencyKey, initiatorUserId, requestHash, now.plus(TTL));
-                record = repository.saveAndFlush(record);
-                return IdempotencySession.newRequest(record.getId());
-            } catch (DataIntegrityViolationException ex) {
-                Optional<CommandIdempotency> existingOpt =
-                        repository.findByIdempotencyKeyAndInitiatorUserId(idempotencyKey, initiatorUserId);
-                if (existingOpt.isEmpty()) {
-                    log.warn("Idempotency conflict but no record found: key={}", idempotencyKey);
-                    throw new BusinessException(ErrorCode.IDEMPOTENCY_CONFLICT);
-                }
-
-                CommandIdempotency existing = existingOpt.get();
-                if (existing.isExpired(now)) {
-                    repository.delete(existing);
-                    repository.flush();
-                    continue;
-                }
-
-                if (!existing.getRequestHash().equals(requestHash)) {
-                    throw new BusinessException(
-                            ErrorCode.IDEMPOTENCY_CONFLICT, "Idempotency-Key reused with different payload");
-                }
-
-                if (existing.hasStoredResponse()) {
-                    return IdempotencySession.replay(
-                            existing.getId(),
-                            new StoredResponse(existing.getStoredHttpStatus(), existing.getStoredResponseJson()));
-                }
-
-                throw new BusinessException(
-                        ErrorCode.IDEMPOTENCY_CONFLICT, "Idempotency-Key request already in progress");
+            UUID recordId = UUID.randomUUID();
+            int inserted = repository.insertIfNotExists(
+                    recordId, idempotencyKey, initiatorUserId, requestHash, now, now.plus(TTL));
+            if (inserted > 0) {
+                return IdempotencySession.newRequest(recordId);
             }
+
+            Optional<CommandIdempotency> existingOpt =
+                    repository.findByIdempotencyKeyAndInitiatorUserId(idempotencyKey, initiatorUserId);
+            if (existingOpt.isEmpty()) {
+                log.warn("Idempotency conflict but no record found: key={}", idempotencyKey);
+                throw new BusinessException(ErrorCode.IDEMPOTENCY_CONFLICT);
+            }
+
+            CommandIdempotency existing = existingOpt.get();
+            if (existing.isExpired(now)) {
+                repository.delete(existing);
+                repository.flush();
+                continue;
+            }
+
+            if (!existing.getRequestHash().equals(requestHash)) {
+                throw new BusinessException(
+                        ErrorCode.IDEMPOTENCY_CONFLICT, "Idempotency-Key reused with different payload");
+            }
+
+            if (existing.hasStoredResponse()) {
+                return IdempotencySession.replay(
+                        existing.getId(),
+                        new StoredResponse(existing.getStoredHttpStatus(), existing.getStoredResponseJson()));
+            }
+
+            throw new BusinessException(
+                    ErrorCode.IDEMPOTENCY_CONFLICT, "Idempotency-Key request already in progress");
         }
 
         throw new BusinessException(ErrorCode.IDEMPOTENCY_CONFLICT, "Unable to create idempotency record");

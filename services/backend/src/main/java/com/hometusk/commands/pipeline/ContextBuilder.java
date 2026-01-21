@@ -67,7 +67,7 @@ public class ContextBuilder {
 
         try {
             // 1. Load members
-            List<Membership> memberships = membershipRepository.findByHouseholdId(householdId);
+            List<Membership> memberships = membershipRepository.findByHousehold_Id(householdId);
             if (memberships.isEmpty()) {
                 log.warn(
                         "No members found for household: householdId={}, correlationId={}", householdId, correlationId);
@@ -79,7 +79,7 @@ public class ContextBuilder {
                     .toList();
 
             // 2. Load zones
-            List<Zone> zoneEntities = zoneRepository.findByHouseholdId(householdId);
+            List<Zone> zoneEntities = zoneRepository.findByHousehold_Id(householdId);
             List<ZoneInfo> zones = zoneEntities.stream()
                     .map(z -> new ZoneInfo(z.getId(), z.getName(), z.getOwnerId()))
                     .toList();
@@ -122,7 +122,7 @@ public class ContextBuilder {
             int maxTasks = guardrailsConfig.getMaxOpenTasksPerAssignee();
 
             // 2. Load members with workload_score
-            List<Membership> memberships = membershipRepository.findByHouseholdId(householdId);
+            List<Membership> memberships = membershipRepository.findByHousehold_Id(householdId);
             List<Map<String, Object>> membersList = memberships.stream()
                     .map(m -> {
                         int openTasks = taskCounts.getOrDefault(m.getUserId(), 0);
@@ -136,7 +136,7 @@ public class ContextBuilder {
                     .toList();
 
             // 3. Load zones with owner_id (if present)
-            List<Zone> zoneEntities = zoneRepository.findByHouseholdId(householdId);
+            List<Zone> zoneEntities = zoneRepository.findByHousehold_Id(householdId);
             List<Map<String, Object>> zonesList = zoneEntities.stream()
                     .map(z -> {
                         Map<String, Object> zoneMap = new HashMap<>();
@@ -151,7 +151,7 @@ public class ContextBuilder {
 
             // 4. Load shopping lists (Stage 5)
             List<ShoppingList> shoppingListEntities =
-                    shoppingListRepository.findByHouseholdIdOrderByCreatedAtDesc(householdId);
+                    shoppingListRepository.findByHousehold_IdOrderByCreatedAtDesc(householdId);
             List<Map<String, Object>> shoppingLists = shoppingListEntities.stream()
                     .map(l -> {
                         Map<String, Object> listMap = new HashMap<>();

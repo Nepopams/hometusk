@@ -43,6 +43,7 @@ public class Zone {
         return household;
     }
 
+    @Transient
     public UUID getHouseholdId() {
         return household.getId();
     }
@@ -63,6 +64,7 @@ public class Zone {
         this.owner = owner;
     }
 
+    @Transient
     public UUID getOwnerId() {
         return owner != null ? owner.getId() : null;
     }

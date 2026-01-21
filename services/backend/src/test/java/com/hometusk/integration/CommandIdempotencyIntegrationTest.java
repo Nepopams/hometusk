@@ -58,7 +58,7 @@ class CommandIdempotencyIntegrationTest extends IntegrationTestBase {
         assertThat(second.getResponse().getContentAsString())
                 .isEqualTo(first.getResponse().getContentAsString());
 
-        var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+        var tasks = taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
         assertThat(tasks).hasSize(1);
     }
 
@@ -102,7 +102,7 @@ class CommandIdempotencyIntegrationTest extends IntegrationTestBase {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.errorCode").value("IDEMPOTENCY_CONFLICT"));
 
-        var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+        var tasks = taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
         assertThat(tasks).hasSize(1);
     }
 }

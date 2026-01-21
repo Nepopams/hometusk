@@ -91,7 +91,7 @@ class Stage4GuardrailsIntegrationTest extends AiPlatformIntegrationTestBase {
                             .value(testUser.getId().toString()));
 
             // Verify task has both fields
-            var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            var tasks = taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(tasks).hasSize(1);
             org.assertj.core.api.Assertions.assertThat(tasks.get(0).getAssigneeId())
                     .isEqualTo(testUser.getId());
@@ -133,7 +133,7 @@ class Stage4GuardrailsIntegrationTest extends AiPlatformIntegrationTestBase {
                     .andExpect(jsonPath("$.errorCode").value("ASSIGNEE_NOT_MEMBER"));
 
             // Verify no task was created
-            var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            var tasks = taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(tasks).isEmpty();
         }
     }
@@ -169,7 +169,7 @@ class Stage4GuardrailsIntegrationTest extends AiPlatformIntegrationTestBase {
                     .andExpect(jsonPath("$.requiredFields", hasItem("deadline")));
 
             // Verify no task was created
-            var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            var tasks = taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(tasks).isEmpty();
         }
     }
@@ -204,7 +204,7 @@ class Stage4GuardrailsIntegrationTest extends AiPlatformIntegrationTestBase {
                     .andExpect(jsonPath("$.requiredFields", hasItem("deadline")));
 
             // Verify no task was created
-            var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            var tasks = taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(tasks).isEmpty();
         }
     }
@@ -241,7 +241,7 @@ class Stage4GuardrailsIntegrationTest extends AiPlatformIntegrationTestBase {
                     .andExpect(jsonPath("$.result.taskId").exists());
 
             // Verify task was created
-            var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            var tasks = taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(tasks).hasSize(1);
         }
     }
@@ -287,7 +287,7 @@ class Stage4GuardrailsIntegrationTest extends AiPlatformIntegrationTestBase {
                     .andExpect(jsonPath("$.requiredFields", hasItem("assigneeId")));
 
             // Verify no additional task was created
-            var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            var tasks = taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(tasks).hasSize(10); // Only pre-created tasks
         }
     }
@@ -334,7 +334,7 @@ class Stage4GuardrailsIntegrationTest extends AiPlatformIntegrationTestBase {
                             .value(testUser.getId().toString()));
 
             // Verify task assigned to zone owner
-            var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            var tasks = taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(tasks).hasSize(1);
             org.assertj.core.api.Assertions.assertThat(tasks.get(0).getAssigneeId())
                     .isEqualTo(testUser.getId());
@@ -443,7 +443,7 @@ class Stage4GuardrailsIntegrationTest extends AiPlatformIntegrationTestBase {
                             .value(testUser2.getId().toString()));
 
             // Verify task persisted with all fields
-            var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            var tasks = taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(tasks).hasSize(4); // 3 existing + 1 new
 
             Task newTask = tasks.get(0); // Most recent

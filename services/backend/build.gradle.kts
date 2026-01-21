@@ -53,9 +53,9 @@ dependencies {
     // Testing
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
-    testImplementation("org.testcontainers:testcontainers:1.19.3")
-    testImplementation("org.testcontainers:junit-jupiter:1.19.3")
-    testImplementation("org.testcontainers:postgresql:1.19.3")
+    testImplementation("org.testcontainers:testcontainers:1.20.4")
+    testImplementation("org.testcontainers:junit-jupiter:1.20.4")
+    testImplementation("org.testcontainers:postgresql:1.20.4")
     testImplementation("org.wiremock:wiremock-standalone:3.3.1")
 
     // Test utilities
@@ -65,6 +65,8 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    val dockerApiVersion = System.getenv("DOCKER_API_VERSION") ?: "1.44"
+    systemProperty("api.version", dockerApiVersion)
     testLogging {
         events("passed", "skipped", "failed")
         showStandardStreams = true

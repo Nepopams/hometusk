@@ -12,13 +12,13 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface MembershipRepository extends JpaRepository<Membership, UUID> {
 
-    List<Membership> findByUserId(UUID userId);
+    List<Membership> findByUser_Id(UUID userId);
 
-    List<Membership> findByHouseholdId(UUID householdId);
+    List<Membership> findByHousehold_Id(UUID householdId);
 
-    Optional<Membership> findByUserIdAndHouseholdId(UUID userId, UUID householdId);
+    Optional<Membership> findByUser_IdAndHousehold_Id(UUID userId, UUID householdId);
 
-    boolean existsByUserIdAndHouseholdId(UUID userId, UUID householdId);
+    boolean existsByUser_IdAndHousehold_Id(UUID userId, UUID householdId);
 
     @Query("SELECT m.household.id FROM Membership m WHERE m.user.id = :userId")
     List<UUID> findHouseholdIdsByUserId(@Param("userId") UUID userId);

@@ -22,3 +22,48 @@ export interface UserProfile {
   households: HouseholdSummary[];
   createdAt: string;
 }
+
+export type TaskStatus = 'open' | 'in_progress' | 'done' | 'cancelled';
+
+export interface UserSummary {
+  id: string;
+  displayName: string;
+}
+
+export interface Zone {
+  id: string;
+  name: string;
+  householdId: string;
+  createdAt: string;
+}
+
+export interface HouseholdMember {
+  userId: string;
+  displayName: string;
+  email: string;
+  role: HouseholdRole;
+  joinedAt: string;
+}
+
+export interface Task {
+  id: string;
+  householdId: string;
+  title: string;
+  description?: string;
+  status: TaskStatus;
+  assignee?: UserSummary;
+  zone?: Zone;
+  deadline?: string;
+  createdBy: UserSummary;
+  commandId?: string;
+  createdVia: 'command' | 'fallback' | 'direct';
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
+}
+
+export interface TaskFilters {
+  status?: TaskStatus;
+  assigneeId?: string;
+  zoneId?: string;
+}

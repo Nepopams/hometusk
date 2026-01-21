@@ -61,10 +61,12 @@ public class Membership {
         return joinedAt;
     }
 
+    @Transient
     public UUID getUserId() {
         return user.getId();
     }
 
+    @Transient
     public UUID getHouseholdId() {
         return household.getId();
     }

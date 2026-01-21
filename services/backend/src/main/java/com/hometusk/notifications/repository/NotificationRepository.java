@@ -12,10 +12,10 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
 
-    List<Notification> findByHouseholdIdAndUserId(UUID householdId, UUID userId, Pageable pageable);
+    List<Notification> findByHousehold_IdAndUser_Id(UUID householdId, UUID userId, Pageable pageable);
 
-    List<Notification> findByHouseholdIdAndUserIdAndCreatedAtAfter(
+    List<Notification> findByHousehold_IdAndUser_IdAndCreatedAtAfter(
             UUID householdId, UUID userId, Instant createdAt, Pageable pageable);
 
-    Optional<Notification> findByIdAndUserId(UUID id, UUID userId);
+    Optional<Notification> findByIdAndUser_Id(UUID id, UUID userId);
 }

@@ -72,7 +72,7 @@ class CommandPipelineTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$.executionMs").isNumber());
 
             // Verify task was created in DB
-            var tasks = taskRepository.findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId());
+            var tasks = taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
             assertThat(tasks).hasSize(1);
             assertThat(tasks.get(0).getTitle()).isEqualTo("Clean the kitchen");
             assertThat(tasks.get(0).getCommandId()).isNotNull();
@@ -127,7 +127,7 @@ class CommandPipelineTest extends IntegrationTestBase {
                             .value(testUser2.getId().toString()));
 
             var task = taskRepository
-                    .findByHouseholdIdOrderByCreatedAtDesc(testHousehold.getId())
+                    .findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId())
                     .get(0);
             assertThat(task.getDescription()).isEqualTo("Scrub all surfaces");
             assertThat(task.getAssigneeId()).isEqualTo(testUser2.getId());

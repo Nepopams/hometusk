@@ -103,12 +103,12 @@ public class ShoppingService {
     @Transactional
     public void linkItemsToTask(List<UUID> itemIds, UUID taskId, UUID householdId) {
         Task task = taskRepository
-                .findByIdAndHouseholdId(taskId, householdId)
+                .findByIdAndHousehold_Id(taskId, householdId)
                 .orElseThrow(
                         () -> new NotFoundException(ErrorCode.TASK_NOT_FOUND, "Task not found for linking: " + taskId));
 
         for (UUID itemId : itemIds) {
-            Optional<ShoppingItem> itemOpt = itemRepository.findByIdAndHouseholdId(itemId, householdId);
+            Optional<ShoppingItem> itemOpt = itemRepository.findByIdAndHousehold_Id(itemId, householdId);
             if (itemOpt.isPresent()) {
                 ShoppingItem item = itemOpt.get();
                 item.setLinkedTask(task);
@@ -162,10 +162,10 @@ public class ShoppingService {
     @Transactional(readOnly = true)
     public List<ShoppingItem> getItemsForTask(UUID taskId, UUID householdId) {
         // Validate task exists and belongs to household (IDOR prevention)
-        if (!taskRepository.existsByIdAndHouseholdId(taskId, householdId)) {
+        if (!taskRepository.existsByIdAndHousehold_Id(taskId, householdId)) {
             throw new NotFoundException(ErrorCode.TASK_NOT_FOUND, "Task not found: " + taskId);
         }
-        return itemRepository.findByLinkedTaskIdAndHouseholdId(taskId, householdId);
+        return itemRepository.findByLinkedTask_IdAndHouseholdId(taskId, householdId);
     }
 
     /**
@@ -173,10 +173,10 @@ public class ShoppingService {
      */
     @Transactional(readOnly = true)
     public List<ShoppingItem> getItemsInList(UUID listId, UUID householdId) {
-        if (!listRepository.existsByIdAndHouseholdId(listId, householdId)) {
+        if (!listRepository.existsByIdAndHousehold_Id(listId, householdId)) {
             throw new NotFoundException(ErrorCode.SHOPPING_LIST_NOT_FOUND, "Shopping list not found: " + listId);
         }
-        return itemRepository.findByShoppingListIdOrderByCreatedAtDesc(listId);
+        return itemRepository.findByShoppingList_IdOrderByCreatedAtDesc(listId);
     }
 
     /**
@@ -184,10 +184,10 @@ public class ShoppingService {
      */
     @Transactional(readOnly = true)
     public List<ShoppingItem> getUnpurchasedItemsInList(UUID listId, UUID householdId) {
-        if (!listRepository.existsByIdAndHouseholdId(listId, householdId)) {
+        if (!listRepository.existsByIdAndHousehold_Id(listId, householdId)) {
             throw new NotFoundException(ErrorCode.SHOPPING_LIST_NOT_FOUND, "Shopping list not found: " + listId);
         }
-        return itemRepository.findByShoppingListIdAndPurchasedFalseOrderByCreatedAtDesc(listId);
+        return itemRepository.findByShoppingList_IdAndPurchasedFalseOrderByCreatedAtDesc(listId);
     }
 
     /**
@@ -195,7 +195,7 @@ public class ShoppingService {
      */
     @Transactional(readOnly = true)
     public List<ShoppingList> getListsInHousehold(UUID householdId) {
-        return listRepository.findByHouseholdIdOrderByCreatedAtDesc(householdId);
+        return listRepository.findByHousehold_IdOrderByCreatedAtDesc(householdId);
     }
 
     /**
@@ -204,7 +204,7 @@ public class ShoppingService {
     @Transactional(readOnly = true)
     public ShoppingList getListByIdAndHousehold(UUID listId, UUID householdId) {
         return listRepository
-                .findByIdAndHouseholdId(listId, householdId)
+                .findByIdAndHousehold_Id(listId, householdId)
                 .orElseThrow(() ->
                         new NotFoundException(ErrorCode.SHOPPING_LIST_NOT_FOUND, "Shopping list not found: " + listId));
     }
@@ -214,7 +214,7 @@ public class ShoppingService {
      */
     @Transactional(readOnly = true)
     public long countUnpurchasedItems(UUID listId) {
-        return itemRepository.countByShoppingListIdAndPurchasedFalse(listId);
+        return itemRepository.countByShoppingList_IdAndPurchasedFalse(listId);
     }
 
     /**
@@ -261,7 +261,7 @@ public class ShoppingService {
     @Transactional
     public ShoppingList getOrCreateDefaultList(Household household) {
         return listRepository
-                .findByHouseholdIdAndName(household.getId(), DEFAULT_LIST_NAME)
+                .findByHousehold_IdAndName(household.getId(), DEFAULT_LIST_NAME)
                 .orElseGet(() -> {
                     ShoppingList list = new ShoppingList(household, DEFAULT_LIST_NAME);
                     ShoppingList saved = listRepository.save(list);
@@ -274,7 +274,7 @@ public class ShoppingService {
 
     private ShoppingItem getItemByIdAndHousehold(UUID itemId, UUID householdId) {
         return itemRepository
-                .findByIdAndHouseholdId(itemId, householdId)
+                .findByIdAndHousehold_Id(itemId, householdId)
                 .orElseThrow(() ->
                         new NotFoundException(ErrorCode.SHOPPING_ITEM_NOT_FOUND, "Shopping item not found: " + itemId));
     }
@@ -282,13 +282,13 @@ public class ShoppingService {
     private ShoppingList resolveList(UUID householdId, UUID listId, Household household) {
         if (listId != null) {
             return listRepository
-                    .findByIdAndHouseholdId(listId, householdId)
+                    .findByIdAndHousehold_Id(listId, householdId)
                     .orElseThrow(() -> new NotFoundException(
                             ErrorCode.SHOPPING_LIST_NOT_FOUND, "Shopping list not found: " + listId));
         }
         // Use or create default list
         return listRepository
-                .findByHouseholdIdAndName(householdId, DEFAULT_LIST_NAME)
+                .findByHousehold_IdAndName(householdId, DEFAULT_LIST_NAME)
                 .orElseGet(() -> {
                     ShoppingList list = new ShoppingList(household, DEFAULT_LIST_NAME);
                     return listRepository.save(list);
@@ -303,7 +303,7 @@ public class ShoppingService {
         if (linkedTaskId == null) {
             return null;
         }
-        Optional<Task> task = taskRepository.findByIdAndHouseholdId(linkedTaskId, householdId);
+        Optional<Task> task = taskRepository.findByIdAndHousehold_Id(linkedTaskId, householdId);
         if (task.isEmpty()) {
             log.warn(
                     "Linked task not found or not in household, adding item without link: linkedTaskId={}, householdId={}",
