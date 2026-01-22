@@ -1,5 +1,6 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom';
 import { ProtectedRoute } from '../components/ProtectedRoute';
+import Callback from './Callback';
 import HouseholdLayout from './HouseholdLayout';
 import HouseholdSelector from './HouseholdSelector';
 import Login from './Login';
@@ -12,6 +13,7 @@ import ZonesList from './ZonesList';
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/login" replace /> },
   { path: '/login', element: <Login /> },
+  { path: '/callback', element: <Callback /> },
   {
     path: '/households',
     element: <ProtectedRoute />,

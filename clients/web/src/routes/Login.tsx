@@ -1,20 +1,67 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { signinRedirect } from '../lib/auth/oidc';
 import { useAuth } from '../hooks/useAuth';
 
 export default function Login() {
   const [token, setToken] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const authProvider = import.meta.env.VITE_AUTH_PROVIDER;
+
+  const handleSignIn = async () => {
+    setIsRedirecting(true);
+    try {
+      await signinRedirect();
+    } catch (err) {
+      console.error('[Login] OIDC redirect failed', err);
+      setIsRedirecting(false);
+    }
+  };
+
+  const handleRegister = async () => {
+    setIsRedirecting(true);
+    try {
+      await signinRedirect();
+    } catch (err) {
+      console.error('[Login] OIDC redirect failed', err);
+      setIsRedirecting(false);
+    }
+  };
+
+  if (authProvider === 'keycloak') {
+    return (
+      <div className="page">
+        <h1>HomeTusk</h1>
+        {isRedirecting ? (
+          <p>Redirecting to login...</p>
+        ) : (
+          <div className="card">
+            <h2>Welcome back!</h2>
+            <button className="button" type="button" onClick={handleSignIn}>
+              Sign in
+            </button>
+            <p style={{ marginTop: '16px' }}>
+              Don&apos;t have an account?{' '}
+              <button className="ghost-button" type="button" onClick={handleRegister}>
+                Sign in to register
+              </button>
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (authProvider !== 'dev') {
     return (
       <div className="page">
         <h1>Authentication Not Available</h1>
-        <p>VITE_AUTH_PROVIDER must be &apos;dev&apos; for token paste login.</p>
+        <p>VITE_AUTH_PROVIDER must be &apos;dev&apos; or &apos;keycloak&apos;.</p>
         <p>Current: {authProvider || 'not set'}</p>
       </div>
     );
