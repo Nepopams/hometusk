@@ -99,6 +99,124 @@ curl -X POST http://localhost:8080/api/v1/commands \
 cd services/backend && ./gradlew test
 ```
 
+## Web Client (SPA) Setup
+
+### 1. Install dependencies
+
+```bash
+cd clients/web
+npm ci
+```
+
+### 2. Configure environment
+
+Create `.env.local` from template:
+
+```bash
+cp .env.example .env.local
+```
+
+For Keycloak mode, update `.env.local`:
+
+```bash
+VITE_API_BASE_URL=http://localhost:8080/api/v1
+VITE_AUTH_PROVIDER=keycloak
+VITE_OIDC_AUTHORITY=http://localhost:8180/realms/hometusk
+VITE_OIDC_CLIENT_ID=hometusk-web
+VITE_OIDC_REDIRECT_URI=http://localhost:5173/callback
+```
+
+For dev mode (token paste), use:
+
+```bash
+VITE_AUTH_PROVIDER=dev
+```
+
+### 3. Start dev server
+
+```bash
+npm run dev
+```
+
+Web client will be available at `http://localhost:5173`
+
+## Keycloak Web Client Configuration
+
+If the `hometusk-web` client doesn't exist, create it in Keycloak Admin Console:
+
+1. Go to `http://localhost:8180` -> Admin Console -> `hometusk` realm
+2. Clients -> Create client
+3. Configure:
+
+| Setting | Value |
+|---------|-------|
+| Client ID | `hometusk-web` |
+| Client type | Public |
+| Valid Redirect URIs | `http://localhost:5173/callback` |
+| Web Origins | `http://localhost:5173` |
+| PKCE Code Challenge Method | S256 |
+
+4. Enable user registration (for Register flow):
+   - Realm Settings -> Login -> User registration: ON
+
+## E2E Onboarding Checklist (Manual)
+
+Use this checklist to validate the complete onboarding flow:
+
+### New User Registration
+- [ ] Clear test user from Keycloak (if exists)
+- [ ] Visit `http://localhost:5173` -> redirects to `/login`
+- [ ] Click "Sign in to register"
+- [ ] Complete Keycloak registration form
+- [ ] Redirected to `/callback` -> `/households`
+- [ ] See empty household list (expected for new user)
+
+### Existing User Login
+- [ ] Visit `http://localhost:5173/login`
+- [ ] Click "Sign in"
+- [ ] Login with test user (alice/alice123)
+- [ ] Redirected to `/households`
+- [ ] See household list (if user has households)
+
+### Session Expiry (401)
+- [ ] Login as existing user
+- [ ] Wait for token to expire OR manually invalidate
+- [ ] Make API request (navigate to tasks)
+- [ ] Auto-logout occurs
+- [ ] Redirected to `/login?error=session_expired`
+- [ ] See "Session expired" error message
+
+### Dev Mode
+- [ ] Set `VITE_AUTH_PROVIDER=dev` in `.env.local`
+- [ ] Restart dev server
+- [ ] Visit `/login` -> see token paste form
+- [ ] Paste valid JWT token
+- [ ] Navigate to `/households`
+
+## Web Client Troubleshooting
+
+### OIDC redirect fails
+
+1. Verify `VITE_OIDC_AUTHORITY` matches Keycloak URL (port 8180)
+2. Verify `hometusk-web` client exists in Keycloak
+3. Check redirect URI matches exactly: `http://localhost:5173/callback`
+
+### CORS errors
+
+1. Verify Web Origins in Keycloak client: `http://localhost:5173`
+2. Check browser console for specific CORS error
+
+### Token validation fails (401)
+
+1. Check if token is expired
+2. Verify issuer (iss) in token matches `VITE_OIDC_AUTHORITY`
+3. Check Keycloak logs: `docker-compose logs keycloak`
+
+### "Authentication service unavailable"
+
+1. Verify Keycloak is running: `docker-compose ps`
+2. Check Keycloak is accessible: `curl http://localhost:8180/realms/hometusk`
+
 ## Lint/Format
 
 ```bash
