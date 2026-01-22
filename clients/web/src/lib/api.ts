@@ -1,4 +1,5 @@
 import { ApiError, AuthError } from './errors';
+import { getAuthToken, handleAuthError } from './auth/tokenProvider';
 import type {
   AuthErrorResponse,
   HouseholdMember,
@@ -14,14 +15,12 @@ export type ApiOptions = {
   headers?: HeadersInit;
 };
 
-const AUTH_TOKEN_KEY = 'hometusk_auth_token';
-
 export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
   const baseUrl = import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '');
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   const url = `${baseUrl}${normalizedPath}`;
 
-  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  const token = getAuthToken();
   const headers: HeadersInit = {
     ...(options.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -36,6 +35,7 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
 
   if (response.status === 401) {
     const errorBody = (await response.json().catch(() => null)) as AuthErrorResponse | null;
+    handleAuthError('session_expired');
     throw new AuthError(errorBody?.message || 'Unauthorized', errorBody?.errorCode);
   }
 

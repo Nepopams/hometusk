@@ -1,19 +1,36 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { signinRedirect } from '../lib/auth/oidc';
 import { useAuth } from '../hooks/useAuth';
+
+const ERROR_MESSAGES: Record<string, string> = {
+  session_expired: 'Session expired, please login again.',
+  auth_unavailable: 'Authentication service unavailable. Please try again later.',
+  auth_failed: 'Authentication failed. Please try again.',
+};
 
 export default function Login() {
   const [token, setToken] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
-  const { login } = useAuth();
+  const { login, clearError } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const authProvider = import.meta.env.VITE_AUTH_PROVIDER;
+  const errorParam = searchParams.get('error');
+  const errorMessage = errorParam ? ERROR_MESSAGES[errorParam] || 'An error occurred.' : null;
+
+  const clearErrorParam = () => {
+    if (errorParam) {
+      setSearchParams({}, { replace: true });
+    }
+    clearError();
+  };
 
   const handleSignIn = async () => {
+    clearErrorParam();
     setIsRedirecting(true);
     try {
       await signinRedirect();
@@ -24,6 +41,7 @@ export default function Login() {
   };
 
   const handleRegister = async () => {
+    clearErrorParam();
     setIsRedirecting(true);
     try {
       await signinRedirect();
@@ -37,6 +55,14 @@ export default function Login() {
     return (
       <div className="page">
         <h1>HomeTusk</h1>
+        {errorMessage && (
+          <div
+            className="card"
+            style={{ marginBottom: '16px', background: '#fff3f3', borderColor: '#ffcdd2' }}
+          >
+            <p style={{ color: '#c62828', margin: 0 }}>{errorMessage}</p>
+          </div>
+        )}
         {isRedirecting ? (
           <p>Redirecting to login...</p>
         ) : (
@@ -69,6 +95,7 @@ export default function Login() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    clearErrorParam();
     setError('');
     setLoading(true);
 
@@ -86,6 +113,15 @@ export default function Login() {
     <div className="page">
       <h1>Login (Dev Mode)</h1>
       <p>Paste your JWT token to authenticate.</p>
+
+      {errorMessage && (
+        <div
+          className="card"
+          style={{ marginBottom: '16px', background: '#fff3f3', borderColor: '#ffcdd2' }}
+        >
+          <p style={{ color: '#c62828', margin: 0 }}>{errorMessage}</p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="card">
         <label>

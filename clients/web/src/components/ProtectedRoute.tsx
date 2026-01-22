@@ -6,7 +6,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ requireHousehold = false }: ProtectedRouteProps) {
-  const { status, isAuthenticated, householdId } = useAuth();
+  const { status, isAuthenticated, householdId, error } = useAuth();
   const location = useLocation();
 
   if (status === 'loading') {
@@ -14,7 +14,8 @@ export function ProtectedRoute({ requireHousehold = false }: ProtectedRouteProps
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    const redirectPath = error ? `/login?error=${error}` : '/login';
+    return <Navigate to={redirectPath} state={{ from: location }} replace />;
   }
 
   if (requireHousehold && !householdId) {

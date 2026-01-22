@@ -3,6 +3,8 @@ import { UserManager, WebStorageStateStore, type User } from 'oidc-client-ts';
 const authority = import.meta.env.VITE_OIDC_AUTHORITY;
 const clientId = import.meta.env.VITE_OIDC_CLIENT_ID;
 const redirectUri = import.meta.env.VITE_OIDC_REDIRECT_URI;
+const postLogoutRedirectUri =
+  typeof window !== 'undefined' ? `${window.location.origin}/login` : '';
 
 function validateConfig(): boolean {
   if (!authority || !clientId || !redirectUri) {
@@ -31,9 +33,11 @@ function getUserManager(): UserManager | null {
     authority: resolvedAuthority,
     client_id: resolvedClientId,
     redirect_uri: resolvedRedirectUri,
+    post_logout_redirect_uri: postLogoutRedirectUri,
     response_type: 'code',
-    scope: 'openid profile',
+    scope: 'openid profile offline_access',
     userStore: new WebStorageStateStore({ store: window.sessionStorage }),
+    automaticSilentRenew: true,
   });
 
   return userManager;
@@ -57,4 +61,53 @@ export async function signinCallback(): Promise<User> {
 
 export function isOidcConfigured(): boolean {
   return validateConfig();
+}
+
+export async function getUser(): Promise<User | null> {
+  const manager = getUserManager();
+  if (!manager) return null;
+  return manager.getUser();
+}
+
+export async function signinSilent(): Promise<User> {
+  const manager = getUserManager();
+  if (!manager) {
+    throw new Error('OIDC configuration is invalid. Check environment variables.');
+  }
+  const user = await manager.signinSilent();
+  if (!user) {
+    throw new Error('Silent renew failed to return user.');
+  }
+  return user;
+}
+
+export async function signoutRedirect(): Promise<void> {
+  const manager = getUserManager();
+  if (!manager) return;
+  await manager.signoutRedirect();
+}
+
+export async function removeUser(): Promise<void> {
+  const manager = getUserManager();
+  if (!manager) return;
+  await manager.removeUser();
+}
+
+export function registerTokenEvents(
+  onExpiring: () => void,
+  onExpired: () => void,
+  onSilentRenewError: (error: Error) => void
+): () => void {
+  const manager = getUserManager();
+  if (!manager) return () => {};
+
+  manager.events.addAccessTokenExpiring(onExpiring);
+  manager.events.addAccessTokenExpired(onExpired);
+  manager.events.addSilentRenewError(onSilentRenewError);
+
+  return () => {
+    manager.events.removeAccessTokenExpiring(onExpiring);
+    manager.events.removeAccessTokenExpired(onExpired);
+    manager.events.removeSilentRenewError(onSilentRenewError);
+  };
 }
