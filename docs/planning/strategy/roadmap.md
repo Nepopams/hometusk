@@ -5,7 +5,11 @@
 
 ## NOW (текущий фокус: превратить API-MVP в продукт)
 
-- Initiative (current): **INIT-2026Q1-onboarding-registration** — Registration & Sign-in (Web)
+- Initiative (current): **INIT-2026Q1-household-lifecycle** — Household Create/Join/Invites (+ Temporary Contexts)
+  - Anchor: docs/planning/initiatives/INIT-2026Q1-household-lifecycle.md
+  - Outcome: путь “создать домохозяйство → пригласить → принять приглашение → начать работать вместе”, плюс минимальная поддержка временных домохозяйств
+
+- Initiative (done): **INIT-2026Q1-onboarding-registration** — Registration & Sign-in (Web)
   - Anchor: docs/planning/initiatives/INIT-2026Q1-onboarding-registration.md
   - Outcome: пользовательский E2E путь “зайти → создать аккаунт/войти → попасть в приложение” без ручного токена
 
