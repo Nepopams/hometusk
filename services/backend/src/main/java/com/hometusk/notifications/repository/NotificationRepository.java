@@ -18,4 +18,8 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
             UUID householdId, UUID userId, Instant createdAt, Pageable pageable);
 
     Optional<Notification> findByIdAndUser_Id(UUID id, UUID userId);
+
+    boolean existsByIdempotencyKey(String idempotencyKey);
+
+    Optional<Notification> findByIdempotencyKey(String idempotencyKey);
 }

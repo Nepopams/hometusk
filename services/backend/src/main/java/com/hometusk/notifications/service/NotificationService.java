@@ -20,11 +20,13 @@ import com.hometusk.users.repository.MembershipRepository;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -212,17 +214,44 @@ public class NotificationService {
         }
     }
 
-    private void createNotification(
+    private NotificationDto createNotification(
             Household household,
             User recipient,
             NotificationType type,
             NotificationPayloadDto payload,
             UUID correlationId) {
+        Instant now = Instant.now();
+        String idempotencyKey =
+                generateIdempotencyKey(type, payload != null ? payload.entityId() : null, recipient.getId(), now);
+
+        Optional<Notification> existing = notificationRepository.findByIdempotencyKey(idempotencyKey);
+        if (existing.isPresent()) {
+            log.debug("Duplicate notification suppressed: {}", idempotencyKey);
+            return toDto(existing.get());
+        }
+
         String payloadJson = toJson(payload);
-        Notification notification = new Notification(household, recipient, type, payloadJson, correlationId);
-        Notification saved = notificationRepository.save(notification);
-        NotificationDto dto = toDto(saved);
+        Notification notification =
+                new Notification(household, recipient, type, payloadJson, correlationId, idempotencyKey);
+
+        try {
+            notification = notificationRepository.save(notification);
+        } catch (DataIntegrityViolationException e) {
+            log.debug("Duplicate notification (race): {}", idempotencyKey);
+            return notificationRepository
+                    .findByIdempotencyKey(idempotencyKey)
+                    .map(this::toDto)
+                    .orElseThrow(() -> e);
+        }
+
+        NotificationDto dto = toDto(notification);
         eventPublisher.publishEvent(new NotificationCreatedEvent(dto));
+        return dto;
+    }
+
+    private String generateIdempotencyKey(NotificationType type, UUID entityId, UUID userId, Instant timestamp) {
+        long windowStart = (timestamp.toEpochMilli() / 300000) * 300000;
+        return String.format("%s:%s:%s:%d", type.name().toLowerCase(), entityId, userId, windowStart);
     }
 
     private NotificationDto toDto(Notification notification) {

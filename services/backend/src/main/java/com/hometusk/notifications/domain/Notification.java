@@ -45,14 +45,24 @@ public class Notification {
     @Column(name = "correlation_id")
     private UUID correlationId;
 
+    @Column(name = "idempotency_key", length = 255)
+    private String idempotencyKey;
+
     protected Notification() {}
 
-    public Notification(Household household, User user, NotificationType type, String payloadJson, UUID correlationId) {
+    public Notification(
+            Household household,
+            User user,
+            NotificationType type,
+            String payloadJson,
+            UUID correlationId,
+            String idempotencyKey) {
         this.household = household;
         this.user = user;
         this.type = type;
         this.payloadJson = payloadJson;
         this.correlationId = correlationId;
+        this.idempotencyKey = idempotencyKey;
         this.createdAt = Instant.now();
     }
 
@@ -102,5 +112,9 @@ public class Notification {
 
     public UUID getCorrelationId() {
         return correlationId;
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
     }
 }
