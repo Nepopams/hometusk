@@ -11,22 +11,37 @@
 ---
 
 ## Status
-**Ready** — Pending sprint commitment
+**In Progress** — Implementation started
 
 ---
 
 ## Outcome
-Backend SSE endpoint that streams new notifications to connected clients in real-time, with authentication, household boundary checks, and heartbeat keepalive.
+Backend SSE endpoint that streams new notifications to connected clients in real-time, with cookie-based authentication, household boundary checks, AFTER_COMMIT event publishing, and heartbeat keepalive.
+
+---
+
+## Key Technical Decisions
+
+### Authentication: Cookie-based
+- SSE endpoint authenticates via session cookie (Spring Security)
+- Client connects with `withCredentials: true`
+- NO token in URL (security: logs, history, referrer)
+
+### Transaction Safety: AFTER_COMMIT
+- SSE events published only AFTER transaction commits
+- Use `@TransactionalEventListener(phase = AFTER_COMMIT)`
+- Prevents phantom notifications on rollback
 
 ---
 
 ## Acceptance Criteria Summary
 1. SSE endpoint `GET /api/v1/households/{householdId}/notifications/stream` returns `text/event-stream`
-2. New notifications delivered via SSE within 2 seconds
+2. New notifications delivered via SSE within 2 seconds (AFTER_COMMIT)
 3. Heartbeat sent every 30 seconds
-4. 401 if no valid JWT
+4. 401 if no valid session cookie
 5. 403 if not household member
 6. Graceful disconnect with resource cleanup
+7. No phantom notifications on transaction rollback
 
 ---
 
@@ -35,8 +50,8 @@ Backend SSE endpoint that streams new notifications to connected clients in real
 ### New Files
 | Path | Purpose |
 |------|---------|
-| `services/backend/src/main/java/com/hometusk/notifications/service/SseNotificationService.java` | Manage SSE emitters, publish events |
-| `services/backend/src/main/java/com/hometusk/notifications/dto/SseNotificationEventDto.java` | SSE event payload DTO |
+| `services/backend/src/main/java/com/hometusk/notifications/service/SseNotificationService.java` | Manage SSE emitters, publish events, heartbeat |
+| `services/backend/src/main/java/com/hometusk/notifications/event/NotificationCreatedEvent.java` | Domain event for AFTER_COMMIT publishing |
 | `services/backend/src/test/java/com/hometusk/notifications/service/SseNotificationServiceTest.java` | Unit tests |
 | `services/backend/src/test/java/com/hometusk/notifications/api/NotificationSseIntegrationTest.java` | Integration tests |
 
@@ -44,41 +59,70 @@ Backend SSE endpoint that streams new notifications to connected clients in real
 | Path | Changes |
 |------|---------|
 | `services/backend/src/main/java/com/hometusk/notifications/api/NotificationController.java` | Add `streamNotifications()` SSE endpoint |
-| `services/backend/src/main/java/com/hometusk/notifications/service/NotificationService.java` | Inject SseNotificationService, call `publish()` after save |
+| `services/backend/src/main/java/com/hometusk/notifications/service/NotificationService.java` | Publish `NotificationCreatedEvent` after save |
 | `docs/contracts/http/commands.openapi.yaml` | Add SSE endpoint specification |
 
 ---
 
 ## Implementation Plan
 
-### Step 1: Create SseNotificationService
-- Create service to manage SSE emitters
-- Methods: `register()`, `remove()`, `publish(notification)`
-- Use `ConcurrentHashMap<String, SseEmitter>` for emitter storage
-- Key format: `{userId}:{householdId}`
-- Add `@Scheduled` heartbeat method (every 30s)
+### Step 1: Create NotificationCreatedEvent
+- Domain event class with notification data
+- Published after `notificationRepository.save()`
 
-### Step 2: Create SSE Event DTO
-- `SseNotificationEventDto` with notification fields
-- Matches existing `NotificationDto` structure
+### Step 2: Create SseNotificationService
+- `ConcurrentHashMap<String, SseEmitter>` for emitter storage
+- Key format: `{userId}:{householdId}`
+- Methods:
+  - `register(userId, householdId, emitter)`
+  - `remove(userId, householdId)`
+  - `@TransactionalEventListener(phase = AFTER_COMMIT)` handler
+- `@Scheduled` heartbeat method (every 30s)
 
 ### Step 3: Add SSE Endpoint to Controller
-- `@GetMapping(produces = "text/event-stream")`
-- Validate JWT and membership
-- Create `SseEmitter` with timeout
-- Register with SseNotificationService
-- Set up `onCompletion`/`onTimeout` cleanup
+```java
+@GetMapping(value = "/households/{householdId}/notifications/stream",
+            produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+public SseEmitter streamNotifications(@PathVariable UUID householdId) {
+    // Spring Security validates session cookie via filter chain
+    CurrentUser user = userResolver.resolveCurrentUser();
+    membershipService.requireMembership(user.id(), householdId);
 
-### Step 4: Hook NotificationService to SSE
-- Inject `SseNotificationService`
-- After `notificationRepository.save()`, call `sseNotificationService.publish(notification)`
+    SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
+    sseNotificationService.register(user.id(), householdId, emitter);
 
-### Step 5: Write Tests
+    emitter.onCompletion(() -> sseNotificationService.remove(user.id(), householdId));
+    emitter.onTimeout(() -> sseNotificationService.remove(user.id(), householdId));
+    emitter.onError(e -> sseNotificationService.remove(user.id(), householdId));
+
+    return emitter;
+}
+```
+
+### Step 4: Hook NotificationService to Event Publishing
+```java
+// In NotificationService.createNotification()
+Notification notification = notificationRepository.save(...);
+applicationEventPublisher.publishEvent(new NotificationCreatedEvent(notification));
+```
+
+### Step 5: Implement AFTER_COMMIT Handler
+```java
+// In SseNotificationService
+@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+public void handleNotificationCreated(NotificationCreatedEvent event) {
+    publish(event.getNotification());
+}
+```
+
+### Step 6: Write Tests
 - Unit test: mock emitter registration/publishing
 - Integration test: full flow with real SSE connection
+- Integration test: verify no event on rollback
 
-### Step 6: Update OpenAPI Contract
+### Step 7: Update OpenAPI Contract
 - Add `/households/{householdId}/notifications/stream` endpoint
+- Document cookie-based auth requirement
 - Document SSE event format
 
 ---
@@ -111,16 +155,17 @@ cd /home/vad/Документы/hometusk/services/backend
 - `SseNotificationServiceTest`:
   - `register_shouldStoreEmitter`
   - `remove_shouldCleanupEmitter`
-  - `publish_shouldSendToRegisteredEmitters`
-  - `publish_shouldSkipDisconnectedEmitters`
+  - `handleNotificationCreated_shouldSendToRegisteredEmitters`
+  - `handleNotificationCreated_shouldSkipDisconnectedEmitters`
   - `heartbeat_shouldSendToAllEmitters`
 
 ### Integration Tests
 - `NotificationSseIntegrationTest`:
-  - `streamNotifications_authenticated_shouldEstablishConnection`
-  - `streamNotifications_noAuth_shouldReturn401`
+  - `streamNotifications_withSession_shouldEstablishConnection`
+  - `streamNotifications_noSession_shouldReturn401`
   - `streamNotifications_notMember_shouldReturn403`
-  - `streamNotifications_newNotification_shouldReceiveEvent`
+  - `streamNotifications_newNotification_shouldReceiveEventAfterCommit`
+  - `streamNotifications_rollback_shouldNotReceiveEvent`
   - `streamNotifications_disconnect_shouldCleanup`
 
 ---
@@ -130,9 +175,11 @@ cd /home/vad/Документы/hometusk/services/backend
 - [ ] Spotless formatting applied
 - [ ] Unit tests written and passing
 - [ ] Integration tests written and passing
+- [ ] AFTER_COMMIT publishing verified (no phantom notifications)
 - [ ] OpenAPI contract updated
 - [ ] No cross-household leaks (membership enforced)
 - [ ] No hardcoded secrets
+- [ ] Cookie-based auth working (no token in URL)
 
 ---
 
@@ -140,14 +187,16 @@ cd /home/vad/Документы/hometusk/services/backend
 | Risk | Mitigation |
 |------|------------|
 | SseEmitter timeout handling | Set reasonable timeout, cleanup on error |
-| Memory leak from unclosed emitters | Explicit cleanup in onCompletion/onTimeout |
-| Token in query param security | Document limitation, consider cookie approach for v2 |
+| Memory leak from unclosed emitters | Explicit cleanup in onCompletion/onTimeout/onError |
+| CORS with credentials | Verify CORS config allows credentials |
+| Heartbeat thread blocking | Use non-blocking async send |
 
 ---
 
 ## Rollback
 - Remove SSE endpoint from controller
 - Remove SseNotificationService
+- Remove NotificationCreatedEvent
 - Revert NotificationService changes
 - Web client falls back to polling (ST-604)
 
