@@ -1,5 +1,6 @@
 import { useAuth } from '../../hooks/useAuth';
 import HouseholdDropdown from '../HouseholdDropdown';
+import NotificationBell from '../notifications/NotificationBell';
 
 export default function Header() {
   const { user, logout } = useAuth();
@@ -9,6 +10,7 @@ export default function Header() {
       <div className="app-header__title">HomeTusk</div>
       <div className="app-header__meta">
         <HouseholdDropdown />
+        <NotificationBell />
         <span className="chip">{user?.displayName ?? 'User'}</span>
         <button className="ghost-button" type="button" onClick={() => void logout()}>
           Logout

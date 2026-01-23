@@ -8,6 +8,7 @@ import type {
   CreateInviteResponse,
   Household,
   HouseholdMember,
+  Notification,
   Task,
   TaskFilters,
   UserProfile,
@@ -19,6 +20,11 @@ export type ApiOptions = {
   body?: unknown;
   headers?: HeadersInit;
 };
+
+export interface NotificationFilters {
+  since?: string;
+  limit?: number;
+}
 
 export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
   const baseUrl = import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '');
@@ -82,6 +88,26 @@ export async function getZones(householdId: string): Promise<Zone[]> {
 
 export async function getMembers(householdId: string): Promise<HouseholdMember[]> {
   return apiFetch<HouseholdMember[]>(`/households/${householdId}/members`);
+}
+
+export async function listNotifications(
+  householdId: string,
+  filters: NotificationFilters = {}
+): Promise<Notification[]> {
+  const params = new URLSearchParams();
+  if (filters.since) params.set('since', filters.since);
+  if (filters.limit) params.set('limit', String(filters.limit));
+  const query = params.toString();
+
+  return apiFetch<Notification[]>(
+    `/households/${householdId}/notifications${query ? `?${query}` : ''}`
+  );
+}
+
+export async function markNotificationRead(notificationId: string): Promise<Notification> {
+  return apiFetch<Notification>(`/notifications/${notificationId}/read`, {
+    method: 'POST',
+  });
 }
 
 export async function createHousehold(name: string): Promise<Household> {

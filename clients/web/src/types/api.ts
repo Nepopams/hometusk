@@ -196,3 +196,5 @@ export interface CommandErrorResponse {
   validationErrors?: ValidationError[];
   violations?: BusinessViolation[];
 }
+
+export type { Notification, NotificationPayload, NotificationType } from './notification';
