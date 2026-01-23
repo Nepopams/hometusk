@@ -1,7 +1,7 @@
 # Initiative: INIT-2026Q2-command-ux — Web Command Box + Traceability (NL-first)
 
 ## Status
-Draft (candidate for NEXT/LATER after web-client NOW + onboarding/household lifecycle)
+**Current** — All dependencies met, ready for epic decomposition (2026-01-23)
 
 ## Sources of Truth
 - Product Goal: `docs/planning/strategy/product-goal.md`

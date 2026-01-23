@@ -3,15 +3,20 @@
 > Формат Now/Next/Later фиксирует направление и приоритеты без преждевременных дат.
 > У каждого пункта должен быть “якорь” — initiative/release документ.
 
-## NOW (текущий фокус: превратить API-MVP в продукт)
+## NOW (текущий фокус: Command UX для валидации NL-first)
 
-- Initiative (current): **INIT-2026Q1-household-lifecycle** — Household Create/Join/Invites (+ Temporary Contexts)
+- Initiative (current): **INIT-2026Q2-command-ux** — Command UX v1 (web-first)
+  - Anchor: docs/planning/initiatives/INIT-2026Q2-command-ux.md
+  - Outcome: text-команда в UI + правильная обработка NEEDS_INPUT (clarify-loop) и DEGRADED, traceability через DecisionLog
+
+- Initiative (done): **INIT-2026Q1-household-lifecycle** — Household Create/Join/Invites
   - Anchor: docs/planning/initiatives/INIT-2026Q1-household-lifecycle.md
-  - Outcome: путь “создать домохозяйство → пригласить → принять приглашение → начать работать вместе”, плюс минимальная поддержка временных домохозяйств
+  - Outcome: путь "создать домохозяйство → пригласить → принять приглашение → начать работать вместе"
+  - Closed: 2026-01-23 (EP-005)
 
 - Initiative (done): **INIT-2026Q1-onboarding-registration** — Registration & Sign-in (Web)
   - Anchor: docs/planning/initiatives/INIT-2026Q1-onboarding-registration.md
-  - Outcome: пользовательский E2E путь “зайти → создать аккаунт/войти → попасть в приложение” без ручного токена
+  - Outcome: пользовательский E2E путь "зайти → создать аккаунт/войти → попасть в приложение" без ручного токена
 
 - Initiative (done): **INIT-2026Q1-web-client** — Simple Web Client (Desktop-first)
   - Anchor: docs/planning/initiatives/INIT-2026Q1-web-client.md
@@ -23,22 +28,14 @@
 
 - Reliability hygiene (supporting, small-batch):
   - Purge/TTL housekeeping для idempotency/decision logs (если нужно) + минимальные метрики/алерты
-  - Цель: не расширять домен, а снизить риск “всё работает только на демо”
+  - Цель: не расширять домен, а снизить риск "всё работает только на демо"
 
-## NEXT (следующие инициативы после онбординга)
+## NEXT (следующие инициативы после command-ux)
 
-- Initiative: **INIT-2026Q1-household-lifecycle** — Household Create/Join/Invites (+ Temporary Contexts)
-  - Anchor: docs/planning/initiatives/INIT-2026Q1-household-lifecycle.md
-  - Outcome: путь “создать домохозяйство → пригласить → принять приглашение → начать работать вместе”, плюс минимальная поддержка временных домохозяйств
+- Initiative (candidate): **Analytics v0** (trend-lite, без "ML-побед")
+  - Outcome: базовый dashboard "нагрузка/вклад/узкие места" для домашнего менеджера
 
-- Initiative: **INIT-2026Q2-command-ux** — Command UX v1 (web-first)
-  - Anchor: docs/planning/initiatives/INIT-2026Q2-command-ux.md
-  - Outcome: text-команда в UI + правильная обработка NEEDS_INPUT (clarify-loop) и DEGRADED, traceability через DecisionLog
-
-- Initiative (candidate after the two above): **Analytics v0** (trend-lite, без “ML-побед”)
-  - Outcome: базовый dashboard “нагрузка/вклад/узкие места” для домашнего менеджера
-
-- Initiative (candidate after the two above): **Agreements v0 (read-only)** (consent-first)
+- Initiative (candidate): **Agreements v0 (read-only)** (consent-first)
   - Outcome: отображение договорённостей/правил без конструктора и без токсичных лидербордов
 
 ## LATER (длинный хвост)

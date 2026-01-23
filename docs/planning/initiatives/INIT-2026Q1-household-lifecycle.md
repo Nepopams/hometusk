@@ -1,7 +1,7 @@
 # Initiative: INIT-2026Q1-household-lifecycle — Household Create/Join/Invites (+ Temporary Contexts)
 
 ## Status
-Draft (to be approved at Human Gate A)
+**Done** — Closed 2026-01-23 (EP-005 implemented all NOW scope)
 
 ## Sources of Truth
 - Product Goal: `docs/planning/strategy/product-goal.md`
