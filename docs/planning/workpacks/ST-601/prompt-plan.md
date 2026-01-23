@@ -18,30 +18,48 @@ ls, find, cat, rg, grep, sed -n, head, tail, git status, git diff
 ---
 
 ## Task
-Plan the implementation of SSE (Server-Sent Events) endpoint for real-time notification delivery.
+Plan the implementation of SSE (Server-Sent Events) endpoint for real-time notification delivery with JWT-in-HttpOnly-cookie authentication.
 
 ## Sources of Truth (MUST READ)
 1. `docs/planning/epics/EP-007/stories/ST-601-sse-endpoint.md` — Story spec with ACs
-2. `docs/planning/workpacks/ST-601/workpack.md` — Implementation plan
-3. `services/backend/src/main/java/com/hometusk/notifications/service/NotificationService.java` — Existing notification service
-4. `services/backend/src/main/java/com/hometusk/notifications/api/NotificationController.java` — Existing controller
-5. `docs/contracts/http/commands.openapi.yaml` — Existing notification contract
+2. `docs/planning/workpacks/ST-601/workpack.md` — Implementation plan (UPDATED)
+3. `services/backend/src/main/java/com/hometusk/config/SecurityConfig.java` — Current security config
+4. `services/backend/src/main/java/com/hometusk/notifications/service/NotificationService.java` — Existing notification service
+5. `services/backend/src/main/java/com/hometusk/notifications/api/NotificationController.java` — Existing controller
+6. `clients/web/src/lib/auth/oidc.ts` — Web OIDC flow
+7. `clients/web/src/context/AuthContext.tsx` — Web auth context
+
+## Architecture Context (Already Known)
+- Backend is **stateless JWT** with `oauth2ResourceServer().jwt()`
+- CORS has `allowCredentials(false)` - needs change
+- No `@EnableScheduling` - needs to be added
+- Keycloak issues JWT, backend validates
+
+---
 
 ## Critical Constraints (MUST FOLLOW)
 
-### 1. Cookie-based Authentication
-- SSE endpoint uses session cookie auth (Spring Security)
-- NO token in URL query params
-- Client connects with `withCredentials: true`
-- Verify existing CORS configuration allows credentials
+### 1. JWT in HttpOnly Cookie (Auth Flow)
+EventSource can't send Authorization header. Solution:
+1. New endpoint: `POST /api/v1/auth/session`
+   - Validates JWT from Authorization header
+   - Sets JWT as HttpOnly cookie `hometusk_token`
+2. New filter: `JwtCookieAuthFilter`
+   - If no Authorization header, extract JWT from cookie
+   - Wrap request with Authorization header for downstream processing
+3. Update CORS: `allowCredentials(true)` with explicit origins
+4. Web client: call `/auth/session` after OIDC login
 
 ### 2. AFTER_COMMIT Publishing
 - SSE events MUST be sent only AFTER transaction commits
 - Use `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)`
 - Prevents phantom notifications on rollback
-- Check if Spring event infrastructure is already configured
 
-### 3. Household Boundary Enforcement
+### 3. Heartbeat via @Scheduled
+- Add `@EnableScheduling` config
+- `@Scheduled(fixedRate = 30000)` in SseNotificationService
+
+### 4. Household Boundary Enforcement
 - Validate user is member of requested household (403 if not)
 - Use existing `membershipService.requireMembership()`
 
@@ -49,36 +67,31 @@ Plan the implementation of SSE (Server-Sent Events) endpoint for real-time notif
 
 ## Exploration Tasks
 
-### Task 1: Understand Existing Infrastructure
-- Read `NotificationService.java` — how are notifications created?
-- Read `NotificationController.java` — existing endpoints
-- Check for existing Spring event publishing in the codebase
-- Check CORS configuration for credentials support
+### Task 1: Understand Current Security Setup
+- Read `SecurityConfig.java` — current filter chain order
+- Where does `oauth2ResourceServer()` fit in filter chain?
+- What class is `BearerTokenAuthenticationFilter`?
+- How to add filter BEFORE it?
 
-### Task 2: Identify Hook Points
-- Where in `NotificationService.createNotification()` should we publish events?
-- Is `ApplicationEventPublisher` already injected? If not, plan to add it.
-- Are there existing domain events (e.g., `NotificationCreatedEvent`)?
+### Task 2: Understand JWT Token Extraction
+- How does oauth2ResourceServer extract JWT from header?
+- Can we reuse `JwtDecoder` bean?
+- How to extract token from SecurityContext?
 
-### Task 3: Plan New Components
-List files to create:
-- `SseNotificationService.java` — emitter registry + publish logic
-- `NotificationCreatedEvent.java` — domain event (if not exists)
-- Test files
+### Task 3: Understand Notification Infrastructure
+- Read `NotificationService.java` — where is `createNotification()` called?
+- Is `ApplicationEventPublisher` already injected?
+- What transaction boundaries exist?
 
-List files to modify:
-- `NotificationController.java` — add SSE endpoint
-- `NotificationService.java` — publish event after save
+### Task 4: Check for Existing Patterns
+- Are there other filters in the codebase?
+- How are cookies set in other controllers?
+- Are there existing Spring events?
 
-### Task 4: Verify Security Configuration
-- Check `SecurityConfig.java` for SSE endpoint permissions
-- Check CORS config for `allowCredentials`
-- Verify session-based auth is working for other endpoints
-
-### Task 5: Check for Existing Patterns
-- Are there other SSE endpoints in the codebase?
-- How are scheduled tasks configured? (for heartbeat)
-- What's the pattern for `@TransactionalEventListener`?
+### Task 5: Understand Web Auth Flow
+- Read `oidc.ts` — when is token available?
+- Read `AuthContext.tsx` — when to call `/auth/session`?
+- Where to add EventSource with credentials?
 
 ---
 
@@ -86,18 +99,37 @@ List files to modify:
 
 After exploration, provide:
 
-1. **Files to Create** (with purpose)
-2. **Files to Modify** (with specific changes)
-3. **Key Implementation Details**:
-   - How to wire event publishing
-   - How to implement AFTER_COMMIT
-   - How to handle emitter lifecycle
-4. **Risks/Blockers** (if any)
-5. **Questions** (if clarification needed)
+1. **Verification of Assumptions**
+   - Confirm SecurityConfig structure
+   - Confirm filter chain order
+   - Confirm NotificationService hook points
+
+2. **Files to Create** (with purpose and key code snippets)
+   - AuthController
+   - JwtCookieAuthFilter
+   - SchedulingConfig
+   - SseNotificationService
+   - NotificationCreatedEvent
+
+3. **Files to Modify** (with specific changes)
+   - SecurityConfig — filter addition, CORS changes
+   - NotificationService — event publishing
+   - NotificationController — SSE endpoint
+   - Web: oidc.ts, Callback.tsx, useNotificationStream.ts
+
+4. **Key Implementation Details**
+   - Filter chain order
+   - Cookie attributes (HttpOnly, Secure, SameSite, Path, MaxAge)
+   - How to extract JWT from SecurityContext
+   - Event publishing wiring
+
+5. **Risks/Blockers** (if any)
+
+6. **Questions** (if clarification needed)
 
 ---
 
 ## Stop Conditions
-- If missing dependencies or unclear requirements → STOP and list questions
-- If existing patterns conflict with plan → STOP and describe conflict
-- Do NOT guess or invent solutions without evidence from codebase
+- If security architecture differs from expected → STOP and describe
+- If missing dependencies → STOP and list
+- Do NOT guess without evidence from codebase

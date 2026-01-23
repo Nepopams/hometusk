@@ -22,15 +22,42 @@ Backend SSE endpoint that streams new notifications to connected clients in real
 
 ## Key Technical Decisions
 
-### Authentication: Cookie-based
-- SSE endpoint authenticates via session cookie (Spring Security)
-- Client connects with `withCredentials: true`
-- NO token in URL (security: logs, history, referrer)
+### Authentication: JWT in HttpOnly Cookie
+The backend is stateless JWT (oauth2ResourceServer). To enable SSE with cookie auth:
+
+1. **New endpoint `POST /api/v1/auth/session`**:
+   - Validates JWT from Authorization header
+   - Sets JWT as HttpOnly cookie (`hometusk_token`)
+   - Returns 200 OK
+
+2. **Security filter modification**:
+   - Check Authorization header first (existing behavior)
+   - Fallback: extract JWT from `hometusk_token` cookie
+   - Validate JWT same way for both
+
+3. **CORS update**:
+   - `allowCredentials(true)`
+   - Explicit origins (not `*`)
+
+4. **Web client flow**:
+   - After OIDC callback: `POST /auth/session` with JWT
+   - Before SSE: browser sends cookie automatically
+   - On token refresh: call `/auth/session` again
+
+**Why this approach:**
+- HttpOnly cookie (XSS protection)
+- No token in URL (logs/history safe)
+- Works with existing stateless JWT architecture
+- Keycloak still issues tokens, backend just validates
 
 ### Transaction Safety: AFTER_COMMIT
 - SSE events published only AFTER transaction commits
 - Use `@TransactionalEventListener(phase = AFTER_COMMIT)`
 - Prevents phantom notifications on rollback
+
+### Heartbeat: @EnableScheduling
+- Add `@EnableScheduling` to application config
+- SseNotificationService uses `@Scheduled(fixedRate = 30000)` for heartbeat
 
 ---
 
@@ -50,41 +77,110 @@ Backend SSE endpoint that streams new notifications to connected clients in real
 ### New Files
 | Path | Purpose |
 |------|---------|
+| `services/backend/src/main/java/com/hometusk/auth/api/AuthController.java` | `POST /auth/session` endpoint for cookie setup |
+| `services/backend/src/main/java/com/hometusk/auth/filter/JwtCookieAuthFilter.java` | Extract JWT from cookie as fallback |
 | `services/backend/src/main/java/com/hometusk/notifications/service/SseNotificationService.java` | Manage SSE emitters, publish events, heartbeat |
 | `services/backend/src/main/java/com/hometusk/notifications/event/NotificationCreatedEvent.java` | Domain event for AFTER_COMMIT publishing |
+| `services/backend/src/main/java/com/hometusk/config/SchedulingConfig.java` | Enable @Scheduled support |
 | `services/backend/src/test/java/com/hometusk/notifications/service/SseNotificationServiceTest.java` | Unit tests |
 | `services/backend/src/test/java/com/hometusk/notifications/api/NotificationSseIntegrationTest.java` | Integration tests |
 
 ### Modified Files
 | Path | Changes |
 |------|---------|
+| `services/backend/src/main/java/com/hometusk/config/SecurityConfig.java` | Add JwtCookieAuthFilter, CORS allowCredentials(true) |
 | `services/backend/src/main/java/com/hometusk/notifications/api/NotificationController.java` | Add `streamNotifications()` SSE endpoint |
 | `services/backend/src/main/java/com/hometusk/notifications/service/NotificationService.java` | Publish `NotificationCreatedEvent` after save |
-| `docs/contracts/http/commands.openapi.yaml` | Add SSE endpoint specification |
+| `docs/contracts/http/commands.openapi.yaml` | Add SSE + auth/session endpoints |
+| `clients/web/src/lib/auth/oidc.ts` | Call /auth/session after login and token refresh |
 
 ---
 
 ## Implementation Plan
 
-### Step 1: Create NotificationCreatedEvent
-- Domain event class with notification data
-- Published after `notificationRepository.save()`
+### Step 1: Add @EnableScheduling Config
+```java
+@Configuration
+@EnableScheduling
+public class SchedulingConfig {}
+```
 
-### Step 2: Create SseNotificationService
+### Step 2: Create AuthController with /auth/session Endpoint
+```java
+@RestController
+@RequestMapping("/api/v1/auth")
+public class AuthController {
+
+    @PostMapping("/session")
+    public ResponseEntity<Void> createSession(HttpServletResponse response) {
+        // JWT already validated by Spring Security filter chain
+        CurrentUser user = userResolver.resolveCurrentUser();
+        String token = extractTokenFromSecurityContext();
+
+        Cookie cookie = new Cookie("hometusk_token", token);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true); // In production
+        cookie.setPath("/");
+        cookie.setMaxAge(3600); // 1 hour, matches token expiry
+        response.addCookie(cookie);
+
+        return ResponseEntity.ok().build();
+    }
+}
+```
+
+### Step 3: Create JwtCookieAuthFilter
+```java
+public class JwtCookieAuthFilter extends OncePerRequestFilter {
+    @Override
+    protected void doFilterInternal(...) {
+        // If Authorization header present, skip (let oauth2ResourceServer handle)
+        if (request.getHeader("Authorization") != null) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // Extract JWT from cookie
+        Cookie[] cookies = request.getCookies();
+        String token = findCookie(cookies, "hometusk_token");
+
+        if (token != null) {
+            // Set as Authorization header for downstream processing
+            HttpServletRequest wrapped = new HeaderAddingRequestWrapper(request, "Authorization", "Bearer " + token);
+            filterChain.doFilter(wrapped, response);
+        } else {
+            filterChain.doFilter(request, response);
+        }
+    }
+}
+```
+
+### Step 4: Update SecurityConfig
+```java
+// Add filter before oauth2ResourceServer
+http.addFilterBefore(jwtCookieAuthFilter(), BearerTokenAuthenticationFilter.class);
+
+// Update CORS
+config.setAllowCredentials(true);
+config.setAllowedOriginPatterns(List.of("http://localhost:5173")); // Explicit origin
+```
+
+### Step 5: Create NotificationCreatedEvent
+```java
+public record NotificationCreatedEvent(Notification notification) {}
+```
+
+### Step 6: Create SseNotificationService
 - `ConcurrentHashMap<String, SseEmitter>` for emitter storage
 - Key format: `{userId}:{householdId}`
-- Methods:
-  - `register(userId, householdId, emitter)`
-  - `remove(userId, householdId)`
-  - `@TransactionalEventListener(phase = AFTER_COMMIT)` handler
-- `@Scheduled` heartbeat method (every 30s)
+- Methods: `register()`, `remove()`, AFTER_COMMIT handler
+- `@Scheduled(fixedRate = 30000)` heartbeat
 
-### Step 3: Add SSE Endpoint to Controller
+### Step 7: Add SSE Endpoint to NotificationController
 ```java
 @GetMapping(value = "/households/{householdId}/notifications/stream",
             produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 public SseEmitter streamNotifications(@PathVariable UUID householdId) {
-    // Spring Security validates session cookie via filter chain
     CurrentUser user = userResolver.resolveCurrentUser();
     membershipService.requireMembership(user.id(), householdId);
 
@@ -99,31 +195,31 @@ public SseEmitter streamNotifications(@PathVariable UUID householdId) {
 }
 ```
 
-### Step 4: Hook NotificationService to Event Publishing
+### Step 8: Hook NotificationService to Event Publishing
 ```java
 // In NotificationService.createNotification()
 Notification notification = notificationRepository.save(...);
 applicationEventPublisher.publishEvent(new NotificationCreatedEvent(notification));
 ```
 
-### Step 5: Implement AFTER_COMMIT Handler
-```java
-// In SseNotificationService
-@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-public void handleNotificationCreated(NotificationCreatedEvent event) {
-    publish(event.getNotification());
-}
+### Step 9: Update Web Client (OIDC flow)
+```typescript
+// After signinCallback() in Callback.tsx
+await api.createAuthSession(); // POST /auth/session with JWT
+
+// In useNotificationStream - EventSource with credentials
+new EventSource(url, { withCredentials: true });
 ```
 
-### Step 6: Write Tests
-- Unit test: mock emitter registration/publishing
-- Integration test: full flow with real SSE connection
-- Integration test: verify no event on rollback
+### Step 10: Write Tests
+- Unit test: SseNotificationService emitter management
+- Integration test: SSE with cookie auth
+- Integration test: AFTER_COMMIT (no event on rollback)
 
-### Step 7: Update OpenAPI Contract
-- Add `/households/{householdId}/notifications/stream` endpoint
-- Document cookie-based auth requirement
-- Document SSE event format
+### Step 11: Update OpenAPI Contract
+- Add `POST /auth/session`
+- Add `GET /notifications/stream`
+- Document cookie auth for SSE
 
 ---
 
