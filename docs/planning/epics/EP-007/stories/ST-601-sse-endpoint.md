@@ -10,7 +10,7 @@
 ---
 
 ## Status
-**Ready** — DoR complete, pending sprint commitment
+**Done** — Implementation complete (commit f68f679)
 
 ## Priority
 P1 (Core)

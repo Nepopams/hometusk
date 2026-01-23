@@ -11,7 +11,7 @@
 ---
 
 ## Status
-**In Progress** — Implementation started
+**Done** — Implementation complete (commit f68f679)
 
 ---
 
