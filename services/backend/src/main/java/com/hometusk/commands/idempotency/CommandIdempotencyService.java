@@ -102,8 +102,7 @@ public class CommandIdempotencyService {
                         new StoredResponse(existing.getStoredHttpStatus(), existing.getStoredResponseJson()));
             }
 
-            throw new BusinessException(
-                    ErrorCode.IDEMPOTENCY_CONFLICT, "Idempotency-Key request already in progress");
+            throw new BusinessException(ErrorCode.IDEMPOTENCY_CONFLICT, "Idempotency-Key request already in progress");
         }
 
         throw new BusinessException(ErrorCode.IDEMPOTENCY_CONFLICT, "Unable to create idempotency record");

@@ -3,8 +3,7 @@ package com.hometusk.shared.persistence;
 import jakarta.persistence.AttributeConverter;
 import java.util.Locale;
 
-public abstract class LowercaseEnumConverter<E extends Enum<E>>
-        implements AttributeConverter<E, String> {
+public abstract class LowercaseEnumConverter<E extends Enum<E>> implements AttributeConverter<E, String> {
 
     private final Class<E> enumType;
 

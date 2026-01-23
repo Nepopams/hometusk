@@ -199,7 +199,8 @@ class ContextBuilderTest {
         @DisplayName("should return empty context on database error")
         void returnsEmptyOnError() {
             // Given
-            when(membershipRepository.findByHousehold_Id(householdId)).thenThrow(new RuntimeException("Database error"));
+            when(membershipRepository.findByHousehold_Id(householdId))
+                    .thenThrow(new RuntimeException("Database error"));
 
             // When
             var context = contextBuilder.buildHouseholdContextForAi(householdId, correlationId);

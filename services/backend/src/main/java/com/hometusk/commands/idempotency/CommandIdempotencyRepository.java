@@ -14,7 +14,8 @@ public interface CommandIdempotencyRepository extends JpaRepository<CommandIdemp
 
     @Modifying
     @Query(
-            value = """
+            value =
+                    """
                 INSERT INTO command_idempotency (
                     id, idempotency_key, initiator_user_id, request_hash, created_at, expires_at
                 )
