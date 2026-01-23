@@ -12,44 +12,26 @@
 ---
 
 ## Goal
-Allow household members to create invites and share via link.
+Allow household members to create and share invite links.
 
 ## User Value
-Users can invite family members to collaborate on household tasks.
+Users can invite family/roommates to join their household.
 
 ---
 
 ## In Scope
-- "Invite Member" button
-- `POST /households/{id}/invites` API call
-- Display invite token and constructed link
-- "Copy link" with clipboard API
-- Show expiry info
-- Success/error states
+- "Invite Member" button in Sidebar (household context)
+- `POST /households/{householdId}/invites` API call
+- Modal displaying invite link + copy button
+- Clipboard API for copying link
+- Expiry info display
+- Error handling (403, network)
 
 ## Out of Scope
-- Invite revoke
 - Invite list/history
+- Revoke invite
 - Email/SMS delivery
-- QR codes
-
----
-
-## UI Surfaces / Flows
-
-### Flow: Create and Share Invite
-1. User on Members page (or settings)
-2. Clicks "Invite Member"
-3. Modal opens with loading
-4. `POST /invites` called
-5. On success:
-   - Token displayed
-   - Link constructed: `{origin}/invite?token={token}`
-   - "Copy link" button
-   - Expiry shown (7 days)
-6. User clicks "Copy link"
-7. Clipboard confirmation toast
-8. User shares link externally
+- QR code
 
 ---
 
@@ -57,113 +39,54 @@ Users can invite family members to collaborate on household tasks.
 
 | File | Action | Purpose |
 |------|--------|---------|
-| `clients/web/src/components/InviteModal.tsx` | CREATE | Invite creation modal |
-| `clients/web/src/lib/api/invites.ts` | CREATE | createInvite function |
-| `clients/web/src/routes/Members.tsx` | MODIFY | Add "Invite Member" button |
+| `clients/web/src/types/api.ts` | MODIFY | Add CreateInviteResponse type |
+| `clients/web/src/lib/api.ts` | MODIFY | Add createInvite function |
+| `clients/web/src/components/InviteModal.tsx` | CREATE | Modal with invite link + copy |
+| `clients/web/src/components/Layout/Sidebar.tsx` | MODIFY | Add "Invite Member" button |
+| `clients/web/src/styles/index.css` | MODIFY | Modal styles |
 
 ---
 
-## API Dependencies
+## API Contract
 
-| Endpoint | Method | Response |
-|----------|--------|----------|
-| `POST /api/v1/households/{householdId}/invites` | POST | `CreateInviteResponse` |
+### Request
+```http
+POST /api/v1/households/{householdId}/invites
+Authorization: Bearer {token}
+```
 
-**Response (201 Created):**
+No request body required.
+
+### Response (201)
 ```typescript
 interface CreateInviteResponse {
-  inviteToken: string;   // hti_xxx
-  expiresAt: string;     // ISO date
-  status: 'active';
+  inviteToken: string;    // hti_xxx format
+  expiresAt: string;      // ISO date
+  status: 'active' | 'redeemed' | 'expired' | 'revoked';
   inviteLink: string | null;
 }
 ```
 
-**Status codes:**
-- 201: Created
+### Error responses
 - 401: Not authenticated
-- 403: Not a member
-
----
-
-## Data Contract Assumptions
-
-- Token format: `hti_` + Base64URL (per ADR-010)
-- Default expiry: 7 days
-- Backend may return `inviteLink` or null (we construct our own)
-
----
-
-## Implementation Plan
-
-### Commit 1: Create API function
-- `createInvite(householdId: string)` in `lib/api/invites.ts`
-- Handle 403 (not member)
-
-### Commit 2: Create InviteModal
-- Modal component with states:
-  - `loading`: Creating invite...
-  - `success`: Token + link + copy button
-  - `error`: Error message + retry
-- Copy to clipboard functionality
-- Expiry display
-
-### Commit 3: Integrate with Members page
-- Add "Invite Member" button
-- Open modal on click
-- Pass current householdId
+- 403: Not a member of this household
 
 ---
 
 ## Verification Commands
 
 ```bash
-cd clients/web && npm run build
 cd clients/web && npm run lint
+cd clients/web && npm run build
 ```
-
----
-
-## Demo Scenario (Manual)
-
-1. Login and select a household
-2. Navigate to Members
-3. Click "Invite Member"
-4. See loading, then token and link
-5. Click "Copy link"
-6. Paste in new browser → valid invite link
-7. See expiry info (7 days)
-
----
-
-## Security Constraints
-
-- Only members can create invites (403 if not)
-- householdId from context (no user input)
-- Token is opaque, secure random
-
----
-
-## Risks
-
-| Risk | Mitigation |
-|------|------------|
-| Clipboard API not supported | Fallback: manual copy with text selection |
-| User not a member (403) | Show error, shouldn't happen if context is correct |
-
----
-
-## Rollback
-- Remove InviteModal
-- Remove API function
-- Remove button from Members
 
 ---
 
 ## Anti-Scope-Creep
 
 DO NOT:
-- Add invite revoke
-- Add invite history list
+- Add invite list/history
+- Add revoke functionality
 - Add email/SMS sending
 - Add QR code generation
+- Create Members page (ST-405)

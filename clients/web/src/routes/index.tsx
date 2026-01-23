@@ -1,9 +1,12 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom';
 import { ProtectedRoute } from '../components/ProtectedRoute';
+import AcceptInvite from './AcceptInvite';
 import Callback from './Callback';
+import CreateHousehold from './CreateHousehold';
 import HouseholdLayout from './HouseholdLayout';
 import HouseholdSelector from './HouseholdSelector';
 import Login from './Login';
+import Members from './Members';
 import Notifications from './Notifications';
 import NotFound from './NotFound';
 import TaskDetail from './TaskDetail';
@@ -17,7 +20,10 @@ export const router = createBrowserRouter([
   {
     path: '/households',
     element: <ProtectedRoute />,
-    children: [{ index: true, element: <HouseholdSelector /> }],
+    children: [
+      { index: true, element: <HouseholdSelector /> },
+      { path: 'new', element: <CreateHousehold /> },
+    ],
   },
   {
     path: '/households/:householdId',
@@ -31,9 +37,15 @@ export const router = createBrowserRouter([
           { path: 'tasks/:taskId', element: <TaskDetail /> },
           { path: 'zones', element: <ZonesList /> },
           { path: 'notifications', element: <Notifications /> },
+          { path: 'members', element: <Members /> },
         ],
       },
     ],
+  },
+  {
+    path: '/invite',
+    element: <ProtectedRoute />,
+    children: [{ index: true, element: <AcceptInvite /> }],
   },
   { path: '*', element: <NotFound /> },
 ]);

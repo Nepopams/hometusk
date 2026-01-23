@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { NavLink, useParams } from 'react-router-dom';
+import InviteModal from '../InviteModal';
 
 const getLinkClass = ({ isActive }: { isActive: boolean }) =>
   isActive ? 'nav-link is-active' : 'nav-link';
@@ -6,6 +8,7 @@ const getLinkClass = ({ isActive }: { isActive: boolean }) =>
 export default function Sidebar() {
   const { householdId } = useParams();
   const basePath = `/households/${householdId ?? 'demo'}`;
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
 
   return (
     <aside className="app-sidebar">
@@ -21,8 +24,31 @@ export default function Sidebar() {
           <NavLink className={getLinkClass} to={`${basePath}/notifications`}>
             Notifications
           </NavLink>
+          <NavLink className={getLinkClass} to={`${basePath}/members`}>
+            Members
+          </NavLink>
         </nav>
       </div>
+
+      <div className="app-sidebar__section">
+        <div className="app-sidebar__title">Actions</div>
+        <div className="app-sidebar__actions">
+          <button
+            type="button"
+            className="ghost-button"
+            onClick={() => setIsInviteOpen(true)}
+            disabled={!householdId}
+          >
+            + Invite Member
+          </button>
+        </div>
+      </div>
+
+      <InviteModal
+        householdId={householdId ?? null}
+        isOpen={isInviteOpen}
+        onClose={() => setIsInviteOpen(false)}
+      />
     </aside>
   );
 }

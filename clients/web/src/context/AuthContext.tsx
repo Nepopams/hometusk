@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { createContext, useCallback, useEffect, useRef, useState } from 'react';
 import { getMe } from '../lib/api';
+import { STORAGE_KEYS } from '../lib/constants';
 import { AuthError } from '../lib/errors';
 import type { UserProfile } from '../types/api';
 import { setAuthErrorHandler, setTokenGetter } from '../lib/auth/tokenProvider';
@@ -9,9 +10,6 @@ import {
   registerTokenEvents,
   removeUser as removeOidcUser,
 } from '../lib/auth/oidc';
-
-const AUTH_TOKEN_KEY = 'hometusk_auth_token';
-const HOUSEHOLD_ID_KEY = 'hometusk_household_id';
 
 type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated';
 type AuthErrorCode = 'session_expired' | 'auth_unavailable' | 'auth_failed' | null;
@@ -26,6 +24,7 @@ interface AuthContextType {
   login: (token: string) => Promise<void>;
   logout: () => void;
   selectHousehold: (id: string) => void;
+  refetchUser: () => Promise<UserProfile | null>;
   clearError: () => void;
 }
 
@@ -37,11 +36,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [token, setToken] = useState<string | null>(() =>
-    isKeycloakMode ? null : localStorage.getItem(AUTH_TOKEN_KEY)
+    isKeycloakMode ? null : localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN)
   );
   const [user, setUser] = useState<UserProfile | null>(null);
   const [householdId, setHouseholdId] = useState<string | null>(() =>
-    localStorage.getItem(HOUSEHOLD_ID_KEY)
+    sessionStorage.getItem(STORAGE_KEYS.HOUSEHOLD_ID)
   );
   const [error, setError] = useState<AuthErrorCode>(null);
 
@@ -53,8 +52,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    localStorage.removeItem(AUTH_TOKEN_KEY);
-    localStorage.removeItem(HOUSEHOLD_ID_KEY);
+    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+    sessionStorage.removeItem(STORAGE_KEYS.HOUSEHOLD_ID);
     setToken(null);
     setUser(null);
     setHouseholdId(null);
@@ -76,6 +75,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     [logout]
   );
+
+  const reconcileHouseholdSelection = useCallback((profile: UserProfile) => {
+    const storedId = sessionStorage.getItem(STORAGE_KEYS.HOUSEHOLD_ID);
+    const households = profile.households;
+
+    if (storedId && households.some((h) => h.id === storedId)) {
+      setHouseholdId(storedId);
+    } else if (households.length > 0) {
+      const hid = households[0].id;
+      sessionStorage.setItem(STORAGE_KEYS.HOUSEHOLD_ID, hid);
+      setHouseholdId(hid);
+    } else {
+      sessionStorage.removeItem(STORAGE_KEYS.HOUSEHOLD_ID);
+      setHouseholdId(null);
+    }
+  }, []);
 
   useEffect(() => {
     setTokenGetter(() => tokenRef.current);
@@ -102,12 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             setUser(profile);
             setStatus('authenticated');
-
-            if (profile.households.length === 1) {
-              const hid = profile.households[0].id;
-              localStorage.setItem(HOUSEHOLD_ID_KEY, hid);
-              setHouseholdId(hid);
-            }
+            reconcileHouseholdSelection(profile);
           } catch (err) {
             if (!isMounted) return;
             console.error('[Auth] Failed to fetch profile:', err);
@@ -128,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       isMounted = false;
     };
-  }, [isKeycloakMode, handleAuthErrorInternal]);
+  }, [isKeycloakMode, handleAuthErrorInternal, reconcileHouseholdSelection]);
 
   useEffect(() => {
     if (!isKeycloakMode) return;
@@ -177,25 +187,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setStatus('loading');
       clearError();
-      localStorage.setItem(AUTH_TOKEN_KEY, newToken);
+      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, newToken);
       setToken(newToken);
 
       try {
         const profile = await getMe();
         setUser(profile);
         setStatus('authenticated');
-
-        if (profile.households.length === 1) {
-          const hid = profile.households[0].id;
-          localStorage.setItem(HOUSEHOLD_ID_KEY, hid);
-          setHouseholdId(hid);
-        }
+        reconcileHouseholdSelection(profile);
       } catch (err) {
         logout();
         throw err;
       }
     },
-    [isKeycloakMode, logout, clearError]
+    [isKeycloakMode, logout, clearError, reconcileHouseholdSelection]
   );
 
   useEffect(() => {
@@ -206,6 +211,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .then((profile) => {
           setUser(profile);
           setStatus('authenticated');
+          reconcileHouseholdSelection(profile);
         })
         .catch((err) => {
           if (err instanceof AuthError) {
@@ -217,12 +223,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else if (!token) {
       setStatus('unauthenticated');
     }
-  }, [token, user, logout, isKeycloakMode]);
+  }, [token, user, logout, isKeycloakMode, reconcileHouseholdSelection]);
 
   const selectHousehold = useCallback((id: string) => {
-    localStorage.setItem(HOUSEHOLD_ID_KEY, id);
+    sessionStorage.setItem(STORAGE_KEYS.HOUSEHOLD_ID, id);
     setHouseholdId(id);
   }, []);
+
+  const refetchUser = useCallback(async (): Promise<UserProfile | null> => {
+    try {
+      const profile = await getMe();
+      setUser(profile);
+      reconcileHouseholdSelection(profile);
+      return profile;
+    } catch (err) {
+      if (err instanceof AuthError) {
+        logout();
+      }
+      return null;
+    }
+  }, [reconcileHouseholdSelection, logout]);
 
   const isAuthenticated = status === 'authenticated';
 
@@ -238,6 +258,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         selectHousehold,
+        refetchUser,
         clearError,
       }}
     >

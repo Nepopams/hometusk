@@ -28,7 +28,7 @@ As an invited user, I want to join my family's household so that I can collabora
 - Error states with clear messages
 
 ## Out of Scope
-- Unauthenticated accept (must login first)
+- Accept without account / guest accept (пользователь обязан залогиниться)
 - Invite preview (show household name before accepting)
 - Decline invite functionality
 

@@ -13,6 +13,32 @@ export interface HouseholdSummary {
   role: HouseholdRole;
 }
 
+export interface Household {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+export type InviteStatus = 'active' | 'redeemed' | 'expired' | 'revoked';
+
+export interface CreateInviteResponse {
+  inviteToken: string;
+  expiresAt: string;
+  status: InviteStatus;
+  inviteLink: string | null;
+}
+
+export interface InviteMembership {
+  id: string;
+  role: HouseholdRole;
+  joinedAt: string;
+}
+
+export interface AcceptInviteResponse {
+  membership: InviteMembership;
+  household: Household;
+}
+
 export interface UserProfile {
   id: string;
   externalId: string;

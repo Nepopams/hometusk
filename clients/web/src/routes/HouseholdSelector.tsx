@@ -17,9 +17,12 @@ export default function HouseholdSelector() {
 
   if (!user || user.households.length === 0) {
     return (
-      <div className="page">
-        <h1>No Households</h1>
-        <p>You are not a member of any households yet.</p>
+      <div className="page empty-state">
+        <h1>Welcome to HomeTusk!</h1>
+        <p>You don&apos;t have any households yet.</p>
+        <button className="button" type="button" onClick={() => navigate('/households/new')}>
+          Create your first household
+        </button>
       </div>
     );
   }

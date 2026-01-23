@@ -40,7 +40,7 @@ As a household member, I want to invite others so that my family can collaborate
 ```gherkin
 Given user is a member of a household
 When they click "Invite Member"
-Then POST /invites is called
+Then POST /api/v1/households/{householdId}/invites is called
 And invite token is displayed
 And shareable link is constructed
 And "Copy link" button is visible

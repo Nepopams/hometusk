@@ -12,7 +12,7 @@
 ---
 
 ## Status
-**Draft** (pending Human Gate A)
+**Done** — All stories implemented, reviewed, fixes applied (2026-01-23)
 
 ## Initiative Alignment
 This epic implements the **NOW** increment of INIT-2026Q1-household-lifecycle:
@@ -81,7 +81,7 @@ This completes the "household team formation" journey.
 - **Transfer ownership**
 
 ### Deferred to LATER
-- **Roles/permissions** (owner/admin/member distinctions)
+- **Role management** (изменение admin↔member) — роль отображаем как строку из API, но управление ролями — LATER
 - **Membership expiry** (temporary membership)
 - **Merge/transfer household**
 
@@ -108,9 +108,10 @@ This completes the "household team formation" journey.
 | Code | Meaning | UI Handling |
 |------|---------|-------------|
 | 200 | Success OR already member (no-op) | Redirect to household |
+| 401 | Not authenticated | Redirect to login |
+| 403 | Not a member of household | Access denied message |
 | 404 | Invalid token | "Invalid invite link" |
 | 410 | Expired/redeemed/revoked | "Invite has expired or already used" |
-| 403 | Not authenticated | Redirect to login |
 
 ---
 

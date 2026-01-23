@@ -1,7 +1,10 @@
 import { ApiError, AuthError } from './errors';
 import { getAuthToken, handleAuthError } from './auth/tokenProvider';
 import type {
+  AcceptInviteResponse,
   AuthErrorResponse,
+  CreateInviteResponse,
+  Household,
   HouseholdMember,
   Task,
   TaskFilters,
@@ -77,4 +80,24 @@ export async function getZones(householdId: string): Promise<Zone[]> {
 
 export async function getMembers(householdId: string): Promise<HouseholdMember[]> {
   return apiFetch<HouseholdMember[]>(`/households/${householdId}/members`);
+}
+
+export async function createHousehold(name: string): Promise<Household> {
+  return apiFetch<Household>('/households', {
+    method: 'POST',
+    body: { name },
+  });
+}
+
+export async function createInvite(householdId: string): Promise<CreateInviteResponse> {
+  return apiFetch<CreateInviteResponse>(`/households/${householdId}/invites`, {
+    method: 'POST',
+  });
+}
+
+export async function acceptInvite(inviteToken: string): Promise<AcceptInviteResponse> {
+  return apiFetch<AcceptInviteResponse>('/invites/accept', {
+    method: 'POST',
+    body: { inviteToken },
+  });
 }

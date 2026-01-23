@@ -1,15 +1,16 @@
-import { useParams } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import HouseholdDropdown from '../HouseholdDropdown';
 
 export default function Header() {
-  const { householdId } = useParams();
+  const { user, logout } = useAuth();
 
   return (
     <header className="app-header">
       <div className="app-header__title">HomeTusk</div>
       <div className="app-header__meta">
-        <span className="chip">Household: {householdId ?? 'demo'}</span>
-        <span className="chip">User: demo</span>
-        <button className="ghost-button" type="button" disabled>
+        <HouseholdDropdown />
+        <span className="chip">{user?.displayName ?? 'User'}</span>
+        <button className="ghost-button" type="button" onClick={() => void logout()}>
           Logout
         </button>
       </div>
