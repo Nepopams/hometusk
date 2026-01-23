@@ -14,7 +14,7 @@
 ---
 
 ## Status
-**Ready** — Pending sprint commitment (depends on ST-601)
+**In Progress** — ST-601 done, starting UI implementation
 
 ---
 
