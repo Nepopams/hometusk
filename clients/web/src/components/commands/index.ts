@@ -4,6 +4,8 @@ export { CompleteTaskForm } from './CompleteTaskForm';
 export { CommandResult } from './CommandResult';
 export { CommandHistory } from './CommandHistory';
 export { CommandHistoryEntry } from './CommandHistoryEntry';
+export { RequiredFieldsList } from './RequiredFieldsList';
+export { FieldSuggestions } from './FieldSuggestions';
 export { StatusBadge } from './StatusBadge';
 export { TraceInfo } from './TraceInfo';
 export { ExecutedResult } from './ExecutedResult';

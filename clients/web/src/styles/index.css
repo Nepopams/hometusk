@@ -870,3 +870,144 @@ a {
 .command-history-entry__copy:hover {
   border-color: #0b3d3a;
 }
+
+/* needs_input Enhanced Display */
+.command-input {
+  position: relative;
+}
+
+.needs-input-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.needs-input-callout__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: #3b82f6;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.needs-input-callout__question {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.needs-input-fields {
+  margin-bottom: 16px;
+}
+
+.needs-input-fields__title {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #6a6257;
+}
+
+.needs-input-fields__list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.needs-input-field {
+  margin-bottom: 8px;
+}
+
+.needs-input-field__label {
+  font-weight: 600;
+}
+
+.needs-input-field__required {
+  font-weight: 400;
+  color: #6a6257;
+  font-size: 0.85rem;
+}
+
+.needs-input-suggestions {
+  margin-top: 4px;
+  margin-left: 8px;
+  font-size: 0.85rem;
+  color: #6a6257;
+}
+
+.needs-input-suggestions__label {
+  font-style: italic;
+}
+
+.needs-input-suggestions__values {
+  margin-left: 4px;
+}
+
+.needs-input-original {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: baseline;
+  padding: 12px;
+  background: #f7f4ee;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.needs-input-original__label {
+  color: #6a6257;
+  font-weight: 600;
+}
+
+.needs-input-original__value {
+  font-weight: 600;
+}
+
+.needs-input-tip {
+  padding: 12px;
+  background: #f7f4ee;
+  border-left: 3px solid #3b82f6;
+  border-radius: 0 10px 10px 0;
+  margin-bottom: 16px;
+}
+
+.needs-input-tip__text {
+  margin: 0 0 4px;
+  font-size: 0.9rem;
+}
+
+.needs-input-tip__example {
+  margin: 0;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: #6a6257;
+}
+
+.needs-input-policy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #6a6257;
+  cursor: help;
+}
+
+.needs-input-policy__label {
+  font-weight: 600;
+}
+
+.needs-input-policy__value {
+  font-family: "IBM Plex Mono", "Source Code Pro", monospace;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #f7f4ee;
+}
