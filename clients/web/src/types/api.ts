@@ -99,6 +99,7 @@ export interface TaskFilters {
 // ============================================
 
 export type CommandType = 'create_task' | 'complete_task';
+export type CommandStatus = 'executed' | 'needs_input' | 'rejected' | 'executed_degraded';
 export type CommandSource = 'api' | 'web' | 'mobile';
 
 export interface CreateTaskPayload {

@@ -1,5 +1,11 @@
 import { useCallback, useRef, useState } from 'react';
 import { executeCommand, generateIdempotencyKey } from '../lib/api';
+import {
+  addToHistory,
+  createDisplayText,
+  dispatchHistoryUpdate,
+  generateEntryId,
+} from '../lib/commandHistory';
 import { ApiError } from '../lib/errors';
 import type { CommandRequest, CommandResponse } from '../types/api';
 
@@ -44,6 +50,19 @@ export function useCommand(): UseCommandReturn {
     try {
       const response = await executeCommand(request, idempotencyKeyRef.current);
       setState({ isLoading: false, response, error: null, errorStatus: null });
+      addToHistory({
+        id: generateEntryId(),
+        displayText: createDisplayText(request),
+        commandType: request.type,
+        status: response.status,
+        timestamp: new Date().toISOString(),
+        correlationId: response.correlationId,
+        commandId: response.commandId,
+        householdId: request.householdId,
+        request,
+        response,
+      });
+      dispatchHistoryUpdate(request.householdId);
       idempotencyKeyRef.current = generateIdempotencyKey();
       return response;
     } catch (err) {

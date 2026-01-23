@@ -727,3 +727,146 @@ a {
   color: #b91c1c;
   font-size: 0.8rem;
 }
+
+/* Command History */
+.command-history {
+  margin-top: 24px;
+}
+
+.command-history__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.command-history__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.command-history__empty {
+  padding: 20px;
+  text-align: center;
+  color: #6a6257;
+  background: #ffffff;
+  border: 1px solid #e7e1d7;
+  border-radius: 12px;
+}
+
+.command-history__empty p {
+  margin: 0;
+}
+
+.command-history__hint {
+  margin-top: 8px;
+  font-size: 0.85rem;
+}
+
+.command-history__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.command-history-entry {
+  border: 1px solid #e7e1d7;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.command-history-entry__summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+  gap: 12px;
+}
+
+.command-history-entry__summary:hover {
+  background: #f7f4ee;
+}
+
+.command-history-entry__title {
+  flex: 1;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.command-history-entry__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.command-history-entry__timestamp {
+  font-size: 0.75rem;
+  color: #6a6257;
+}
+
+.command-history-entry__toggle {
+  width: 20px;
+  text-align: center;
+  font-weight: 700;
+  color: #6a6257;
+}
+
+.command-history-entry__details {
+  padding: 16px;
+  background: #faf7f0;
+  border-top: 1px solid #e7e1d7;
+}
+
+.command-history-entry__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+}
+
+.command-history-entry__label {
+  font-weight: 600;
+  color: #6a6257;
+}
+
+.command-history-entry__section {
+  margin-top: 12px;
+}
+
+.command-history-entry__json {
+  margin: 6px 0 0;
+  padding: 10px;
+  border: 1px solid #e2ddd3;
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 0.75rem;
+  overflow-x: auto;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.command-history-entry__copy {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid #e2ddd3;
+  background: #ffffff;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.command-history-entry__copy:hover {
+  border-color: #0b3d3a;
+}
