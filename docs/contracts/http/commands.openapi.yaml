@@ -22,6 +22,8 @@ security:
 tags:
   - name: Commands
     description: Command execution endpoints
+  - name: Auth
+    description: Authentication endpoints
   - name: Users
     description: User profile endpoints
   - name: Households
@@ -227,6 +229,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CommandErrorResponse'
+
+  /auth/session:
+    post:
+      operationId: createAuthSession
+      summary: Create session cookie for SSE
+      description: |
+        Validates the bearer token and sets an HttpOnly session cookie for SSE connections.
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: Session cookie set
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
 
   /users/me:
     get:
@@ -561,6 +581,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CommandErrorResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '403':
+          description: Not a member of this household
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+
+  /households/{householdId}/notifications/stream:
+    get:
+      operationId: streamNotifications
+      summary: Stream notifications for a household
+      description: Opens an SSE stream for real-time notifications.
+      tags:
+        - Notifications
+      parameters:
+        - name: householdId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: SSE stream opened
+          content:
+            text/event-stream:
+              schema:
+                type: string
         '401':
           description: Authentication required
           content:

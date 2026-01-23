@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { createContext, useCallback, useEffect, useRef, useState } from 'react';
-import { getMe } from '../lib/api';
+import { createAuthSession, getMe } from '../lib/api';
 import { STORAGE_KEYS } from '../lib/constants';
 import { AuthError } from '../lib/errors';
 import type { UserProfile } from '../types/api';
@@ -96,6 +96,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTokenGetter(() => tokenRef.current);
     setAuthErrorHandler(handleAuthErrorInternal);
   }, [handleAuthErrorInternal]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    let isMounted = true;
+
+    const syncSession = async () => {
+      try {
+        await createAuthSession(token);
+      } catch (err) {
+        if (isMounted) {
+          console.warn('[Auth] Failed to create auth session:', err);
+        }
+      }
+    };
+
+    syncSession();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [token]);
 
   useEffect(() => {
     if (!isKeycloakMode) return;

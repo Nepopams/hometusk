@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { createAuthSession } from '../lib/api';
 import { signinCallback } from '../lib/auth/oidc';
 import { STORAGE_KEYS } from '../lib/constants';
 
@@ -25,6 +26,12 @@ export default function Callback() {
 
         if (user.access_token) {
           setStatus('success');
+          try {
+            await createAuthSession(user.access_token);
+          } catch (err) {
+            console.warn('[Callback] Failed to create auth session:', err);
+          }
+
           const state = location.state as LocationState | null;
           const stateRedirect = state?.from
             ? state.from.pathname + (state.from.search || '')

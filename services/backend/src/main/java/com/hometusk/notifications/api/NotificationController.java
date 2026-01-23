@@ -2,6 +2,7 @@ package com.hometusk.notifications.api;
 
 import com.hometusk.notifications.dto.NotificationDto;
 import com.hometusk.notifications.service.NotificationService;
+import com.hometusk.notifications.service.SseNotificationService;
 import com.hometusk.shared.exception.ValidationException;
 import com.hometusk.shared.security.CurrentUser;
 import com.hometusk.users.service.MembershipService;
@@ -15,6 +16,7 @@ import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -32,12 +35,17 @@ public class NotificationController {
     private static final int MAX_LIMIT = 200;
 
     private final NotificationService notificationService;
+    private final SseNotificationService sseNotificationService;
     private final UserResolver userResolver;
     private final MembershipService membershipService;
 
     public NotificationController(
-            NotificationService notificationService, UserResolver userResolver, MembershipService membershipService) {
+            NotificationService notificationService,
+            SseNotificationService sseNotificationService,
+            UserResolver userResolver,
+            MembershipService membershipService) {
         this.notificationService = notificationService;
+        this.sseNotificationService = sseNotificationService;
         this.userResolver = userResolver;
         this.membershipService = membershipService;
     }
@@ -81,6 +89,27 @@ public class NotificationController {
         CurrentUser currentUser = userResolver.resolveCurrentUser();
         NotificationDto notification = notificationService.markRead(notificationId, currentUser.id());
         return ResponseEntity.ok(notification);
+    }
+
+    @GetMapping(value = "/households/{householdId}/notifications/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "Stream notifications for a household")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "SSE stream opened"),
+        @ApiResponse(responseCode = "401", description = "Authentication required"),
+        @ApiResponse(responseCode = "403", description = "Not a member of this household")
+    })
+    public SseEmitter streamNotifications(@PathVariable UUID householdId) {
+        CurrentUser currentUser = userResolver.resolveCurrentUser();
+        membershipService.requireMembership(currentUser.id(), householdId);
+
+        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
+        sseNotificationService.register(currentUser.id(), householdId, emitter);
+
+        emitter.onCompletion(() -> sseNotificationService.remove(currentUser.id(), householdId));
+        emitter.onTimeout(() -> sseNotificationService.remove(currentUser.id(), householdId));
+        emitter.onError(e -> sseNotificationService.remove(currentUser.id(), householdId));
+
+        return emitter;
     }
 
     private Instant parseSince(String since) {

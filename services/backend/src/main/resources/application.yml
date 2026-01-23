@@ -44,6 +44,13 @@ server:
     include-message: always
     include-binding-errors: always
 
+hometusk:
+  cookie:
+    secure: false
+    same-site: Lax
+  cors:
+    allowed-origins: http://localhost:5173,http://127.0.0.1:5173
+
 management:
   endpoints:
     web:

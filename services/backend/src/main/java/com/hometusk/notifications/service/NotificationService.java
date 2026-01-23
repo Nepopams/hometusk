@@ -8,6 +8,7 @@ import com.hometusk.notifications.domain.Notification;
 import com.hometusk.notifications.domain.NotificationType;
 import com.hometusk.notifications.dto.NotificationDto;
 import com.hometusk.notifications.dto.NotificationPayloadDto;
+import com.hometusk.notifications.event.NotificationCreatedEvent;
 import com.hometusk.notifications.repository.NotificationRepository;
 import com.hometusk.shared.exception.ErrorCode;
 import com.hometusk.shared.exception.NotFoundException;
@@ -23,6 +24,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -40,14 +42,17 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final MembershipRepository membershipRepository;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     public NotificationService(
             NotificationRepository notificationRepository,
             MembershipRepository membershipRepository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            ApplicationEventPublisher eventPublisher) {
         this.notificationRepository = notificationRepository;
         this.membershipRepository = membershipRepository;
         this.objectMapper = objectMapper;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional(readOnly = true)
@@ -215,7 +220,9 @@ public class NotificationService {
             UUID correlationId) {
         String payloadJson = toJson(payload);
         Notification notification = new Notification(household, recipient, type, payloadJson, correlationId);
-        notificationRepository.save(notification);
+        Notification saved = notificationRepository.save(notification);
+        NotificationDto dto = toDto(saved);
+        eventPublisher.publishEvent(new NotificationCreatedEvent(dto));
     }
 
     private NotificationDto toDto(Notification notification) {

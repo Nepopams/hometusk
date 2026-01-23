@@ -127,3 +127,24 @@ export async function executeCommand(
     },
   });
 }
+
+export async function createAuthSession(tokenOverride?: string): Promise<void> {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '');
+  const token = tokenOverride ?? getAuthToken();
+
+  if (!token) {
+    throw new Error('No auth token available');
+  }
+
+  const response = await fetch(`${baseUrl}/auth/session`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to create session: ${response.status}`);
+  }
+}
