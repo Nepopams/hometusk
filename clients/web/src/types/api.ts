@@ -93,3 +93,105 @@ export interface TaskFilters {
   assigneeId?: string;
   zoneId?: string;
 }
+
+// ============================================
+// Command API Types (per commands.openapi.yaml)
+// ============================================
+
+export type CommandType = 'create_task' | 'complete_task';
+export type CommandSource = 'api' | 'web' | 'mobile';
+
+export interface CreateTaskPayload {
+  title: string;
+  description?: string;
+  zoneId?: string;
+  assigneeId?: string;
+  deadline?: string;
+}
+
+export interface CompleteTaskPayload {
+  taskId: string;
+}
+
+export interface CommandRequest {
+  householdId: string;
+  type: CommandType;
+  payload: CreateTaskPayload | CompleteTaskPayload;
+  source: CommandSource;
+  clientTimestamp?: string;
+}
+
+export interface CommandResult {
+  taskId?: string;
+  assigneeId?: string;
+  decisionConfidence?: number;
+}
+
+export interface CommandExecutedResponse {
+  commandId: string;
+  correlationId: string;
+  status: 'executed';
+  result: CommandResult;
+  executionMs: number;
+  initiatorId: string;
+}
+
+export interface CommandNeedsInputResponse {
+  commandId: string;
+  correlationId: string;
+  status: 'needs_input';
+  question: string;
+  requiredFields: string[];
+  suggestions?: Record<string, unknown>;
+  policyName?: string;
+  executionMs: number;
+  initiatorId: string;
+}
+
+export interface CommandRejectedResponse {
+  commandId: string;
+  correlationId: string;
+  status: 'rejected';
+  errorCode: string;
+  reason: string;
+  executionMs: number;
+  initiatorId: string;
+}
+
+export type DegradedReason = 'ai_unavailable' | 'ai_timeout' | 'ai_low_confidence';
+
+export interface CommandDegradedResponse {
+  commandId: string;
+  correlationId: string;
+  status: 'executed_degraded';
+  result: CommandResult;
+  executionMs: number;
+  initiatorId: string;
+  degradedReason: DegradedReason;
+  fallbackStrategy?: string;
+}
+
+export type CommandResponse =
+  | CommandExecutedResponse
+  | CommandNeedsInputResponse
+  | CommandRejectedResponse
+  | CommandDegradedResponse;
+
+export interface ValidationError {
+  path: string;
+  code: string;
+  message: string;
+}
+
+export interface BusinessViolation {
+  rule: string;
+  message: string;
+}
+
+export interface CommandErrorResponse {
+  correlationId: string;
+  errorCode: string;
+  message: string;
+  validationErrors?: ValidationError[];
+  violations?: BusinessViolation[];
+}

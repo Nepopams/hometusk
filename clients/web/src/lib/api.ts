@@ -3,6 +3,8 @@ import { getAuthToken, handleAuthError } from './auth/tokenProvider';
 import type {
   AcceptInviteResponse,
   AuthErrorResponse,
+  CommandRequest,
+  CommandResponse,
   CreateInviteResponse,
   Household,
   HouseholdMember,
@@ -99,5 +101,29 @@ export async function acceptInvite(inviteToken: string): Promise<AcceptInviteRes
   return apiFetch<AcceptInviteResponse>('/invites/accept', {
     method: 'POST',
     body: { inviteToken },
+  });
+}
+
+export function generateIdempotencyKey(): string {
+  return crypto.randomUUID();
+}
+
+export function generateCorrelationId(): string {
+  return crypto.randomUUID();
+}
+
+export async function executeCommand(
+  request: CommandRequest,
+  idempotencyKey: string
+): Promise<CommandResponse> {
+  const correlationId = generateCorrelationId();
+
+  return apiFetch<CommandResponse>('/commands', {
+    method: 'POST',
+    body: request,
+    headers: {
+      'Idempotency-Key': idempotencyKey,
+      'X-Correlation-ID': correlationId,
+    },
   });
 }
