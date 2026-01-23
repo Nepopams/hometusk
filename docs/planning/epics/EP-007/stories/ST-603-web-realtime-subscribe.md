@@ -27,6 +27,7 @@ As a household member, I want notifications to appear instantly without refreshi
 
 ### Technical Approach
 - EventSource API to connect to SSE endpoint
+- **Cookie-based auth** — connect with `withCredentials: true`
 - Parse incoming notification events
 - Update notifications state via hook
 - Auto-reconnect on disconnect (exponential backoff)
@@ -38,9 +39,10 @@ As a household member, I want notifications to appear instantly without refreshi
 
 ### AC-1: SSE Connection Established
 ```gherkin
-Given user is authenticated and viewing household
+Given user is authenticated (session cookie valid)
+And viewing household page
 When household page loads
-Then EventSource connects to /notifications/stream
+Then EventSource connects to /notifications/stream with withCredentials: true
 And connection status is "connected"
 ```
 
@@ -62,13 +64,15 @@ And attempts to reconnect
 And uses exponential backoff (1s, 2s, 4s, 8s, max 30s)
 ```
 
-### AC-4: Token Refresh on 401
+### AC-4: Session Expiry Handling
 ```gherkin
-Given SSE connection fails with 401
-When token is expired
-Then client refreshes token
-And reconnects with new token
+Given SSE connection
+When session expires (server returns 401 on reconnect)
+Then client stops reconnecting
+And redirects to login (or shows re-auth prompt)
 ```
+
+**Note:** Unlike token-based auth, we cannot "refresh" a session cookie from JS. On 401, the user must re-authenticate.
 
 ### AC-5: Cleanup on Household Change
 ```gherkin
@@ -91,7 +95,7 @@ And no reconnect attempts
 ## Test Strategy
 
 ### Manual Tests
-- Open app → verify SSE connected (DevTools Network tab)
+- Open app → verify SSE connected (DevTools Network tab, look for EventStream)
 - Create task in another tab → verify notification appears
 - Disable network → verify reconnect attempts
 - Switch households → verify new connection
@@ -110,7 +114,7 @@ And no reconnect attempts
 | contract_impact | no | Using ST-601 endpoint |
 | adr_needed | no | EventSource is standard |
 | diagrams_needed | no | |
-| security_sensitive | yes | Token in SSE connection |
+| security_sensitive | yes | Session cookie in SSE |
 | traceability_critical | no | |
 
 ---
@@ -129,26 +133,34 @@ And no reconnect attempts
 ```typescript
 export function useNotificationStream(
   householdId: string,
-  onNotification: (notification: Notification) => void
+  onNotification: (notification: Notification) => void,
+  onAuthError: () => void
 ) {
   const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
   const eventSourceRef = useRef<EventSource | null>(null);
   const retryCountRef = useRef(0);
+  const MAX_RETRIES = 10;
 
   useEffect(() => {
-    const connect = () => {
-      const token = getAccessToken();
-      const url = `${API_BASE}/households/${householdId}/notifications/stream?token=${token}`;
+    let isMounted = true;
 
-      const eventSource = new EventSource(url);
+    const connect = () => {
+      if (!isMounted) return;
+
+      const url = `${API_BASE}/households/${householdId}/notifications/stream`;
+
+      // withCredentials for cookie-based auth
+      const eventSource = new EventSource(url, { withCredentials: true });
       eventSourceRef.current = eventSource;
 
       eventSource.onopen = () => {
+        if (!isMounted) return;
         setStatus('connected');
         retryCountRef.current = 0;
       };
 
       eventSource.addEventListener('notification', (event) => {
+        if (!isMounted) return;
         const notification = JSON.parse(event.data);
         onNotification(notification);
       });
@@ -157,9 +169,19 @@ export function useNotificationStream(
         // Connection alive, no action needed
       });
 
-      eventSource.onerror = () => {
-        setStatus('disconnected');
+      eventSource.onerror = (event) => {
+        if (!isMounted) return;
         eventSource.close();
+
+        // Check if it's an auth error (EventSource doesn't expose status directly)
+        // We rely on retry count — if server keeps returning 401, retries will exhaust
+        if (retryCountRef.current >= MAX_RETRIES) {
+          setStatus('error');
+          onAuthError();
+          return;
+        }
+
+        setStatus('disconnected');
         scheduleReconnect();
       };
     };
@@ -173,9 +195,10 @@ export function useNotificationStream(
     connect();
 
     return () => {
+      isMounted = false;
       eventSourceRef.current?.close();
     };
-  }, [householdId, onNotification]);
+  }, [householdId, onNotification, onAuthError]);
 
   return { status };
 }
@@ -184,27 +207,51 @@ export function useNotificationStream(
 ### Integration with useNotifications
 ```typescript
 // In HouseholdLayout or NotificationProvider
+const navigate = useNavigate();
 const { addNotification, refresh } = useNotifications(householdId);
 
-const { status } = useNotificationStream(householdId, (notification) => {
-  addNotification(notification);
-});
+const handleAuthError = useCallback(() => {
+  // Session expired, redirect to login
+  navigate('/login?reason=session_expired');
+}, [navigate]);
+
+const { status } = useNotificationStream(
+  householdId,
+  addNotification,
+  handleAuthError
+);
 
 // Optional: show connection status indicator
 ```
 
-### Token Handling Options
-1. **Query param**: `?token=...` (simpler, but token in URL)
-2. **Cookie**: Set HttpOnly cookie before connection (more secure)
-3. **Custom header**: Not supported by EventSource natively
+### EventSource with Credentials
+Native EventSource supports `withCredentials: true`:
+```typescript
+new EventSource(url, { withCredentials: true });
+```
 
-Recommendation: Use query param for MVP, document security consideration.
+This sends cookies with the request. No token in URL needed.
 
 ### Connection Status UI (Optional)
 ```tsx
 {status === 'disconnected' && (
-  <span className="connection-status connection-status--offline">
+  <span className="connection-status connection-status--reconnecting">
     Reconnecting...
   </span>
 )}
+
+{status === 'error' && (
+  <span className="connection-status connection-status--error">
+    Connection lost
+  </span>
+)}
 ```
+
+### Browser Support
+EventSource with `withCredentials` is supported in all modern browsers:
+- Chrome 26+
+- Firefox 6+
+- Safari 7+
+- Edge 79+
+
+For older browsers, consider a polyfill like `eventsource-polyfill`.

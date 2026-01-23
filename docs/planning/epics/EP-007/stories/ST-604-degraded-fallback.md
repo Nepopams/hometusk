@@ -5,6 +5,7 @@
 - Initiative: `docs/planning/initiatives/INIT-2026Q2-notifications-realtime.md`
 - DoR: `docs/_governance/dor.md`
 - DoD: `docs/_governance/dod.md`
+- OpenAPI: `docs/contracts/http/commands.openapi.yaml` (notifications endpoints)
 
 ---
 
@@ -28,9 +29,20 @@ As a household member, I want notifications to still work even when realtime is 
 ### Technical Approach
 - Detect SSE connection failure after max retries
 - Switch to polling mode (every 30s)
+- **Use existing `since` parameter** (already supported in OpenAPI)
 - Show subtle indicator of degraded mode
 - Auto-switch back to SSE when available
 - Silent degradation (no error modals)
+
+---
+
+## Contract Verification
+The existing `GET /households/{householdId}/notifications` endpoint already supports the `since` query parameter:
+- Type: RFC3339 timestamp string
+- Filters notifications created after the given timestamp
+- Location: `NotificationController.java:57-59`
+
+**No contract changes required for polling.**
 
 ---
 
@@ -49,7 +61,7 @@ And poll every 30 seconds
 ```gherkin
 Given app is in polling mode
 When 30 seconds pass
-Then GET /notifications is called with since={lastFetch}
+Then GET /notifications?since={lastFetchTimestamp} is called
 And new notifications added to list
 And unread count updated
 ```
@@ -65,12 +77,12 @@ And no intrusive error message
 ### AC-4: Auto-recovery to SSE
 ```gherkin
 Given app is in polling mode
-When SSE endpoint becomes available
+When SSE endpoint becomes available (periodic check every 60s)
 Then switch back to SSE mode
 And degraded indicator disappears
 ```
 
-### AC-5: No Duplicate Notifications
+### AC-5: No Duplicate Notifications (Client-side Dedup)
 ```gherkin
 Given polling returns notifications
 When same notification received multiple times
@@ -90,15 +102,15 @@ And app continues to function
 ## Test Strategy
 
 ### Manual Tests
-- Block SSE endpoint (DevTools) → verify polling starts
-- Verify notifications arrive via polling
-- Unblock SSE → verify auto-recovery
+- Block SSE endpoint (DevTools Network → Block request URL) → verify polling starts
+- Verify notifications arrive via polling (30s interval)
+- Unblock SSE → verify auto-recovery (up to 60s)
 - Verify no duplicate notifications
 
 ### Unit Tests
 - Test retry logic and max retry threshold
 - Test polling interval
-- Test deduplication logic
+- Test client-side deduplication logic
 
 ---
 
@@ -106,7 +118,7 @@ And app continues to function
 
 | Flag | Value | Notes |
 |------|-------|-------|
-| contract_impact | no | Using existing API |
+| contract_impact | no | Using existing `since` parameter |
 | adr_needed | no | Standard fallback pattern |
 | diagrams_needed | no | |
 | security_sensitive | no | |
@@ -129,41 +141,62 @@ And app continues to function
 ```typescript
 export function useNotificationStream(
   householdId: string,
-  onNotification: (notification: Notification) => void
+  onNotification: (notification: Notification) => void,
+  onAuthError: () => void
 ) {
   const [mode, setMode] = useState<'sse' | 'polling'>('sse');
   const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'polling'>('connecting');
-  const MAX_RETRIES = 5;
+  const lastFetchRef = useRef<string>(new Date().toISOString());
+  const MAX_SSE_RETRIES = 5;
   const POLL_INTERVAL = 30000;
+  const SSE_RETRY_INTERVAL = 60000;
 
-  // ... SSE logic with retry count ...
+  // ... SSE connection logic (from ST-603) ...
 
-  const startPolling = () => {
+  const switchToPolling = () => {
     setMode('polling');
     setStatus('polling');
+    startPolling();
+  };
 
+  const startPolling = () => {
     // Poll immediately
     fetchNewNotifications();
 
-    // Set up interval
-    const interval = setInterval(fetchNewNotifications, POLL_INTERVAL);
+    // Set up polling interval
+    const pollInterval = setInterval(fetchNewNotifications, POLL_INTERVAL);
 
     // Periodically try SSE again
-    const sseRetry = setInterval(() => {
+    const sseRetryInterval = setInterval(() => {
       attemptSseReconnect();
-    }, 60000); // Try SSE every minute
+    }, SSE_RETRY_INTERVAL);
 
     return () => {
-      clearInterval(interval);
-      clearInterval(sseRetry);
+      clearInterval(pollInterval);
+      clearInterval(sseRetryInterval);
     };
   };
 
   const fetchNewNotifications = async () => {
-    const since = lastFetchRef.current;
-    const notifications = await api.listNotifications(householdId, { since });
-    notifications.forEach(onNotification);
-    lastFetchRef.current = new Date().toISOString();
+    try {
+      const since = lastFetchRef.current;
+      const notifications = await api.listNotifications(householdId, { since });
+
+      // Update last fetch timestamp
+      lastFetchRef.current = new Date().toISOString();
+
+      // Add each (dedup happens in onNotification)
+      notifications.forEach(onNotification);
+    } catch (error) {
+      // Silent fail, will retry on next interval
+      console.debug('Polling failed, will retry', error);
+    }
+  };
+
+  const attemptSseReconnect = () => {
+    // Try to establish SSE connection
+    // If successful, switch back to SSE mode
+    // If fails, stay in polling mode
   };
 
   return { mode, status };
@@ -172,7 +205,7 @@ export function useNotificationStream(
 
 ### Degraded Indicator Component
 ```tsx
-function ConnectionStatus({ mode, status }: { mode: 'sse' | 'polling', status: string }) {
+function ConnectionStatus({ mode }: { mode: 'sse' | 'polling' }) {
   if (mode === 'polling') {
     return (
       <span
@@ -187,11 +220,12 @@ function ConnectionStatus({ mode, status }: { mode: 'sse' | 'polling', status: s
 }
 ```
 
-### Deduplication
+### Client-side Deduplication
+Already implemented in `useNotifications.addNotification()`:
 ```typescript
 const addNotification = (notification: Notification) => {
   setNotifications(prev => {
-    // Check if already exists
+    // Check if already exists by ID
     if (prev.some(n => n.id === notification.id)) {
       return prev;
     }
@@ -207,6 +241,7 @@ const addNotification = (notification: Notification) => {
   color: var(--color-warning);
   opacity: 0.7;
   margin-left: 8px;
+  cursor: help;
 }
 
 .connection-degraded:hover {

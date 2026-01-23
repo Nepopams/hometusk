@@ -12,7 +12,7 @@
 ---
 
 ## Status
-**Planning** — Stories defined, pending human gate approval
+**Planning** — Stories defined, pending human gate approval (v2 after feedback)
 
 ## Initiative Alignment
 This epic implements the **NOW** increment of INIT-2026Q2-notifications-realtime:
@@ -49,10 +49,10 @@ Enable users to:
 | Event publishing | Called from ActionExecutor, ShoppingService, InviteService | ✅ Done |
 
 ### API Endpoints (Complete)
-| Endpoint | Method | Status |
-|----------|--------|--------|
-| `/api/v1/households/{householdId}/notifications` | GET | ✅ Done |
-| `/api/v1/notifications/{notificationId}/read` | POST | ✅ Done |
+| Endpoint | Method | Status | Notes |
+|----------|--------|--------|-------|
+| `/api/v1/households/{householdId}/notifications` | GET | ✅ Done | Supports `since` param (RFC3339) |
+| `/api/v1/notifications/{notificationId}/read` | POST | ✅ Done | Mark single notification |
 
 ---
 
@@ -61,10 +61,11 @@ Enable users to:
 ### SSE Realtime Endpoint (ST-601)
 - New endpoint: `GET /api/v1/households/{householdId}/notifications/stream`
 - SSE (Server-Sent Events) transport
-- Authentication via JWT (query param or header)
+- **Authentication via session cookie** (same-origin, withCredentials)
 - Household boundary check (403 if not member)
 - Heartbeat every 30s to keep connection alive
 - Graceful disconnect handling
+- **AFTER_COMMIT publish** — no phantom notifications on rollback
 
 ### Web Notifications UI (ST-602)
 - Bell icon in header with unread count badge
@@ -75,11 +76,11 @@ Enable users to:
   - Relative timestamp
   - Read/unread visual state
 - Mark as read on click
-- "Mark all as read" action
+- **"Mark all as read" action** — calls `/notifications/{id}/read` sequentially for visible unread (no new endpoint)
 - Empty state when no notifications
 
 ### Web Realtime Subscribe (ST-603)
-- EventSource connection to SSE endpoint
+- EventSource connection to SSE endpoint (withCredentials: true)
 - Auto-reconnect on disconnect (exponential backoff)
 - Parse incoming notification events
 - Update notifications list in real-time
@@ -88,7 +89,7 @@ Enable users to:
 
 ### Degraded Fallback (ST-604)
 - Detect when SSE is unavailable (connection fails)
-- Fall back to polling (every 30s)
+- Fall back to polling (every 30s) using GET `/notifications?since=...`
 - Visual indicator of degraded mode
 - Auto-switch back to SSE when available
 - No user-facing errors (silent degradation)
@@ -96,7 +97,7 @@ Enable users to:
 ### Notification Deduplication (ST-605)
 - Idempotency key on notification creation
 - Prevent duplicate notifications for same event
-- Rate limiting consideration (max N per minute per user)
+- Time window based deduplication (5 min)
 
 ---
 
@@ -108,6 +109,7 @@ Enable users to:
 - **Notification preferences** (user can mute types)
 - **Batch notifications grouping** ("3 tasks assigned to you")
 - **Notification sounds**
+- **Rate limiting** — risk of losing important notifications; requires careful design
 
 ### Never in Scope
 - Complex notification rules engine
@@ -118,10 +120,17 @@ Enable users to:
 
 ## Security & Data Boundaries
 
-### Authentication
-- SSE endpoint requires valid JWT
-- Token validation on connection establishment
-- Connection closed on token expiry (client must reconnect)
+### Authentication (Cookie-based for SSE)
+- SSE endpoint authenticates via session cookie (same-origin)
+- Web client connects with `withCredentials: true`
+- No token in URL (avoids log/history/referrer exposure)
+- Session validation on connection establishment
+- Connection closed on session expiry (client auto-reconnects)
+
+**Why cookie-based:**
+- EventSource API cannot send custom Authorization headers natively
+- Token in query param is risky (logs, browser history, referrer headers)
+- Cookie-based is standard for same-origin SSE connections
 
 ### Household Scoping
 - SSE stream scoped to single household
@@ -147,6 +156,7 @@ Enable users to:
       Server-Sent Events stream for real-time notification delivery.
       Connection stays open until client disconnects.
       Heartbeat sent every 30 seconds.
+      Authentication: session cookie (same-origin, withCredentials).
     tags:
       - Notifications
     parameters:
@@ -164,7 +174,7 @@ Enable users to:
             schema:
               type: string
       '401':
-        description: Authentication required
+        description: Authentication required (no valid session)
       '403':
         description: Not a member of this household
 ```
@@ -177,6 +187,9 @@ data: {"id":"...", "type":"task_assigned", "payload":{...}, "createdAt":"..."}
 event: heartbeat
 data: {"timestamp":"..."}
 ```
+
+### Mark All as Read (No New Endpoint)
+"Mark all as read" is implemented client-side by calling `POST /notifications/{id}/read` sequentially for each visible unread notification. This avoids contract changes and keeps the API simple.
 
 ---
 
@@ -204,7 +217,7 @@ data: {"timestamp":"..."}
 | Dependency | Type | Status | Notes |
 |------------|------|--------|-------|
 | EP-003 (Web Foundation) | Internal | Done | React app, routing |
-| EP-004 (Auth/Session) | Internal | Done | Token handling |
+| EP-004 (Auth/Session) | Internal | Done | Session cookie handling |
 | EP-005 (Household Lifecycle) | Internal | Done | Household context |
 | EP-006 (Command UX) | Internal | Done | Proves web patterns |
 | Backend Notifications | Internal | Done | Service + API ready |
@@ -216,10 +229,11 @@ data: {"timestamp":"..."}
 | Risk | Impact | Mitigation |
 |------|--------|------------|
 | SSE connection instability | Users miss notifications | ST-604 degraded fallback |
-| Token expiry mid-stream | Connection drops | Client auto-reconnect with fresh token |
+| Session expiry mid-stream | Connection drops | Client auto-reconnect |
 | High connection count | Server resource pressure | Heartbeat timeout + cleanup |
-| Notification spam | UX degradation | ST-605 deduplication + rate limits |
-| Cross-browser SSE issues | Safari edge cases | Test on Safari, use polyfill if needed |
+| Notification spam | UX degradation | ST-605 deduplication |
+| Cross-browser SSE issues | Safari edge cases | Test on Safari, polyfill if needed |
+| Phantom notifications on rollback | Data inconsistency | AFTER_COMMIT publish (ST-601) |
 
 ---
 
@@ -242,7 +256,7 @@ From initiative INIT-2026Q2-notifications-realtime:
 | Flag | Value | Notes |
 |------|-------|-------|
 | contract_impact | yes | New SSE endpoint |
-| adr_needed | no | SSE is standard pattern |
+| adr_needed | no | SSE + cookie auth is standard pattern |
 | diagrams_needed | no | No structural changes |
 | security_sensitive | yes | Auth on SSE, household scoping |
 

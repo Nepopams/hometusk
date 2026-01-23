@@ -9,7 +9,7 @@
 ---
 
 ## Status
-**Ready** — DoR complete, pending sprint commitment
+**Ready** — DoR complete, pending sprint commitment (S07 candidate)
 
 ## Priority
 P3 (Nice-to-have)
@@ -20,16 +20,30 @@ P3 (Nice-to-have)
 ---
 
 ## Description
-Prevent duplicate notifications from being created when the same event occurs multiple times (e.g., rapid task reassignments) or when batch operations happen.
+Prevent duplicate notifications from being created when the same event occurs multiple times (e.g., rapid task reassignments, retries, or race conditions).
 
 ### User Value
-As a household member, I don't want to be spammed with duplicate or near-duplicate notifications, so my notification list remains useful and not overwhelming.
+As a household member, I don't want to see duplicate notifications for the same event, so my notification list remains clean and useful.
 
 ### Technical Approach
-- Idempotency key based on event signature (type + entityId + timestamp window)
+- Idempotency key based on event signature (type + entityId + userId + time window)
 - Check for existing notification before creating
-- Rate limiting: max N notifications of same type per minute per user
-- Optional: batch similar notifications ("3 tasks assigned to you")
+- Time window based deduplication (5 min) — same event within window = same notification
+
+---
+
+## Scope Clarification
+
+### In Scope (This Story)
+- **Deduplication via idempotency key** — prevent exact duplicate notifications for same event
+
+### Out of Scope (Deferred)
+- **Rate limiting** — suppressing notifications after N per minute
+  - Reason: Risk of losing important notifications; requires careful design and user feedback
+  - Recommend: Separate story with explicit product decision on limits and UI feedback
+- **Batch notifications** — grouping ("3 tasks assigned to you")
+  - Reason: Requires more complex logic and UI changes
+  - Recommend: Future initiative
 
 ---
 
@@ -42,33 +56,34 @@ When same assignment event fires twice (due to retry/bug)
 Then only one notification created for U1
 ```
 
-### AC-2: Rate Limiting
+### AC-2: Idempotency Key Format
 ```gherkin
-Given user receives 10 task_assigned notifications in 1 minute
-Then only first 5 are created (configurable limit)
-And subsequent ones are suppressed
+Given notification creation request
+Then idempotency key is generated as: "{type}:{entityId}:{userId}:{5minWindow}"
+And key is stored with notification
 ```
 
-### AC-3: Idempotency Key
+### AC-3: Duplicate Detected by Key
 ```gherkin
-Given notification created with idempotency key "task_assigned:task123:2026-01-23T10:00"
-When same key used again
-Then existing notification returned
-And no duplicate created
+Given notification with idempotency key "task_assigned:task123:user456:12345"
+When another notification with same key is created
+Then existing notification is returned (no new record)
+And log entry indicates duplicate suppressed
 ```
 
 ### AC-4: Different Events Not Affected
 ```gherkin
 Given task T1 assigned → notification created
 When task T1 completed → separate notification
-Then both notifications exist (different event types)
+Then both notifications exist (different event types = different keys)
 ```
 
 ### AC-5: Time Window for Dedup
 ```gherkin
 Given task T1 assigned to U1 at 10:00
-When task T1 assigned to U1 again at 10:30 (different assignment)
-Then second notification IS created (outside 5-min window)
+And notification created with key "task_assigned:task123:user456:12345"
+When task T1 assigned to U1 again at 10:30 (different 5-min window)
+Then second notification IS created (different time window = different key)
 ```
 
 ---
@@ -76,15 +91,15 @@ Then second notification IS created (outside 5-min window)
 ## Test Strategy
 
 ### Unit Tests
-- Test idempotency key generation
-- Test duplicate detection
-- Test rate limiting logic
-- Test time window logic
+- `generateIdempotencyKey_shouldIncludeAllComponents`
+- `generateIdempotencyKey_sameInputsSameWindow_shouldReturnSameKey`
+- `generateIdempotencyKey_differentWindow_shouldReturnDifferentKey`
+- `createNotification_duplicateKey_shouldSkip`
+- `createNotification_differentKey_shouldCreate`
 
 ### Integration Tests
-- Create same notification twice → verify single entry
-- Create rapid notifications → verify rate limit
-- Create notifications outside window → verify both created
+- `notifyTaskAssigned_duplicate_shouldNotCreateSecond`
+- `notifyTaskAssigned_differentWindow_shouldCreateBoth`
 
 ---
 
@@ -104,7 +119,7 @@ Then second notification IS created (outside 5-min window)
 - NotificationService
 
 ## Blocked By
-- None
+- None (can be implemented independently)
 
 ---
 
@@ -118,7 +133,7 @@ private String generateIdempotencyKey(
     UUID userId,
     Instant timestamp
 ) {
-    // Round timestamp to 5-minute window
+    // Round timestamp to 5-minute window (300000 ms)
     long windowStart = (timestamp.toEpochMilli() / 300000) * 300000;
     return String.format("%s:%s:%s:%d", type, entityId, userId, windowStart);
 }
@@ -141,23 +156,13 @@ private void createNotification(
         Instant.now()
     );
 
-    // Check for existing
+    // Check for existing (dedup)
     if (notificationRepository.existsByIdempotencyKey(idempotencyKey)) {
         log.debug("Duplicate notification suppressed: {}", idempotencyKey);
         return;
     }
 
-    // Rate limit check
-    long recentCount = notificationRepository.countByUserAndTypeAndCreatedAtAfter(
-        recipient.getId(),
-        type,
-        Instant.now().minusSeconds(60)
-    );
-    if (recentCount >= MAX_NOTIFICATIONS_PER_MINUTE) {
-        log.debug("Rate limit reached for user {} type {}", recipient.getId(), type);
-        return;
-    }
-
+    // Create notification with key
     String payloadJson = toJson(payload);
     Notification notification = new Notification(
         household, recipient, type, payloadJson, correlationId, idempotencyKey
@@ -169,33 +174,44 @@ private void createNotification(
 ### Repository Addition
 ```java
 boolean existsByIdempotencyKey(String idempotencyKey);
-
-long countByUser_IdAndTypeAndCreatedAtAfter(UUID userId, NotificationType type, Instant since);
 ```
 
 ### Entity Addition
 ```java
 @Column(name = "idempotency_key", unique = true)
 private String idempotencyKey;
+
+public Notification(..., String idempotencyKey) {
+    // ... existing fields ...
+    this.idempotencyKey = idempotencyKey;
+}
 ```
 
 ### Migration
 ```sql
+-- V{N}__add_notification_idempotency_key.sql
 ALTER TABLE notifications ADD COLUMN idempotency_key VARCHAR(255);
 CREATE UNIQUE INDEX idx_notifications_idempotency_key ON notifications(idempotency_key);
 ```
 
-### Configuration
+### Configuration (Optional)
 ```yaml
 hometusk:
   notifications:
-    dedup-window-minutes: 5
-    max-per-minute-per-type: 5
+    dedup-window-minutes: 5  # Time window for deduplication
 ```
 
 ---
 
-## Future Considerations (Out of Scope)
-- Batch notifications ("3 tasks assigned to you") - requires more complex logic
-- User-configurable notification preferences
-- Quiet hours / Do not disturb
+## Future Considerations (Explicitly Out of Scope)
+
+### Rate Limiting
+- Suppressing notifications after N per minute per type per user
+- Requires product decision: what happens to suppressed notifications?
+- Options: silent drop, batch into one, show count badge
+- Recommend: Separate story with explicit UX design
+
+### Batch Notifications
+- Grouping similar notifications ("3 tasks assigned to you")
+- Requires significant UI changes
+- Recommend: Future initiative after validating notification usage patterns

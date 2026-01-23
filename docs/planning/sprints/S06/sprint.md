@@ -25,6 +25,24 @@ This slice validates:
 
 ---
 
+## Key Technical Decisions
+
+### SSE Authentication: Cookie-based
+- EventSource connects with `withCredentials: true`
+- Server validates session cookie (Spring Security)
+- No token in URL (security: logs, history, referrer)
+
+### Mark All as Read: Sequential Calls
+- No new bulk endpoint
+- UI calls `POST /notifications/{id}/read` for each visible unread
+- Acceptable UX for typical notification counts (< 20)
+
+### AFTER_COMMIT Publishing
+- SSE events sent only after transaction commits
+- Prevents phantom notifications on rollback
+
+---
+
 ## Scope
 
 ### Committed (Must Deliver)
@@ -50,6 +68,7 @@ This slice validates:
 | ID | Story | Reason |
 |----|-------|--------|
 | ST-605 | Notification Deduplication | Defer to S07, not critical for thin slice |
+| — | Rate limiting | Risk of losing notifications; requires product decision |
 | — | Push notifications | Out of initiative scope |
 | — | Email/SMS | Out of initiative scope |
 | — | Notification preferences | Future initiative |
@@ -63,6 +82,7 @@ This slice validates:
 | Backend notification infrastructure | ✅ Done | None |
 | Web patterns (EP-006) | ✅ Done | None |
 | Household context (EP-005) | ✅ Done | None |
+| Session cookie auth (EP-004) | ✅ Done | None |
 
 ---
 
@@ -70,8 +90,15 @@ This slice validates:
 
 ```
 Day 1-2: ST-601 (Backend SSE)
+         - SseNotificationService
+         - SSE endpoint with cookie auth
+         - AFTER_COMMIT event publishing
          ↓
 Day 3-4: ST-602 + ST-603 (Web UI + Realtime)
+         - NotificationBell component
+         - useNotifications hook
+         - useNotificationStream hook
+         - EventSource with withCredentials
          ↓
 Day 5:   Integration testing + polish
          ↓
@@ -88,21 +115,24 @@ Day 5:   Integration testing + polish
 |------|--------|-------------|------------|
 | SSE complexity higher than expected | Delay | Medium | Start ST-601 first, have clear contract |
 | Safari EventSource issues | UX degradation | Low | Test early, use polyfill if needed |
-| Token expiry during SSE | Connection drops | Medium | Client auto-reconnect logic |
+| Session expiry during SSE | Connection drops | Medium | Client auto-reconnect, redirect on auth failure |
+| CORS with credentials | Connection fails | Low | Verify CORS config early |
 
 ---
 
 ## Acceptance Criteria (Sprint-level)
 
 ### Core Flow
-- [ ] User opens household page → SSE connection established
+- [ ] User opens household page → SSE connection established (cookie auth)
 - [ ] Another user assigns task → notification appears in < 2s
 - [ ] Bell icon shows unread count
 - [ ] Click notification → marked as read
-- [ ] "Mark all as read" works
+- [ ] "Mark all as read" works (sequential calls)
 
 ### Technical
 - [ ] SSE endpoint returns `text/event-stream`
+- [ ] SSE uses session cookie auth (no token in URL)
+- [ ] SSE events sent AFTER_COMMIT only
 - [ ] Heartbeat sent every 30s
 - [ ] Auto-reconnect on disconnect
 - [ ] No cross-household leaks (403 enforced)

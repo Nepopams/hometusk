@@ -31,8 +31,8 @@ As a household member, I want to see my notifications in a convenient location (
 - Unread count badge (red dot with number)
 - Dropdown panel with notification list
 - Individual notification items with type icons
-- Click to mark as read
-- "Mark all as read" button
+- Click to mark as read (single)
+- **"Mark all as read" — sequential calls to existing endpoint** (no new bulk endpoint)
 - Hook for fetching and managing notifications state
 
 ---
@@ -76,7 +76,7 @@ Then item shows:
   - Unread indicator (bold/dot)
 ```
 
-### AC-5: Mark as Read on Click
+### AC-5: Mark as Read on Click (Single)
 ```gherkin
 Given unread notification
 When user clicks on notification item
@@ -85,13 +85,17 @@ And item becomes read (no bold/dot)
 And unread count decreases
 ```
 
-### AC-6: Mark All as Read
+### AC-6: Mark All as Read (Sequential Calls)
 ```gherkin
-Given multiple unread notifications
+Given multiple unread notifications visible in dropdown
 When user clicks "Mark all as read"
-Then all visible notifications marked as read
+Then POST /notifications/{id}/read is called for each visible unread notification
+And all items become read
 And unread count becomes 0
+And button is disabled during operation
 ```
+
+**Note:** No bulk endpoint required. Implementation calls existing single-mark endpoint sequentially with `Promise.all()`. For typical notification counts (< 20 visible), this is acceptable UX.
 
 ### AC-7: Empty State
 ```gherkin
@@ -114,6 +118,7 @@ Then show skeleton/spinner in dropdown
 - Open dropdown, verify notification items
 - Click notification, verify mark as read
 - Verify badge count updates
+- Click "Mark all as read", verify all marked
 - Test empty state
 - Test loading state
 
@@ -124,9 +129,9 @@ Header
 │   ├── BellIcon
 │   ├── UnreadBadge
 │   └── NotificationDropdown (when open)
+│       ├── DropdownHeader ("Notifications" + "Mark all as read" button)
 │       ├── NotificationList
 │       │   └── NotificationItem (x N)
-│       ├── MarkAllReadButton
 │       └── EmptyState
 ```
 
@@ -136,7 +141,7 @@ Header
 
 | Flag | Value | Notes |
 |------|-------|-------|
-| contract_impact | no | Using existing API |
+| contract_impact | no | Using existing API, no new endpoints |
 | adr_needed | no | Standard UI patterns |
 | diagrams_needed | no | |
 | security_sensitive | no | |
@@ -145,11 +150,11 @@ Header
 ---
 
 ## Dependencies
-- Existing GET /notifications API
+- Existing GET /households/{householdId}/notifications API
 - Existing POST /notifications/{id}/read API
 
 ## Blocked By
-- None (can use polling initially)
+- None (can use polling initially, SSE in ST-603)
 
 ---
 
@@ -159,10 +164,11 @@ Header
 ```
 clients/web/src/components/notifications/
 ├── NotificationBell.tsx        # Bell icon + badge + dropdown trigger
-├── NotificationDropdown.tsx    # Dropdown container
+├── NotificationDropdown.tsx    # Dropdown container with header
 ├── NotificationList.tsx        # List of notifications
 ├── NotificationItem.tsx        # Single notification
 ├── UnreadBadge.tsx            # Count badge
+├── EmptyNotifications.tsx      # Empty state
 └── index.ts                    # Barrel exports
 ```
 
@@ -178,12 +184,31 @@ export function useNotifications(householdId: string) {
     [notifications]
   );
 
-  const markAsRead = async (id: string) => { ... };
-  const markAllAsRead = async () => { ... };
+  const markAsRead = async (id: string) => {
+    await api.markNotificationRead(id);
+    setNotifications(prev =>
+      prev.map(n => n.id === id ? { ...n, readAt: new Date().toISOString() } : n)
+    );
+  };
+
+  // Sequential calls, no bulk endpoint
+  const markAllAsRead = async () => {
+    const unread = notifications.filter(n => !n.readAt);
+    await Promise.all(unread.map(n => api.markNotificationRead(n.id)));
+    setNotifications(prev =>
+      prev.map(n => ({ ...n, readAt: n.readAt || new Date().toISOString() }))
+    );
+  };
+
   const refresh = async () => { ... };
 
   // Add notification from realtime (ST-603)
-  const addNotification = (notification: Notification) => { ... };
+  const addNotification = (notification: Notification) => {
+    setNotifications(prev => {
+      if (prev.some(n => n.id === notification.id)) return prev;
+      return [notification, ...prev];
+    });
+  };
 
   return { notifications, unreadCount, loading, error, markAsRead, markAllAsRead, refresh, addNotification };
 }
@@ -203,9 +228,12 @@ export function useNotifications(householdId: string) {
 .notification-bell { }
 .notification-badge { }
 .notification-dropdown { }
+.notification-dropdown-header { }
 .notification-item { }
 .notification-item--unread { }
 .notification-icon { }
 .notification-summary { }
 .notification-time { }
+.mark-all-read-btn { }
+.mark-all-read-btn:disabled { }
 ```

@@ -28,8 +28,9 @@ As a household member, I want to receive notifications instantly when something 
 
 ### Technical Approach
 - New controller method with `SseEmitter` return type
+- **Authentication via session cookie** (same-origin, Spring Security session)
 - Register emitter per user/household combination
-- Publish to emitters when `NotificationService.createNotification()` saves
+- **Publish AFTER_COMMIT only** — use `@TransactionalEventListener(phase = AFTER_COMMIT)` or equivalent to prevent phantom notifications
 - Heartbeat thread to keep connections alive
 - Cleanup on disconnect/timeout
 
@@ -39,20 +40,25 @@ As a household member, I want to receive notifications instantly when something 
 
 ### AC-1: SSE Connection Established
 ```gherkin
-Given user is authenticated with valid JWT
+Given user has valid session cookie (authenticated)
 And user is member of household H1
 When client connects to GET /api/v1/households/{H1}/notifications/stream
+  with credentials: 'include' (or withCredentials: true)
 Then HTTP 200 with Content-Type: text/event-stream
 And connection stays open
 ```
 
-### AC-2: Notification Delivered via SSE
+### AC-2: Notification Delivered via SSE (AFTER_COMMIT)
 ```gherkin
 Given user U1 has active SSE connection for household H1
 When another user creates task assigned to U1
+And the transaction commits successfully
 Then U1 receives SSE event within 2 seconds:
   event: notification
   data: {"id":"...", "type":"task_assigned", ...}
+
+Given the transaction rolls back
+Then NO SSE event is sent (no phantom notifications)
 ```
 
 ### AC-3: Heartbeat Sent
@@ -64,9 +70,9 @@ Then server sends:
   data: {"timestamp":"2026-01-23T12:00:00Z"}
 ```
 
-### AC-4: Auth Required
+### AC-4: Auth Required (Session Cookie)
 ```gherkin
-Given no JWT provided
+Given no valid session cookie
 When client connects to SSE endpoint
 Then HTTP 401 Unauthorized
 ```
@@ -96,10 +102,11 @@ And no resource leak
 
 ### Integration Tests
 - `NotificationSseIntegrationTest`:
-  - Connect → receive notification → verify event format
-  - Connect without auth → 401
+  - Connect with session → receive notification → verify event format
+  - Connect without session → 401
   - Connect to wrong household → 403
   - Disconnect → cleanup verified
+  - Verify AFTER_COMMIT: rollback → no event sent
 
 ### Test Data
 - Household H1 with members U1, U2
@@ -114,7 +121,7 @@ And no resource leak
 | Flag | Value | Notes |
 |------|-------|-------|
 | contract_impact | yes | New SSE endpoint |
-| adr_needed | no | SSE is standard |
+| adr_needed | no | SSE + cookie auth is standard |
 | diagrams_needed | no | |
 | security_sensitive | yes | Auth + boundary |
 | traceability_critical | no | |
@@ -123,7 +130,8 @@ And no resource leak
 
 ## Dependencies
 - NotificationService.createNotification() hook point
-- JWT validation infrastructure
+- Spring Security session management
+- `@TransactionalEventListener` support
 
 ## Blocks
 - ST-603 (Web Realtime Subscribe) depends on this
@@ -132,11 +140,17 @@ And no resource leak
 
 ## Implementation Notes
 
-### Recommended Approach
+### Cookie-based Authentication
+SSE endpoint uses standard Spring Security session authentication:
+- Client connects with `withCredentials: true` (EventSource limitation: no custom headers)
+- Server validates session cookie via SecurityContext
+- No token in URL (security: logs, history, referrer)
+
 ```java
 @GetMapping(value = "/households/{householdId}/notifications/stream",
             produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 public SseEmitter streamNotifications(@PathVariable UUID householdId) {
+    // Spring Security already validated session via filter chain
     CurrentUser user = userResolver.resolveCurrentUser();
     membershipService.requireMembership(user.id(), householdId);
 
@@ -145,16 +159,45 @@ public SseEmitter streamNotifications(@PathVariable UUID householdId) {
 
     emitter.onCompletion(() -> sseNotificationService.remove(user.id(), householdId));
     emitter.onTimeout(() -> sseNotificationService.remove(user.id(), householdId));
+    emitter.onError(e -> sseNotificationService.remove(user.id(), householdId));
 
     return emitter;
 }
 ```
 
+### AFTER_COMMIT Publishing (Critical)
+Notifications must be published to SSE **only after the transaction commits** to avoid phantom notifications on rollback.
+
+**Option A: TransactionalEventListener**
+```java
+// In NotificationService.createNotification()
+Notification notification = notificationRepository.save(...);
+applicationEventPublisher.publishEvent(new NotificationCreatedEvent(notification));
+
+// In SseNotificationService
+@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+public void handleNotificationCreated(NotificationCreatedEvent event) {
+    publish(event.getNotification());
+}
+```
+
+**Option B: TransactionSynchronization**
+```java
+TransactionSynchronizationManager.registerSynchronization(
+    new TransactionSynchronization() {
+        @Override
+        public void afterCommit() {
+            sseNotificationService.publish(notification);
+        }
+    }
+);
+```
+
 ### New Service: SseNotificationService
 - `register(userId, householdId, emitter)`
 - `remove(userId, householdId)`
-- `publish(notification)` — called from NotificationService after save
-- `startHeartbeatScheduler()` — every 30s
+- `publish(notification)` — called AFTER_COMMIT
+- `@Scheduled` heartbeat method (every 30s)
 
 ### Event Format
 ```
@@ -163,4 +206,10 @@ data: {"id":"abc-123","type":"task_assigned","payload":{"actorId":"...","entityI
 
 event: heartbeat
 data: {"timestamp":"2026-01-23T10:30:30Z"}
+```
+
+### CORS Configuration
+Ensure SSE endpoint allows credentials:
+```java
+@CrossOrigin(origins = "${hometusk.web.origin}", allowCredentials = "true")
 ```
