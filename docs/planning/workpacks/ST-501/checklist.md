@@ -15,7 +15,7 @@
 - [x] In scope / out of scope explicit
 - [x] Files to change listed
 - [x] API dependencies documented (OpenAPI)
-- [x] EP-005 complete (HouseholdContext available)
+- [x] EP-005 complete (householdId available via useAuth())
 - [x] EP-004 complete (Auth token provider available)
 - [x] OpenAPI contract finalized for `POST /api/v1/commands`
 
@@ -60,7 +60,7 @@
 - [ ] `Content-Type: application/json` header set
 
 ### Request Body (per OpenAPI)
-- [ ] `householdId` from HouseholdContext
+- [ ] `householdId` from `useAuth()` (AuthContext)
 - [ ] `type` is enum: `create_task` | `complete_task`
 - [ ] `payload` matches type-specific schema
 - [ ] `source` is `'web'`

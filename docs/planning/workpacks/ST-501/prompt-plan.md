@@ -115,9 +115,9 @@ ls clients/web/src/components/
 # Check HouseholdLayout for integration point
 cat clients/web/src/routes/HouseholdLayout.tsx
 
-# Check HouseholdContext for householdId access
-rg -l "HouseholdContext" clients/web/src/
-cat clients/web/src/contexts/HouseholdContext.tsx 2>/dev/null || rg "householdId" clients/web/src/contexts/
+# Check AuthContext for householdId access
+cat clients/web/src/context/AuthContext.tsx
+rg "householdId" clients/web/src/context/AuthContext.tsx
 ```
 
 ### 2. Identify patterns to follow
@@ -206,7 +206,7 @@ Based on codebase exploration:
 STOP and request input if:
 - Required source file doesn't exist
 - OpenAPI contract differs from workpack assumptions
-- HouseholdContext doesn't provide householdId as expected
+- useAuth() doesn't provide householdId as expected
 - Auth token access pattern unclear
 - Any ambiguity in acceptance criteria
 

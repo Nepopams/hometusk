@@ -28,7 +28,7 @@ As a household member, I want to quickly create tasks or mark them complete thro
 - Generate `Idempotency-Key` header (UUID, unique per user for 24h)
 - Generate/pass `X-Correlation-ID` header (UUID v4)
 - Loading state during API call
-- Pass `householdId` from current HouseholdContext
+- Pass `householdId` from `useAuth()` (AuthContext)
 - Pass `type`, `payload`, `source: 'web'` in request body
 - Basic feedback on submission (success toast or inline)
 - Error handling for 400/401/403/409 responses
@@ -232,7 +232,7 @@ Hook responsibilities:
 Component responsibilities:
 - Mode toggle (create_task / complete_task)
 - Render appropriate form based on mode
-- Pass householdId from context
+- Pass householdId from `useAuth()` (AuthContext)
 - Handle form submission via useCommand
 - Display loading/error/success states
 
