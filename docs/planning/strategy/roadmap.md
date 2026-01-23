@@ -3,11 +3,15 @@
 > Формат Now/Next/Later фиксирует направление и приоритеты без преждевременных дат.
 > У каждого пункта должен быть “якорь” — initiative/release документ.
 
-## NOW (текущий фокус: Command UX для валидации NL-first)
+## NOW (текущий фокус: Notifications + realtime как “командный нерв” продукта)
 
-- Initiative (current): **INIT-2026Q2-command-ux** — Command UX v1 (web-first)
+- Initiative (current): **INIT-2026Q2-notifications-realtime** — Notifications & Realtime v0 (web-first)
+  - Anchor: docs/planning/initiatives/INIT-2026Q2-notifications-realtime.md
+  - Outcome: in-app уведомления по ключевым событиям (tasks + shopping) + realtime доставka в UI; degraded fallback без realtime; boundary-checks без утечек между household
+
+- Initiative (done): **INIT-2026Q2-command-ux** — Command UX v1 (web-first)
   - Anchor: docs/planning/initiatives/INIT-2026Q2-command-ux.md
-  - Outcome: text-команда в UI + правильная обработка NEEDS_INPUT (clarify-loop) и DEGRADED, traceability через DecisionLog
+  - Outcome: text-команда в UI + корректная обработка NEEDS_INPUT (clarify-loop) и DEGRADED, traceability через DecisionLog
 
 - Initiative (done): **INIT-2026Q1-household-lifecycle** — Household Create/Join/Invites
   - Anchor: docs/planning/initiatives/INIT-2026Q1-household-lifecycle.md
@@ -30,10 +34,19 @@
   - Purge/TTL housekeeping для idempotency/decision logs (если нужно) + минимальные метрики/алерты
   - Цель: не расширять домен, а снизить риск "всё работает только на демо"
 
-## NEXT (следующие инициативы после command-ux)
+## NEXT (следующие инициативы после стабилизации notifications/realtime + command-ux)
 
-- Initiative (candidate): **Analytics v0** (trend-lite, без "ML-побед")
-  - Outcome: базовый dashboard "нагрузка/вклад/узкие места" для домашнего менеджера
+- Initiative (candidate): **INIT-2026Q2-analytics-fairness-dashboard** — Analytics & Fairness Dashboard v0
+  - Anchor: docs/planning/initiatives/INIT-2026Q2-analytics-fairness-dashboard.md
+  - Outcome: базовый dashboard "нагрузка/вклад/узкие места" + прозрачный fairness index (простая формула, без ML)
+
+- Initiative (candidate): **INIT-2026Q2-gamification-motivation** — Gamification & Motivation v0
+  - Anchor: docs/planning/initiatives/INIT-2026Q2-gamification-motivation.md
+  - Outcome: очки/серии/бейджи и мягкая мотивация без токсичных лидербордов; всё опционально и предсказуемо по правилам
+
+- Initiative (candidate): **INIT-2026Q2-shopping-marketplaces** — Shopping List → Marketplace Link-outs / Runs v0
+  - Anchor: docs/planning/initiatives/INIT-2026Q2-shopping-marketplaces.md
+  - Outcome: исполняемый список покупок: export/share + link-outs в маркетплейсы + “shopping run” (снимок списка) + сохранение связки “задача ↔ покупки”
 
 - Initiative (candidate): **Agreements v0 (read-only)** (consent-first)
   - Outcome: отображение договорённостей/правил без конструктора и без токсичных лидербордов
