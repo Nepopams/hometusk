@@ -20,7 +20,7 @@ As a household member, I want to see my recent commands, so that I can understan
 ## In Scope
 - Store last N commands (e.g., 50) per household in localStorage
 - Display command history list
-- Show: input text, status badge, timestamp, correlationId
+- Show: command summary, status badge, timestamp, correlationId
 - Click to expand/view details
 - Clear history option
 - Prune old entries when limit exceeded
@@ -38,15 +38,18 @@ As a household member, I want to see my recent commands, so that I can understan
 ### AC1: Command saved to history
 ```gherkin
 Given I submit a command
-When API returns any response (executed/needs_input/rejected/degraded)
+When API returns any response (executed/needs_input/rejected/executed_degraded)
 Then command is saved to localStorage
 And entry contains:
-  - inputText: original command text
+  - displayText: human-friendly command summary
+  - commandType: from request (create_task/complete_task)
   - status: response status
   - timestamp: submission time
   - correlationId: from response
   - commandId: from response
   - householdId: current household
+  - request: original CommandRequest
+  - response: full CommandResponse
 ```
 
 ### AC2: History displayed
@@ -55,8 +58,8 @@ Given I have submitted commands previously
 When I view the command history section
 Then I see a list of recent commands
 And each entry shows:
-  - Input text (truncated if long)
-  - Status badge (executed/needs_input/rejected/degraded)
+  - Command summary (truncated if long)
+  - Status badge (executed/needs_input/rejected/executed_degraded)
   - Relative timestamp (e.g., "2 minutes ago")
 And list is ordered by timestamp (newest first)
 ```
@@ -75,7 +78,7 @@ And household A commands are not visible
 Given command history is displayed
 When I click on a history entry
 Then details expand or modal shows:
-  - Full input text
+  - Full command details (type + payload)
   - Full response data
   - correlationId (copyable)
   - Timestamp (full date/time)
@@ -152,12 +155,14 @@ And suggestion "Type a command above to get started"
 ```typescript
 interface CommandHistoryEntry {
   id: string; // unique entry ID
-  inputText: string;
+  displayText: string; // human-friendly summary, e.g. "Create task: Clean the kitchen"
+  commandType: 'create_task' | 'complete_task'; // from CommandRequest.type
   status: 'executed' | 'needs_input' | 'rejected' | 'executed_degraded';
   timestamp: string; // ISO 8601
   correlationId: string;
   commandId: string;
   householdId: string;
+  request: CommandRequest; // original request for retry/reference
   response: CommandResponse; // full response for details view
 }
 

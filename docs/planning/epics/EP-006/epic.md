@@ -26,24 +26,25 @@ This epic implements the **NOW** increment of INIT-2026Q2-command-ux:
 
 ## Epic Goal
 Enable a user to:
-1. Enter a natural language command in a text input
+1. Submit structured commands (create_task, complete_task) via quick form UI
 2. Submit it to the backend via `POST /api/v1/commands`
 3. See the result status (executed, needs_input, rejected, executed_degraded)
 4. Understand why (reason/errorCode) and what to do next
 5. View recent command history per household
 6. Access trace info (correlationId + decision summary)
 
-This validates the core NL-first product hypothesis end-to-end in web.
+**Contract note:** Backend is Stage 1 (structured commands). NL-parsing is Stage 2+.
+This validates the command-driven UX flow end-to-end in web.
 
 ---
 
 ## In Scope
 
 ### Command Input Box (ST-501)
-- Text input component for command entry
+- Quick command form (Stage 1: structured `type` + `payload`)
 - Submit button + keyboard shortcut (Enter)
-- `POST /api/v1/commands` integration
-- Generate `Idempotency-Key` (client-side UUID)
+- `POST /api/v1/commands` integration (per OpenAPI contract)
+- Generate `Idempotency-Key` (client-side UUID, unique per user for 24h)
 - Generate/propagate `X-Correlation-ID`
 - Loading state during submission
 - Basic success/error feedback

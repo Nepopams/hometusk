@@ -18,16 +18,18 @@ As a household member, when my command is ambiguous or incomplete, I want clear 
 ---
 
 ## In Scope
-- Display `question` field prominently
-- List `requiredFields` with labels
-- Display `suggestions` for each field (if provided)
-- Display `policyName` (which guardrail triggered the request)
-- Clear instruction: "Please retype your command with more details"
-- Retain original input for reference/editing
+Per OpenAPI `CommandNeedsInputResponse`:
+- Display `question` field prominently (REQUIRED)
+- List `requiredFields` with labels (REQUIRED, array of strings)
+- Display `suggestions` for each field (OPTIONAL, object)
+- Display `policyName` (OPTIONAL, string — which guardrail triggered)
+- Clear instruction: "Please provide the missing information"
+- Retain original command payload for reference
 - Copy correlationId for support
 
 ## Out of Scope
-- Form-based input continuation (`POST /commands/{id}/continue`)
+- Form-based input continuation via `POST /commands/{commandId}/continue`
+  (endpoint exists in OpenAPI with `ContinueCommandRequest`, deferred to NEXT)
 - Auto-population of suggested values
 - Inline field editing
 - Command continuation flow (NEXT scope)

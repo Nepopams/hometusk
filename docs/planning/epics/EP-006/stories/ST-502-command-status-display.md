@@ -200,13 +200,17 @@ function CommandResult({ response }: { response: CommandResponse }) {
 }
 ```
 
-**Degraded reason mapping:**
+**Degraded reason mapping (per OpenAPI CommandDegradedResponse):**
 ```typescript
+// degradedReason is REQUIRED (enum)
 const DEGRADED_REASON_LABELS: Record<string, string> = {
   ai_unavailable: 'AI service temporarily unavailable',
   ai_timeout: 'AI service timed out',
   ai_low_confidence: 'Low confidence result',
 };
+
+// fallbackStrategy is OPTIONAL (string)
+// Only display if present in response
 ```
 
 ---

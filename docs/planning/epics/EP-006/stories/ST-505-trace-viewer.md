@@ -12,6 +12,9 @@
 ## Summary
 Display command trace information including correlationId, execution time, and decision details.
 
+**Note:** This is a client-side viewer showing data from `CommandResponse`.
+No server-side DecisionLog API is exposed to web clients.
+
 ## User Value
 As a household member (or support person), I want to see trace information for a command, so that I can debug issues or reference the exact execution details.
 

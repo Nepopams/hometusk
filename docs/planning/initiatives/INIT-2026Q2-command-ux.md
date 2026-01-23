@@ -66,10 +66,14 @@
 - Risk: needs_input превращается в UX-ад  
   Mitigation: NOW ограничить — показать “что уточнить” и руками повторить команду; continuation в NEXT
 
-## 10. Epic candidates
-- EP-401 Command Box UI
-- EP-402 Command History + Trace Viewer
-- EP-403 needs_input UX (NEXT)
+## 10. Epics
+
+| ID | Title | Scope | Status |
+|----|-------|-------|--------|
+| EP-006 | Command Box UI + Status Display | NOW | Ready |
+
+**Note:** Original candidates EP-401/402/403 were consolidated into EP-006 during decomposition.
+Stories: ST-501 through ST-505 (see `docs/planning/epics/EP-006/`).
 
 ## 11. Exit Criteria (NOW delivered)
 - Команда из web создаёт/меняет задачи end-to-end
