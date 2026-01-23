@@ -31,8 +31,7 @@ function getOriginalInputSummary(request: CommandRequest | null | undefined): st
 }
 
 export function NeedsInputResult({ data, request, onRetry }: NeedsInputResultProps) {
-  const { question, requiredFields, suggestions, policyName, commandId, correlationId, executionMs } =
-    data;
+  const { question, requiredFields, suggestions, policyName } = data;
   const originalInput = getOriginalInputSummary(request);
 
   return (
@@ -77,7 +76,7 @@ export function NeedsInputResult({ data, request, onRetry }: NeedsInputResultPro
         </button>
       </div>
 
-      <TraceInfo commandId={commandId} correlationId={correlationId} executionMs={executionMs} />
+      <TraceInfo response={data} />
     </div>
   );
 }

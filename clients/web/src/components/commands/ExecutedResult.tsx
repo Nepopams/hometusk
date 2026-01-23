@@ -8,7 +8,7 @@ interface ExecutedResultProps {
 }
 
 export function ExecutedResult({ data, onNewCommand }: ExecutedResultProps) {
-  const { result, commandId, correlationId, executionMs } = data;
+  const { result } = data;
 
   const formatConfidence = (confidence?: number) => {
     if (confidence === undefined) return 'N/A';
@@ -56,7 +56,7 @@ export function ExecutedResult({ data, onNewCommand }: ExecutedResultProps) {
         </button>
       </div>
 
-      <TraceInfo commandId={commandId} correlationId={correlationId} executionMs={executionMs} />
+      <TraceInfo response={data} />
     </div>
   );
 }

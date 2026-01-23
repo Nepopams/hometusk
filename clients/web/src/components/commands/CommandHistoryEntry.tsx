@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { CommandStatus } from '../../types/api';
 import type { CommandHistoryEntry as HistoryEntry } from '../../lib/commandHistory';
 import { StatusBadge } from './StatusBadge';
+import { TraceInfo } from './TraceInfo';
 
 interface CommandHistoryEntryProps {
   entry: HistoryEntry;
@@ -32,6 +33,7 @@ function formatRelativeTime(timestamp: string): string {
 
 export function CommandHistoryEntry({ entry, expanded, onToggle }: CommandHistoryEntryProps) {
   const [copied, setCopied] = useState(false);
+  const [showTrace, setShowTrace] = useState(false);
 
   const handleCopy = async () => {
     try {
@@ -93,6 +95,17 @@ export function CommandHistoryEntry({ entry, expanded, onToggle }: CommandHistor
             <pre className="command-history-entry__json">
               {JSON.stringify(entry.response, null, 2)}
             </pre>
+          </div>
+
+          <div className="command-history-entry__trace-section">
+            <button
+              type="button"
+              className="ghost-button"
+              onClick={() => setShowTrace((current) => !current)}
+            >
+              {showTrace ? 'Hide Trace' : 'View Trace'}
+            </button>
+            {showTrace && <TraceInfo response={entry.response} />}
           </div>
         </div>
       )}

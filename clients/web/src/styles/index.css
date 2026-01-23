@@ -1011,3 +1011,151 @@ a {
   border-radius: 6px;
   background: #f7f4ee;
 }
+
+/* Trace Viewer & Copy Button */
+.copy-button {
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  background: #ffffff;
+  border: 1px solid #e2ddd3;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.copy-button:hover {
+  background: #f7f4ee;
+}
+
+.trace-info {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e7e1d7;
+  font-size: 0.85rem;
+}
+
+.trace-info__summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.trace-info__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trace-info__label {
+  color: #6a6257;
+  font-size: 0.75rem;
+}
+
+.trace-info__value {
+  font-family: "IBM Plex Mono", "Source Code Pro", monospace;
+  font-size: 0.75rem;
+}
+
+.trace-info__value--truncate {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trace-info__copy {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+}
+
+.trace-info__toggle {
+  margin-left: auto;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  background: transparent;
+  border: 1px solid #e2ddd3;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #6a6257;
+}
+
+.trace-info__toggle:hover {
+  background: #f7f4ee;
+}
+
+.trace-info--expanded {
+  background: #f7f4ee;
+  padding: 16px;
+  border-radius: 12px;
+  margin-top: 16px;
+  border-top: none;
+}
+
+.trace-info__details {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e2ddd3;
+}
+
+.trace-info__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.trace-info__section {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed #e2ddd3;
+}
+
+.trace-info__section-title {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #6a6257;
+}
+
+.raw-json-viewer {
+  margin-top: 12px;
+}
+
+.raw-json-viewer__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.raw-json-viewer__toggle {
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  background: transparent;
+  border: 1px solid #e2ddd3;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #6a6257;
+}
+
+.raw-json-viewer__toggle:hover {
+  background: #ffffff;
+}
+
+.raw-json-viewer__code {
+  margin-top: 8px;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #e2ddd3;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  overflow-x: auto;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.command-history-entry__trace-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #e2ddd3;
+}

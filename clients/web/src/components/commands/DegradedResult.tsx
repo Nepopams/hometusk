@@ -14,7 +14,7 @@ const DEGRADED_REASON_LABELS: Record<DegradedReason, string> = {
 };
 
 export function DegradedResult({ data, onNewCommand }: DegradedResultProps) {
-  const { result, degradedReason, fallbackStrategy, commandId, correlationId, executionMs } = data;
+  const { result, degradedReason, fallbackStrategy } = data;
 
   const formatConfidence = (confidence?: number) => {
     if (confidence === undefined) return 'N/A';
@@ -67,7 +67,7 @@ export function DegradedResult({ data, onNewCommand }: DegradedResultProps) {
         </button>
       </div>
 
-      <TraceInfo commandId={commandId} correlationId={correlationId} executionMs={executionMs} />
+      <TraceInfo response={data} />
     </div>
   );
 }

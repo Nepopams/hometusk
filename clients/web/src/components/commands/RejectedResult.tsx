@@ -9,7 +9,7 @@ interface RejectedResultProps {
 }
 
 export function RejectedResult({ data, onRetry, onNewCommand }: RejectedResultProps) {
-  const { errorCode, reason, commandId, correlationId, executionMs } = data;
+  const { errorCode, reason } = data;
 
   return (
     <div className="command-result command-result--error">
@@ -32,7 +32,7 @@ export function RejectedResult({ data, onRetry, onNewCommand }: RejectedResultPr
         </button>
       </div>
 
-      <TraceInfo commandId={commandId} correlationId={correlationId} executionMs={executionMs} />
+      <TraceInfo response={data} />
     </div>
   );
 }
