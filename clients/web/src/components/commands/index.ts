@@ -1,3 +1,10 @@
 export { CommandInput } from './CommandInput';
 export { CreateTaskForm } from './CreateTaskForm';
 export { CompleteTaskForm } from './CompleteTaskForm';
+export { CommandResult } from './CommandResult';
+export { StatusBadge } from './StatusBadge';
+export { TraceInfo } from './TraceInfo';
+export { ExecutedResult } from './ExecutedResult';
+export { NeedsInputResult } from './NeedsInputResult';
+export { RejectedResult } from './RejectedResult';
+export { DegradedResult } from './DegradedResult';

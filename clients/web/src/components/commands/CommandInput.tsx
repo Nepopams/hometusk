@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useCommand } from '../../hooks/useCommand';
+import { CommandResult } from './CommandResult';
 import { CreateTaskForm } from './CreateTaskForm';
 import { CompleteTaskForm } from './CompleteTaskForm';
 import type { CommandType, CreateTaskPayload, CompleteTaskPayload } from '../../types/api';
@@ -40,6 +41,16 @@ export function CommandInput() {
     setFormKey((prev) => prev + 1);
   };
 
+  const handleNewCommand = () => {
+    reset();
+    setMode('create_task');
+    setFormKey((prev) => prev + 1);
+  };
+
+  const handleRetry = () => {
+    reset();
+  };
+
   const handleCreateTask = async (payload: CreateTaskPayload) => {
     await execute({
       householdId,
@@ -57,26 +68,6 @@ export function CommandInput() {
       source: 'web',
     });
   };
-
-  const renderResponseMessage = () => {
-    if (!response) return null;
-
-    if (response.status === 'executed') {
-      return 'Command executed successfully.';
-    }
-    if (response.status === 'executed_degraded') {
-      return 'Command completed with limitations.';
-    }
-    if (response.status === 'needs_input') {
-      return `More info needed: ${response.question}`;
-    }
-    if (response.status === 'rejected') {
-      return `Rejected: ${response.reason}`;
-    }
-    return null;
-  };
-
-  const responseMessage = renderResponseMessage();
 
   return (
     <div className="card">
@@ -105,7 +96,13 @@ export function CommandInput() {
         </div>
       )}
 
-      {responseMessage && <p>{responseMessage}</p>}
+      {response && (
+        <CommandResult
+          response={response}
+          onNewCommand={handleNewCommand}
+          onRetry={handleRetry}
+        />
+      )}
 
       {mode === 'create_task' ? (
         <CreateTaskForm
