@@ -14,7 +14,7 @@
 ---
 
 ## Status
-**In Progress** — ST-601 done, starting UI implementation
+**Done** — Implementation complete (commit 2bf57a1)
 
 ---
 
