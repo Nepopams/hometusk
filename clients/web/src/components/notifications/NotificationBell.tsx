@@ -28,7 +28,11 @@ export default function NotificationBell() {
     navigate('/login?error=session_expired', { replace: true });
   }, [logout, navigate]);
 
-  useNotificationStream(householdId ?? undefined, addNotification, handleAuthError);
+  const { mode } = useNotificationStream(
+    householdId ?? undefined,
+    addNotification,
+    handleAuthError
+  );
 
   useEffect(() => {
     if (!isOpen) return;
@@ -77,6 +81,14 @@ export default function NotificationBell() {
         </svg>
         <UnreadBadge count={unreadCount} />
       </button>
+      {mode === 'polling' && (
+        <span
+          className="notification-bell__degraded"
+          title="Real-time updates unavailable. Checking every 30 seconds."
+        >
+          !
+        </span>
+      )}
 
       {isOpen && (
         <NotificationDropdown

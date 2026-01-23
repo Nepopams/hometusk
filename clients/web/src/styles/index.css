@@ -1332,3 +1332,18 @@ a {
     width: 280px;
   }
 }
+
+/* Degraded mode indicator */
+.notification-bell__degraded {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  font-size: 10px;
+  color: #f59e0b;
+  cursor: help;
+  opacity: 0.8;
+}
+
+.notification-bell__degraded:hover {
+  opacity: 1;
+}
