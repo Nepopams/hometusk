@@ -10,7 +10,7 @@
 ---
 
 ## Status
-**Ready** — DoR complete, pending sprint commitment
+**Done** — Implementation complete (commit e3251dc)
 
 ## Priority
 P2 (Enhancement)
