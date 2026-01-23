@@ -11,7 +11,7 @@
 ---
 
 ## Status
-**Ready** — All stories pass DoR, no blockers (2026-01-23)
+**Done** — All stories implemented and reviewed (2026-01-23)
 
 ## Initiative Alignment
 This epic implements the **NOW** increment of INIT-2026Q2-command-ux:
@@ -132,11 +132,11 @@ This validates the command-driven UX flow end-to-end in web.
 
 | ID | Title | Status | Priority | Points |
 |----|-------|--------|----------|--------|
-| ST-501 | Command Input Box | Ready | P1 | 3 |
-| ST-502 | Command Status Display | Ready | P1 | 3 |
-| ST-503 | Command History | Ready | P2 | 2 |
-| ST-504 | needs_input Basic Display | Ready | P1 | 2 |
-| ST-505 | Minimal Trace Viewer | Ready | P2 | 2 |
+| ST-501 | Command Input Box | Done | P1 | 3 |
+| ST-502 | Command Status Display | Done | P1 | 3 |
+| ST-503 | Command History | Done | P2 | 2 |
+| ST-504 | needs_input Basic Display | Done | P1 | 2 |
+| ST-505 | Minimal Trace Viewer | Done | P2 | 2 |
 
 **Total:** 12 points
 
@@ -199,3 +199,19 @@ From initiative INIT-2026Q2-command-ux:
 |----------|------|
 | Initiative | `docs/planning/initiatives/INIT-2026Q2-command-ux.md` |
 | OpenAPI | `docs/contracts/http/commands.openapi.yaml` |
+| Code Review | `docs/planning/epics/EP-006/code-review.md` |
+| Test Playbook | `docs/planning/epics/EP-006/test-playbook.md` |
+
+---
+
+## Implementation Summary
+
+| Commit | Story | Description |
+|--------|-------|-------------|
+| `614c61f` | ST-501 | Command Input Box |
+| `0252ce5` | ST-502 | Command Status Display |
+| `293459f` | ST-503 | Command History |
+| `2741545` | ST-504 | needs_input Basic Display |
+| `988b75a` | ST-505 | Minimal Trace Viewer |
+
+**Total:** ~1500 LOC, 22 new files, 95 modules in bundle
