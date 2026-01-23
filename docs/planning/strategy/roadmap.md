@@ -3,11 +3,16 @@
 > Формат Now/Next/Later фиксирует направление и приоритеты без преждевременных дат.
 > У каждого пункта должен быть “якорь” — initiative/release документ.
 
-## NOW (текущий фокус: Notifications + realtime как “командный нерв” продукта)
+## NOW (текущий фокус: Analytics & Fairness — прозрачность нагрузки и вклада)
 
-- Initiative (current): **INIT-2026Q2-notifications-realtime** — Notifications & Realtime v0 (web-first)
+- Initiative (current): **INIT-2026Q2-analytics-fairness-dashboard** — Analytics & Fairness Dashboard v0
+  - Anchor: docs/planning/initiatives/INIT-2026Q2-analytics-fairness-dashboard.md
+  - Outcome: базовый dashboard "нагрузка/вклад/узкие места" + прозрачный fairness index (простая формула, без ML)
+
+- Initiative (done): **INIT-2026Q2-notifications-realtime** — Notifications & Realtime v0 (web-first)
   - Anchor: docs/planning/initiatives/INIT-2026Q2-notifications-realtime.md
-  - Outcome: in-app уведомления по ключевым событиям (tasks + shopping) + realtime доставka в UI; degraded fallback без realtime; boundary-checks без утечек между household
+  - Outcome: in-app уведомления по ключевым событиям (tasks + shopping) + realtime доставка в UI; degraded fallback без realtime; boundary-checks без утечек между household
+  - Closed: 2026-01-23 (EP-007)
 
 - Initiative (done): **INIT-2026Q2-command-ux** — Command UX v1 (web-first)
   - Anchor: docs/planning/initiatives/INIT-2026Q2-command-ux.md
@@ -34,11 +39,7 @@
   - Purge/TTL housekeeping для idempotency/decision logs (если нужно) + минимальные метрики/алерты
   - Цель: не расширять домен, а снизить риск "всё работает только на демо"
 
-## NEXT (следующие инициативы после стабилизации notifications/realtime + command-ux)
-
-- Initiative (candidate): **INIT-2026Q2-analytics-fairness-dashboard** — Analytics & Fairness Dashboard v0
-  - Anchor: docs/planning/initiatives/INIT-2026Q2-analytics-fairness-dashboard.md
-  - Outcome: базовый dashboard "нагрузка/вклад/узкие места" + прозрачный fairness index (простая формула, без ML)
+## NEXT (следующие инициативы после analytics/fairness dashboard)
 
 - Initiative (candidate): **INIT-2026Q2-gamification-motivation** — Gamification & Motivation v0
   - Anchor: docs/planning/initiatives/INIT-2026Q2-gamification-motivation.md

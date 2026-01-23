@@ -12,7 +12,7 @@
 ---
 
 ## Status
-**Planning** — Stories defined, pending human gate approval (v2 after feedback)
+**Done** — All stories implemented and tested
 
 ## Initiative Alignment
 This epic implements the **NOW** increment of INIT-2026Q2-notifications-realtime:
@@ -197,18 +197,17 @@ data: {"timestamp":"..."}
 
 | ID | Title | Status | Priority | Points |
 |----|-------|--------|----------|--------|
-| ST-601 | SSE Realtime Endpoint | Ready | P1 | 3 |
-| ST-602 | Web Notifications UI | Ready | P1 | 5 |
-| ST-603 | Web Realtime Subscribe | Ready | P1 | 3 |
-| ST-604 | Degraded Fallback | Ready | P2 | 2 |
-| ST-605 | Notification Deduplication | Ready | P3 | 2 |
+| ST-601 | SSE Realtime Endpoint | Done | P1 | 3 |
+| ST-602 | Web Notifications UI | Done | P1 | 5 |
+| ST-603 | Web Realtime Subscribe | Done | P1 | 3 |
+| ST-604 | Degraded Fallback | Done | P2 | 2 |
+| ST-605 | Notification Deduplication | Done | P3 | 2 |
 
-**Total:** 15 points
+**Total:** 15 points (all delivered)
 
-### Sprint Mapping (Proposed)
-- **Sprint S06 (committed):** ST-601, ST-602, ST-603 (core flow, 11 points)
-- **Sprint S06 (stretch):** ST-604 (degraded, 2 points)
-- **Sprint S07 (candidate):** ST-605 (dedup, 2 points)
+### Sprint Delivery
+- **Sprint S06:** ST-601, ST-602, ST-603, ST-604 (13 points)
+- **Sprint S07:** ST-605 (2 points)
 
 ---
 
@@ -237,17 +236,17 @@ data: {"timestamp":"..."}
 
 ---
 
-## Exit Criteria (NOW Delivered)
+## Exit Criteria (Delivered)
 
 From initiative INIT-2026Q2-notifications-realtime:
 
 1. ✅ In-app notifications appear for task/shopping/invite events (backend done)
-2. [ ] Notifications delivered in real-time via SSE (ST-601, ST-603)
-3. [ ] Web UI shows notifications with bell icon (ST-602)
-4. [ ] Mark as read works (ST-602, backend done)
-5. [ ] Degraded mode works when SSE unavailable (ST-604)
-6. [ ] 95% notifications visible ≤ 2s after event (ST-603)
-7. [ ] 0 cross-household leaks (ST-601 boundary checks)
+2. ✅ Notifications delivered in real-time via SSE (ST-601, ST-603)
+3. ✅ Web UI shows notifications with bell icon (ST-602)
+4. ✅ Mark as read works (ST-602, backend done)
+5. ✅ Degraded mode works when SSE unavailable (ST-604)
+6. ✅ 95% notifications visible ≤ 2s after event (ST-603)
+7. ✅ 0 cross-household leaks (ST-601 boundary checks)
 
 ---
 

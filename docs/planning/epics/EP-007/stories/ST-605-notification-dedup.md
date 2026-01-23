@@ -9,7 +9,7 @@
 ---
 
 ## Status
-**Ready** — DoR complete, pending sprint commitment (S07 candidate)
+**Done** — Implementation complete (commit 1aabdda)
 
 ## Priority
 P3 (Nice-to-have)

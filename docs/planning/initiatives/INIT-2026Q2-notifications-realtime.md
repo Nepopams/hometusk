@@ -1,5 +1,5 @@
 # Initiative: INIT-2026Q2-notifications-realtime
-Status: DRAFT (Gate A)
+Status: **DONE** (Closed 2026-01-23)
 Owner: Planning/Architecture (Claude Code)
 
 ## Goal
@@ -40,12 +40,12 @@ Owner: Planning/Architecture (Claude Code)
 - Docs:
   - кратко описать типы событий и семантику “когда создаём нотификацию”
 
-## Exit Criteria
-1) Любое назначение задачи на пользователя создаёт in-app notification и видно в UI.
-2) Смена статуса задачи создаёт нотификацию исполнителю (и/или создателю по правилу).
-3) Добавление/покупка shopping item создаёт нотификации участникам household по выбранному правилу.
-4) Realtime канал доставляет новые нотификации в UI без refresh.
-5) При отключённом realtime UI продолжает работать (polling/ручное обновление) без ошибок.
+## Exit Criteria (All Met)
+1) ✅ Любое назначение задачи на пользователя создаёт in-app notification и видно в UI.
+2) ✅ Смена статуса задачи создаёт нотификацию исполнителю (и/или создателю по правилу).
+3) ✅ Добавление/покупка shopping item создаёт нотификации участникам household по выбранному правилу.
+4) ✅ Realtime канал (SSE) доставляет новые нотификации в UI без refresh.
+5) ✅ При отключённом realtime UI продолжает работать (polling fallback) без ошибок.
 
 ## Success Metrics
 - 95% нотификаций видны пользователю ≤ 2 секунды после события (в пределах локального окружения).
@@ -61,9 +61,9 @@ Owner: Planning/Architecture (Claude Code)
 - Сложность realtime → выбираем один простой транспорт (SSE обычно проще для MVP).
 - Порядок событий/дубликаты → вводим idempotency key на уровне notification creation.
 
-## Candidate Stories
-- ST-3xx: DB migration + Notification entity
-- ST-3xx: Create notification on task assignment/status change
-- ST-3xx: GET notifications + PATCH mark as read
-- ST-3xx: Realtime channel (SSE/WebSocket) with auth + boundary checks
-- ST-3xx: Web notifications UI + realtime subscribe + degraded fallback
+## Delivered Stories (EP-007)
+- ✅ ST-601: SSE Realtime Endpoint (JWT cookie auth + household boundary)
+- ✅ ST-602: Web Notifications UI (bell icon + dropdown + mark as read)
+- ✅ ST-603: Web Realtime Subscribe (EventSource + auto-reconnect)
+- ✅ ST-604: Degraded Fallback (polling when SSE unavailable)
+- ✅ ST-605: Notification Deduplication (idempotency key + 5-min window)
