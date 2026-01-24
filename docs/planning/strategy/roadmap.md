@@ -3,11 +3,16 @@
 > Формат Now/Next/Later фиксирует направление и приоритеты без преждевременных дат.
 > У каждого пункта должен быть “якорь” — initiative/release документ.
 
-## NOW (текущий фокус: Analytics & Fairness — прозрачность нагрузки и вклада)
+## NOW (текущий фокус: Gamification & Motivation — мягкая мотивация без токсичности)
 
-- Initiative (current): **INIT-2026Q2-analytics-fairness-dashboard** — Analytics & Fairness Dashboard v0
+- Initiative (current): **INIT-2026Q2-gamification-motivation** — Gamification & Motivation v0
+  - Anchor: docs/planning/initiatives/INIT-2026Q2-gamification-motivation.md
+  - Outcome: очки/серии/бейджи и мягкая мотивация без токсичных лидербордов; всё опционально и предсказуемо по правилам
+
+- Initiative (done): **INIT-2026Q2-analytics-fairness-dashboard** — Analytics & Fairness Dashboard v0
   - Anchor: docs/planning/initiatives/INIT-2026Q2-analytics-fairness-dashboard.md
   - Outcome: базовый dashboard "нагрузка/вклад/узкие места" + прозрачный fairness index (простая формула, без ML)
+  - Closed: 2026-01-24 (EP-008)
 
 - Initiative (done): **INIT-2026Q2-notifications-realtime** — Notifications & Realtime v0 (web-first)
   - Anchor: docs/planning/initiatives/INIT-2026Q2-notifications-realtime.md
@@ -39,11 +44,7 @@
   - Purge/TTL housekeeping для idempotency/decision logs (если нужно) + минимальные метрики/алерты
   - Цель: не расширять домен, а снизить риск "всё работает только на демо"
 
-## NEXT (следующие инициативы после analytics/fairness dashboard)
-
-- Initiative (candidate): **INIT-2026Q2-gamification-motivation** — Gamification & Motivation v0
-  - Anchor: docs/planning/initiatives/INIT-2026Q2-gamification-motivation.md
-  - Outcome: очки/серии/бейджи и мягкая мотивация без токсичных лидербордов; всё опционально и предсказуемо по правилам
+## NEXT (следующие инициативы после gamification/motivation)
 
 - Initiative (candidate): **INIT-2026Q2-shopping-marketplaces** — Shopping List → Marketplace Link-outs / Runs v0
   - Anchor: docs/planning/initiatives/INIT-2026Q2-shopping-marketplaces.md

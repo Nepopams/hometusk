@@ -12,7 +12,7 @@
 ---
 
 ## Status
-**Ready** — Human Gate approved (2026-01-24)
+**Done** — Closed 2026-01-24 (Sprint S07)
 
 ## Initiative Alignment
 This epic implements the **NOW** increment of INIT-2026Q2-analytics-fairness-dashboard:
