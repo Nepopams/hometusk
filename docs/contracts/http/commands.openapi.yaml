@@ -30,6 +30,8 @@ tags:
     description: Household data endpoints
   - name: Analytics
     description: Household analytics endpoints
+  - name: Gamification
+    description: Gamification progress and badges
   - name: Invites
     description: Household invite endpoints
   - name: Notifications
@@ -658,6 +660,72 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AnalyticsSummary'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '403':
+          description: Not a member of this household
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+
+  /households/{householdId}/gamification/progress:
+    get:
+      operationId: getGamificationProgress
+      summary: Get gamification progress
+      tags:
+        - Gamification
+      parameters:
+        - name: householdId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Gamification progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GamificationProgressResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '403':
+          description: Not a member of this household
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+
+  /households/{householdId}/gamification/badges:
+    get:
+      operationId: getGamificationBadges
+      summary: Get badge catalog
+      tags:
+        - Gamification
+      parameters:
+        - name: householdId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Badge catalog
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadgeCatalogResponse'
         '401':
           description: Authentication required
           content:
@@ -1562,6 +1630,102 @@ components:
           type: integer
           minimum: 1
 
+    GamificationProgressResponse:
+      type: object
+      required:
+        - userId
+        - totalPoints
+        - pointsThisWeek
+        - earnedBadges
+        - recentActivity
+        - householdTotalTasks
+        - householdTotalPoints
+      properties:
+        userId:
+          type: string
+          format: uuid
+        totalPoints:
+          type: integer
+        pointsThisWeek:
+          type: integer
+        earnedBadges:
+          type: array
+          items:
+            $ref: '#/components/schemas/BadgeDto'
+        recentActivity:
+          type: array
+          items:
+            $ref: '#/components/schemas/PointsEntry'
+        householdTotalTasks:
+          type: integer
+        householdTotalPoints:
+          type: integer
+
+    BadgeCatalogResponse:
+      type: object
+      required:
+        - badges
+      properties:
+        badges:
+          type: array
+          items:
+            $ref: '#/components/schemas/BadgeDto'
+
+    PointsEntry:
+      type: object
+      required:
+        - id
+        - points
+        - reason
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+          nullable: true
+        points:
+          type: integer
+        reason:
+          type: string
+          enum:
+            - task_completed
+            - on_time_bonus
+            - task_uncompleted
+            - on_time_bonus_reversed
+        createdAt:
+          type: string
+          format: date-time
+
+    BadgeDto:
+      type: object
+      required:
+        - code
+        - name
+        - description
+        - criteria
+        - iconName
+        - earned
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        criteria:
+          type: string
+        iconName:
+          type: string
+        earned:
+          type: boolean
+        earnedAt:
+          type: string
+          format: date-time
+          nullable: true
+
     # Request schemas
     CreateHouseholdRequest:
       type: object
@@ -1668,6 +1832,7 @@ components:
             - task_completed
             - shopping_item_added
             - shopping_item_purchased
+            - badge_earned
         payload:
           $ref: '#/components/schemas/NotificationPayload'
         createdAt:

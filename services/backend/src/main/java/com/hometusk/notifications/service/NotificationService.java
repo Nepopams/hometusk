@@ -2,6 +2,7 @@ package com.hometusk.notifications.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hometusk.gamification.domain.Badge;
 import com.hometusk.households.domain.Household;
 import com.hometusk.households.domain.HouseholdInvite;
 import com.hometusk.notifications.domain.Notification;
@@ -40,6 +41,7 @@ public class NotificationService {
     private static final String ENTITY_TYPE_TASK = "task";
     private static final String ENTITY_TYPE_SHOPPING_ITEM = "shopping_item";
     private static final String ENTITY_TYPE_INVITE = "invite";
+    private static final String ENTITY_TYPE_BADGE = "badge";
 
     private final NotificationRepository notificationRepository;
     private final MembershipRepository membershipRepository;
@@ -192,6 +194,19 @@ public class NotificationService {
                 NotificationType.SHOPPING_ITEM_PURCHASED,
                 payload,
                 correlationId);
+    }
+
+    @Transactional
+    public void notifyBadgeEarned(User recipient, Household household, Badge badge) {
+        if (recipient == null || household == null || badge == null) {
+            return;
+        }
+
+        String summary = "Badge earned: " + safeText(badge.getName());
+        NotificationPayloadDto payload =
+                new NotificationPayloadDto(recipient.getId(), badge.getId(), ENTITY_TYPE_BADGE, summary);
+
+        createNotification(household, recipient, NotificationType.BADGE_EARNED, payload, null);
     }
 
     private void notifyHouseholdMembers(

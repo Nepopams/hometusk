@@ -1,4 +1,4 @@
-package com.hometusk.analytics.api;
+package com.hometusk.integration;
 
 import static org.hamcrest.Matchers.contains;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -6,7 +6,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.hometusk.households.domain.Household;
-import com.hometusk.integration.IntegrationTestBase;
 import com.hometusk.tasks.domain.Task;
 import com.hometusk.tasks.repository.TaskRepository;
 import com.hometusk.users.domain.Membership;

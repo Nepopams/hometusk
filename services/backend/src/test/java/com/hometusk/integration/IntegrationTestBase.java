@@ -22,20 +22,22 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Testcontainers
 @Transactional
 public abstract class IntegrationTestBase {
 
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine")
-            .withDatabaseName("hometusk_test")
-            .withUsername("test")
-            .withPassword("test");
+    // Singleton container pattern - container is shared across ALL test classes
+    static PostgreSQLContainer<?> postgres;
+
+    static {
+        postgres = new PostgreSQLContainer<>("postgres:15-alpine")
+                .withDatabaseName("hometusk_test")
+                .withUsername("test")
+                .withPassword("test");
+        postgres.start();
+    }
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
@@ -73,15 +75,18 @@ public abstract class IntegrationTestBase {
 
     @BeforeEach
     void setUpTestData() {
+        // Use unique IDs per test to avoid collisions with singleton container
+        String uniqueSuffix = UUID.randomUUID().toString().substring(0, 8);
+
         // Create test household
-        testHousehold = new Household("Test Household");
+        testHousehold = new Household("Test Household " + uniqueSuffix);
         testHousehold = householdRepository.save(testHousehold);
 
-        // Create test users
-        testUser = new User("test-user-sub-123", "alice@test.local", "Alice Test");
+        // Create test users with unique externalId
+        testUser = new User("test-user-" + uniqueSuffix + "-1", "alice-" + uniqueSuffix + "@test.local", "Alice Test");
         testUser = userRepository.save(testUser);
 
-        testUser2 = new User("test-user-sub-456", "bob@test.local", "Bob Test");
+        testUser2 = new User("test-user-" + uniqueSuffix + "-2", "bob-" + uniqueSuffix + "@test.local", "Bob Test");
         testUser2 = userRepository.save(testUser2);
 
         // Create membership for testUser

@@ -1,6 +1,8 @@
 # Initiative: INIT-2026Q2-gamification-motivation
-Status: DRAFT (Gate A)
+Status: READY — Awaiting Human Gate approval
 Owner: Planning/Architecture (Claude Code)
+Epic: EP-009
+Sprint: S08
 
 ## Goal
 Повысить “доходимость” бытовых задач: сделать выполнение видимым и вознаграждаемым через очки/достижения/серии, не превращая продукт в детский сад и не ломая серьёзный командный UX.

@@ -3,6 +3,8 @@ package com.hometusk.commands.pipeline;
 import com.hometusk.activity.service.ActivityRecorder;
 import com.hometusk.commands.domain.Command;
 import com.hometusk.commands.pipeline.decision.DecisionResult;
+import com.hometusk.gamification.service.BadgeService;
+import com.hometusk.gamification.service.PointsService;
 import com.hometusk.households.domain.Household;
 import com.hometusk.households.domain.Zone;
 import com.hometusk.households.service.HouseholdService;
@@ -37,6 +39,8 @@ public class ActionExecutor {
     private final UserService userService;
     private final ActivityRecorder activityRecorder;
     private final NotificationService notificationService;
+    private final PointsService pointsService;
+    private final BadgeService badgeService;
 
     public ActionExecutor(
             TaskService taskService,
@@ -45,7 +49,9 @@ public class ActionExecutor {
             ZoneService zoneService,
             UserService userService,
             ActivityRecorder activityRecorder,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            PointsService pointsService,
+            BadgeService badgeService) {
         this.taskService = taskService;
         this.shoppingService = shoppingService;
         this.householdService = householdService;
@@ -53,6 +59,8 @@ public class ActionExecutor {
         this.userService = userService;
         this.activityRecorder = activityRecorder;
         this.notificationService = notificationService;
+        this.pointsService = pointsService;
+        this.badgeService = badgeService;
     }
 
     /**
@@ -107,6 +115,9 @@ public class ActionExecutor {
         log.debug("Executing complete_task: commandId={}, taskId={}", command.getId(), decision.taskId());
 
         Task task = taskService.complete(decision.taskId(), command.getHouseholdId());
+
+        pointsService.awardForTaskCompleted(task, command.getRequester());
+        badgeService.checkAndAwardBadges(task.getAssignee(), task.getHousehold());
 
         // Record activity
         activityRecorder.recordTaskCompleted(task, command.getRequester(), command.getId(), correlationId);
@@ -181,6 +192,9 @@ public class ActionExecutor {
         log.debug("Executing complete_task from action: commandId={}, taskId={}", command.getId(), taskId);
 
         Task task = taskService.complete(taskId, command.getHouseholdId());
+
+        pointsService.awardForTaskCompleted(task, command.getRequester());
+        badgeService.checkAndAwardBadges(task.getAssignee(), task.getHousehold());
 
         // Record activity
         activityRecorder.recordTaskCompleted(task, command.getRequester(), command.getId(), correlationId);

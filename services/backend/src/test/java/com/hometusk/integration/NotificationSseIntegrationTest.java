@@ -1,4 +1,4 @@
-package com.hometusk.notifications.api;
+package com.hometusk.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -6,7 +6,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.hometusk.integration.IntegrationTestBase;
 import com.hometusk.users.domain.User;
 import jakarta.servlet.http.Cookie;
 import java.time.Instant;
@@ -93,24 +92,19 @@ class NotificationSseIntegrationTest extends IntegrationTestBase {
         @Bean
         @Primary
         JwtDecoder jwtDecoder() {
+            // Use dynamic external IDs from test users by extracting from token
             return token -> {
-                if ("user2-token".equals(token)) {
-                    return buildJwt(token, "test-user-sub-456", "bob@test.local", "Bob Test");
-                }
-                return buildJwt(token, "test-user-sub-123", "alice@test.local", "Alice Test");
+                // The token value contains the user identifier, lookup happens via SecurityContext
+                Instant now = Instant.now();
+                return Jwt.withTokenValue(token)
+                        .header("alg", "none")
+                        .subject(token) // Subject will be matched via SecurityContext, not DB lookup
+                        .claim("email", token + "@test.local")
+                        .claim("name", "Test User")
+                        .issuedAt(now)
+                        .expiresAt(now.plusSeconds(3600))
+                        .build();
             };
-        }
-
-        private Jwt buildJwt(String tokenValue, String subject, String email, String name) {
-            Instant now = Instant.now();
-            return Jwt.withTokenValue(tokenValue)
-                    .header("alg", "none")
-                    .subject(subject)
-                    .claim("email", email)
-                    .claim("name", name)
-                    .issuedAt(now)
-                    .expiresAt(now.plusSeconds(3600))
-                    .build();
         }
     }
 }
