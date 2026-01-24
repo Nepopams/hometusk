@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.hometusk.households.domain.Household;
 import com.hometusk.integration.IntegrationTestBase;
 import com.hometusk.tasks.domain.Task;
 import com.hometusk.tasks.repository.TaskRepository;
@@ -13,7 +14,9 @@ import com.hometusk.users.domain.MembershipRole;
 import java.lang.reflect.Field;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -177,6 +180,78 @@ class AnalyticsControllerIntegrationTest extends IntegrationTestBase {
             field.set(task, completedAt);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    @Nested
+    @DisplayName("Security Tests")
+    class SecurityTests {
+
+        @Test
+        @DisplayName("Should return 403 when user is member of different household")
+        void getAnalytics_memberOfDifferentHousehold_returns403() throws Exception {
+            Household otherHousehold = new Household("Other Household");
+            householdRepository.save(otherHousehold);
+            Membership membership2 = new Membership(testUser2, otherHousehold, MembershipRole.admin);
+            membershipRepository.save(membership2);
+
+            mockMvc.perform(get("/api/v1/households/{id}/analytics", otherHousehold.getId())
+                            .with(jwt()))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("Should not leak data between households")
+        void getAnalytics_noDataLeakBetweenHouseholds() throws Exception {
+            Instant now = Instant.now();
+
+            for (int i = 0; i < 3; i++) {
+                Task task = new Task(testHousehold, "H1 Task " + i, testUser);
+                task.setAssignee(testUser);
+                task.complete();
+                setCompletedAt(task, now.minus(1, ChronoUnit.DAYS));
+                taskRepository.save(task);
+            }
+
+            Household otherHousehold = new Household("Other Household");
+            householdRepository.save(otherHousehold);
+            Membership membership2 = new Membership(testUser2, otherHousehold, MembershipRole.admin);
+            membershipRepository.save(membership2);
+
+            for (int i = 0; i < 10; i++) {
+                Task task = new Task(otherHousehold, "H2 Task " + i, testUser2);
+                task.setAssignee(testUser2);
+                task.complete();
+                setCompletedAt(task, now.minus(1, ChronoUnit.DAYS));
+                taskRepository.save(task);
+            }
+
+            mockMvc.perform(get("/api/v1/households/{id}/analytics", testHousehold.getId())
+                            .with(jwt()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.householdId")
+                            .value(testHousehold.getId().toString()))
+                    .andExpect(jsonPath("$.perMember[?(@.memberName == 'Alice Test')].completedCount")
+                            .value(contains(3)));
+        }
+
+        @Test
+        @DisplayName("Should return 403 for IDOR attempt with random UUID")
+        void getAnalytics_idorAttempt_returns403() throws Exception {
+            UUID randomId = UUID.randomUUID();
+
+            mockMvc.perform(get("/api/v1/households/{id}/analytics", randomId).with(jwt()))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("Should handle invalid period gracefully by defaulting to 7d")
+        void getAnalytics_invalidPeriod_handledGracefully() throws Exception {
+            mockMvc.perform(get("/api/v1/households/{id}/analytics", testHousehold.getId())
+                            .with(jwt())
+                            .param("period", "invalid"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.period").value("7d"));
         }
     }
 }

@@ -10,6 +10,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,6 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/households/{householdId}/analytics")
 @Tag(name = "Analytics", description = "Household analytics endpoints")
 public class AnalyticsController {
+
+    private static final Logger log = LoggerFactory.getLogger(AnalyticsController.class);
 
     private final AnalyticsService analyticsService;
     private final MembershipService membershipService;
@@ -42,10 +46,14 @@ public class AnalyticsController {
     })
     public ResponseEntity<AnalyticsSummaryResponse> getAnalytics(
             @PathVariable UUID householdId, @RequestParam(defaultValue = "7d") String period) {
+        long startTime = System.currentTimeMillis();
         CurrentUser user = userResolver.resolveCurrentUser();
         membershipService.requireMembership(user.id(), householdId);
 
         AnalyticsSummaryResponse response = analyticsService.getAnalytics(householdId, period);
+        long latencyMs = System.currentTimeMillis() - startTime;
+        log.info(
+                "analytics_request household_id={} period={} latency_ms={} status=200", householdId, period, latencyMs);
         return ResponseEntity.ok(response);
     }
 }
