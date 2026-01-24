@@ -1347,3 +1347,188 @@ a {
 .notification-bell__degraded:hover {
   opacity: 1;
 }
+
+/* Analytics Page */
+.analytics {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.analytics__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.analytics__subtitle {
+  margin: 6px 0 0;
+  color: #6a6257;
+}
+
+.analytics__summary,
+.analytics__details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.analytics__footer {
+  text-align: center;
+  color: #6a6257;
+  font-size: 0.85rem;
+}
+
+.analytics-empty {
+  color: #6a6257;
+  margin: 12px 0 0;
+}
+
+/* Balance Score */
+.balance-card {
+  text-align: center;
+}
+
+.balance-value {
+  font-size: 2.75rem;
+  font-weight: 700;
+  margin: 12px 0 8px;
+}
+
+.balance-excellent {
+  color: #15803d;
+}
+
+.balance-moderate {
+  color: #b45309;
+}
+
+.balance-low {
+  color: #b91c1c;
+}
+
+.balance-na {
+  color: #9b948a;
+}
+
+.balance-interpretation {
+  margin: 0 0 12px;
+  color: #6a6257;
+}
+
+.balance-toggle {
+  background: transparent;
+  border: none;
+  color: #0b3d3a;
+  cursor: pointer;
+  font-size: 0.85rem;
+  text-decoration: underline;
+}
+
+.balance-formula {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #f7f4ee;
+  border: 1px solid #e7e1d7;
+  font-size: 0.85rem;
+}
+
+/* Analytics Tables */
+.analytics-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e7e1d7;
+}
+
+.analytics-table th,
+.analytics-table td {
+  padding: 12px 16px;
+  text-align: left;
+}
+
+.analytics-table th {
+  background: #f7f4ee;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #6a6257;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.analytics-table tbody tr {
+  border-top: 1px solid #e7e1d7;
+}
+
+.analytics-table tbody tr:hover {
+  background: #faf7f0;
+}
+
+.overdue-highlight {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+/* Overdue List */
+.overdue-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.overdue-item {
+  padding: 12px 0;
+  border-bottom: 1px solid #e7e1d7;
+}
+
+.overdue-item:last-child {
+  border-bottom: none;
+}
+
+.overdue-item__title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.overdue-item__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #6a6257;
+  font-size: 0.85rem;
+}
+
+/* Period Toggle */
+.period-toggle {
+  display: inline-flex;
+  gap: 8px;
+  padding: 4px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid #e7e1d7;
+}
+
+.period-toggle__button {
+  border: none;
+  background: transparent;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #6a6257;
+}
+
+.period-toggle__button:hover {
+  color: #0b3d3a;
+}
+
+.period-toggle__button.is-active {
+  background: #e4f0ea;
+  color: #0b3d3a;
+  font-weight: 600;
+}

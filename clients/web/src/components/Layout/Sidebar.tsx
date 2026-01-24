@@ -18,6 +18,9 @@ export default function Sidebar() {
           <NavLink className={getLinkClass} to={`${basePath}/tasks`}>
             Tasks
           </NavLink>
+          <NavLink className={getLinkClass} to={`${basePath}/analytics`}>
+            Analytics
+          </NavLink>
           <NavLink className={getLinkClass} to={`${basePath}/zones`}>
             Zones
           </NavLink>

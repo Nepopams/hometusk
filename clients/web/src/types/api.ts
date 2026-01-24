@@ -197,4 +197,50 @@ export interface CommandErrorResponse {
   violations?: BusinessViolation[];
 }
 
+// ============================================
+// Analytics Types (ST-703/ST-704)
+// ============================================
+
+export type AnalyticsPeriod = '7d' | '30d';
+
+export interface MemberStats {
+  memberId: string;
+  memberName: string;
+  completedCount: number;
+  overdueCount: number;
+  openCount: number;
+}
+
+export interface ZoneStats {
+  zoneId: string;
+  zoneName: string;
+  completedCount: number;
+  overdueCount: number;
+}
+
+export interface FairnessInfo {
+  gini: number | null;
+  balance: number | null;
+  formula: string;
+  interpretation: string;
+}
+
+export interface OverdueTask {
+  taskId: string;
+  title: string;
+  assigneeName: string;
+  daysOverdue: number;
+}
+
+export interface AnalyticsSummary {
+  householdId: string;
+  period: AnalyticsPeriod;
+  periodStart: string;
+  periodEnd: string;
+  perMember: MemberStats[];
+  perZone: ZoneStats[];
+  fairness: FairnessInfo;
+  overdueTop?: OverdueTask[];
+}
+
 export type { Notification, NotificationPayload, NotificationType } from './notification';

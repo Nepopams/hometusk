@@ -2,6 +2,8 @@ import { ApiError, AuthError } from './errors';
 import { getAuthToken, handleAuthError } from './auth/tokenProvider';
 import type {
   AcceptInviteResponse,
+  AnalyticsPeriod,
+  AnalyticsSummary,
   AuthErrorResponse,
   CommandRequest,
   CommandResponse,
@@ -88,6 +90,19 @@ export async function getZones(householdId: string): Promise<Zone[]> {
 
 export async function getMembers(householdId: string): Promise<HouseholdMember[]> {
   return apiFetch<HouseholdMember[]>(`/households/${householdId}/members`);
+}
+
+export async function getAnalytics(
+  householdId: string,
+  period: AnalyticsPeriod = '7d'
+): Promise<AnalyticsSummary> {
+  const params = new URLSearchParams();
+  params.set('period', period);
+  const query = params.toString();
+
+  return apiFetch<AnalyticsSummary>(
+    `/households/${householdId}/analytics${query ? `?${query}` : ''}`
+  );
 }
 
 export async function listNotifications(
