@@ -2,9 +2,11 @@ package com.hometusk.tasks.repository;
 
 import com.hometusk.tasks.domain.Task;
 import com.hometusk.tasks.domain.TaskStatus;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -95,4 +97,88 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
             + "GROUP BY t.assignee.id")
     List<Object[]> countTasksByAssigneeAndStatuses(
             @Param("householdId") UUID householdId, @Param("statuses") List<TaskStatus> statuses);
+
+    /**
+     * Count completed tasks by assignee in a period (includes unassigned as null key).
+     */
+    @Query("SELECT a.id, COUNT(t) "
+            + "FROM Task t "
+            + "LEFT JOIN t.assignee a "
+            + "WHERE t.household.id = :householdId "
+            + "AND t.status = com.hometusk.tasks.domain.TaskStatus.DONE "
+            + "AND t.completedAt >= :periodStart "
+            + "AND t.completedAt < :periodEnd "
+            + "GROUP BY a.id")
+    List<Object[]> countCompletedByAssigneeInPeriod(
+            @Param("householdId") UUID householdId,
+            @Param("periodStart") Instant periodStart,
+            @Param("periodEnd") Instant periodEnd);
+
+    /**
+     * Count overdue active tasks by assignee (includes unassigned as null key).
+     */
+    @Query("SELECT a.id, COUNT(t) "
+            + "FROM Task t "
+            + "LEFT JOIN t.assignee a "
+            + "WHERE t.household.id = :householdId "
+            + "AND t.status IN (com.hometusk.tasks.domain.TaskStatus.OPEN, com.hometusk.tasks.domain.TaskStatus.IN_PROGRESS) "
+            + "AND t.deadline IS NOT NULL "
+            + "AND t.deadline < :now "
+            + "GROUP BY a.id")
+    List<Object[]> countOverdueByAssignee(@Param("householdId") UUID householdId, @Param("now") Instant now);
+
+    /**
+     * Count open (non-overdue) active tasks by assignee (includes unassigned as null key).
+     */
+    @Query("SELECT a.id, COUNT(t) "
+            + "FROM Task t "
+            + "LEFT JOIN t.assignee a "
+            + "WHERE t.household.id = :householdId "
+            + "AND t.status IN (com.hometusk.tasks.domain.TaskStatus.OPEN, com.hometusk.tasks.domain.TaskStatus.IN_PROGRESS) "
+            + "AND (t.deadline IS NULL OR t.deadline >= :now) "
+            + "GROUP BY a.id")
+    List<Object[]> countOpenByAssignee(@Param("householdId") UUID householdId, @Param("now") Instant now);
+
+    /**
+     * Count completed tasks by zone in a period (excludes null zone).
+     */
+    @Query("SELECT t.zone.id, COUNT(t) "
+            + "FROM Task t "
+            + "WHERE t.household.id = :householdId "
+            + "AND t.status = com.hometusk.tasks.domain.TaskStatus.DONE "
+            + "AND t.completedAt >= :periodStart "
+            + "AND t.completedAt < :periodEnd "
+            + "AND t.zone IS NOT NULL "
+            + "GROUP BY t.zone.id")
+    List<Object[]> countCompletedByZoneInPeriod(
+            @Param("householdId") UUID householdId,
+            @Param("periodStart") Instant periodStart,
+            @Param("periodEnd") Instant periodEnd);
+
+    /**
+     * Count overdue active tasks by zone (excludes null zone).
+     */
+    @Query("SELECT t.zone.id, COUNT(t) "
+            + "FROM Task t "
+            + "WHERE t.household.id = :householdId "
+            + "AND t.status IN (com.hometusk.tasks.domain.TaskStatus.OPEN, com.hometusk.tasks.domain.TaskStatus.IN_PROGRESS) "
+            + "AND t.deadline IS NOT NULL "
+            + "AND t.deadline < :now "
+            + "AND t.zone IS NOT NULL "
+            + "GROUP BY t.zone.id")
+    List<Object[]> countOverdueByZone(@Param("householdId") UUID householdId, @Param("now") Instant now);
+
+    /**
+     * Find top overdue tasks ordered by oldest deadline first.
+     */
+    @Query("SELECT t "
+            + "FROM Task t "
+            + "LEFT JOIN FETCH t.assignee "
+            + "WHERE t.household.id = :householdId "
+            + "AND t.status IN (com.hometusk.tasks.domain.TaskStatus.OPEN, com.hometusk.tasks.domain.TaskStatus.IN_PROGRESS) "
+            + "AND t.deadline IS NOT NULL "
+            + "AND t.deadline < :now "
+            + "ORDER BY t.deadline ASC")
+    List<Task> findTopOverdueTasks(
+            @Param("householdId") UUID householdId, @Param("now") Instant now, Pageable pageable);
 }

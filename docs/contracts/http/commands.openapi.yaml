@@ -28,6 +28,8 @@ tags:
     description: User profile endpoints
   - name: Households
     description: Household data endpoints
+  - name: Analytics
+    description: Household analytics endpoints
   - name: Invites
     description: Household invite endpoints
   - name: Notifications
@@ -615,6 +617,47 @@ paths:
             text/event-stream:
               schema:
                 type: string
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '403':
+          description: Not a member of this household
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+
+  /households/{householdId}/analytics:
+    get:
+      operationId: getAnalytics
+      summary: Get household analytics summary
+      tags:
+        - Analytics
+      parameters:
+        - name: householdId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: period
+          in: query
+          required: false
+          description: Time period for analytics (7d or 30d)
+          schema:
+            type: string
+            enum: [7d, 30d]
+            default: 7d
+      responses:
+        '200':
+          description: Analytics summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsSummary'
         '401':
           description: Authentication required
           content:
@@ -1379,6 +1422,145 @@ components:
           format: uuid
         displayName:
           type: string
+
+    AnalyticsSummary:
+      type: object
+      required:
+        - householdId
+        - period
+        - periodStart
+        - periodEnd
+        - perMember
+        - perZone
+        - fairness
+      properties:
+        householdId:
+          type: string
+          format: uuid
+        period:
+          type: string
+          enum: [7d, 30d]
+        periodStart:
+          type: string
+          format: date-time
+        periodEnd:
+          type: string
+          format: date-time
+        perMember:
+          type: array
+          description: Stats per household member
+          items:
+            $ref: '#/components/schemas/MemberStats'
+        perZone:
+          type: array
+          description: Stats per zone
+          items:
+            $ref: '#/components/schemas/ZoneStats'
+        fairness:
+          $ref: '#/components/schemas/FairnessInfo'
+        overdueTop:
+          type: array
+          description: Top overdue tasks (optional, max 5)
+          items:
+            $ref: '#/components/schemas/OverdueTask'
+
+    MemberStats:
+      type: object
+      required:
+        - memberId
+        - memberName
+        - completedCount
+        - overdueCount
+        - openCount
+      properties:
+        memberId:
+          type: string
+          format: uuid
+        memberName:
+          type: string
+        completedCount:
+          type: integer
+          minimum: 0
+          description: Tasks completed in period
+        overdueCount:
+          type: integer
+          minimum: 0
+          description: Currently overdue tasks assigned to member
+        openCount:
+          type: integer
+          minimum: 0
+          description: Currently open tasks assigned to member
+
+    ZoneStats:
+      type: object
+      required:
+        - zoneId
+        - zoneName
+        - completedCount
+        - overdueCount
+      properties:
+        zoneId:
+          type: string
+          format: uuid
+        zoneName:
+          type: string
+        completedCount:
+          type: integer
+          minimum: 0
+          description: Tasks completed in zone during period
+        overdueCount:
+          type: integer
+          minimum: 0
+          description: Currently overdue tasks in zone
+
+    FairnessInfo:
+      type: object
+      required:
+        - gini
+        - balance
+        - formula
+        - interpretation
+      properties:
+        gini:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          nullable: true
+          description: Gini coefficient (0=equal, 1=unequal). Null if no tasks.
+        balance:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Balance score = round((1-gini)*100). Null if no tasks.
+        formula:
+          type: string
+          description: Human-readable formula explanation
+          example: "Balance = 100 × (1 - Gini coefficient)"
+        interpretation:
+          type: string
+          description: What this score means for the household
+          example: "Balance score 75 — good distribution of tasks among members."
+
+    OverdueTask:
+      type: object
+      required:
+        - taskId
+        - title
+        - assigneeName
+        - daysOverdue
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        assigneeName:
+          type: string
+        daysOverdue:
+          type: integer
+          minimum: 1
 
     # Request schemas
     CreateHouseholdRequest:
