@@ -165,6 +165,45 @@ public SseEmitter streamNotifications(@PathVariable UUID householdId) {
 }
 ```
 
+### CORS + Credentials Assumptions
+
+**Deployment model:** Same-origin (web and API share same origin or are behind single reverse proxy).
+
+| Scenario | CORS config | Notes |
+|----------|-------------|-------|
+| Same-origin | Not required | Cookie sent automatically |
+| Single reverse proxy | Not required | Proxy presents unified origin |
+| Cross-origin (future) | `@CrossOrigin(origins = "...", allowCredentials = "true")` | Requires explicit config |
+
+Current implementation assumes **same-origin**. If cross-origin deployment is needed, add:
+```java
+@CrossOrigin(origins = "${hometusk.web.origin}", allowCredentials = "true")
+```
+
+### Response Headers / Deployment Notes (Proxy Buffering)
+
+SSE requires **unbuffered streaming**. Add response headers to prevent proxy buffering:
+
+```java
+@GetMapping(value = "/households/{householdId}/notifications/stream",
+            produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+public SseEmitter streamNotifications(@PathVariable UUID householdId, HttpServletResponse response) {
+    // Disable proxy buffering (nginx, AWS ALB, etc.)
+    response.setHeader("X-Accel-Buffering", "no");       // nginx
+    response.setHeader("Cache-Control", "no-cache");    // general
+    response.setHeader("Connection", "keep-alive");     // explicit
+
+    // ... rest of implementation
+}
+```
+
+**Reverse proxy checklist:**
+| Proxy | Setting |
+|-------|---------|
+| nginx | `proxy_buffering off;` or respect `X-Accel-Buffering: no` |
+| AWS ALB | SSE works by default; ensure idle timeout > heartbeat interval |
+| Cloudflare | Disable response buffering for SSE path |
+
 ### AFTER_COMMIT Publishing (Critical)
 Notifications must be published to SSE **only after the transaction commits** to avoid phantom notifications on rollback.
 
@@ -206,10 +245,4 @@ data: {"id":"abc-123","type":"task_assigned","payload":{"actorId":"...","entityI
 
 event: heartbeat
 data: {"timestamp":"2026-01-23T10:30:30Z"}
-```
-
-### CORS Configuration
-Ensure SSE endpoint allows credentials:
-```java
-@CrossOrigin(origins = "${hometusk.web.origin}", allowCredentials = "true")
 ```

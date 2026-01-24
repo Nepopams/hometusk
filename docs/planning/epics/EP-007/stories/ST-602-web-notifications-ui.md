@@ -32,7 +32,7 @@ As a household member, I want to see my notifications in a convenient location (
 - Dropdown panel with notification list
 - Individual notification items with type icons
 - Click to mark as read (single)
-- **"Mark all as read" — sequential calls to existing endpoint** (no new bulk endpoint)
+- **"Mark all as read" — parallel calls with `Promise.all()`** (no new bulk endpoint)
 - Hook for fetching and managing notifications state
 
 ---
@@ -85,17 +85,17 @@ And item becomes read (no bold/dot)
 And unread count decreases
 ```
 
-### AC-6: Mark All as Read (Sequential Calls)
+### AC-6: Mark All as Read (Parallel Calls)
 ```gherkin
 Given multiple unread notifications visible in dropdown
 When user clicks "Mark all as read"
-Then POST /notifications/{id}/read is called for each visible unread notification
+Then POST /notifications/{id}/read is called for each visible unread notification in parallel
 And all items become read
 And unread count becomes 0
 And button is disabled during operation
 ```
 
-**Note:** No bulk endpoint required. Implementation calls existing single-mark endpoint sequentially with `Promise.all()`. For typical notification counts (< 20 visible), this is acceptable UX.
+**Implementation:** Uses `Promise.all()` to call existing single-mark endpoint in parallel. For typical notification counts (< 20 visible), this is acceptable UX and avoids contract changes.
 
 ### AC-7: Empty State
 ```gherkin
@@ -191,7 +191,7 @@ export function useNotifications(householdId: string) {
     );
   };
 
-  // Sequential calls, no bulk endpoint
+  // Parallel calls via Promise.all (acceptable for < 20 items)
   const markAllAsRead = async () => {
     const unread = notifications.filter(n => !n.readAt);
     await Promise.all(unread.map(n => api.markNotificationRead(n.id)));
