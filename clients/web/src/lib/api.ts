@@ -84,6 +84,10 @@ export async function getTasks(householdId: string, filters: TaskFilters = {}): 
   return apiFetch<Task[]>(`/households/${householdId}/tasks${query}`);
 }
 
+export async function getTask(householdId: string, taskId: string): Promise<Task> {
+  return apiFetch<Task>(`/households/${householdId}/tasks/${taskId}`);
+}
+
 export async function getZones(householdId: string): Promise<Zone[]> {
   return apiFetch<Zone[]>(`/households/${householdId}/zones`);
 }
