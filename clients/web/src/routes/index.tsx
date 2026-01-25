@@ -7,6 +7,7 @@ import Commands from './Commands';
 import Dashboard from './Dashboard';
 import HouseholdLayout from './HouseholdLayout';
 import HouseholdSelector from './HouseholdSelector';
+import Invites from './Invites';
 import Login from './Login';
 import Register from './Register';
 import Members from './Members';
@@ -42,6 +43,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <Dashboard /> },
           { path: 'commands', element: <Commands /> },
+          { path: 'invites', element: <Invites /> },
           { path: 'tasks', element: <TasksList /> },
           { path: 'tasks/:taskId', element: <TaskDetail /> },
           { path: 'analytics', element: <Analytics /> },
