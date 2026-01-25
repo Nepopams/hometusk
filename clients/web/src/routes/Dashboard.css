@@ -1,0 +1,498 @@
+/**
+ * Dashboard styles (Tasks + Shopping)
+ *
+ * Layout:
+ * - Desktop/Tablet: Two columns (tasks flex, shopping 360px fixed)
+ * - Mobile: Vertical stack
+ *
+ * @see Pencil frames: PARvt, UxFDL, lCp6u, eTaes, phvdl, PydL5, ZgDKd
+ */
+
+/* ========================================
+ * LAYOUT
+ * ======================================== */
+
+.dashboard {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ========================================
+ * COLUMNS
+ * ======================================== */
+
+.dashboard__tasks-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.dashboard__shopping-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 360px;
+  flex-shrink: 0;
+}
+
+/* ========================================
+ * SECTION HEADERS
+ * ======================================== */
+
+.dashboard__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+}
+
+.dashboard__title {
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.dashboard__count {
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-brand);
+}
+
+/* ========================================
+ * CARDS
+ * ======================================== */
+
+.dashboard__card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+/* ========================================
+ * TASK ROW
+ * ======================================== */
+
+.dashboard__task-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  transition: background-color var(--transition-fast);
+}
+
+.dashboard__task-row:hover {
+  background: var(--color-bg-hover-subtle);
+}
+
+.dashboard__task-row + .dashboard__task-row {
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.dashboard__task-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-text-primary);
+  border-radius: 2px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.dashboard__task-checkbox:hover {
+  border-color: var(--color-brand);
+}
+
+.dashboard__task-checkbox--done {
+  background: transparent;
+  border-color: var(--color-success);
+}
+
+.dashboard__task-checkbox--done svg {
+  color: var(--color-success);
+}
+
+.dashboard__task-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.dashboard__task-title {
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.dashboard__task-title--done {
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+}
+
+.dashboard__task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Task badges */
+.dashboard__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-family: var(--font-family-body);
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+}
+
+.dashboard__badge--zone-kitchen {
+  background: #E8F5E9;
+  color: var(--color-success);
+}
+
+.dashboard__badge--zone-bathroom {
+  background: #E3F2FD;
+  color: var(--color-info);
+}
+
+.dashboard__badge--zone-living {
+  background: #FFF3E0;
+  color: var(--color-warning);
+}
+
+.dashboard__badge--zone-bedroom {
+  background: #F3E5F5;
+  color: #7B1FA2;
+}
+
+.dashboard__badge--zone-default {
+  background: #FAFAFA;
+  color: var(--color-text-primary);
+}
+
+.dashboard__badge--assignee {
+  background: #FFF3E0;
+  color: var(--color-warning);
+}
+
+.dashboard__badge--due {
+  background: #FAFAFA;
+  color: var(--color-text-primary);
+}
+
+/* ========================================
+ * SHOPPING ITEMS
+ * ======================================== */
+
+.dashboard__add-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+}
+
+.dashboard__add-input {
+  flex: 1;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 4px;
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-primary);
+  background: var(--color-bg-card);
+}
+
+.dashboard__add-input::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.dashboard__add-input:focus {
+  outline: none;
+  border-color: var(--color-brand);
+}
+
+.dashboard__add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.dashboard__add-btn:hover {
+  background: var(--color-bg-hover-subtle);
+  color: var(--color-text-primary);
+}
+
+.dashboard__shop-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+}
+
+.dashboard__shop-row + .dashboard__shop-row {
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.dashboard__shop-row:first-child {
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.dashboard__shop-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-text-primary);
+  border-radius: 2px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.dashboard__shop-checkbox--done {
+  border-color: var(--color-brand);
+}
+
+.dashboard__shop-checkbox--done svg {
+  color: var(--color-brand);
+}
+
+.dashboard__shop-text {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-primary);
+}
+
+.dashboard__shop-text--done {
+  color: var(--color-text-muted);
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+
+/* ========================================
+ * EMPTY STATE
+ * ======================================== */
+
+.dashboard__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+}
+
+.dashboard__empty-icon {
+  color: var(--color-text-secondary);
+}
+
+.dashboard__empty-title {
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.dashboard__empty-desc {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.dashboard__empty-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* ========================================
+ * ERROR STATE
+ * ======================================== */
+
+.dashboard__error {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.dashboard__error-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.dashboard__error-icon {
+  color: var(--color-warning);
+  flex-shrink: 0;
+}
+
+.dashboard__error-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dashboard__error-title {
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.dashboard__error-desc {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.dashboard__retry-btn {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 2px solid var(--color-border-primary);
+  border-radius: var(--radius-md);
+  background: transparent;
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.dashboard__retry-btn:hover {
+  background: var(--color-bg-hover-subtle);
+}
+
+/* ========================================
+ * LOADING STATE
+ * ======================================== */
+
+.dashboard__skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+}
+
+.dashboard__skeleton-row + .dashboard__skeleton-row {
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.dashboard__skeleton-checkbox {
+  width: 18px;
+  height: 18px;
+  background: var(--color-bg-hover);
+  border-radius: 2px;
+  animation: dashboard-pulse 1.5s ease-in-out infinite;
+}
+
+.dashboard__skeleton-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.dashboard__skeleton-title {
+  height: 14px;
+  background: var(--color-bg-hover);
+  border-radius: var(--radius-sm);
+  animation: dashboard-pulse 1.5s ease-in-out infinite;
+}
+
+.dashboard__skeleton-badges {
+  display: flex;
+  gap: 6px;
+}
+
+.dashboard__skeleton-badge {
+  width: 60px;
+  height: 16px;
+  background: var(--color-bg-hover);
+  border-radius: 10px;
+  animation: dashboard-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes dashboard-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ========================================
+ * RESPONSIVE
+ * ======================================== */
+
+@media (max-width: 1024px) {
+  .dashboard__shopping-col {
+    width: 320px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .dashboard__shopping-col {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard__title {
+    font-size: var(--font-size-md);
+  }
+
+  .dashboard__task-row {
+    padding: 10px;
+  }
+
+  .dashboard__shop-row {
+    padding: 8px;
+  }
+
+  .dashboard__empty {
+    padding: 20px;
+  }
+}

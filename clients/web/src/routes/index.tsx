@@ -3,6 +3,7 @@ import { ProtectedRoute } from '../components/ProtectedRoute';
 import AcceptInvite from './AcceptInvite';
 import Analytics from './Analytics';
 import Callback from './Callback';
+import Dashboard from './Dashboard';
 import HouseholdLayout from './HouseholdLayout';
 import HouseholdSelector from './HouseholdSelector';
 import Login from './Login';
@@ -38,7 +39,7 @@ export const router = createBrowserRouter([
       {
         element: <HouseholdLayout />,
         children: [
-          { index: true, element: <Navigate to="tasks" replace /> },
+          { index: true, element: <Dashboard /> },
           { path: 'tasks', element: <TasksList /> },
           { path: 'tasks/:taskId', element: <TaskDetail /> },
           { path: 'analytics', element: <Analytics /> },
