@@ -1,4 +1,4 @@
-import type { AnchorHTMLAttributes, ReactNode } from 'react';
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from 'react';
 import { Link, type LinkProps } from 'react-router-dom';
 import './TextLink.css';
 
@@ -16,15 +16,24 @@ type TextLinkAsAnchor = TextLinkBaseProps &
   Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'children'> & {
     href: string;
     to?: never;
+    onClick?: never;
   };
 
 type TextLinkAsRouterLink = TextLinkBaseProps &
   Omit<LinkProps, 'children'> & {
     to: string;
     href?: never;
+    onClick?: never;
   };
 
-type TextLinkProps = TextLinkAsAnchor | TextLinkAsRouterLink;
+type TextLinkAsButton = TextLinkBaseProps &
+  Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & {
+    onClick: () => void;
+    to?: never;
+    href?: never;
+  };
+
+type TextLinkProps = TextLinkAsAnchor | TextLinkAsRouterLink | TextLinkAsButton;
 
 /**
  * Styled text link for inline links in forms.
@@ -58,6 +67,7 @@ export default function TextLink({
     .filter(Boolean)
     .join(' ');
 
+  // Router Link
   if ('to' in props && props.to) {
     const { to, ...rest } = props;
     return (
@@ -67,6 +77,17 @@ export default function TextLink({
     );
   }
 
+  // Button (onClick without navigation)
+  if ('onClick' in props && props.onClick && !('href' in props)) {
+    const { onClick, type = 'button', ...rest } = props as TextLinkAsButton;
+    return (
+      <button type={type} onClick={onClick} className={classNames} {...rest}>
+        {children}
+      </button>
+    );
+  }
+
+  // Anchor link
   const { href, ...rest } = props as TextLinkAsAnchor;
   return (
     <a href={href} className={classNames} {...rest}>

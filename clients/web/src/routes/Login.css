@@ -1,0 +1,118 @@
+/**
+ * Login page styles
+ * Spacing and layout to match Pencil frames (4vJMN, m70Ad, XILe3)
+ */
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-10); /* 32px - desktop gap */
+}
+
+.login-form__brand {
+  /* BrandHeader centered */
+}
+
+.login-form__error {
+  /* ErrorBanner spacing handled by its own component */
+}
+
+.login-form__fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-7); /* 20px - between email and password */
+}
+
+.login-form__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6); /* 16px */
+}
+
+.login-form__divider {
+  /* Divider component handles its own styling */
+}
+
+.login-form__footer {
+  text-align: center;
+}
+
+/* Loading overlay for inputs */
+.login-form--loading .login-form__fields {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Tablet (1024px) */
+@media (max-width: 1024px) {
+  .login-form {
+    gap: var(--spacing-9); /* 28px */
+  }
+}
+
+/* Mobile (480px) */
+@media (max-width: 480px) {
+  .login-form {
+    gap: var(--spacing-8); /* 24px */
+  }
+
+  .login-form__fields {
+    gap: var(--spacing-6); /* 16px */
+  }
+
+  .login-form__actions {
+    gap: var(--spacing-5); /* 12px */
+  }
+}
+
+/* Dev mode styling (minimal changes) */
+.login-dev {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: var(--spacing-8);
+}
+
+.login-dev__title {
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-4);
+}
+
+.login-dev__description {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-6);
+}
+
+.login-dev__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+.login-dev__textarea {
+  width: 100%;
+  min-height: 150px;
+  padding: var(--spacing-5);
+  border: var(--border-standard) solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  resize: vertical;
+}
+
+.login-dev__textarea:focus {
+  outline: none;
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
+}
+
+.login-dev__textarea:disabled {
+  background-color: var(--color-bg-hover-subtle);
+  color: var(--color-text-muted);
+}
+
+.login-dev__error {
+  color: var(--color-error);
+  font-size: var(--font-size-sm);
+}

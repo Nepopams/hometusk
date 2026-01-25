@@ -11,6 +11,10 @@
   text-decoration: none;
   cursor: pointer;
   transition: color var(--transition-fast);
+  /* Reset button styles when used as button element */
+  background: none;
+  border: none;
+  padding: 0;
 }
 
 .text-link:focus-visible {
