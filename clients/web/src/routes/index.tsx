@@ -14,6 +14,7 @@ import Members from './Members';
 import Notifications from './Notifications';
 import NotFound from './NotFound';
 import SessionExpired from './SessionExpired';
+import ShoppingDetail from './ShoppingDetail';
 import ShoppingLists from './ShoppingLists';
 import Unauthorized from './Unauthorized';
 import AccessDenied from './AccessDenied';
@@ -48,6 +49,7 @@ export const router = createBrowserRouter([
           { path: 'tasks', element: <TasksList /> },
           { path: 'tasks/:taskId', element: <TaskDetail /> },
           { path: 'shopping', element: <ShoppingLists /> },
+          { path: 'shopping/:listId', element: <ShoppingDetail /> },
           { path: 'analytics', element: <Analytics /> },
           { path: 'zones', element: <ZonesList /> },
           { path: 'notifications', element: <Notifications /> },

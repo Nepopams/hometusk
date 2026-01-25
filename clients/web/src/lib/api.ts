@@ -2,6 +2,7 @@ import { ApiError, AuthError } from './errors';
 import { getAuthToken, handleAuthError } from './auth/tokenProvider';
 import type {
   AcceptInviteResponse,
+  AddShoppingItemRequest,
   AnalyticsPeriod,
   AnalyticsSummary,
   AuthErrorResponse,
@@ -11,6 +12,8 @@ import type {
   Household,
   HouseholdMember,
   Notification,
+  ShoppingItem,
+  ShoppingItemFilters,
   ShoppingList,
   Task,
   TaskFilters,
@@ -91,6 +94,58 @@ export async function getTask(householdId: string, taskId: string): Promise<Task
 
 export async function getShoppingLists(householdId: string): Promise<ShoppingList[]> {
   return apiFetch<ShoppingList[]>(`/households/${householdId}/shopping-lists`);
+}
+
+export async function getShoppingList(householdId: string, listId: string): Promise<ShoppingList> {
+  const lists = await getShoppingLists(householdId);
+  const list = lists.find((l) => l.id === listId);
+  if (!list) {
+    throw new Error('Shopping list not found');
+  }
+  return list;
+}
+
+export async function getShoppingItems(
+  householdId: string,
+  listId: string,
+  filters: ShoppingItemFilters = {}
+): Promise<ShoppingItem[]> {
+  const params = new URLSearchParams();
+  if (filters.purchased !== undefined) {
+    params.set('purchased', String(filters.purchased));
+  }
+  const query = params.toString();
+  return apiFetch<ShoppingItem[]>(
+    `/households/${householdId}/shopping-lists/${listId}/items${query ? `?${query}` : ''}`
+  );
+}
+
+export async function addShoppingItem(
+  householdId: string,
+  listId: string,
+  data: AddShoppingItemRequest
+): Promise<ShoppingItem> {
+  return apiFetch<ShoppingItem>(`/households/${householdId}/shopping-lists/${listId}/items`, {
+    method: 'POST',
+    body: data,
+  });
+}
+
+export async function updateShoppingItem(
+  householdId: string,
+  itemId: string,
+  purchased: boolean
+): Promise<ShoppingItem> {
+  return apiFetch<ShoppingItem>(`/households/${householdId}/shopping-items/${itemId}`, {
+    method: 'PATCH',
+    body: { purchased },
+  });
+}
+
+export async function deleteShoppingItem(householdId: string, itemId: string): Promise<void> {
+  return apiFetch<void>(`/households/${householdId}/shopping-items/${itemId}`, {
+    method: 'DELETE',
+  });
 }
 
 export async function getZones(householdId: string): Promise<Zone[]> {

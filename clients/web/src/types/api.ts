@@ -267,4 +267,14 @@ export interface ShoppingItem {
   purchasedAt?: string;
 }
 
+export interface ShoppingItemFilters {
+  purchased?: boolean;
+}
+
+export interface AddShoppingItemRequest {
+  name: string;
+  quantity?: number;
+  unit?: string;
+}
+
 export type { Notification, NotificationPayload, NotificationType } from './notification';
