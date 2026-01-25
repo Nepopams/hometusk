@@ -11,6 +11,19 @@ interface TaskStatusBadgeProps {
   status: TaskStatus;
 }
 
+/**
+ * Task status badge with color variants.
+ *
+ * Badge variants per Pencil dataTask spec:
+ * - done → Success (green)
+ * - in_progress → Warning (orange)
+ * - open → Info (blue)
+ * - cancelled → Neutral (gray)
+ */
 export default function TaskStatusBadge({ status }: TaskStatusBadgeProps) {
-  return <span className={`chip task-status task-status--${status}`}>{statusLabels[status]}</span>;
+  return (
+    <span className={`tasks__badge tasks__badge--${status}`}>
+      {statusLabels[status]}
+    </span>
+  );
 }

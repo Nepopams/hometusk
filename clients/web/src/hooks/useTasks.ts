@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { getTasks } from '../lib/api';
 import type { Task, TaskFilters } from '../types/api';
 
-export function useTasks(householdId: string | undefined, filters: TaskFilters) {
+export function useTasks(householdId: string | null | undefined, filters: TaskFilters) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
