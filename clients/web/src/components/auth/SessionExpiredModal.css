@@ -1,0 +1,127 @@
+/**
+ * Session Expired Modal styles
+ * Matches Pencil frames: 8CHBm (1200px), 5IASX (1024px), G7gtU (error)
+ */
+
+.session-expired-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6); /* 24px */
+  padding: var(--spacing-8); /* 32px */
+  width: 440px;
+  max-width: 100%;
+}
+
+/* Header row with icon + title */
+.session-expired-modal__header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4); /* 12px */
+}
+
+/* Icon container */
+.session-expired-modal__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-info-soft);
+  color: var(--color-info);
+  flex-shrink: 0;
+}
+
+.session-expired-modal__icon--error {
+  background-color: var(--color-error-soft);
+  color: var(--color-error);
+}
+
+/* Title */
+.session-expired-modal__title {
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-lg); /* 18px */
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+/* Body text */
+.session-expired-modal__body {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-sm); /* 14px */
+  font-weight: var(--font-weight-normal);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Success hint (preserved input) */
+.session-expired-modal__hint {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3); /* 8px */
+  padding: var(--spacing-4) var(--spacing-5); /* 12px 16px */
+  background-color: var(--color-success-soft);
+  border-radius: var(--radius-md);
+  color: var(--color-success);
+  font-size: var(--font-size-xs); /* 13px */
+  font-weight: var(--font-weight-medium);
+}
+
+.session-expired-modal__hint svg {
+  flex-shrink: 0;
+}
+
+/* Error banner */
+.session-expired-modal__error-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3); /* 8px */
+  padding: var(--spacing-4) var(--spacing-5); /* 12px 16px */
+  background-color: var(--color-error-soft);
+  border-radius: var(--radius-md);
+  color: var(--color-error);
+  font-size: var(--font-size-xs); /* 13px */
+  font-weight: var(--font-weight-medium);
+}
+
+.session-expired-modal__error-banner svg {
+  flex-shrink: 0;
+}
+
+/* Help text (error state) */
+.session-expired-modal__help {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-xs); /* 13px */
+  font-weight: var(--font-weight-normal);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Button row */
+.session-expired-modal__buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-4); /* 12px */
+}
+
+/* Ensure buttons have minimum touch target */
+.session-expired-modal__buttons button {
+  min-height: 40px;
+  padding-left: var(--spacing-6); /* 24px */
+  padding-right: var(--spacing-6);
+}
+
+/* Tablet adjustments */
+@media (max-width: 1024px) {
+  .session-expired-modal {
+    width: 420px;
+  }
+}
+
+/* Modal panel override for session-expired specifically */
+:global(.modal__panel) .session-expired-modal {
+  margin: calc(-1 * var(--spacing-6)); /* Negate modal__content padding */
+}

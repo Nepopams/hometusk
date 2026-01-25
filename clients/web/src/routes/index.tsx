@@ -11,6 +11,9 @@ import Register from './Register';
 import Members from './Members';
 import Notifications from './Notifications';
 import NotFound from './NotFound';
+import SessionExpired from './SessionExpired';
+import Unauthorized from './Unauthorized';
+import AccessDenied from './AccessDenied';
 import TaskDetail from './TaskDetail';
 import TasksList from './TasksList';
 import ZonesList from './ZonesList';
@@ -51,5 +54,8 @@ export const router = createBrowserRouter([
     element: <ProtectedRoute />,
     children: [{ index: true, element: <AcceptInvite /> }],
   },
+  { path: '/session-expired', element: <SessionExpired /> },
+  { path: '/unauthorized', element: <Unauthorized /> },
+  { path: '/access-denied', element: <AccessDenied /> },
   { path: '*', element: <NotFound /> },
 ]);

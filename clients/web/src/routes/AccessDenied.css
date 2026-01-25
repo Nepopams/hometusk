@@ -1,0 +1,120 @@
+/**
+ * 403 Access Denied page styles
+ * Matches Pencil frames: e0Goo (1200px), ymcdH (1024px), pjCdq (390px)
+ */
+
+.access-denied-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--spacing-6); /* 24px */
+  background-color: var(--color-bg-page);
+}
+
+.access-denied-page__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-8); /* 32px */
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+/* Mobile: full width with padding */
+@media (max-width: 480px) {
+  .access-denied-page__content {
+    max-width: 100%;
+  }
+}
+
+/* Tablet */
+@media (min-width: 481px) and (max-width: 1024px) {
+  .access-denied-page__content {
+    max-width: 380px;
+  }
+}
+
+/* Icon */
+.access-denied-page__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+@media (min-width: 481px) {
+  .access-denied-page__icon {
+    width: 64px;
+    height: 64px;
+  }
+
+  .access-denied-page__icon svg {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* Text section */
+.access-denied-page__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3); /* 8px */
+}
+
+/* Title */
+.access-denied-page__title {
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-xl); /* 20px */
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+@media (min-width: 481px) {
+  .access-denied-page__title {
+    font-size: var(--font-size-xl); /* 22px */
+  }
+}
+
+/* Subtitle */
+.access-denied-page__subtitle {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-sm); /* 14px */
+  font-weight: var(--font-weight-normal);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Buttons */
+.access-denied-page__buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4); /* 12px */
+  width: 100%;
+}
+
+/* Mobile: taller buttons for touch targets */
+@media (max-width: 480px) {
+  .access-denied-page__buttons button {
+    min-height: 52px;
+  }
+}
+
+/* Desktop: standard height */
+@media (min-width: 481px) {
+  .access-denied-page__buttons button {
+    min-height: 48px;
+  }
+}
+
+/* Support link */
+.access-denied-page__support {
+  font-size: var(--font-size-xs); /* 13px */
+}
