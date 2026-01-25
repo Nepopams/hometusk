@@ -11,6 +11,7 @@ import type {
   Household,
   HouseholdMember,
   Notification,
+  ShoppingList,
   Task,
   TaskFilters,
   UserProfile,
@@ -86,6 +87,10 @@ export async function getTasks(householdId: string, filters: TaskFilters = {}): 
 
 export async function getTask(householdId: string, taskId: string): Promise<Task> {
   return apiFetch<Task>(`/households/${householdId}/tasks/${taskId}`);
+}
+
+export async function getShoppingLists(householdId: string): Promise<ShoppingList[]> {
+  return apiFetch<ShoppingList[]>(`/households/${householdId}/shopping-lists`);
 }
 
 export async function getZones(householdId: string): Promise<Zone[]> {

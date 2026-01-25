@@ -243,4 +243,28 @@ export interface AnalyticsSummary {
   overdueTop?: OverdueTask[];
 }
 
+// ============================================
+// Shopping Types (per commands.openapi.yaml)
+// ============================================
+
+export interface ShoppingList {
+  id: string;
+  name: string;
+  householdId: string;
+  unpurchasedCount: number;
+  createdAt: string;
+}
+
+export interface ShoppingItem {
+  id: string;
+  name: string;
+  quantity?: number;
+  unit?: string;
+  purchased: boolean;
+  linkedTaskId?: string;
+  addedBy?: UserSummary;
+  createdAt: string;
+  purchasedAt?: string;
+}
+
 export type { Notification, NotificationPayload, NotificationType } from './notification';
