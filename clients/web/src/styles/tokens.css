@@ -199,8 +199,55 @@
 }
 
 /* ========================================
- * RESPONSIVE BREAKPOINTS (reference only)
- * Use in media queries:
- * @media (max-width: 1024px) - tablet
- * @media (max-width: 390px) - mobile
+ * RESPONSIVE BREAKPOINTS
+ * Standard breakpoints for consistent responsive behavior.
+ *
+ * Breakpoint values:
+ * - Mobile:  <= 480px  (phones)
+ * - Tablet:  <= 1024px (tablets, small laptops)
+ * - Desktop: >= 1200px (large screens)
+ *
+ * Usage in media queries:
+ * @media (max-width: 480px)  - Mobile styles
+ * @media (max-width: 1024px) - Tablet and below
+ * @media (min-width: 1200px) - Desktop only
+ *
+ * For JS, use hooks from src/hooks/useMediaQuery.ts:
+ * const isMobile = useIsMobile();
+ * const breakpoint = useBreakpoint();
  * ======================================== */
+
+/* Container widths for layouts */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--spacing-6);
+  padding-right: var(--spacing-6);
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding-left: var(--spacing-5);
+    padding-right: var(--spacing-5);
+  }
+}
+
+/* Responsive visibility utilities */
+.hide-mobile {
+  display: block;
+}
+
+.show-mobile {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .hide-mobile {
+    display: none !important;
+  }
+  .show-mobile {
+    display: block !important;
+  }
+}
