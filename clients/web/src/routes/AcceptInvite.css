@@ -1,0 +1,313 @@
+/**
+ * Accept Invite page styles
+ * Follows auth screen patterns (Login, Register)
+ * Responsive: 1200/1024/390
+ */
+
+/* ========================================
+ * PAGE LAYOUT
+ * ======================================== */
+
+.accept-invite {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--spacing-8);
+  background-color: var(--color-bg-page);
+}
+
+.accept-invite__card {
+  width: 100%;
+  max-width: var(--auth-card-width);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-12);
+}
+
+/* ========================================
+ * HEADER
+ * ======================================== */
+
+.accept-invite__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-8);
+  text-align: center;
+}
+
+.accept-invite__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  background: var(--color-text-primary);
+  border-radius: var(--radius-lg);
+}
+
+.accept-invite__icon svg {
+  color: var(--color-brand);
+}
+
+.accept-invite__icon--success {
+  background: var(--color-success-soft);
+}
+
+.accept-invite__icon--success svg {
+  color: var(--color-success);
+}
+
+.accept-invite__icon--error {
+  background: var(--color-warning-soft);
+}
+
+.accept-invite__icon--error svg {
+  color: var(--color-warning);
+}
+
+.accept-invite__icon--info {
+  background: var(--color-info-soft);
+}
+
+.accept-invite__icon--info svg {
+  color: var(--color-info);
+}
+
+.accept-invite__title {
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.accept-invite__subtitle {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ========================================
+ * FORM
+ * ======================================== */
+
+.accept-invite__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+.accept-invite__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.accept-invite__label {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.accept-invite__input {
+  width: 100%;
+  height: 48px;
+  padding: 0 var(--spacing-4);
+  border: 2px solid var(--color-border-primary);
+  border-radius: var(--radius-md);
+  font-family: var(--font-family-mono, monospace);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  background: var(--color-bg-card);
+  text-align: center;
+  letter-spacing: 0.5px;
+  transition: border-color var(--transition-fast);
+}
+
+.accept-invite__input::placeholder {
+  color: var(--color-text-muted);
+  font-family: var(--font-family-body);
+  letter-spacing: normal;
+}
+
+.accept-invite__input:focus {
+  outline: none;
+  border-color: var(--color-brand);
+}
+
+.accept-invite__input:disabled {
+  background: var(--color-bg-hover-subtle);
+  color: var(--color-text-secondary);
+  opacity: 0.7;
+}
+
+.accept-invite__input--error {
+  border-color: var(--color-error);
+}
+
+.accept-invite__hint {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.accept-invite__error-text {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-xs);
+  color: var(--color-error);
+}
+
+/* ========================================
+ * VALIDATING STATE
+ * ======================================== */
+
+.accept-invite__validating {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-5);
+  padding: var(--spacing-8) 0;
+  text-align: center;
+}
+
+.accept-invite__spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--color-border-subtle);
+  border-top-color: var(--color-brand);
+  border-radius: var(--radius-full);
+  animation: invite-spin 0.8s linear infinite;
+}
+
+@keyframes invite-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.accept-invite__validating-text {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+}
+
+/* ========================================
+ * RESULT STATES (Success/Error/Info)
+ * ======================================== */
+
+.accept-invite__result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-6);
+  text-align: center;
+}
+
+.accept-invite__result-title {
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.accept-invite__result-message {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.accept-invite__household-name {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.accept-invite__redirect-hint {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+/* ========================================
+ * ACTIONS
+ * ======================================== */
+
+.accept-invite__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-2);
+}
+
+.accept-invite__link {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.accept-invite__link a {
+  color: var(--color-brand);
+  text-decoration: none;
+}
+
+.accept-invite__link a:hover {
+  text-decoration: underline;
+}
+
+/* ========================================
+ * RESPONSIVE
+ * ======================================== */
+
+@media (max-width: 1024px) {
+  .accept-invite__card {
+    max-width: var(--auth-card-width-tablet);
+    padding: var(--spacing-10);
+  }
+}
+
+@media (max-width: 480px) {
+  .accept-invite {
+    padding: var(--spacing-6);
+    justify-content: flex-start;
+    padding-top: var(--spacing-12);
+  }
+
+  .accept-invite__card {
+    max-width: 100%;
+    background: transparent;
+    border: none;
+    padding: 0;
+  }
+
+  .accept-invite__icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .accept-invite__title {
+    font-size: var(--font-size-xl);
+  }
+
+  .accept-invite__input {
+    height: 52px;
+    font-size: var(--font-size-md);
+  }
+
+  /* Full width buttons on mobile */
+  .accept-invite__actions .btn {
+    min-height: var(--touch-target-min);
+  }
+}
