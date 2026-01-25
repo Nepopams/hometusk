@@ -1,0 +1,54 @@
+/**
+ * TextLink - Styled inline links
+ * Variants: default (brand color), muted (secondary)
+ */
+
+.text-link {
+  display: inline;
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.text-link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-sm);
+}
+
+/* ========================================
+ * DEFAULT VARIANT (brand color)
+ * ======================================== */
+
+.text-link--default {
+  color: var(--color-brand);
+}
+
+.text-link--default:hover {
+  color: var(--color-brand-hover);
+}
+
+/* ========================================
+ * MUTED VARIANT (secondary color)
+ * ======================================== */
+
+.text-link--muted {
+  color: var(--color-text-secondary);
+}
+
+.text-link--muted:hover {
+  color: var(--color-text-primary);
+}
+
+/* ========================================
+ * CENTERED MODIFIER
+ * ======================================== */
+
+.text-link--centered {
+  display: block;
+  text-align: center;
+  padding: var(--spacing-4) 0;
+}

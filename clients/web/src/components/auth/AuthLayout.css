@@ -1,0 +1,57 @@
+/**
+ * AuthLayout - Centered layout for auth screens
+ * Responsive behavior across 1200/1024/390 widths
+ */
+
+.auth-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--spacing-8);
+  background-color: var(--color-bg-page);
+}
+
+.auth-layout__content {
+  width: 100%;
+  max-width: var(--auth-card-width);
+}
+
+.auth-layout__footer {
+  margin-top: var(--spacing-8);
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* ========================================
+ * RESPONSIVE
+ * ======================================== */
+
+@media (max-width: 1024px) {
+  .auth-layout__content {
+    max-width: var(--auth-card-width-tablet);
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-layout {
+    padding: var(--spacing-6);
+    justify-content: flex-start;
+    padding-top: var(--spacing-12);
+  }
+
+  .auth-layout__content {
+    max-width: 100%;
+  }
+
+  /* On mobile, we don't use cards - just the form content */
+  .auth-layout__content .card-ui {
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    border-radius: 0;
+  }
+}

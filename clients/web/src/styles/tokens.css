@@ -1,0 +1,206 @@
+/**
+ * Design Tokens - HomeTusk Design System
+ * Extracted from Pencil designs (untitled.pen)
+ *
+ * Usage: All components should use these CSS custom properties
+ * instead of hardcoded values for consistency.
+ */
+
+:root {
+  /* ========================================
+   * COLORS
+   * ======================================== */
+
+  /* Background */
+  --color-bg-page: #F5F2ED;
+  --color-bg-card: #FFFFFF;
+  --color-bg-dark: #1A1A1A;
+  --color-bg-hover: #E8E5E0;
+  --color-bg-hover-subtle: #F9F7F4;
+  --color-bg-pressed: #EBE8E3;
+
+  /* Text */
+  --color-text-primary: #1A1A1A;
+  --color-text-secondary: #888888;
+  --color-text-muted: #BDBDBD;
+  --color-text-inverse: #F5F2ED;
+  --color-text-strikethrough: #999999;
+
+  /* Brand - Primary Action */
+  --color-brand: #C45A3B;
+  --color-brand-hover: #A84A30;
+  --color-brand-pressed: #8E3F28;
+
+  /* Border */
+  --color-border-primary: #1A1A1A;
+  --color-border-subtle: #E0DDD8;
+  --color-border-muted: #F0EDE8;
+
+  /* Semantic - Error */
+  --color-error: #D84315;
+  --color-error-soft: #FFEBE6;
+  --color-error-text: #B91C1C;
+
+  /* Semantic - Success */
+  --color-success: #6B8E5E;
+  --color-success-soft: #E8F0E5;
+  --color-success-text: #166534;
+
+  /* Semantic - Warning */
+  --color-warning: #E8A055;
+  --color-warning-soft: #FDF4E8;
+  --color-warning-text: #92400E;
+
+  /* Semantic - Info */
+  --color-info: #5B8FC4;
+  --color-info-soft: #E8F1F8;
+  --color-info-text: #0369A1;
+
+  /* Neutral */
+  --color-neutral-soft: #F5F2ED;
+
+  /* Focus */
+  --color-focus-ring: rgba(196, 90, 59, 0.25);
+
+  /* ========================================
+   * SPACING
+   * ======================================== */
+  --spacing-0: 0;
+  --spacing-1: 2px;
+  --spacing-2: 4px;
+  --spacing-3: 6px;
+  --spacing-4: 8px;
+  --spacing-5: 12px;
+  --spacing-6: 16px;
+  --spacing-7: 20px;
+  --spacing-8: 24px;
+  --spacing-9: 28px;
+  --spacing-10: 32px;
+  --spacing-11: 40px;
+  --spacing-12: 48px;
+  --spacing-13: 56px;
+  --spacing-14: 64px;
+
+  /* ========================================
+   * BORDER RADIUS
+   * ======================================== */
+  --radius-none: 0;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 999px;
+
+  /* ========================================
+   * BORDER WIDTH
+   * ======================================== */
+  --border-thin: 1px;
+  --border-standard: 2px;
+  --border-emphasis: 4px;
+
+  /* ========================================
+   * TYPOGRAPHY
+   * ======================================== */
+  --font-family-heading: "Space Grotesk", "DM Sans", system-ui, sans-serif;
+  --font-family-body: "Inter", "IBM Plex Sans", system-ui, sans-serif;
+  --font-family-mono: "IBM Plex Mono", "Source Code Pro", monospace;
+
+  /* Font Sizes */
+  --font-size-xs: 0.75rem;   /* 12px */
+  --font-size-sm: 0.8125rem; /* 13px */
+  --font-size-base: 0.875rem; /* 14px */
+  --font-size-md: 1rem;       /* 16px */
+  --font-size-lg: 1.125rem;   /* 18px */
+  --font-size-xl: 1.25rem;    /* 20px */
+  --font-size-2xl: 1.5rem;    /* 24px */
+  --font-size-3xl: 2rem;      /* 32px */
+
+  /* Font Weights */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Line Heights */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* Letter Spacing */
+  --letter-spacing-tight: -0.02em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.04em;
+  --letter-spacing-wider: 0.08em;
+
+  /* ========================================
+   * COMPONENT SIZES
+   * ======================================== */
+
+  /* Buttons */
+  --btn-height-sm: 36px;
+  --btn-height-md: 44px;
+  --btn-height-lg: 48px;
+  --btn-height-xl: 52px;
+  --btn-min-width: 80px;
+  --btn-padding-x: 24px;
+  --btn-padding-x-sm: 16px;
+  --btn-radius: var(--radius-md);
+
+  /* Inputs */
+  --input-height: 48px;
+  --input-padding-x: 16px;
+  --input-padding-y: 12px;
+  --input-radius: var(--radius-md);
+
+  /* Cards */
+  --card-padding-sm: 24px;
+  --card-padding-md: 40px;
+  --card-padding-lg: 48px;
+  --card-radius: var(--radius-lg);
+  --card-gap: 32px;
+
+  /* Auth Card specific */
+  --auth-card-width: 420px;
+  --auth-card-width-tablet: 400px;
+
+  /* ========================================
+   * FOCUS & ACCESSIBILITY
+   * ======================================== */
+  --focus-ring-width: 3px;
+  --focus-ring-offset: 2px;
+  --focus-ring-color: var(--color-focus-ring);
+
+  /* Minimum touch target (WCAG) */
+  --touch-target-min: 44px;
+
+  /* ========================================
+   * SHADOWS
+   * ======================================== */
+  --shadow-sm: 0 1px 2px rgba(18, 18, 18, 0.05);
+  --shadow-md: 0 4px 12px rgba(18, 18, 18, 0.08);
+  --shadow-lg: 0 10px 24px rgba(18, 18, 18, 0.08);
+  --shadow-xl: 0 20px 40px rgba(18, 18, 18, 0.12);
+
+  /* ========================================
+   * TRANSITIONS
+   * ======================================== */
+  --transition-fast: 150ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow: 300ms ease;
+
+  /* ========================================
+   * Z-INDEX SCALE
+   * ======================================== */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal-backdrop: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+}
+
+/* ========================================
+ * RESPONSIVE BREAKPOINTS (reference only)
+ * Use in media queries:
+ * @media (max-width: 1024px) - tablet
+ * @media (max-width: 390px) - mobile
+ * ======================================== */

@@ -1,0 +1,42 @@
+/**
+ * ErrorBanner - Full-width error banner for form-level errors
+ */
+
+.error-banner {
+  display: flex;
+  gap: var(--spacing-5);
+  padding: var(--spacing-6);
+  background-color: var(--color-error-soft);
+  border-radius: var(--radius-md);
+}
+
+.error-banner__icon {
+  flex-shrink: 0;
+  color: var(--color-error);
+}
+
+.error-banner__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.error-banner__title {
+  display: block;
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-error);
+  margin-bottom: var(--spacing-2);
+}
+
+.error-banner__message {
+  margin: 0;
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-base);
+  color: var(--color-error);
+  line-height: var(--line-height-normal);
+}
+
+.error-banner__action {
+  margin-top: var(--spacing-4);
+}

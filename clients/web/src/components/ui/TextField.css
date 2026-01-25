@@ -1,0 +1,151 @@
+/**
+ * TextField component styles
+ * States: default, focus, error, disabled
+ */
+
+.text-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  width: 100%;
+}
+
+/* ========================================
+ * LABEL
+ * ======================================== */
+
+.text-field__label {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-normal);
+}
+
+.text-field__required {
+  color: var(--color-error);
+}
+
+/* Screen reader only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ========================================
+ * HINT
+ * ======================================== */
+
+.text-field__hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-top: calc(-1 * var(--spacing-1));
+}
+
+/* ========================================
+ * INPUT WRAPPER (for adornments)
+ * ======================================== */
+
+.text-field__input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* ========================================
+ * INPUT
+ * ======================================== */
+
+.text-field__input {
+  width: 100%;
+  height: var(--input-height);
+  padding: var(--input-padding-y) var(--input-padding-x);
+  border: var(--border-thin) solid var(--color-border-subtle);
+  border-radius: var(--input-radius);
+  background-color: var(--color-bg-card);
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.text-field__input::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* Focus state */
+.text-field__input:focus {
+  outline: none;
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
+}
+
+/* Hover state */
+.text-field__input:hover:not(:focus):not(:disabled) {
+  border-color: var(--color-border-primary);
+}
+
+/* Disabled state */
+.text-field__input:disabled {
+  background-color: var(--color-bg-hover-subtle);
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
+}
+
+/* ========================================
+ * END ADORNMENT
+ * ======================================== */
+
+.text-field__end-adornment {
+  position: absolute;
+  right: var(--spacing-5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+}
+
+/* When there's an adornment, add padding to input */
+.text-field__input-wrapper:has(.text-field__end-adornment) .text-field__input {
+  padding-right: calc(var(--input-padding-x) + 32px);
+}
+
+/* ========================================
+ * ERROR STATE
+ * ======================================== */
+
+.text-field--error .text-field__input {
+  border-color: var(--color-error);
+}
+
+.text-field--error .text-field__input:focus {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 var(--focus-ring-width) rgba(216, 67, 21, 0.25);
+}
+
+.text-field__error {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-error);
+  margin-top: var(--spacing-1);
+}
+
+.text-field__error::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23D84315' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E");
+  background-size: contain;
+  flex-shrink: 0;
+}

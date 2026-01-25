@@ -1,0 +1,56 @@
+/**
+ * Card component styles
+ * Padding variants: none, sm, md, lg
+ */
+
+.card-ui {
+  background-color: var(--color-bg-card);
+  border: var(--border-thin) solid var(--color-border-subtle);
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ========================================
+ * PADDING VARIANTS
+ * ======================================== */
+
+.card-ui--padding-none {
+  padding: 0;
+}
+
+.card-ui--padding-sm {
+  padding: var(--card-padding-sm);
+}
+
+.card-ui--padding-md {
+  padding: var(--card-padding-md);
+}
+
+.card-ui--padding-lg {
+  padding: var(--card-padding-lg);
+}
+
+/* ========================================
+ * FLAT (no shadow)
+ * ======================================== */
+
+.card-ui--flat {
+  box-shadow: none;
+}
+
+/* ========================================
+ * RESPONSIVE
+ * ======================================== */
+
+@media (max-width: 1024px) {
+  .card-ui--padding-lg {
+    padding: var(--card-padding-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .card-ui--padding-lg,
+  .card-ui--padding-md {
+    padding: var(--card-padding-sm);
+  }
+}
