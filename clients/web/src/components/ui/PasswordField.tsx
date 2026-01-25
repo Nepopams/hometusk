@@ -5,8 +5,10 @@ import './PasswordField.css';
 interface PasswordFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'size'> {
   /** Field label */
   label: string;
-  /** Optional hint text below label */
+  /** Optional hint text */
   hint?: string;
+  /** Position of hint text: 'top' (below label) or 'bottom' (below input) */
+  hintPosition?: 'top' | 'bottom';
   /** Error message (field turns red when set) */
   error?: string;
   /** Hide the label visually but keep for screen readers */
@@ -27,7 +29,7 @@ interface PasswordFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>,
  * <PasswordField label="Password" error="Password is required" />
  */
 const PasswordField = forwardRef<HTMLInputElement, PasswordFieldProps>(
-  ({ label, hint, error, ...props }, ref) => {
+  ({ label, hint, hintPosition, error, ...props }, ref) => {
     const [showPassword, setShowPassword] = useState(false);
 
     const toggleVisibility = () => {
@@ -39,6 +41,7 @@ const PasswordField = forwardRef<HTMLInputElement, PasswordFieldProps>(
         ref={ref}
         label={label}
         hint={hint}
+        hintPosition={hintPosition}
         error={error}
         type={showPassword ? 'text' : 'password'}
         endAdornment={

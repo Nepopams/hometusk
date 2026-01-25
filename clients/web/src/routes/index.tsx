@@ -7,6 +7,7 @@ import CreateHousehold from './CreateHousehold';
 import HouseholdLayout from './HouseholdLayout';
 import HouseholdSelector from './HouseholdSelector';
 import Login from './Login';
+import Register from './Register';
 import Members from './Members';
 import Notifications from './Notifications';
 import NotFound from './NotFound';
@@ -17,6 +18,7 @@ import ZonesList from './ZonesList';
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/login" replace /> },
   { path: '/login', element: <Login /> },
+  { path: '/register', element: <Register /> },
   { path: '/callback', element: <Callback /> },
   {
     path: '/households',

@@ -1,20 +1,20 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
 import { signinRedirect } from '../lib/auth/oidc';
 import { useAuth } from '../hooks/useAuth';
+import { useSearchParams } from 'react-router-dom';
 import AuthLayout from '../components/auth/AuthLayout';
 import BrandHeader from '../components/auth/BrandHeader';
 import { Card, Button, TextField, PasswordField, ErrorBanner, Divider, TextLink } from '../components/ui';
-import './Login.css';
+import './Register.css';
 
 const ERROR_MESSAGES: Record<string, string> = {
-  session_expired: 'Your session has expired. Please sign in again.',
+  registration_failed: 'Registration failed. Please try again.',
+  email_exists: 'An account with this email already exists.',
   auth_unavailable: 'Authentication service is temporarily unavailable. Please try again later.',
-  auth_failed: 'Authentication failed. Please check your credentials and try again.',
-  invalid_credentials: 'The email or password you entered doesn\'t match our records. Please check and try again.',
 };
 
-export default function Login() {
+export default function Register() {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -48,15 +48,18 @@ export default function Login() {
     return '';
   };
 
-  // Validate password
+  // Validate password (minimum 8 characters)
   const validatePassword = (value: string): string => {
     if (!value) {
       return 'Password is required';
     }
+    if (value.length < 8) {
+      return 'Password must be at least 8 characters';
+    }
     return '';
   };
 
-  const handleSignIn = async (e: FormEvent) => {
+  const handleCreateAccount = async (e: FormEvent) => {
     e.preventDefault();
     clearErrorParam();
 
@@ -73,39 +76,49 @@ export default function Login() {
 
     setLoading(true);
     try {
-      // For Keycloak mode, we redirect to the OIDC provider
-      // Email/password are visual only - actual auth happens on Keycloak
+      // Redirect to Keycloak for actual registration
+      // Name/email/password are visual - Keycloak handles the real registration
       await signinRedirect();
     } catch (err) {
-      console.error('[Login] OIDC redirect failed', err);
+      console.error('[Register] OIDC redirect failed', err);
       setFormError('Unable to connect to authentication service. Please try again.');
       setLoading(false);
     }
   };
 
-
-  // Keycloak mode - styled login form
+  // Keycloak mode - styled registration form
   if (authProvider === 'keycloak') {
     return (
       <AuthLayout>
         <Card padding="lg">
           <form
-            className={`login-form ${loading ? 'login-form--loading' : ''}`}
-            onSubmit={handleSignIn}
+            className={`register-form ${loading ? 'register-form--loading' : ''}`}
+            onSubmit={handleCreateAccount}
             noValidate
           >
             {/* Brand Header */}
-            <BrandHeader tagline="Welcome back" />
+            <BrandHeader tagline="Create your account" />
 
             {/* Error Banner (form-level errors) */}
             {(errorMessage || formError) && (
-              <ErrorBanner title="Unable to sign in">
+              <ErrorBanner title="Unable to create account">
                 {errorMessage || formError}
               </ErrorBanner>
             )}
 
             {/* Form Fields */}
-            <div className="login-form__fields">
+            <div className="register-form__fields">
+              <TextField
+                label="Name"
+                labelSuffix="(optional)"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+                disabled={loading}
+                autoComplete="name"
+                autoFocus
+              />
               <TextField
                 label="Email"
                 type="email"
@@ -119,7 +132,6 @@ export default function Login() {
                 error={emailError}
                 disabled={loading}
                 autoComplete="email"
-                autoFocus
               />
               <PasswordField
                 label="Password"
@@ -130,14 +142,16 @@ export default function Login() {
                 }}
                 onBlur={() => setPasswordError(validatePassword(password))}
                 placeholder="••••••••"
+                hint="At least 8 characters"
+                hintPosition="bottom"
                 error={passwordError}
                 disabled={loading}
-                autoComplete="current-password"
+                autoComplete="new-password"
               />
             </div>
 
             {/* Actions */}
-            <div className="login-form__actions">
+            <div className="register-form__actions">
               <Button
                 type="submit"
                 variant="primary"
@@ -146,21 +160,17 @@ export default function Login() {
                 loading={loading}
                 disabled={loading}
               >
-                {loading ? 'Signing in...' : 'Sign in'}
+                {loading ? 'Creating account...' : 'Create account'}
               </Button>
-              <TextLink to="/forgot-password" centered>
-                Forgot password?
-              </TextLink>
             </div>
 
             {/* Divider */}
             <Divider text="or" />
 
-            {/* Create Account Link */}
-            <div className="login-form__footer">
-              <TextLink to="/register" centered>
-                Create account
-              </TextLink>
+            {/* Sign In Link */}
+            <div className="register-form__footer">
+              <span className="register-form__footer-text">Already have an account? </span>
+              <TextLink to="/login">Sign in</TextLink>
             </div>
           </form>
         </Card>
@@ -168,9 +178,21 @@ export default function Login() {
     );
   }
 
-  // Dev mode - JWT token input (unchanged functionality, styled with tokens)
+  // Dev mode - redirect to login (dev mode doesn't support registration)
   if (authProvider === 'dev') {
-    return <DevModeLogin />;
+    return (
+      <AuthLayout>
+        <Card padding="lg">
+          <BrandHeader tagline="Dev Mode" />
+          <ErrorBanner title="Registration Not Available">
+            In dev mode, use the login page to authenticate with a JWT token.
+          </ErrorBanner>
+          <div className="register-form__footer" style={{ marginTop: 'var(--spacing-6)' }}>
+            <TextLink to="/login" centered>Go to Login</TextLink>
+          </div>
+        </Card>
+      </AuthLayout>
+    );
   }
 
   // No auth provider configured
@@ -185,89 +207,5 @@ export default function Login() {
         </ErrorBanner>
       </Card>
     </AuthLayout>
-  );
-}
-
-/**
- * Dev mode login component - separate to keep main Login clean.
- * Uses JWT token pasting for local development.
- */
-function DevModeLogin() {
-  const [token, setToken] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { login, clearError } = useAuth();
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  const errorParam = searchParams.get('error');
-  const errorMessage = errorParam ? ERROR_MESSAGES[errorParam] || 'An error occurred.' : null;
-
-  const clearErrorParam = () => {
-    if (errorParam) {
-      setSearchParams({}, { replace: true });
-    }
-    clearError();
-  };
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    clearErrorParam();
-    setError('');
-    setLoading(true);
-
-    try {
-      await login(token.trim());
-      navigate('/households');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="login-dev">
-      <h1 className="login-dev__title">Login (Dev Mode)</h1>
-      <p className="login-dev__description">
-        Paste your JWT token to authenticate in development mode.
-      </p>
-
-      {errorMessage && (
-        <ErrorBanner title="Authentication Error">
-          {errorMessage}
-        </ErrorBanner>
-      )}
-
-      <form onSubmit={handleSubmit} className="login-dev__form">
-        <div>
-          <label htmlFor="jwt-token" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
-            JWT Token
-          </label>
-          <textarea
-            id="jwt-token"
-            className="login-dev__textarea"
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-            disabled={loading}
-            required
-          />
-        </div>
-
-        {error && <p className="login-dev__error">{error}</p>}
-
-        <Button
-          type="submit"
-          variant="primary"
-          size="lg"
-          fullWidth
-          loading={loading}
-          disabled={loading || !token.trim()}
-        >
-          {loading ? 'Logging in...' : 'Login with Token'}
-        </Button>
-      </form>
-    </div>
   );
 }

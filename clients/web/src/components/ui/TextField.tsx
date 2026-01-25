@@ -4,8 +4,12 @@ import './TextField.css';
 interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
   /** Field label */
   label: string;
-  /** Optional hint text below label */
+  /** Optional suffix text after label (e.g., "(optional)") */
+  labelSuffix?: string;
+  /** Optional hint text */
   hint?: string;
+  /** Position of hint text: 'top' (below label) or 'bottom' (below input) */
+  hintPosition?: 'top' | 'bottom';
   /** Error message (field turns red when set) */
   error?: string;
   /** Icon or element to show at the end of the input */
@@ -28,7 +32,7 @@ interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'si
  * <TextField label="Password" type="password" hint="At least 8 characters" />
  */
 const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
-  ({ label, hint, error, endAdornment, hideLabel, className = '', id, ...props }, ref) => {
+  ({ label, labelSuffix, hint, hintPosition = 'top', error, endAdornment, hideLabel, className = '', id, ...props }, ref) => {
     const generatedId = useId();
     const inputId = id || generatedId;
     const errorId = error ? `${inputId}-error` : undefined;
@@ -43,10 +47,11 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
           className={`text-field__label ${hideLabel ? 'sr-only' : ''}`}
         >
           {label}
+          {labelSuffix && <span className="text-field__label-suffix"> {labelSuffix}</span>}
           {props.required && <span className="text-field__required"> *</span>}
         </label>
 
-        {hint && !error && (
+        {hint && !error && hintPosition === 'top' && (
           <span id={hintId} className="text-field__hint">
             {hint}
           </span>
@@ -63,6 +68,12 @@ const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
           />
           {endAdornment && <div className="text-field__end-adornment">{endAdornment}</div>}
         </div>
+
+        {hint && !error && hintPosition === 'bottom' && (
+          <span id={hintId} className="text-field__hint text-field__hint--bottom">
+            {hint}
+          </span>
+        )}
 
         {error && (
           <span id={errorId} className="text-field__error" role="alert">

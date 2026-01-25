@@ -1,0 +1,59 @@
+/**
+ * Register page styles
+ * Spacing and layout to match Pencil frames (mPFZL, Qj8fk, gUKML)
+ */
+
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-10); /* 32px - desktop gap */
+}
+
+.register-form__fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-7); /* 20px - between fields */
+}
+
+.register-form__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6); /* 16px */
+}
+
+.register-form__footer {
+  text-align: center;
+}
+
+.register-form__footer-text {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+}
+
+/* Loading overlay for inputs */
+.register-form--loading .register-form__fields {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Tablet (1024px) */
+@media (max-width: 1024px) {
+  .register-form {
+    gap: var(--spacing-9); /* 28px */
+  }
+}
+
+/* Mobile (480px) */
+@media (max-width: 480px) {
+  .register-form {
+    gap: var(--spacing-8); /* 24px */
+  }
+
+  .register-form__fields {
+    gap: var(--spacing-6); /* 16px */
+  }
+
+  .register-form__actions {
+    gap: var(--spacing-5); /* 12px */
+  }
+}

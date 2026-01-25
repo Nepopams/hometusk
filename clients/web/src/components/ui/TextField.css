@@ -26,6 +26,11 @@
   color: var(--color-error);
 }
 
+.text-field__label-suffix {
+  font-weight: var(--font-weight-normal);
+  color: var(--color-text-secondary);
+}
+
 /* Screen reader only */
 .sr-only {
   position: absolute;
@@ -47,6 +52,10 @@
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   margin-top: calc(-1 * var(--spacing-1));
+}
+
+.text-field__hint--bottom {
+  margin-top: var(--spacing-2);
 }
 
 /* ========================================
