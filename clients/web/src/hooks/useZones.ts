@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { getZones } from '../lib/api';
 import type { Zone } from '../types/api';
 
-export function useZones(householdId: string | undefined) {
+export function useZones(householdId: string | null | undefined) {
   const [zones, setZones] = useState<Zone[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
+  const fetchZones = useCallback(() => {
     if (!householdId) {
       setZones([]);
       setIsLoading(false);
@@ -23,5 +23,13 @@ export function useZones(householdId: string | undefined) {
       .finally(() => setIsLoading(false));
   }, [householdId]);
 
-  return { zones, isLoading, error };
+  useEffect(() => {
+    fetchZones();
+  }, [fetchZones]);
+
+  const refetch = useCallback(() => {
+    fetchZones();
+  }, [fetchZones]);
+
+  return { zones, isLoading, error, refetch };
 }

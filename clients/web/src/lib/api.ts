@@ -88,6 +88,13 @@ export async function getZones(householdId: string): Promise<Zone[]> {
   return apiFetch<Zone[]>(`/households/${householdId}/zones`);
 }
 
+export async function createZone(householdId: string, name: string): Promise<Zone> {
+  return apiFetch<Zone>(`/households/${householdId}/zones`, {
+    method: 'POST',
+    body: { name },
+  });
+}
+
 export async function getMembers(householdId: string): Promise<HouseholdMember[]> {
   return apiFetch<HouseholdMember[]>(`/households/${householdId}/members`);
 }
