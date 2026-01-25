@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { getMembers } from '../lib/api';
 import type { HouseholdMember } from '../types/api';
 
-export function useMembers(householdId: string | undefined) {
+export function useMembers(householdId: string | null | undefined) {
   const [members, setMembers] = useState<HouseholdMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
+  const fetchMembers = useCallback(() => {
     if (!householdId) {
       setMembers([]);
       setIsLoading(false);
@@ -23,5 +23,13 @@ export function useMembers(householdId: string | undefined) {
       .finally(() => setIsLoading(false));
   }, [householdId]);
 
-  return { members, isLoading, error };
+  useEffect(() => {
+    fetchMembers();
+  }, [fetchMembers]);
+
+  const refetch = useCallback(() => {
+    fetchMembers();
+  }, [fetchMembers]);
+
+  return { members, isLoading, error, refetch };
 }
