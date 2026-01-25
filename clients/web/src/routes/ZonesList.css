@@ -1,8 +1,8 @@
 /**
  * Zones page styles
- * Pattern follows Invites/Dashboard pages
+ * Pattern follows Invites page (TmZLg, gCEwX, ZWWj9)
  *
- * @see Pencil CreateHouseholdModal pattern: NmuGH, D5bh0, w7hAD, DMAll
+ * @see Pencil frames: TmZLg (list), gCEwX (empty), ZWWj9 (mobile)
  */
 
 /* ========================================
@@ -25,55 +25,65 @@
 }
 
 /* ========================================
- * HEADER
+ * SECTION
  * ======================================== */
 
-.zones__header {
+.zones__section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.zones__section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
 }
 
-.zones__title {
+.zones__section-title {
   font-family: var(--font-family-heading);
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
   margin: 0;
 }
 
 /* ========================================
- * ZONES LIST
+ * CARD CONTAINER
  * ======================================== */
 
-.zones__list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.zones__card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
+
+.zones__divider {
+  height: 1px;
+  background: var(--color-border-subtle);
+}
+
+/* ========================================
+ * ZONES LIST ITEM
+ * ======================================== */
 
 .zones__item {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
-  background: var(--color-bg-card);
-  border: 2px solid var(--color-border-primary);
-  border-radius: var(--radius-md);
-  transition: border-color var(--transition-fast);
-}
-
-.zones__item:hover {
-  border-color: var(--color-brand);
+  gap: 12px;
+  padding: 14px;
 }
 
 .zones__item-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   background: var(--color-text-primary);
   border-radius: var(--radius-md);
   flex-shrink: 0;
@@ -90,7 +100,7 @@
 
 .zones__item-name {
   font-family: var(--font-family-heading);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
   white-space: nowrap;
@@ -105,22 +115,31 @@
 }
 
 /* ========================================
+ * HINT (for 10+ zones)
+ * ======================================== */
+
+.zones__hint {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+  margin: 0;
+}
+
+/* ========================================
  * LOADING STATE (Skeletons)
  * ======================================== */
 
 .zones__skeleton {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
-  background: var(--color-bg-card);
-  border: 2px solid var(--color-border-primary);
-  border-radius: var(--radius-md);
+  gap: 12px;
+  padding: 14px;
 }
 
 .zones__skeleton-icon {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   background: var(--color-bg-hover-subtle);
   border-radius: var(--radius-md);
   animation: zones-pulse 1.5s ease-in-out infinite;
@@ -134,14 +153,14 @@
 }
 
 .zones__skeleton-line {
-  height: 16px;
+  height: 14px;
   background: var(--color-bg-hover-subtle);
   border-radius: var(--radius-sm);
   animation: zones-pulse 1.5s ease-in-out infinite;
 }
 
 .zones__skeleton-line--short {
-  width: 120px;
+  width: 100px;
   height: 12px;
 }
 
@@ -163,24 +182,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
-  padding: 40px 24px;
-}
-
-.zones__error-box {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 20px;
-  background: var(--color-warning-soft);
-  border: 2px solid var(--color-warning);
-  border-radius: var(--radius-md);
-  max-width: 400px;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
 }
 
 .zones__error-icon {
   color: var(--color-warning);
-  flex-shrink: 0;
 }
 
 .zones__error-content {
@@ -191,7 +199,7 @@
 
 .zones__error-title {
   font-family: var(--font-family-heading);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
   color: var(--color-warning);
   margin: 0;
@@ -200,7 +208,7 @@
 .zones__error-message {
   font-family: var(--font-family-body);
   font-size: var(--font-size-sm);
-  color: var(--color-text-primary);
+  color: var(--color-text-secondary);
   margin: 0;
 }
 
@@ -212,25 +220,18 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  padding: 48px 24px;
+  gap: 12px;
+  padding: 24px;
   text-align: center;
 }
 
 .zones__empty-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 72px;
-  height: 72px;
-  background: var(--color-text-primary);
-  border-radius: var(--radius-full);
-  color: var(--color-brand);
+  color: var(--color-text-secondary);
 }
 
 .zones__empty-title {
   font-family: var(--font-family-heading);
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
   margin: 0;
@@ -238,10 +239,10 @@
 
 .zones__empty-desc {
   font-family: var(--font-family-body);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
-  line-height: 1.5;
-  max-width: 320px;
+  line-height: 1.4;
+  max-width: 280px;
   margin: 0;
 }
 
@@ -266,7 +267,7 @@
 }
 
 /* ========================================
- * RESPONSIVE
+ * RESPONSIVE - 1200px
  * ======================================== */
 
 @media (max-width: 1200px) {
@@ -274,6 +275,10 @@
     max-width: 680px;
   }
 }
+
+/* ========================================
+ * RESPONSIVE - 1024px (Tablet)
+ * ======================================== */
 
 @media (max-width: 1024px) {
   .zones__wrapper {
@@ -285,6 +290,10 @@
   }
 }
 
+/* ========================================
+ * RESPONSIVE - 768px
+ * ======================================== */
+
 @media (max-width: 768px) {
   .zones {
     padding: 20px 16px;
@@ -294,46 +303,58 @@
     gap: 20px;
   }
 
-  .zones__title {
-    font-size: var(--font-size-lg);
+  .zones__section {
+    gap: 10px;
+  }
+
+  .zones__section-title {
+    font-size: var(--font-size-sm);
   }
 
   .zones__item {
-    padding: 14px 16px;
-    gap: 12px;
+    padding: 12px;
   }
 
-  .zones__item-icon {
-    width: 36px;
-    height: 36px;
-  }
-
-  .zones__empty {
-    padding: 32px 16px;
-  }
-
-  .zones__empty-icon {
-    width: 56px;
-    height: 56px;
+  .zones__skeleton {
+    padding: 12px;
   }
 }
 
+/* ========================================
+ * RESPONSIVE - 480px (Mobile)
+ * ======================================== */
+
 @media (max-width: 480px) {
-  .zones__header {
+  .zones__section-header {
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
+    gap: 10px;
   }
 
-  .zones__item-name {
-    font-size: var(--font-size-sm);
+  .zones__section-header .btn {
+    width: 100%;
   }
 
-  .zones__empty-title {
-    font-size: var(--font-size-lg);
+  .zones__item-icon {
+    width: 32px;
+    height: 32px;
   }
 
-  .zones__empty-desc {
-    font-size: var(--font-size-sm);
+  .zones__item-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .zones__skeleton-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .zones__empty {
+    padding: 20px 16px;
+  }
+
+  .zones__error {
+    padding: 20px 16px;
   }
 }
