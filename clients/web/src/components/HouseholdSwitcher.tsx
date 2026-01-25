@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import CreateHouseholdModal from './CreateHouseholdModal';
+import AcceptInviteModal from './AcceptInviteModal';
 import './HouseholdSwitcher.css';
 
 /**
@@ -20,6 +21,7 @@ export default function HouseholdSwitcher() {
 
   const [isOpen, setIsOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -103,8 +105,8 @@ export default function HouseholdSwitcher() {
 
   const handleJoinViaInvite = useCallback(() => {
     setIsOpen(false);
-    navigate('/invite');
-  }, [navigate]);
+    setIsJoinOpen(true);
+  }, []);
 
   const handleCreateHousehold = useCallback(() => {
     setIsOpen(false);
@@ -388,6 +390,11 @@ export default function HouseholdSwitcher() {
       <CreateHouseholdModal
         open={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
+      />
+
+      <AcceptInviteModal
+        open={isJoinOpen}
+        onClose={() => setIsJoinOpen(false)}
       />
     </>
   );
