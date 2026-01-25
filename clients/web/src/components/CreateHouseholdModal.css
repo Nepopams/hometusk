@@ -1,0 +1,303 @@
+/**
+ * Create Household Modal styles
+ * Matches Pencil frames: NmuGH, D5bh0, w7hAD, 9wOkc, DMAll
+ */
+
+/* ========================================
+ * MODAL OVERLAY
+ * ======================================== */
+
+.create-household-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal-backdrop);
+  animation: chm-backdrop-in 150ms ease-out;
+}
+
+/* ========================================
+ * MODAL CARD (Desktop/Tablet)
+ * ======================================== */
+
+.create-household-modal__card {
+  width: 440px;
+  max-width: calc(100vw - var(--spacing-8));
+  max-height: calc(100vh - var(--spacing-12));
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: var(--z-modal);
+  animation: chm-panel-in 200ms ease-out;
+  outline: none;
+}
+
+/* ========================================
+ * HEADER
+ * ======================================== */
+
+.create-household-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-6) var(--spacing-6);
+}
+
+.create-household-modal__header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.create-household-modal__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: var(--color-text-primary);
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.create-household-modal__icon svg {
+  color: var(--color-brand);
+}
+
+.create-household-modal__title {
+  margin: 0;
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.create-household-modal__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.create-household-modal__close:hover {
+  background: var(--color-bg-hover-subtle);
+  color: var(--color-text-primary);
+}
+
+.create-household-modal__close:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* ========================================
+ * DIVIDER
+ * ======================================== */
+
+.create-household-modal__divider {
+  height: 1px;
+  background: var(--color-border-primary);
+  flex-shrink: 0;
+}
+
+/* ========================================
+ * BODY
+ * ======================================== */
+
+.create-household-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-5);
+  padding: var(--spacing-6);
+  overflow-y: auto;
+}
+
+.create-household-modal__microcopy {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.create-household-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.create-household-modal__label {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.create-household-modal__input {
+  width: 100%;
+  height: 44px;
+  padding: 0 var(--spacing-4);
+  border: 2px solid var(--color-border-primary);
+  border-radius: var(--radius-md);
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  background: var(--color-bg-card);
+  transition: border-color var(--transition-fast);
+}
+
+.create-household-modal__input::placeholder {
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-normal);
+}
+
+.create-household-modal__input:focus {
+  outline: none;
+  border-color: var(--color-brand);
+}
+
+.create-household-modal__input:disabled {
+  background: var(--color-bg-hover-subtle);
+  color: var(--color-text-secondary);
+  opacity: 0.5;
+}
+
+.create-household-modal__input--error {
+  border-color: var(--color-error);
+}
+
+.create-household-modal__input--error:focus {
+  border-color: var(--color-error);
+}
+
+.create-household-modal__error {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-xs);
+  color: var(--color-error);
+}
+
+.create-household-modal__hint {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* ========================================
+ * FOOTER
+ * ======================================== */
+
+.create-household-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-4);
+  padding: var(--spacing-5) var(--spacing-6);
+}
+
+/* ========================================
+ * MOBILE SHEET (390px)
+ * ======================================== */
+
+@media (max-width: 480px) {
+  .create-household-modal__backdrop {
+    align-items: flex-end;
+  }
+
+  .create-household-modal__card {
+    width: 100%;
+    max-width: none;
+    max-height: 90vh;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    animation: chm-slide-up 200ms ease-out;
+  }
+
+  /* Sheet handle */
+  .create-household-modal__header::before {
+    content: '';
+    position: absolute;
+    top: var(--spacing-3);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 4px;
+    background: var(--color-border-primary);
+    border-radius: var(--radius-full);
+  }
+
+  .create-household-modal__header {
+    position: relative;
+    padding-top: var(--spacing-8);
+  }
+
+  .create-household-modal__close {
+    width: 44px;
+    height: 44px;
+  }
+
+  .create-household-modal__input {
+    height: 48px;
+    font-size: var(--font-size-md);
+  }
+
+  /* Mobile: stacked buttons, primary first */
+  .create-household-modal__footer {
+    flex-direction: column;
+    padding: var(--spacing-5) var(--spacing-6) var(--spacing-10);
+    gap: var(--spacing-4);
+  }
+
+  .create-household-modal__footer .btn {
+    width: 100%;
+    height: 52px;
+  }
+
+  /* Reverse order: submit first, cancel second */
+  .create-household-modal__footer .btn--primary {
+    order: -1;
+  }
+}
+
+/* ========================================
+ * ANIMATIONS
+ * ======================================== */
+
+@keyframes chm-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes chm-panel-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes chm-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}

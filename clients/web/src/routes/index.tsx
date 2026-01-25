@@ -3,7 +3,6 @@ import { ProtectedRoute } from '../components/ProtectedRoute';
 import AcceptInvite from './AcceptInvite';
 import Analytics from './Analytics';
 import Callback from './Callback';
-import CreateHousehold from './CreateHousehold';
 import HouseholdLayout from './HouseholdLayout';
 import HouseholdSelector from './HouseholdSelector';
 import Login from './Login';
@@ -28,7 +27,8 @@ export const router = createBrowserRouter([
     element: <ProtectedRoute />,
     children: [
       { index: true, element: <HouseholdSelector /> },
-      { path: 'new', element: <CreateHousehold /> },
+      // Legacy: redirect to landing page (create via modal or inline form)
+      { path: 'new', element: <Navigate to="/households" replace /> },
     ],
   },
   {
