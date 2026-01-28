@@ -6,6 +6,9 @@ interface PersonalProgressCardProps {
   pointsThisWeek: number;
   badges: Badge[];
   isEmpty: boolean;
+  currentStreak: number;
+  bestStreak: number;
+  graceAvailable: boolean;
 }
 
 export function PersonalProgressCard({
@@ -13,8 +16,18 @@ export function PersonalProgressCard({
   pointsThisWeek,
   badges,
   isEmpty,
+  currentStreak,
+  bestStreak,
+  graceAvailable,
 }: PersonalProgressCardProps) {
   const earnedBadges = badges.filter((badge) => badge.earned);
+
+  const streakMessage =
+    currentStreak <= 0
+      ? 'Start a streak with your next task.'
+      : currentStreak === 1
+        ? 'Day 1! Great start!'
+        : `Day ${currentStreak}! Keep it up!`;
 
   return (
     <div className="progress__card personal-progress">
@@ -32,6 +45,17 @@ export function PersonalProgressCard({
           <div className="progress__stat progress__stat--secondary">
             <span className="progress__stat-label">This week:</span>
             <span className="progress__stat-value">+{pointsThisWeek}</span>
+          </div>
+          <div className="personal-progress__streak">
+            <span className="streak-value">{currentStreak}</span>
+            <span className="streak-label">day streak</span>
+            <span className="streak-message">{streakMessage}</span>
+            {!graceAvailable && currentStreak > 0 && (
+              <span className="streak-grace">Grace day saved your streak!</span>
+            )}
+            {bestStreak > currentStreak && (
+              <span className="streak-best">Best: {bestStreak} days</span>
+            )}
           </div>
           <BadgeGrid
             badges={earnedBadges}

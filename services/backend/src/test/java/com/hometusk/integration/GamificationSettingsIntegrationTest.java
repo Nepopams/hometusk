@@ -20,7 +20,8 @@ class GamificationSettingsIntegrationTest extends IntegrationTestBase {
                         .with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.showProgressToOthers").value(true))
-                .andExpect(jsonPath("$.gamificationEnabled").value(true));
+                .andExpect(jsonPath("$.gamificationEnabled").value(true))
+                .andExpect(jsonPath("$.streakVisible").value(true));
     }
 
     @Test
@@ -28,7 +29,8 @@ class GamificationSettingsIntegrationTest extends IntegrationTestBase {
     void putSettings_updatesAndPersists() throws Exception {
         Map<String, Object> request = Map.of(
                 "showProgressToOthers", false,
-                "gamificationEnabled", false);
+                "gamificationEnabled", false,
+                "streakVisible", false);
 
         mockMvc.perform(put("/api/v1/households/{id}/gamification/settings", testHousehold.getId())
                         .with(jwt())
@@ -36,13 +38,15 @@ class GamificationSettingsIntegrationTest extends IntegrationTestBase {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.showProgressToOthers").value(false))
-                .andExpect(jsonPath("$.gamificationEnabled").value(false));
+                .andExpect(jsonPath("$.gamificationEnabled").value(false))
+                .andExpect(jsonPath("$.streakVisible").value(false));
 
         mockMvc.perform(get("/api/v1/households/{id}/gamification/settings", testHousehold.getId())
                         .with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.showProgressToOthers").value(false))
-                .andExpect(jsonPath("$.gamificationEnabled").value(false));
+                .andExpect(jsonPath("$.gamificationEnabled").value(false))
+                .andExpect(jsonPath("$.streakVisible").value(false));
     }
 
     @Test
@@ -58,7 +62,8 @@ class GamificationSettingsIntegrationTest extends IntegrationTestBase {
     void putSettings_notMember_returns403() throws Exception {
         Map<String, Object> request = Map.of(
                 "showProgressToOthers", false,
-                "gamificationEnabled", false);
+                "gamificationEnabled", false,
+                "streakVisible", false);
 
         mockMvc.perform(put("/api/v1/households/{id}/gamification/settings", testHousehold.getId())
                         .with(jwtForUser(testUser2))

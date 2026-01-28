@@ -14,11 +14,12 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
-@Table(name = "gamification_settings", uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "household_id"}))
-public class GamificationSettings {
+@Table(name = "streak_states", uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "household_id"}))
+public class StreakState {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -32,30 +33,29 @@ public class GamificationSettings {
     @JoinColumn(name = "household_id", nullable = false)
     private Household household;
 
-    @Column(name = "show_progress_to_others", nullable = false)
-    private boolean showProgressToOthers = true;
+    @Column(name = "current_streak", nullable = false)
+    private int currentStreak = 0;
 
-    @Column(name = "gamification_enabled", nullable = false)
-    private boolean gamificationEnabled = true;
+    @Column(name = "best_streak", nullable = false)
+    private int bestStreak = 0;
 
-    @Column(name = "streak_visible", nullable = false)
-    private boolean streakVisible = true;
+    @Column(name = "last_activity_date")
+    private LocalDate lastActivityDate;
 
-    @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+    @Column(name = "grace_used_today", nullable = false)
+    private boolean graceUsedToday = false;
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    protected GamificationSettings() {}
+    protected StreakState() {}
 
-    public GamificationSettings(User user, Household household) {
+    public StreakState(User user, Household household) {
         this.user = user;
         this.household = household;
-        this.showProgressToOthers = true;
-        this.gamificationEnabled = true;
-        this.streakVisible = true;
-        this.createdAt = Instant.now();
+        this.currentStreak = 0;
+        this.bestStreak = 0;
+        this.graceUsedToday = false;
         this.updatedAt = Instant.now();
     }
 
@@ -76,35 +76,39 @@ public class GamificationSettings {
         return household;
     }
 
-    public boolean isShowProgressToOthers() {
-        return showProgressToOthers;
+    public int getCurrentStreak() {
+        return currentStreak;
     }
 
-    public boolean isGamificationEnabled() {
-        return gamificationEnabled;
+    public int getBestStreak() {
+        return bestStreak;
     }
 
-    public boolean isStreakVisible() {
-        return streakVisible;
+    public LocalDate getLastActivityDate() {
+        return lastActivityDate;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public boolean isGraceUsedToday() {
+        return graceUsedToday;
     }
 
     public Instant getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setShowProgressToOthers(boolean showProgressToOthers) {
-        this.showProgressToOthers = showProgressToOthers;
+    public void setCurrentStreak(int currentStreak) {
+        this.currentStreak = currentStreak;
     }
 
-    public void setGamificationEnabled(boolean gamificationEnabled) {
-        this.gamificationEnabled = gamificationEnabled;
+    public void setBestStreak(int bestStreak) {
+        this.bestStreak = bestStreak;
     }
 
-    public void setStreakVisible(boolean streakVisible) {
-        this.streakVisible = streakVisible;
+    public void setLastActivityDate(LocalDate lastActivityDate) {
+        this.lastActivityDate = lastActivityDate;
+    }
+
+    public void setGraceUsedToday(boolean graceUsedToday) {
+        this.graceUsedToday = graceUsedToday;
     }
 }

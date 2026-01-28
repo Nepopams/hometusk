@@ -314,6 +314,9 @@ export interface GamificationProgress {
   recentActivity: PointsEntry[];
   householdTotalTasks: number;
   householdTotalPoints: number;
+  currentStreak: number;
+  bestStreak: number;
+  graceAvailable: boolean;
 }
 
 export interface BadgeCatalogResponse {
@@ -323,6 +326,7 @@ export interface BadgeCatalogResponse {
 export interface GamificationSettings {
   showProgressToOthers: boolean;
   gamificationEnabled: boolean;
+  streakVisible: boolean;
 }
 
 export type { Notification, NotificationPayload, NotificationType } from './notification';

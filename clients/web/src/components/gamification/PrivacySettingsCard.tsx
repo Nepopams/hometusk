@@ -31,6 +31,18 @@ export function PrivacySettingsCard({
         <label className="privacy-settings__label">
           <input
             type="checkbox"
+            checked={settings.streakVisible}
+            onChange={(e) => onUpdate({ streakVisible: e.target.checked })}
+            disabled={isUpdating}
+          />
+          <span>Show my streak to household members</span>
+        </label>
+      </div>
+
+      <div className="privacy-settings__option">
+        <label className="privacy-settings__label">
+          <input
+            type="checkbox"
             checked={settings.gamificationEnabled}
             onChange={(e) => onUpdate({ gamificationEnabled: e.target.checked })}
             disabled={isUpdating}

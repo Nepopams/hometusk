@@ -74,6 +74,9 @@ export default function Progress() {
           pointsThisWeek={progress.pointsThisWeek}
           badges={progress.earnedBadges}
           isEmpty={isEmpty}
+          currentStreak={progress.currentStreak}
+          bestStreak={progress.bestStreak}
+          graceAvailable={progress.graceAvailable}
         />
 
         <HouseholdAggregateCard

@@ -5,6 +5,7 @@ import com.hometusk.commands.domain.Command;
 import com.hometusk.commands.pipeline.decision.DecisionResult;
 import com.hometusk.gamification.service.BadgeService;
 import com.hometusk.gamification.service.PointsService;
+import com.hometusk.gamification.service.StreakService;
 import com.hometusk.households.domain.Household;
 import com.hometusk.households.domain.Zone;
 import com.hometusk.households.service.HouseholdService;
@@ -17,6 +18,8 @@ import com.hometusk.tasks.service.TaskService;
 import com.hometusk.users.domain.User;
 import com.hometusk.users.service.UserService;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -41,6 +44,7 @@ public class ActionExecutor {
     private final NotificationService notificationService;
     private final PointsService pointsService;
     private final BadgeService badgeService;
+    private final StreakService streakService;
 
     public ActionExecutor(
             TaskService taskService,
@@ -51,7 +55,8 @@ public class ActionExecutor {
             ActivityRecorder activityRecorder,
             NotificationService notificationService,
             PointsService pointsService,
-            BadgeService badgeService) {
+            BadgeService badgeService,
+            StreakService streakService) {
         this.taskService = taskService;
         this.shoppingService = shoppingService;
         this.householdService = householdService;
@@ -61,6 +66,7 @@ public class ActionExecutor {
         this.notificationService = notificationService;
         this.pointsService = pointsService;
         this.badgeService = badgeService;
+        this.streakService = streakService;
     }
 
     /**
@@ -118,6 +124,7 @@ public class ActionExecutor {
 
         pointsService.awardForTaskCompleted(task, command.getRequester());
         badgeService.checkAndAwardBadges(task.getAssignee(), task.getHousehold());
+        updateStreakForTask(task);
 
         // Record activity
         activityRecorder.recordTaskCompleted(task, command.getRequester(), command.getId(), correlationId);
@@ -195,6 +202,7 @@ public class ActionExecutor {
 
         pointsService.awardForTaskCompleted(task, command.getRequester());
         badgeService.checkAndAwardBadges(task.getAssignee(), task.getHousehold());
+        updateStreakForTask(task);
 
         // Record activity
         activityRecorder.recordTaskCompleted(task, command.getRequester(), command.getId(), correlationId);
@@ -266,6 +274,15 @@ public class ActionExecutor {
         if (value instanceof Number n) return n.intValue();
         if (value instanceof String s) return Integer.parseInt(s);
         return null;
+    }
+
+    private void updateStreakForTask(Task task) {
+        if (task == null || task.getAssignee() == null || task.getCompletedAt() == null) {
+            return;
+        }
+
+        LocalDate activityDate = task.getCompletedAt().atZone(ZoneOffset.UTC).toLocalDate();
+        streakService.updateStreak(task.getAssignee(), task.getHousehold(), activityDate);
     }
 
     public record CreateTaskResult(UUID taskId, UUID assigneeId) {}

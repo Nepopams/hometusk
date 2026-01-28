@@ -49,6 +49,7 @@ public class GamificationSettingsService {
         GamificationSettings settings = getOrCreate(user, household);
         settings.setShowProgressToOthers(request.showProgressToOthers());
         settings.setGamificationEnabled(request.gamificationEnabled());
+        settings.setStreakVisible(request.streakVisible());
         return repository.save(settings);
     }
 
@@ -56,6 +57,13 @@ public class GamificationSettingsService {
         return repository
                 .findByUser_IdAndHousehold_Id(user.getId(), household.getId())
                 .map(GamificationSettings::isGamificationEnabled)
+                .orElse(true);
+    }
+
+    public boolean isStreakVisible(User user, Household household) {
+        return repository
+                .findByUser_IdAndHousehold_Id(user.getId(), household.getId())
+                .map(GamificationSettings::isStreakVisible)
                 .orElse(true);
     }
 }

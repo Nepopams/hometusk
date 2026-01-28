@@ -9,9 +9,9 @@
 ---
 
 ## Status
-**Deferred** — OUT OF SCOPE for S08 (planned for S09)
+**Ready** — S09 Scope
 
-**Rationale:** Avoid "streak pressure" early. Validate value with Points + Badges first.
+**Previous:** Deferred from S08 to avoid "streak pressure" early.
 
 ---
 

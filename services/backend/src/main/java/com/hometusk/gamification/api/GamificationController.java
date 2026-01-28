@@ -1,12 +1,14 @@
 package com.hometusk.gamification.api;
 
 import com.hometusk.gamification.domain.GamificationSettings;
+import com.hometusk.gamification.domain.StreakState;
 import com.hometusk.gamification.dto.BadgeCatalogResponse;
 import com.hometusk.gamification.dto.GamificationProgressResponse;
 import com.hometusk.gamification.dto.GamificationSettingsDto;
 import com.hometusk.gamification.service.BadgeService;
 import com.hometusk.gamification.service.GamificationSettingsService;
 import com.hometusk.gamification.service.PointsService;
+import com.hometusk.gamification.service.StreakService;
 import com.hometusk.households.domain.Household;
 import com.hometusk.households.repository.HouseholdRepository;
 import com.hometusk.shared.security.CurrentUser;
@@ -35,6 +37,7 @@ public class GamificationController {
     private final PointsService pointsService;
     private final BadgeService badgeService;
     private final GamificationSettingsService settingsService;
+    private final StreakService streakService;
     private final MembershipService membershipService;
     private final UserResolver userResolver;
     private final UserRepository userRepository;
@@ -44,6 +47,7 @@ public class GamificationController {
             PointsService pointsService,
             BadgeService badgeService,
             GamificationSettingsService settingsService,
+            StreakService streakService,
             MembershipService membershipService,
             UserResolver userResolver,
             UserRepository userRepository,
@@ -51,6 +55,7 @@ public class GamificationController {
         this.pointsService = pointsService;
         this.badgeService = badgeService;
         this.settingsService = settingsService;
+        this.streakService = streakService;
         this.membershipService = membershipService;
         this.userResolver = userResolver;
         this.userRepository = userRepository;
@@ -68,6 +73,14 @@ public class GamificationController {
         CurrentUser currentUser = userResolver.resolveCurrentUser();
         membershipService.requireMembership(currentUser.id(), householdId);
 
+        User user = userRepository
+                .findById(currentUser.id())
+                .orElseThrow(() -> new IllegalStateException("User not found"));
+        Household household = householdRepository
+                .findById(householdId)
+                .orElseThrow(() -> new IllegalStateException("Household not found"));
+        StreakState streakState = streakService.getStreakState(user, household);
+
         GamificationProgressResponse response = new GamificationProgressResponse(
                 currentUser.id(),
                 pointsService.getTotalPoints(currentUser.id(), householdId),
@@ -75,7 +88,10 @@ public class GamificationController {
                 badgeService.getEarnedBadges(currentUser.id(), householdId),
                 pointsService.getRecentActivity(currentUser.id(), householdId, 10),
                 pointsService.getHouseholdTotalTasks(householdId),
-                pointsService.getHouseholdTotalPoints(householdId));
+                pointsService.getHouseholdTotalPoints(householdId),
+                streakState.getCurrentStreak(),
+                streakState.getBestStreak(),
+                !streakState.isGraceUsedToday());
 
         return ResponseEntity.ok(response);
     }
