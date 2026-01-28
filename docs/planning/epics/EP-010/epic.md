@@ -12,7 +12,7 @@
 ---
 
 ## Status
-**Draft** — Awaiting Human Gate approval
+**Approved** — Ready for sprint planning (2026-01-28)
 
 ## Initiative Alignment
 This epic implements INIT-2026Q3-recurring-tasks-scheduling:

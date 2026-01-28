@@ -1,5 +1,5 @@
 # Initiative: INIT-2026Q3-recurring-tasks-scheduling
-Status: PROPOSED — Awaiting Human Gate approval
+Status: APPROVED — Epic EP-010 decomposed, ready for sprint planning
 Owner: Planning/Architecture (Claude Code)
 Epic: TBD (EP-010 candidate)
 Sprint: TBD
