@@ -82,9 +82,9 @@ public class AiPlatformDecisionProvider implements DecisionProvider {
 
     private String serializeResponseForLog(AiDecisionResponse response) {
         try {
-            return "decisionId=" + response.decisionId() + ", type=" + response.type();
+            return "{\"decisionId\":\"" + response.decisionId() + "\",\"type\":\"" + response.type() + "\"}";
         } catch (Exception e) {
-            return "Unable to serialize response";
+            return "{\"error\":\"Unable to serialize response\"}";
         }
     }
 }

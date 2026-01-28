@@ -71,9 +71,9 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
             String requestBody = objectMapper.writeValueAsString(Map.of(
                     "type", "create_task",
                     "householdId", testHousehold.getId(),
-                    "source", "text",
+                    "source", "web",
                     "clientTimestamp", "2024-01-15T10:00:00Z",
-                    "payload", Map.of("rawText", "Clean the kitchen")));
+                    "payload", Map.of("title", "Clean the kitchen")));
 
             // When
             mockMvc.perform(post("/api/v1/commands")
@@ -114,9 +114,9 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
             String requestBody = objectMapper.writeValueAsString(Map.of(
                     "type", "create_task",
                     "householdId", testHousehold.getId(),
-                    "source", "text",
+                    "source", "web",
                     "clientTimestamp", "2024-01-15T10:00:00Z",
-                    "payload", Map.of("rawText", "Clean something")));
+                    "payload", Map.of("title", "Clean something")));
 
             // When
             mockMvc.perform(post("/api/v1/commands")
@@ -155,9 +155,9 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
             String requestBody = objectMapper.writeValueAsString(Map.of(
                     "type", "create_task",
                     "householdId", testHousehold.getId(),
-                    "source", "text",
+                    "source", "web",
                     "clientTimestamp", "2024-01-15T10:00:00Z",
-                    "payload", Map.of("rawText", "Clean kitchen")));
+                    "payload", Map.of("title", "Clean kitchen")));
 
             // When
             mockMvc.perform(post("/api/v1/commands")
@@ -195,9 +195,9 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
             String requestBody = objectMapper.writeValueAsString(Map.of(
                     "type", "create_task",
                     "householdId", testHousehold.getId(),
-                    "source", "text",
+                    "source", "web",
                     "clientTimestamp", "2024-01-15T10:00:00Z",
-                    "payload", Map.of("rawText", "Clean kitchen")));
+                    "payload", Map.of("title", "Clean kitchen")));
 
             // When
             mockMvc.perform(post("/api/v1/commands")
@@ -306,9 +306,9 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
             String requestBody = objectMapper.writeValueAsString(Map.of(
                     "type", "create_task",
                     "householdId", testHousehold.getId(),
-                    "source", "text",
+                    "source", "web",
                     "clientTimestamp", "2024-01-15T10:00:00Z",
-                    "payload", Map.of("rawText", "Another task")));
+                    "payload", Map.of("title", "Another task")));
 
             // When
             mockMvc.perform(post("/api/v1/commands")
@@ -319,7 +319,7 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
                     // Then: Guardrails should trigger NEEDS_INPUT due to MaxOpenTasks
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value("needs_input"))
-                    .andExpect(jsonPath("$.question", containsString("tasks")));
+                    .andExpect(jsonPath("$.question", containsString("10")));
 
             // Verify no additional task was created
             var tasks = taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
@@ -342,9 +342,9 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
             String requestBody = objectMapper.writeValueAsString(Map.of(
                     "type", "create_task",
                     "householdId", testHousehold.getId(),
-                    "source", "text",
+                    "source", "web",
                     "clientTimestamp", "2024-01-15T10:00:00Z",
-                    "payload", Map.of("rawText", "Buy groceries")));
+                    "payload", Map.of("title", "Buy groceries")));
 
             // When
             mockMvc.perform(post("/api/v1/commands")
@@ -365,21 +365,21 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
     }
 
     @Nested
-    @DisplayName("Scenario 7: propose_add_shopping_item → NEEDS_INPUT (unsupported)")
+    @DisplayName("Scenario 7: propose_add_shopping_item → EXECUTED (now supported)")
     class ProposeAddShoppingItemScenario {
 
         @Test
-        @DisplayName("should return needs_input for unsupported upstream type")
-        void returnsNeedsInputForUnsupportedType() throws Exception {
-            // Given: AI Platform returns propose_add_shopping_item (unsupported)
+        @DisplayName("should execute shopping item action")
+        void executesShoppingItemAction() throws Exception {
+            // Given: AI Platform returns propose_add_shopping_item (now supported)
             stubProposeAddShoppingItemDecision();
 
             String requestBody = objectMapper.writeValueAsString(Map.of(
                     "type", "create_task",
                     "householdId", testHousehold.getId(),
-                    "source", "text",
+                    "source", "web",
                     "clientTimestamp", "2024-01-15T10:00:00Z",
-                    "payload", Map.of("rawText", "Add milk to shopping list")));
+                    "payload", Map.of("title", "Add milk to shopping list")));
 
             // When
             mockMvc.perform(post("/api/v1/commands")
@@ -387,12 +387,12 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(requestBody)
                             .with(jwt()))
-                    // Then: Safe degradation to NEEDS_INPUT
+                    // Then: Shopping item should be added (id returned in taskId field)
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.status").value("needs_input"))
-                    .andExpect(jsonPath("$.question", containsString("не поддерживается")));
+                    .andExpect(jsonPath("$.status").value("executed"))
+                    .andExpect(jsonPath("$.result.taskId").exists());
 
-            // Verify no task was created
+            // Verify no task was created (shopping item was created instead)
             var tasks = taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
             org.assertj.core.api.Assertions.assertThat(tasks).isEmpty();
         }
@@ -411,9 +411,9 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
             String requestBody = objectMapper.writeValueAsString(Map.of(
                     "type", "create_task",
                     "householdId", testHousehold.getId(),
-                    "source", "text",
+                    "source", "web",
                     "clientTimestamp", "2024-01-15T10:00:00Z",
-                    "payload", Map.of("rawText", "Something")));
+                    "payload", Map.of("title", "Something")));
 
             // When
             mockMvc.perform(post("/api/v1/commands")
@@ -421,10 +421,10 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(requestBody)
                             .with(jwt()))
-                    // Then: Safe degradation to rejected
+                    // Then: Schema validation rejects unknown type
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value("rejected"))
-                    .andExpect(jsonPath("$.errorCode").value("UNKNOWN_DECISION_TYPE"));
+                    .andExpect(jsonPath("$.errorCode").value("AI_RESPONSE_INVALID"));
         }
     }
 
@@ -452,9 +452,9 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
             String requestBody = objectMapper.writeValueAsString(Map.of(
                     "type", "create_task",
                     "householdId", testHousehold.getId(),
-                    "source", "text",
+                    "source", "web",
                     "clientTimestamp", "2024-01-15T10:00:00Z",
-                    "payload", Map.of("rawText", "Critical test task")));
+                    "payload", Map.of("title", "Critical test task")));
 
             // When
             mockMvc.perform(post("/api/v1/commands")

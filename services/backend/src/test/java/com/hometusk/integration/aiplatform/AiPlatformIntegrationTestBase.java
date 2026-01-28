@@ -186,7 +186,7 @@ public abstract class AiPlatformIntegrationTestBase extends IntegrationTestBase 
     }
 
     /**
-     * Stubs upstream propose_add_shopping_item (unsupported → Clarify).
+     * Stubs upstream propose_add_shopping_item (now supported, executes immediately).
      */
     protected void stubProposeAddShoppingItemDecision() {
         String responseBody =
@@ -199,8 +199,7 @@ public abstract class AiPlatformIntegrationTestBase extends IntegrationTestBase 
                         {
                             "actionType": "add_shopping_item",
                             "parameters": {
-                                "listId": "list-uuid-here",
-                                "itemName": "Молоко",
+                                "name": "Молоко",
                                 "quantity": 2
                             }
                         }
@@ -239,6 +238,9 @@ public abstract class AiPlatformIntegrationTestBase extends IntegrationTestBase 
      * Stubs upstream start_job with deadline and zone for guardrails test.
      */
     protected void stubStartJobWithFullParams(String assigneeId, String title, String zoneId) {
+        String futureDeadline = java.time.Instant.now()
+                .plus(7, java.time.temporal.ChronoUnit.DAYS)
+                .toString();
         String responseBody =
                 """
                 {
@@ -252,13 +254,13 @@ public abstract class AiPlatformIntegrationTestBase extends IntegrationTestBase 
                                 "title": "%s",
                                 "assigneeId": "%s",
                                 "zoneId": "%s",
-                                "deadline": "2026-01-20T18:00:00Z"
+                                "deadline": "%s"
                             }
                         }
                     ]
                 }
                 """
-                        .formatted(title, assigneeId, zoneId);
+                        .formatted(title, assigneeId, zoneId, futureDeadline);
 
         stubFor(post(urlEqualTo("/decision"))
                 .willReturn(aResponse()
