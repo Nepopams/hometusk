@@ -1471,7 +1471,15 @@ components:
           description: Command that created this task
         createdVia:
           type: string
-          enum: [command, fallback, direct]
+          enum: [command, fallback, direct, routine]
+        routine:
+          $ref: '#/components/schemas/RoutineSummary'
+          description: Source routine (if generated from a routine)
+        scheduledDate:
+          type: string
+          format: date
+          nullable: true
+          description: Scheduled date for routine instance (null for manual tasks)
         createdAt:
           type: string
           format: date-time
@@ -1490,6 +1498,20 @@ components:
           format: uuid
         displayName:
           type: string
+
+    RoutineSummary:
+      type: object
+      description: Summary of source routine for routine-generated tasks
+      required:
+        - id
+        - title
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          description: Routine title (e.g., "Мыть посуду")
 
     AnalyticsSummary:
       type: object
