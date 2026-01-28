@@ -6,6 +6,7 @@ import com.hometusk.routines.domain.Routine;
 import com.hometusk.routines.domain.RoutineStatus;
 import com.hometusk.routines.dto.CreateRoutineRequest;
 import com.hometusk.routines.dto.RoutineDto;
+import com.hometusk.routines.dto.UpcomingInstancesResponse;
 import com.hometusk.routines.dto.UpdateRoutineRequest;
 import com.hometusk.routines.service.RoutineService;
 import com.hometusk.shared.security.CurrentUser;
@@ -152,5 +153,56 @@ public class RoutineController {
 
         routineService.deleteRoutine(routineId, householdId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/routines/{routineId}/pause")
+    @Operation(summary = "Pause a routine")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Routine paused"),
+        @ApiResponse(responseCode = "401", description = "Authentication required"),
+        @ApiResponse(responseCode = "403", description = "Not a member of this household"),
+        @ApiResponse(responseCode = "404", description = "Routine not found"),
+        @ApiResponse(responseCode = "409", description = "Cannot pause deleted routine")
+    })
+    public ResponseEntity<RoutineDto> pauseRoutine(@PathVariable UUID householdId, @PathVariable UUID routineId) {
+        CurrentUser currentUser = userResolver.resolveCurrentUser();
+        membershipService.requireMembership(currentUser.id(), householdId);
+
+        Routine routine = routineService.pauseRoutine(routineId, householdId);
+        return ResponseEntity.ok(RoutineDto.from(routine, objectMapper));
+    }
+
+    @PostMapping("/routines/{routineId}/resume")
+    @Operation(summary = "Resume a paused routine")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Routine resumed"),
+        @ApiResponse(responseCode = "401", description = "Authentication required"),
+        @ApiResponse(responseCode = "403", description = "Not a member of this household"),
+        @ApiResponse(responseCode = "404", description = "Routine not found"),
+        @ApiResponse(responseCode = "409", description = "Cannot resume deleted routine")
+    })
+    public ResponseEntity<RoutineDto> resumeRoutine(@PathVariable UUID householdId, @PathVariable UUID routineId) {
+        CurrentUser currentUser = userResolver.resolveCurrentUser();
+        membershipService.requireMembership(currentUser.id(), householdId);
+
+        Routine routine = routineService.resumeRoutine(routineId, householdId);
+        return ResponseEntity.ok(RoutineDto.from(routine, objectMapper));
+    }
+
+    @GetMapping("/routines/{routineId}/upcoming")
+    @Operation(summary = "Preview upcoming task instances")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "List of upcoming instances"),
+        @ApiResponse(responseCode = "401", description = "Authentication required"),
+        @ApiResponse(responseCode = "403", description = "Not a member of this household"),
+        @ApiResponse(responseCode = "404", description = "Routine not found")
+    })
+    public ResponseEntity<UpcomingInstancesResponse> getUpcomingInstances(
+            @PathVariable UUID householdId, @PathVariable UUID routineId, @RequestParam(defaultValue = "7") int days) {
+        CurrentUser currentUser = userResolver.resolveCurrentUser();
+        membershipService.requireMembership(currentUser.id(), householdId);
+
+        UpcomingInstancesResponse response = routineService.getUpcomingInstances(routineId, householdId, days);
+        return ResponseEntity.ok(response);
     }
 }

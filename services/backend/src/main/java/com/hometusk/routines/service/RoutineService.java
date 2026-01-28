@@ -11,7 +11,10 @@ import com.hometusk.routines.domain.RecurrenceRule;
 import com.hometusk.routines.domain.Routine;
 import com.hometusk.routines.domain.RoutineStatus;
 import com.hometusk.routines.dto.CreateRoutineRequest;
+import com.hometusk.routines.dto.UpcomingInstanceDto;
+import com.hometusk.routines.dto.UpcomingInstancesResponse;
 import com.hometusk.routines.dto.UpdateRoutineRequest;
+import com.hometusk.routines.dto.UserSummaryDto;
 import com.hometusk.routines.repository.RoutineRepository;
 import com.hometusk.shared.exception.BusinessException;
 import com.hometusk.shared.exception.ErrorCode;
@@ -20,6 +23,8 @@ import com.hometusk.users.domain.User;
 import com.hometusk.users.service.MembershipService;
 import com.hometusk.users.service.UserService;
 import java.time.DayOfWeek;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -38,6 +43,7 @@ public class RoutineService {
     private final UserService userService;
     private final MembershipService membershipService;
     private final ObjectMapper objectMapper;
+    private final RecurrenceRuleParser recurrenceRuleParser;
 
     public RoutineService(
             RoutineRepository routineRepository,
@@ -45,13 +51,15 @@ public class RoutineService {
             ZoneService zoneService,
             UserService userService,
             MembershipService membershipService,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            RecurrenceRuleParser recurrenceRuleParser) {
         this.routineRepository = routineRepository;
         this.householdService = householdService;
         this.zoneService = zoneService;
         this.userService = userService;
         this.membershipService = membershipService;
         this.objectMapper = objectMapper;
+        this.recurrenceRuleParser = recurrenceRuleParser;
     }
 
     @Transactional(readOnly = true)
@@ -160,6 +168,74 @@ public class RoutineService {
         routine.softDelete();
         routineRepository.save(routine);
         log.info("Routine soft-deleted: id={}, householdId={}", routineId, householdId);
+    }
+
+    @Transactional
+    public Routine pauseRoutine(UUID routineId, UUID householdId) {
+        Routine routine = getRoutine(routineId, householdId);
+
+        if (routine.getStatus() == RoutineStatus.DELETED) {
+            throw new BusinessException(
+                    ErrorCode.BUSINESS_RULE_VIOLATION,
+                    "Cannot pause a deleted routine",
+                    List.of(new BusinessException.Violation("ROUTINE_DELETED", "Routine is deleted")));
+        }
+
+        if (routine.getStatus() != RoutineStatus.PAUSED) {
+            routine.setStatus(RoutineStatus.PAUSED);
+            routine.setPausedAt(Instant.now());
+            routine = routineRepository.save(routine);
+            log.info("Routine paused: id={}, householdId={}", routineId, householdId);
+        }
+
+        return routine;
+    }
+
+    @Transactional
+    public Routine resumeRoutine(UUID routineId, UUID householdId) {
+        Routine routine = getRoutine(routineId, householdId);
+
+        if (routine.getStatus() == RoutineStatus.DELETED) {
+            throw new BusinessException(
+                    ErrorCode.BUSINESS_RULE_VIOLATION,
+                    "Cannot resume a deleted routine",
+                    List.of(new BusinessException.Violation("ROUTINE_DELETED", "Routine is deleted")));
+        }
+
+        if (routine.getStatus() != RoutineStatus.ACTIVE) {
+            routine.setStatus(RoutineStatus.ACTIVE);
+            routine.setPausedAt(null);
+            routine = routineRepository.save(routine);
+            log.info("Routine resumed: id={}, householdId={}", routineId, householdId);
+        }
+
+        return routine;
+    }
+
+    @Transactional(readOnly = true)
+    public UpcomingInstancesResponse getUpcomingInstances(UUID routineId, UUID householdId, int days) {
+        Routine routine = getRoutine(routineId, householdId);
+
+        RecurrenceRule rule;
+        try {
+            rule = objectMapper.readValue(routine.getRecurrenceRuleJson(), RecurrenceRule.class);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Invalid recurrence rule JSON", e);
+        }
+
+        int count = Math.min(Math.max(days, 1), 30);
+        List<LocalDate> dates = recurrenceRuleParser.getOccurrencesInRange(rule, LocalDate.now(), count);
+
+        UserSummaryDto assignee = routine.getAssignmentPolicy() == AssignmentPolicy.FIXED
+                ? UserSummaryDto.from(routine.getFixedAssignee())
+                : null;
+
+        List<UpcomingInstanceDto> instances = dates.stream()
+                .map(date -> new UpcomingInstanceDto(date, assignee))
+                .toList();
+
+        // TODO(ST-1008): add alreadyGenerated flag when task lookup exists.
+        return new UpcomingInstancesResponse(routine.getId(), routine.getTitle(), instances);
     }
 
     private Zone resolveZone(UUID zoneId, UUID householdId) {

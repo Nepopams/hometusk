@@ -52,6 +52,9 @@ class RoutineServiceTest {
     @Mock
     private MembershipService membershipService;
 
+    @Mock
+    private RecurrenceRuleParser recurrenceRuleParser;
+
     private RoutineService routineService;
     private ObjectMapper objectMapper;
 
@@ -59,7 +62,13 @@ class RoutineServiceTest {
     void setUp() {
         objectMapper = new ObjectMapper().findAndRegisterModules();
         routineService = new RoutineService(
-                routineRepository, householdService, zoneService, userService, membershipService, objectMapper);
+                routineRepository,
+                householdService,
+                zoneService,
+                userService,
+                membershipService,
+                objectMapper,
+                recurrenceRuleParser);
     }
 
     @Test
