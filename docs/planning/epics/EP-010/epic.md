@@ -85,21 +85,35 @@ Rationale: Enough visibility without flooding task list.
 
 **Round-robin state:** Stored per routine (last assigned member + rotation order).
 
-### D) Scheduler Idempotency
-**Decision:** Dedup by (routineId, scheduledDate)
+### D) Scheduler Idempotency & Catch-up Policy
+**Decision:** Dedup by (routineId, scheduledDate) + NO backfill
 
-- Scheduler can run multiple times (cron restarts, catch-up)
+- Scheduler generates only for **[today .. today+window]** — never for past dates
+- If scheduler was down for 2 days, missed dates are NOT backfilled (v0 simplicity)
 - Only one task instance per routine per scheduled date
-- If task already exists for (routine, date) -> skip
+- If task already exists for (routine, date) -> skip silently
 
-Rationale: Aligns with ADR-012 idempotency patterns.
+Rationale: Backfill creates UX confusion ("why 10 overdue tasks appeared?"). Users can manually create if needed. Aligns with ADR-012 idempotency patterns.
+
+### D.1) Scheduler Concurrency
+**Decision:** DB-based scheduler lock (single runner)
+
+- Use `SELECT ... FOR UPDATE SKIP LOCKED` on a `scheduler_locks` table or routine row
+- Only one scheduler instance processes routines at a time
+- Round-robin state updated atomically with task insert (same transaction)
+- If task insert skipped (duplicate), round-robin state NOT advanced
+
+Rationale: Simpler than distributed locking; v0 runs single instance anyway.
 
 ### E) Delete Semantics
-**Decision:** Soft delete routine; pending instances remain by default
+**Decision:** Soft delete routine; pending instances always remain (v0)
 
 - `DELETE /routines/{id}` -> routine.status = DELETED
-- Pending (not-started) instances: configurable via `deletePendingInstances` flag
+- Pending (not-started) task instances: remain in task list (user can delete manually)
 - Completed instances: always kept for history
+- No `deletePendingInstances` flag in v0 (keep simple)
+
+Rationale: Simpler UX; users see remaining tasks and can act on them.
 
 ### F) Points Integration
 **Decision:** Generated tasks earn points like any task (via EP-009)
@@ -135,8 +149,14 @@ Task (extended)
 - scheduledDate: date (nullable) -- NEW FIELD (for routine instances)
 ```
 
-### Unique Constraints
-- `UNIQUE(routine_id, scheduled_date)` on Task (for scheduler idempotency)
+### Constraints
+- **CHECK:** `(routine_id IS NULL) = (scheduled_date IS NULL)` — both set or both null
+- **Partial unique index (Postgres):** `UNIQUE(routine_id, scheduled_date) WHERE routine_id IS NOT NULL`
+
+This ensures:
+1. Manual tasks have neither field set
+2. Routine-generated tasks have both fields set
+3. No duplicate tasks for same routine+date
 
 ---
 
@@ -148,7 +168,7 @@ Task (extended)
 GET    /api/v1/households/{householdId}/routines
 POST   /api/v1/households/{householdId}/routines
 GET    /api/v1/households/{householdId}/routines/{routineId}
-PUT    /api/v1/households/{householdId}/routines/{routineId}
+PATCH  /api/v1/households/{householdId}/routines/{routineId}  # partial update
 DELETE /api/v1/households/{householdId}/routines/{routineId}
 
 # Lifecycle

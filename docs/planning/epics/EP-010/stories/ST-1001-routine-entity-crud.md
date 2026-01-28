@@ -34,7 +34,7 @@ Implement Routine entity and REST CRUD endpoints:
   - `GET /households/{id}/routines` (list)
   - `POST /households/{id}/routines` (create)
   - `GET /households/{id}/routines/{routineId}` (get)
-  - `PUT /households/{id}/routines/{routineId}` (update)
+  - `PATCH /households/{id}/routines/{routineId}` (partial update)
   - `DELETE /households/{id}/routines/{routineId}` (soft delete)
 - Task entity extension: add `routineId`, `scheduledDate` fields
 - DB migration for new tables/columns
@@ -83,13 +83,14 @@ Then response 200 with full Routine object
 And includes all fields (title, zone, rule, policy, status)
 ```
 
-### AC-4: Update routine
+### AC-4: Partial update routine (PATCH)
 ```
-Given existing active routine
-When PUT /households/{householdId}/routines/{routineId} with:
+Given existing active routine with title = "Мыть посуду"
+When PATCH /households/{householdId}/routines/{routineId} with:
   { "title": "Помыть посуду тщательно" }
 Then response 200 with updated Routine
 And routine.title = "Помыть посуду тщательно"
+And other fields unchanged (zone, rule, policy)
 And routine.updatedAt > routine.createdAt
 ```
 
@@ -102,14 +103,17 @@ And routine.status = DELETED (not physically removed)
 And routine not in list response
 ```
 
-### AC-6: Task entity extended
+### AC-6: Task entity extended with constraints
 ```
 Given Task entity
 Then new nullable fields exist:
   - routineId: UUID (FK to routines.id)
   - scheduledDate: LocalDate
-And unique constraint on (routineId, scheduledDate) where both not null
+And CHECK constraint: (routine_id IS NULL) = (scheduled_date IS NULL)
+And partial unique index: UNIQUE(routine_id, scheduled_date) WHERE routine_id IS NOT NULL
 ```
+
+**Invariant:** Manual tasks have both fields NULL; routine tasks have both fields SET.
 
 ### AC-7: Validation - title required
 ```

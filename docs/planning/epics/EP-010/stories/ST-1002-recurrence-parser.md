@@ -20,8 +20,17 @@
 Implement RRULE-lite parser that converts recurrence rule JSON to a sequence of dates:
 - `RecurrenceRuleParser` service
 - Support patterns: DAILY, WEEKLY, MONTHLY, EVERY_N_DAYS
-- Method: `getNextOccurrences(rule, startDate, count)` -> List<LocalDate>
-- Method: `getNextOccurrence(rule, afterDate)` -> LocalDate
+
+### Method Signatures & Semantics
+```java
+// Returns up to `count` occurrences starting from `fromDateInclusive`
+List<LocalDate> getOccurrencesInRange(RecurrenceRule rule, LocalDate fromDateInclusive, int count)
+
+// Returns the first occurrence AFTER `afterDateExclusive` (not including that date)
+LocalDate getNextOccurrence(RecurrenceRule rule, LocalDate afterDateExclusive)
+```
+
+**Key:** Parameter names clarify inclusive/exclusive behavior.
 
 ---
 
@@ -44,51 +53,51 @@ Implement RRULE-lite parser that converts recurrence rule JSON to a sequence of 
 
 ## Acceptance Criteria
 
-### AC-1: DAILY pattern
+### AC-1: DAILY pattern (inclusive start)
 ```
 Given rule = { "type": "DAILY" }
-And startDate = 2026-01-28
-When getNextOccurrences(rule, startDate, 3)
+And fromDateInclusive = 2026-01-28
+When getOccurrencesInRange(rule, fromDateInclusive, 3)
 Then returns [2026-01-28, 2026-01-29, 2026-01-30]
 ```
 
-### AC-2: WEEKLY pattern (single day)
+### AC-2: WEEKLY pattern (single day, exclusive after)
 ```
 Given rule = { "type": "WEEKLY", "daysOfWeek": ["SATURDAY"] }
-And startDate = 2026-01-28 (Wednesday)
-When getNextOccurrence(rule, startDate)
-Then returns 2026-01-31 (next Saturday)
+And afterDateExclusive = 2026-01-28 (Wednesday)
+When getNextOccurrence(rule, afterDateExclusive)
+Then returns 2026-02-01 (next Saturday after Wed)
 ```
 
-### AC-3: WEEKLY pattern (multiple days)
+### AC-3: WEEKLY pattern (multiple days, inclusive start)
 ```
 Given rule = { "type": "WEEKLY", "daysOfWeek": ["MONDAY", "FRIDAY"] }
-And startDate = 2026-01-28 (Wednesday)
-When getNextOccurrences(rule, startDate, 4)
-Then returns [2026-01-30 (Fri), 2026-02-02 (Mon), 2026-02-06 (Fri), 2026-02-09 (Mon)]
+And fromDateInclusive = 2026-01-28 (Wednesday)
+When getOccurrencesInRange(rule, fromDateInclusive, 4)
+Then returns [2026-01-31 (Fri), 2026-02-02 (Mon), 2026-02-06 (Fri), 2026-02-09 (Mon)]
 ```
 
-### AC-4: MONTHLY pattern (valid day)
+### AC-4: MONTHLY pattern (exclusive after)
 ```
 Given rule = { "type": "MONTHLY", "dayOfMonth": 15 }
-And startDate = 2026-01-28
-When getNextOccurrence(rule, startDate)
+And afterDateExclusive = 2026-01-28
+When getNextOccurrence(rule, afterDateExclusive)
 Then returns 2026-02-15
 ```
 
 ### AC-5: MONTHLY pattern (day > month length)
 ```
 Given rule = { "type": "MONTHLY", "dayOfMonth": 31 }
-And startDate = 2026-02-01 (Feb has 28 days in 2026)
-When getNextOccurrence(rule, startDate)
-Then returns 2026-02-28 (last day of Feb)
+And afterDateExclusive = 2026-02-01 (Feb has 28 days in 2026)
+When getNextOccurrence(rule, afterDateExclusive)
+Then returns 2026-02-28 (clamped to last day of Feb)
 ```
 
-### AC-6: EVERY_N_DAYS pattern
+### AC-6: EVERY_N_DAYS pattern (inclusive start)
 ```
 Given rule = { "type": "EVERY_N_DAYS", "interval": 3 }
-And startDate = 2026-01-28
-When getNextOccurrences(rule, startDate, 4)
+And fromDateInclusive = 2026-01-28
+When getOccurrencesInRange(rule, fromDateInclusive, 4)
 Then returns [2026-01-28, 2026-01-31, 2026-02-03, 2026-02-06]
 ```
 
@@ -113,12 +122,12 @@ When parsing rule
 Then throws InvalidRecurrenceRuleException
 ```
 
-### AC-10: getNextOccurrence skips current date if already passed
+### AC-10: getNextOccurrence is exclusive (never returns afterDate itself)
 ```
 Given rule = { "type": "DAILY" }
-And afterDate = 2026-01-28
-When getNextOccurrence(rule, afterDate)
-Then returns 2026-01-29 (not 2026-01-28)
+And afterDateExclusive = 2026-01-28
+When getNextOccurrence(rule, afterDateExclusive)
+Then returns 2026-01-29 (not 2026-01-28, since after is exclusive)
 ```
 
 ---

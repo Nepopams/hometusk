@@ -70,15 +70,18 @@ Then no new tasks created for those dates
 And existing tasks unchanged
 ```
 
-### AC-3: Catch-up after downtime
+### AC-3: NO backfill after downtime (v0 policy)
 ```
 Given routine with DAILY rule
 And scheduler was down for 2 days
 And last generated task was for 2026-01-26
 And today = 2026-01-28
 When scheduler runs
-Then tasks created for: 2026-01-27, 2026-01-28, and next 7 days
+Then tasks created ONLY for: 2026-01-28 through 2026-02-03 (today + 7 days)
+And NO tasks created for 2026-01-27 (past date, not backfilled)
 ```
+
+**Rationale:** Backfill would create confusing "suddenly overdue" tasks. Users can manually create if needed.
 
 ### AC-4: PAUSED routines skipped
 ```

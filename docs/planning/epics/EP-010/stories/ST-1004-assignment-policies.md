@@ -111,12 +111,16 @@ When task created
 Then roundRobinState updated in same transaction
 ```
 
-### AC-9: Concurrent scheduler runs safe
+### AC-9: Concurrent scheduler runs safe (DB lock)
 ```
-Given two scheduler instances running
-When both try to generate for same routine
-Then no duplicate assignments (pessimistic lock or optimistic retry)
+Given two scheduler instances attempt to run
+When both try to acquire scheduler lock
+Then only one acquires lock (SELECT FOR UPDATE SKIP LOCKED)
+And other instance skips this run
+And no duplicate assignments or state corruption
 ```
+
+**Note:** Round-robin state only advances when task INSERT succeeds (not on skip due to duplicate).
 
 ---
 
