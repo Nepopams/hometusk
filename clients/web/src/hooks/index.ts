@@ -11,3 +11,5 @@ export {
   usePrefersReducedMotion,
   BREAKPOINTS,
 } from './useMediaQuery';
+
+export { useGamification } from './useGamification';

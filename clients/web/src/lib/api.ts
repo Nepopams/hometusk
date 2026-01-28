@@ -6,9 +6,11 @@ import type {
   AnalyticsPeriod,
   AnalyticsSummary,
   AuthErrorResponse,
+  BadgeCatalogResponse,
   CommandRequest,
   CommandResponse,
   CreateInviteResponse,
+  GamificationProgress,
   Household,
   HouseholdMember,
   Notification,
@@ -259,4 +261,14 @@ export async function createAuthSession(tokenOverride?: string): Promise<void> {
   if (!response.ok) {
     throw new Error(`Failed to create session: ${response.status}`);
   }
+}
+
+export async function getGamificationProgress(
+  householdId: string
+): Promise<GamificationProgress> {
+  return apiFetch<GamificationProgress>(`/households/${householdId}/gamification/progress`);
+}
+
+export async function getBadgeCatalog(householdId: string): Promise<BadgeCatalogResponse> {
+  return apiFetch<BadgeCatalogResponse>(`/households/${householdId}/gamification/badges`);
 }

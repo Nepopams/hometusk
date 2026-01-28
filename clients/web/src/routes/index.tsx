@@ -13,6 +13,7 @@ import Register from './Register';
 import Members from './Members';
 import Notifications from './Notifications';
 import NotFound from './NotFound';
+import Progress from './Progress';
 import SessionExpired from './SessionExpired';
 import ShoppingDetail from './ShoppingDetail';
 import ShoppingLists from './ShoppingLists';
@@ -51,6 +52,7 @@ export const router = createBrowserRouter([
           { path: 'shopping', element: <ShoppingLists /> },
           { path: 'shopping/:listId', element: <ShoppingDetail /> },
           { path: 'analytics', element: <Analytics /> },
+          { path: 'progress', element: <Progress /> },
           { path: 'zones', element: <ZonesList /> },
           { path: 'notifications', element: <Notifications /> },
           { path: 'members', element: <Members /> },

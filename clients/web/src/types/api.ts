@@ -277,4 +277,47 @@ export interface AddShoppingItemRequest {
   unit?: string;
 }
 
+// ============================================
+// Gamification Types (ST-904)
+// Aligned with backend DTOs: PointsEntryDto, BadgeDto, PointsReason
+// ============================================
+
+export type PointsReason =
+  | 'task_completed'
+  | 'on_time_bonus'
+  | 'task_uncompleted'
+  | 'on_time_bonus_reversed';
+
+export interface Badge {
+  code: string;
+  name: string;
+  description: string;
+  criteria: string;
+  iconName: string;
+  earned: boolean;
+  earnedAt?: string;
+}
+
+export interface PointsEntry {
+  id: string;
+  taskId?: string;
+  points: number;
+  reason: PointsReason;
+  createdAt: string;
+}
+
+export interface GamificationProgress {
+  userId: string;
+  totalPoints: number;
+  pointsThisWeek: number;
+  earnedBadges: Badge[];
+  recentActivity: PointsEntry[];
+  householdTotalTasks: number;
+  householdTotalPoints: number;
+}
+
+export interface BadgeCatalogResponse {
+  badges: Badge[];
+}
+
 export type { Notification, NotificationPayload, NotificationType } from './notification';
