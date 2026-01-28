@@ -161,18 +161,33 @@ For each **DoR-ready story in committed scope**:
 - produce `workpack.md` + `checklist.md` (and risks if needed).
 Output is the authoritative “implementation packet” for Codex.
 
-### 7) Codex prompts (Claude: dev-prompt-engineer) — stage-gated generation
-Prompts are generated in three steps (not as one bundle):
-1) **PLAN prompt** (`prompt-plan.md`) → for planning only  
-2) **APPLY prompt** (`prompt-apply.md`) → generated after plan approval  
-3) **REVIEW prompt** (`prompt-review.md`) → generated after apply completion  
+### 7) Codex prompts (Claude Code) — iterative generation
+Prompts are generated **one at a time**, not as a bundle:
 
-Critical constraints MUST be repeated in prompts (do not rely on hidden context).
+**Stage 1: PLAN prompt**
+- **When:** Workpack status = Ready
+- **Action:** Generate only `prompt-plan.md`
+- **DO NOT generate:** prompt-apply.md
+
+**Stage 2: APPLY prompt**
+- **When:** Human shows Codex PLAN output
+- **Action:** Generate `prompt-apply.md` incorporating PLAN findings (actual paths, signatures, migration versions)
+- **DO NOT:** guess or invent details — use facts from Codex PLAN response
+
+**Stage 3: Review (no prompt needed)**
+- **When:** Human shows Codex APPLY output
+- **Action:** Claude Code conducts review directly (run verification commands, check key files, produce GO/NO-GO)
+
+Anti-patterns:
+- ❌ Generating all prompts at once
+- ❌ Guessing in APPLY without PLAN results
+- ❌ Running Codex directly (Human runs Codex)
+- ❌ Writing implementation code (Claude Code = prompts + review only)
 
 PLAN prompt rules:
 - NO edits, NO file writes.
-- Allow only read-only commands required to inspect sources-of-truth (whitelist below).
-- If required input is missing → stop and request it (do not invent details).
+- Allow only read-only commands (whitelist below).
+- If required input is missing → stop and request it.
 
 Allowed read-only commands (PLAN):
 - `ls`, `find`
@@ -188,13 +203,29 @@ Forbidden in PLAN:
 - `git commit/push`, migrations, DB ops
 
 ### 8) Implementation (Codex)
-- Run PLAN (read-only)
-- **Human Gate C:** approve plan
-- Run APPLY (workspace-write), run tests, update docs-as-code.
+- Human runs PLAN prompt in Codex (read-only)
+- **Human Gate C:** approve plan, show output to Claude Code
+- Human runs APPLY prompt in Codex (workspace-write)
+- Human shows output to Claude Code for review
 
-### 9) Review gate (Claude: codex-review-gate + Codex /review)
-- Use Codex `/review` on current diff for correctness/edge cases/security/contracts.
-- Output GO/NO-GO with Must-fix / Should-fix.
+### 9) Review gate (Claude Code)
+Claude Code conducts review directly:
+1. Run verification commands from workpack
+2. Check key files for correctness
+3. Produce GO/NO-GO report:
+   ```
+   ## Review Result: [GO / NO-GO]
+   ### Must-Fix Issues
+   - [list or "None"]
+   ### Should-Fix Issues
+   - [list or "None"]
+   ### Evidence
+   - Backend tests: [PASS/FAIL]
+   - Web build: [PASS/FAIL]
+   - [other checks as needed]
+   ### Recommendation
+   [Approve for merge / Block with required fixes]
+   ```
 **Human Gate D:** merge / ship / rollback decision.
 
 ---
