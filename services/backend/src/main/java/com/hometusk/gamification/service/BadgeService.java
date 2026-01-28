@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class BadgeService {
 
+    private static final Logger log = LoggerFactory.getLogger(BadgeService.class);
     private static final String FIRST_TASK = "FIRST_TASK";
     private static final String TEN_TASKS = "TEN_TASKS";
     private static final String WEEK_WARRIOR = "WEEK_WARRIOR";
@@ -36,21 +39,29 @@ public class BadgeService {
     private final UserBadgeRepository userBadgeRepository;
     private final PointsLedgerRepository pointsLedgerRepository;
     private final NotificationService notificationService;
+    private final GamificationSettingsService settingsService;
 
     public BadgeService(
             BadgeRepository badgeRepository,
             UserBadgeRepository userBadgeRepository,
             PointsLedgerRepository pointsLedgerRepository,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            GamificationSettingsService settingsService) {
         this.badgeRepository = badgeRepository;
         this.userBadgeRepository = userBadgeRepository;
         this.pointsLedgerRepository = pointsLedgerRepository;
         this.notificationService = notificationService;
+        this.settingsService = settingsService;
     }
 
     @Transactional
     public void checkAndAwardBadges(User user, Household household) {
         if (user == null || household == null) {
+            return;
+        }
+
+        if (!settingsService.isGamificationEnabled(user, household)) {
+            log.debug("Gamification disabled for user {}, skipping badge check", user.getId());
             return;
         }
 

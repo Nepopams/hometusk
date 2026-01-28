@@ -40,12 +40,16 @@ class BadgeServiceTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private GamificationSettingsService settingsService;
+
     private BadgeService badgeService;
 
     @BeforeEach
     void setUp() {
-        badgeService =
-                new BadgeService(badgeRepository, userBadgeRepository, pointsLedgerRepository, notificationService);
+        when(settingsService.isGamificationEnabled(any(), any())).thenReturn(true);
+        badgeService = new BadgeService(
+                badgeRepository, userBadgeRepository, pointsLedgerRepository, notificationService, settingsService);
     }
 
     @Test

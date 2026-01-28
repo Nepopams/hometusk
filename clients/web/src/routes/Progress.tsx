@@ -3,6 +3,7 @@ import {
   HouseholdAggregateCard,
   PersonalProgressCard,
   BadgeGrid,
+  PrivacySettingsCard,
 } from '../components/gamification';
 import ErrorMessage from '../components/ui/ErrorMessage';
 import Spinner from '../components/ui/Spinner';
@@ -16,7 +17,8 @@ export default function Progress() {
   const { householdId: paramId } = useParams();
   const activeId = paramId ?? householdId ?? undefined;
 
-  const { progress, badges, isLoading, error, refetch } = useGamification(activeId);
+  const { progress, badges, settings, isLoading, isUpdating, error, refetch, updateSettings } =
+    useGamification(activeId);
 
   if (!activeId) {
     return (
@@ -84,6 +86,14 @@ export default function Progress() {
         <div className="progress__catalog">
           <BadgeGrid badges={badges.badges} title="All Badges" emptyLabel="No badges available." />
         </div>
+      )}
+
+      {settings && (
+        <PrivacySettingsCard
+          settings={settings}
+          onUpdate={updateSettings}
+          isUpdating={isUpdating}
+        />
       )}
     </div>
   );

@@ -29,11 +29,15 @@ class PointsServiceTest {
     @Mock
     private PointsLedgerRepository pointsLedgerRepository;
 
+    @Mock
+    private GamificationSettingsService settingsService;
+
     private PointsService pointsService;
 
     @BeforeEach
     void setUp() {
-        pointsService = new PointsService(pointsLedgerRepository);
+        when(settingsService.isGamificationEnabled(any(), any())).thenReturn(true);
+        pointsService = new PointsService(pointsLedgerRepository, settingsService);
     }
 
     @Test

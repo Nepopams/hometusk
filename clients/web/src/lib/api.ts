@@ -11,6 +11,7 @@ import type {
   CommandResponse,
   CreateInviteResponse,
   GamificationProgress,
+  GamificationSettings,
   Household,
   HouseholdMember,
   Notification,
@@ -271,4 +272,20 @@ export async function getGamificationProgress(
 
 export async function getBadgeCatalog(householdId: string): Promise<BadgeCatalogResponse> {
   return apiFetch<BadgeCatalogResponse>(`/households/${householdId}/gamification/badges`);
+}
+
+export async function getGamificationSettings(
+  householdId: string
+): Promise<GamificationSettings> {
+  return apiFetch<GamificationSettings>(`/households/${householdId}/gamification/settings`);
+}
+
+export async function updateGamificationSettings(
+  householdId: string,
+  settings: GamificationSettings
+): Promise<GamificationSettings> {
+  return apiFetch<GamificationSettings>(`/households/${householdId}/gamification/settings`, {
+    method: 'PUT',
+    body: settings,
+  });
 }

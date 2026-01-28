@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -21,13 +23,16 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class PointsService {
 
+    private static final Logger log = LoggerFactory.getLogger(PointsService.class);
     private static final int BASE_POINTS = 10;
     private static final int ON_TIME_BONUS = 5;
 
     private final PointsLedgerRepository pointsLedgerRepository;
+    private final GamificationSettingsService settingsService;
 
-    public PointsService(PointsLedgerRepository pointsLedgerRepository) {
+    public PointsService(PointsLedgerRepository pointsLedgerRepository, GamificationSettingsService settingsService) {
         this.pointsLedgerRepository = pointsLedgerRepository;
+        this.settingsService = settingsService;
     }
 
     @Transactional
@@ -39,6 +44,11 @@ public class PointsService {
         List<PointsLedger> entries = new ArrayList<>();
         User assignee = task.getAssignee();
         Household household = task.getHousehold();
+
+        if (!settingsService.isGamificationEnabled(assignee, household)) {
+            log.debug("Gamification disabled for user {}, skipping points award", assignee.getId());
+            return List.of();
+        }
 
         PointsLedger base =
                 awardPointsIdempotent(assignee, household, task, BASE_POINTS, PointsReason.TASK_COMPLETED, actor);

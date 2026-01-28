@@ -320,4 +320,9 @@ export interface BadgeCatalogResponse {
   badges: Badge[];
 }
 
+export interface GamificationSettings {
+  showProgressToOthers: boolean;
+  gamificationEnabled: boolean;
+}
+
 export type { Notification, NotificationPayload, NotificationType } from './notification';
