@@ -231,21 +231,36 @@ Claude Code conducts review directly:
 ---
 
 ## Subagents (Claude Code)
-Project subagents live in: `.claude/agents/*.md` (YAML frontmatter + prompt). 
+Project subagents live in: `.claude/agents/*.md` (YAML frontmatter + prompt).
 
 ### Mandatory sequence (happy path)
-1. `triage-manager`
+1. `triage-manager` → Triage Summary (identifies flags)
 2. `pi-planner` (only for PI-sized asks)
-3. `sprint-planner`
-4. `epic-decomposer`
-5. `plan-generator`
-6. `dev-prompt-engineer`
+3. `epic-decomposer` → Epic + Stories (with flags per story)
+4. **ARTIFACTS GATE** → Run conditional agents (see below), then Human Gate
+5. `sprint-planner` → Sprint commitment (only after artifacts approved)
+6. `plan-generator` → Workpacks
 7. `codex-review-gate`
 
-### Conditional (flag-driven)
-- `contract-owner`
-- `adr-designer`
-- `diagram-steward`
+### Conditional agents (run at step 4, BEFORE sprint-planner)
+Check epic/story flags and run applicable agents:
+
+| Flag | Agent | Output |
+|------|-------|--------|
+| `contract_impact=yes` | `contract-owner` | OpenAPI/contract pack |
+| `adr_needed!=none` | `adr-designer` | ADR/ADR-lite document |
+| `diagrams_needed!=none` | `diagram-steward` | PlantUML/C4 diagram |
+
+**Human Gate:** Approve artifacts before sprint planning.
+
+**Checklist reminder:**
+```
+After epic-decomposer, check flags:
+[ ] Any contract_impact? → contract-owner
+[ ] Any adr_needed? → adr-designer
+[ ] Any diagrams_needed? → diagram-steward
+Then proceed to sprint-planner.
+```
 
 ### Invocation rules
 - Claude MUST proactively pick the right subagent when a trigger matches.
