@@ -1,13 +1,12 @@
 ---
-description: Generate Codex prompts for a workpack (iterative: plan → apply → review).
-argument-hint: "<ST-ID> [plan|apply|review]"
+description: Generate Codex prompts for a workpack (iterative: plan → apply).
+argument-hint: "<ST-ID> [plan|apply]"
 ---
 
 ## Usage
 ```
 /ht-prompt-pack ST-701-702 plan     # Generate prompt-plan.md
 /ht-prompt-pack ST-701-702 apply    # Generate prompt-apply.md (after plan executed)
-/ht-prompt-pack ST-701-702 review   # Generate prompt-review.md (after apply done)
 /ht-prompt-pack ST-701-702          # Default: plan
 ```
 
@@ -20,13 +19,14 @@ The prompt generation is **staged**, not a single bundle:
    ↓ Human reviews Codex output
 2. APPLY prompt → Generated with fixes from PLAN findings
    ↓ Codex implements
-3. REVIEW prompt → Exit evidence checklist
+3. Claude Code conducts review directly (no prompt-review.md)
 ```
 
 **Why staged:**
 - PLAN phase may discover unexpected codebase state
 - APPLY prompt can incorporate fixes/adjustments from PLAN findings
 - Each phase requires human gate before proceeding
+- Review is done by Claude Code directly for faster iteration
 
 ## Context (read for each phase)
 
@@ -45,7 +45,8 @@ The prompt generation is **staged**, not a single bundle:
 |-------|------|---------|
 | plan | `prompt-plan.md` | Read-only exploration, outputs findings |
 | apply | `prompt-apply.md` | Implementation with STOP-THE-LINE rule |
-| review | `prompt-review.md` | Exit evidence checklist, GO/NO-GO |
+
+**Note:** Review is conducted by Claude Code directly after APPLY completion (see CLAUDE.md section 9).
 
 ## Prompt Structure (for each phase)
 
@@ -68,12 +69,6 @@ The prompt generation is **staged**, not a single bundle:
 - **STOP-THE-LINE rule:** On any deviation → STOP and report
 - **Include:** Exact code snippets from workpack
 - **Include:** Verification commands to run
-
-### REVIEW Prompt Rules
-- **Mode: REVIEW** — Verification only
-- **Output:** Exit evidence with GO/NO-GO recommendation
-- **Include:** Checklist items to verify
-- **Include:** Must-fix vs should-fix classification
 
 ## Execution
 

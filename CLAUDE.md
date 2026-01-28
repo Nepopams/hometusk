@@ -109,7 +109,7 @@ When helpful, Claude should pull exact docs into context via imports (fast + sta
   - `risks.md` — optional per-story risks (ROAM-lite)
   - `prompt-plan.md` — Codex PLAN prompt (generated after workpack approval)
   - `prompt-apply.md` — Codex APPLY prompt (generated after plan approval)
-  - `prompt-review.md` — Codex REVIEW prompt (generated after apply completion)
+  - (review conducted by Claude Code directly, no prompt file)
 
 ---
 
