@@ -2,9 +2,11 @@ package com.hometusk.tasks.domain;
 
 import com.hometusk.households.domain.Household;
 import com.hometusk.households.domain.Zone;
+import com.hometusk.routines.domain.Routine;
 import com.hometusk.users.domain.User;
 import jakarta.persistence.*;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -35,6 +37,13 @@ public class Task {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "zone_id")
     private Zone zone;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "routine_id")
+    private Routine routine;
+
+    @Column(name = "scheduled_date")
+    private LocalDate scheduledDate;
 
     @Column(name = "deadline")
     private Instant deadline;
@@ -114,6 +123,19 @@ public class Task {
         return zone != null ? zone.getId() : null;
     }
 
+    public Routine getRoutine() {
+        return routine;
+    }
+
+    @Transient
+    public UUID getRoutineId() {
+        return routine != null ? routine.getId() : null;
+    }
+
+    public LocalDate getScheduledDate() {
+        return scheduledDate;
+    }
+
     public Instant getDeadline() {
         return deadline;
     }
@@ -165,6 +187,16 @@ public class Task {
 
     public void setZone(Zone zone) {
         this.zone = zone;
+        this.updatedAt = Instant.now();
+    }
+
+    public void setRoutine(Routine routine) {
+        this.routine = routine;
+        this.updatedAt = Instant.now();
+    }
+
+    public void setScheduledDate(LocalDate scheduledDate) {
+        this.scheduledDate = scheduledDate;
         this.updatedAt = Instant.now();
     }
 
