@@ -17,6 +17,10 @@ This index tracks all ADRs in the project. Update this file when creating/supers
 | ADR-003 | Stage 1 Commands API | accepted | 2024-01-XX | [Link](../architecture/decisions/003-stage1-commands-api.md) |
 | ADR-004 | Stage 2 AI Platform Integration | accepted | 2024-01-XX | [Link](../architecture/decisions/004-stage2-ai-platform-integration.md) |
 | ADR-009 | Commands vs CRUD Boundary | accepted | 2024-01-XX | [Link](../architecture/decisions/009-mvp-commands-vs-crud-boundary.md) |
+| ADR-010 | Household Invites | accepted | 2024-01-XX | [Link](../architecture/decisions/010-household-invites.md) |
+| ADR-011 | Notifications Stub | accepted | 2024-01-XX | [Link](../architecture/decisions/011-notifications-stub.md) |
+| ADR-012 | Command Reliability & Idempotency | accepted | 2024-01-XX | [Link](../architecture/decisions/012-command-reliability-idempotency.md) |
+| ADR-013 | Routine Scheduler Design (EP-010) | accepted | 2026-01-28 | [Link](../adr/013-routine-scheduler-design.md) |
 
 ## Template
 

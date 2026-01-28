@@ -286,3 +286,4 @@ Task:
 | Initiative | `docs/planning/initiatives/INIT-2026Q3-recurring-tasks-scheduling.md` |
 | Existing Task entity | `services/backend/src/main/java/com/hometusk/tasks/domain/Task.java` |
 | Idempotency ADR | `docs/architecture/decisions/012-command-reliability-idempotency.md` |
+| **Scheduler Design ADR** | `docs/adr/013-routine-scheduler-design.md` |
