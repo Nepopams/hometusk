@@ -12,6 +12,7 @@ import { useAnalytics } from '../hooks/useAnalytics';
 import { useAuth } from '../hooks/useAuth';
 import { ApiError } from '../lib/errors';
 import type { AnalyticsPeriod } from '../types/api';
+import './Analytics.css';
 
 function resolvePeriod(value: string | null): AnalyticsPeriod {
   return value === '30d' ? '30d' : '7d';
@@ -54,11 +55,11 @@ export default function Analytics() {
 
   if (error instanceof ApiError && error.status === 403) {
     return (
-      <div className="page analytics">
+      <div className="page analytics analytics--access-denied">
         <h1>Access Denied</h1>
         <p>You do not have access to this household.</p>
-        <Link className="button" to="/households">
-          Back to Household Selector
+        <Link to="/households" className="btn btn--primary btn--lg">
+          <span className="btn__label">Back to Household Selector</span>
         </Link>
       </div>
     );

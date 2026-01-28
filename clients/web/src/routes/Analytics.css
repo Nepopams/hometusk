@@ -1,0 +1,121 @@
+/**
+ * Analytics Page Styles
+ * Follows HomeTusk Pencil design patterns
+ */
+
+.analytics {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-10) var(--spacing-8);
+}
+
+/* Header Section */
+.analytics__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-6);
+  margin-bottom: var(--spacing-8);
+}
+
+.analytics__header h1 {
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.analytics__subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: var(--spacing-2) 0 0 0;
+}
+
+/* Summary Section - Balance Card + Overdue Tasks */
+.analytics__summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-8);
+  margin-bottom: var(--spacing-8);
+}
+
+/* Details Section - Members + Zones */
+.analytics__details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-8);
+  margin-bottom: var(--spacing-8);
+}
+
+/* Footer */
+.analytics__footer {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+  padding-top: var(--spacing-6);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+/* Empty/Loading States */
+.analytics .card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--card-radius);
+  padding: var(--spacing-8);
+  text-align: center;
+}
+
+.analytics .card p {
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* Access Denied State */
+.analytics--access-denied {
+  text-align: center;
+  padding: var(--spacing-12) var(--spacing-8);
+}
+
+.analytics--access-denied h1 {
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-4);
+}
+
+.analytics--access-denied p {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-8);
+}
+
+/* Responsive - Tablet */
+@media (max-width: 1024px) {
+  .analytics {
+    padding: var(--spacing-8) var(--spacing-6);
+  }
+
+  .analytics__summary,
+  .analytics__details {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-6);
+  }
+}
+
+/* Responsive - Mobile */
+@media (max-width: 480px) {
+  .analytics {
+    padding: var(--spacing-6) var(--spacing-5);
+  }
+
+  .analytics__header {
+    flex-direction: column;
+    gap: var(--spacing-4);
+  }
+
+  .analytics__header h1 {
+    font-size: var(--font-size-lg);
+  }
+}
