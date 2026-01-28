@@ -667,8 +667,11 @@ components:
     UpdateRoutineRequest:
       type: object
       description: |
-        Partial update - only provided fields are modified.
-        Omitting a field means "don't change it".
+        Partial update - only provided non-null fields are modified.
+        Omitting a field or sending null means "don't change it".
+
+        **v0 limitation:** Cannot explicitly clear fields to null.
+        To clear description, send empty string "".
       properties:
         title:
           type: string
