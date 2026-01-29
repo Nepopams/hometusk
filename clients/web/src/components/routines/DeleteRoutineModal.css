@@ -1,0 +1,38 @@
+.delete-routine {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.delete-routine__message {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.delete-routine__name {
+  margin: 0;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.delete-routine__error {
+  padding: var(--spacing-3);
+  background: var(--color-error-soft);
+  color: var(--color-error-text);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+}
+
+.delete-routine__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-4);
+}
+
+@media (max-width: 480px) {
+  .delete-routine__actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+}

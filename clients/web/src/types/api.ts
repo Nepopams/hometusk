@@ -329,4 +329,62 @@ export interface GamificationSettings {
   streakVisible: boolean;
 }
 
+// ============================================
+// Routine Types (ST-1005)
+// ============================================
+
+export type RoutineStatus = 'ACTIVE' | 'PAUSED' | 'DELETED';
+export type AssignmentPolicy = 'FIXED' | 'ROUND_ROBIN' | 'MANUAL';
+export type RecurrenceType = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'EVERY_N_DAYS';
+export type DayOfWeek =
+  | 'MONDAY'
+  | 'TUESDAY'
+  | 'WEDNESDAY'
+  | 'THURSDAY'
+  | 'FRIDAY'
+  | 'SATURDAY'
+  | 'SUNDAY';
+
+export interface RecurrenceRule {
+  type: RecurrenceType;
+  daysOfWeek?: DayOfWeek[];
+  dayOfMonth?: number;
+  interval?: number;
+}
+
+export interface Routine {
+  id: string;
+  householdId: string;
+  title: string;
+  description?: string;
+  zone?: Zone;
+  recurrenceRule: RecurrenceRule;
+  assignmentPolicy: AssignmentPolicy;
+  fixedAssignee?: UserSummary;
+  status: RoutineStatus;
+  generationWindowDays: number;
+  createdBy: UserSummary;
+  createdAt: string;
+  updatedAt: string;
+  pausedAt?: string;
+}
+
+export interface CreateRoutineRequest {
+  title: string;
+  description?: string;
+  zoneId?: string;
+  recurrenceRule: RecurrenceRule;
+  assignmentPolicy: AssignmentPolicy;
+  fixedAssigneeId?: string;
+}
+
+export interface UpdateRoutineRequest {
+  title?: string;
+  description?: string;
+  zoneId?: string;
+  recurrenceRule?: RecurrenceRule;
+  assignmentPolicy?: AssignmentPolicy;
+  fixedAssigneeId?: string;
+}
+
 export type { Notification, NotificationPayload, NotificationType } from './notification';

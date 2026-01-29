@@ -21,6 +21,7 @@ import Unauthorized from './Unauthorized';
 import AccessDenied from './AccessDenied';
 import TaskDetail from './TaskDetail';
 import TasksList from './TasksList';
+import Routines from './Routines';
 import ZonesList from './ZonesList';
 
 export const router = createBrowserRouter([
@@ -49,6 +50,7 @@ export const router = createBrowserRouter([
           { path: 'invites', element: <Invites /> },
           { path: 'tasks', element: <TasksList /> },
           { path: 'tasks/:taskId', element: <TaskDetail /> },
+          { path: 'routines', element: <Routines /> },
           { path: 'shopping', element: <ShoppingLists /> },
           { path: 'shopping/:listId', element: <ShoppingDetail /> },
           { path: 'analytics', element: <Analytics /> },

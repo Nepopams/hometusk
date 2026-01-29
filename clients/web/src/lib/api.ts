@@ -15,12 +15,15 @@ import type {
   Household,
   HouseholdMember,
   Notification,
+  Routine,
   ShoppingItem,
   ShoppingItemFilters,
   ShoppingList,
   Task,
   TaskFilters,
   UserProfile,
+  CreateRoutineRequest,
+  UpdateRoutineRequest,
   Zone,
 } from '../types/api';
 
@@ -147,6 +150,45 @@ export async function updateShoppingItem(
 
 export async function deleteShoppingItem(householdId: string, itemId: string): Promise<void> {
   return apiFetch<void>(`/households/${householdId}/shopping-items/${itemId}`, {
+    method: 'DELETE',
+  });
+}
+
+// ============================================
+// Routines API (ST-1005)
+// ============================================
+
+export async function getRoutines(householdId: string): Promise<Routine[]> {
+  return apiFetch<Routine[]>(`/households/${householdId}/routines`);
+}
+
+export async function getRoutine(householdId: string, routineId: string): Promise<Routine> {
+  return apiFetch<Routine>(`/households/${householdId}/routines/${routineId}`);
+}
+
+export async function createRoutine(
+  householdId: string,
+  data: CreateRoutineRequest
+): Promise<Routine> {
+  return apiFetch<Routine>(`/households/${householdId}/routines`, {
+    method: 'POST',
+    body: data,
+  });
+}
+
+export async function updateRoutine(
+  householdId: string,
+  routineId: string,
+  data: UpdateRoutineRequest
+): Promise<Routine> {
+  return apiFetch<Routine>(`/households/${householdId}/routines/${routineId}`, {
+    method: 'PATCH',
+    body: data,
+  });
+}
+
+export async function deleteRoutine(householdId: string, routineId: string): Promise<void> {
+  return apiFetch<void>(`/households/${householdId}/routines/${routineId}`, {
     method: 'DELETE',
   });
 }

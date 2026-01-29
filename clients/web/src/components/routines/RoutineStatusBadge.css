@@ -1,0 +1,24 @@
+.routine-status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.routine-status-badge--active {
+  background-color: var(--color-success-soft);
+  color: var(--color-success-text);
+}
+
+.routine-status-badge--paused {
+  background-color: var(--color-warning-soft);
+  color: var(--color-warning-text);
+}
+
+.routine-status-badge--deleted {
+  background-color: var(--color-error-soft);
+  color: var(--color-error-text);
+}
