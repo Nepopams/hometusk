@@ -387,4 +387,19 @@ export interface UpdateRoutineRequest {
   fixedAssigneeId?: string;
 }
 
+// ============================================
+// Upcoming Instances Types (ST-1006)
+// ============================================
+
+export interface UpcomingInstance {
+  scheduledDate: string;
+  projectedAssignee?: UserSummary;
+}
+
+export interface UpcomingInstancesResponse {
+  routineId: string;
+  routineTitle: string;
+  instances: UpcomingInstance[];
+}
+
 export type { Notification, NotificationPayload, NotificationType } from './notification';

@@ -1,0 +1,23 @@
+.pause-confirm {
+  padding: var(--spacing-2) 0;
+}
+
+.pause-confirm__message {
+  margin: 0 0 var(--spacing-6);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  font-size: var(--font-size-sm);
+}
+
+.pause-confirm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-4);
+}
+
+@media (max-width: 480px) {
+  .pause-confirm__actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+}

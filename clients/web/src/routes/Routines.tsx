@@ -4,10 +4,15 @@ import { useAuth } from '../hooks/useAuth';
 import { useMembers } from '../hooks/useMembers';
 import { useRoutines } from '../hooks/useRoutines';
 import { useZones } from '../hooks/useZones';
-import { deleteRoutine } from '../lib/api';
+import { deleteRoutine, pauseRoutine, resumeRoutine } from '../lib/api';
 import { ApiError } from '../lib/errors';
 import { Button } from '../components/ui';
-import { DeleteRoutineModal, RoutineForm, RoutineRow } from '../components/routines';
+import {
+  DeleteRoutineModal,
+  RoutineForm,
+  RoutineRow,
+  UpcomingInstances,
+} from '../components/routines';
 import type { Routine } from '../types/api';
 import './Routines.css';
 
@@ -22,6 +27,9 @@ export default function Routines() {
   const [deleteTarget, setDeleteTarget] = useState<Routine | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [pausingId, setPausingId] = useState<string | null>(null);
+  const [resumingId, setResumingId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const openCreate = useCallback(() => {
     setEditingRoutine(null);
@@ -76,6 +84,42 @@ export default function Routines() {
       setIsDeleting(false);
     }
   }, [householdId, deleteTarget, refetch]);
+
+  const handlePause = useCallback(
+    async (routine: Routine) => {
+      if (!householdId) return;
+      setPausingId(routine.id);
+      try {
+        await pauseRoutine(householdId, routine.id);
+        refetch();
+      } catch (err) {
+        console.error('Failed to pause routine:', err);
+      } finally {
+        setPausingId(null);
+      }
+    },
+    [householdId, refetch]
+  );
+
+  const handleResume = useCallback(
+    async (routine: Routine) => {
+      if (!householdId) return;
+      setResumingId(routine.id);
+      try {
+        await resumeRoutine(householdId, routine.id);
+        refetch();
+      } catch (err) {
+        console.error('Failed to resume routine:', err);
+      } finally {
+        setResumingId(null);
+      }
+    },
+    [householdId, refetch]
+  );
+
+  const handleToggleExpand = useCallback((routine: Routine) => {
+    setExpandedId((prev) => (prev === routine.id ? null : routine.id));
+  }, []);
 
   const handleRetry = useCallback(() => {
     refetch();
@@ -227,9 +271,23 @@ export default function Routines() {
                 {idx > 0 && <div className="routines__divider" />}
                 <RoutineRow
                   routine={routine}
+                  isPausing={pausingId === routine.id}
+                  isResuming={resumingId === routine.id}
+                  isExpanded={expandedId === routine.id}
                   onEdit={openEdit}
                   onDelete={handleDeleteOpen}
+                  onPause={handlePause}
+                  onResume={handleResume}
+                  onToggleExpand={handleToggleExpand}
                 />
+                {expandedId === routine.id && (
+                  <UpcomingInstances
+                    householdId={householdId}
+                    routineId={routine.id}
+                    routineStatus={routine.status}
+                    assignmentPolicy={routine.assignmentPolicy}
+                  />
+                )}
               </div>
             ))}
           </div>

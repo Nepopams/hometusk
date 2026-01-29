@@ -21,6 +21,20 @@
   flex-shrink: 0;
 }
 
+.routine-row__expand-btn {
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  flex-shrink: 0;
+}
+
+.routine-row__expand-btn:hover {
+  color: var(--color-text-primary);
+}
+
 .routine-row__zone,
 .routine-row__frequency,
 .routine-row__policy {

@@ -15,6 +15,7 @@ import type {
   Household,
   HouseholdMember,
   Notification,
+  UpcomingInstancesResponse,
   Routine,
   ShoppingItem,
   ShoppingItemFilters,
@@ -191,6 +192,32 @@ export async function deleteRoutine(householdId: string, routineId: string): Pro
   return apiFetch<void>(`/households/${householdId}/routines/${routineId}`, {
     method: 'DELETE',
   });
+}
+
+// ============================================
+// Routine Lifecycle API (ST-1006)
+// ============================================
+
+export async function pauseRoutine(householdId: string, routineId: string): Promise<Routine> {
+  return apiFetch<Routine>(`/households/${householdId}/routines/${routineId}/pause`, {
+    method: 'POST',
+  });
+}
+
+export async function resumeRoutine(householdId: string, routineId: string): Promise<Routine> {
+  return apiFetch<Routine>(`/households/${householdId}/routines/${routineId}/resume`, {
+    method: 'POST',
+  });
+}
+
+export async function getUpcomingInstances(
+  householdId: string,
+  routineId: string,
+  days: number = 7
+): Promise<UpcomingInstancesResponse> {
+  return apiFetch<UpcomingInstancesResponse>(
+    `/households/${householdId}/routines/${routineId}/upcoming?days=${days}`
+  );
 }
 
 export async function getZones(householdId: string): Promise<Zone[]> {

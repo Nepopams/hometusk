@@ -3,3 +3,5 @@ export { default as RoutineForm } from './RoutineForm';
 export { default as RoutineStatusBadge } from './RoutineStatusBadge';
 export { default as FrequencyDisplay, formatFrequency } from './FrequencyDisplay';
 export { default as DeleteRoutineModal } from './DeleteRoutineModal';
+export { default as PauseResumeButton } from './PauseResumeButton';
+export { default as UpcomingInstances } from './UpcomingInstances';

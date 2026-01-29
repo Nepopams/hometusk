@@ -1,12 +1,19 @@
 import type { Routine } from '../../types/api';
 import RoutineStatusBadge from './RoutineStatusBadge';
+import PauseResumeButton from './PauseResumeButton';
 import { formatFrequency } from './FrequencyDisplay';
 import './RoutineRow.css';
 
 interface Props {
   routine: Routine;
+  isPausing: boolean;
+  isResuming: boolean;
+  isExpanded: boolean;
   onEdit: (routine: Routine) => void;
   onDelete: (routine: Routine) => void;
+  onPause: (routine: Routine) => void;
+  onResume: (routine: Routine) => void;
+  onToggleExpand: (routine: Routine) => void;
 }
 
 const POLICY_LABELS: Record<string, string> = {
@@ -15,7 +22,17 @@ const POLICY_LABELS: Record<string, string> = {
   MANUAL: 'Manual',
 };
 
-export default function RoutineRow({ routine, onEdit, onDelete }: Props) {
+export default function RoutineRow({
+  routine,
+  isPausing,
+  isResuming,
+  isExpanded,
+  onEdit,
+  onDelete,
+  onPause,
+  onResume,
+  onToggleExpand,
+}: Props) {
   const policyLabel =
     routine.assignmentPolicy === 'FIXED' && routine.fixedAssignee
       ? `Fixed: ${routine.fixedAssignee.displayName}`
@@ -24,6 +41,15 @@ export default function RoutineRow({ routine, onEdit, onDelete }: Props) {
   return (
     <div className="routine-row">
       <div className="routine-row__main">
+        <button
+          type="button"
+          className="routine-row__expand-btn"
+          onClick={() => onToggleExpand(routine)}
+          aria-label={isExpanded ? 'Collapse' : 'Expand'}
+          aria-expanded={isExpanded}
+        >
+          {isExpanded ? '▼' : '▶'}
+        </button>
         <span className="routine-row__title">{routine.title}</span>
         <span className="routine-row__zone">{routine.zone?.name || '—'}</span>
         <span className="routine-row__frequency">{formatFrequency(routine.recurrenceRule)}</span>
@@ -31,6 +57,13 @@ export default function RoutineRow({ routine, onEdit, onDelete }: Props) {
         <RoutineStatusBadge status={routine.status} />
       </div>
       <div className="routine-row__actions">
+        <PauseResumeButton
+          routine={routine}
+          isPausing={isPausing}
+          isResuming={isResuming}
+          onPause={() => onPause(routine)}
+          onResume={() => onResume(routine)}
+        />
         <button
           type="button"
           className="routine-row__btn routine-row__btn--edit"
