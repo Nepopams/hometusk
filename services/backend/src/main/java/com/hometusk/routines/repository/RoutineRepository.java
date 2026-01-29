@@ -12,6 +12,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface RoutineRepository extends JpaRepository<Routine, UUID> {
 
+    List<Routine> findByStatus(RoutineStatus status);
+
     List<Routine> findByHousehold_IdAndStatusInOrderByCreatedAtDesc(UUID householdId, List<RoutineStatus> statuses);
 
     List<Routine> findByHousehold_IdAndStatusOrderByCreatedAtDesc(UUID householdId, RoutineStatus status);

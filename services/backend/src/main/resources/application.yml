@@ -50,6 +50,9 @@ hometusk:
     same-site: Lax
   cors:
     allowed-origins: http://localhost:5173,http://127.0.0.1:5173
+  scheduler:
+    enabled: false
+    fixed-rate-ms: 3600000
 
 management:
   endpoints:

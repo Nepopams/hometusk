@@ -216,12 +216,7 @@ public class RoutineService {
     public UpcomingInstancesResponse getUpcomingInstances(UUID routineId, UUID householdId, int days) {
         Routine routine = getRoutine(routineId, householdId);
 
-        RecurrenceRule rule;
-        try {
-            rule = objectMapper.readValue(routine.getRecurrenceRuleJson(), RecurrenceRule.class);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Invalid recurrence rule JSON", e);
-        }
+        RecurrenceRule rule = parseRecurrenceRule(routine.getRecurrenceRuleJson());
 
         int count = Math.min(Math.max(days, 1), 30);
         List<LocalDate> dates = recurrenceRuleParser.getOccurrencesInRange(rule, LocalDate.now(), count);
@@ -236,6 +231,14 @@ public class RoutineService {
 
         // TODO(ST-1008): add alreadyGenerated flag when task lookup exists.
         return new UpcomingInstancesResponse(routine.getId(), routine.getTitle(), instances);
+    }
+
+    public RecurrenceRule parseRecurrenceRule(String json) {
+        try {
+            return objectMapper.readValue(json, RecurrenceRule.class);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Invalid recurrence rule JSON", e);
+        }
     }
 
     private Zone resolveZone(UUID zoneId, UUID householdId) {

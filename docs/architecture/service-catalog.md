@@ -2,7 +2,7 @@
 
 Living registry of all services and applications in the HomeTusk monorepo.
 
-**Last updated:** 2026-01-17
+**Last updated:** 2026-01-29
 
 ---
 
@@ -62,6 +62,7 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 - `households` — Household, Zone, and Invite management
 - `users` — User profiles and Memberships
 - `shopping` — Shopping lists and items (Step 1 Web MVP)
+- `routines` — Routine definitions and scheduling
 - `activity` — TaskActivity events
 - `notifications` — In-app notifications (Step 3)
 - `shared` — Security, logging, exceptions, validation

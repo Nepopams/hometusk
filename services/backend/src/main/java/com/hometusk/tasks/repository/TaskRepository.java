@@ -3,6 +3,7 @@ package com.hometusk.tasks.repository;
 import com.hometusk.tasks.domain.Task;
 import com.hometusk.tasks.domain.TaskStatus;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,6 +25,11 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
      * Check if task exists in household.
      */
     boolean existsByIdAndHousehold_Id(UUID id, UUID householdId);
+
+    /**
+     * Check if task already exists for a routine on a scheduled date (idempotency).
+     */
+    boolean existsByRoutine_IdAndScheduledDate(UUID routineId, LocalDate scheduledDate);
 
     /**
      * List all tasks in a household.

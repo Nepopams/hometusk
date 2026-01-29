@@ -1471,7 +1471,7 @@ components:
           description: Command that created this task
         createdVia:
           type: string
-          enum: [command, fallback, direct, routine]
+          enum: [command, fallback, direct, routine, scheduler]
         routine:
           $ref: '#/components/schemas/RoutineSummary'
           description: Source routine (if generated from a routine)
