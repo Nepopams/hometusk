@@ -18,6 +18,7 @@ import com.hometusk.tasks.repository.TaskRepository;
 import com.hometusk.users.domain.User;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,12 +42,15 @@ class RoutineSchedulerServiceTest {
     @Mock
     private RoutineService routineService;
 
+    @Mock
+    private AssignmentPolicyService assignmentPolicyService;
+
     private RoutineSchedulerService schedulerService;
 
     @BeforeEach
     void setUp() {
-        schedulerService =
-                new RoutineSchedulerService(routineRepository, taskRepository, recurrenceRuleParser, routineService);
+        schedulerService = new RoutineSchedulerService(
+                routineRepository, taskRepository, recurrenceRuleParser, routineService, assignmentPolicyService);
     }
 
     @Test
@@ -56,12 +60,14 @@ class RoutineSchedulerServiceTest {
         List<LocalDate> dates = List.of(today, today.plusDays(1), today.plusDays(2));
 
         when(routineRepository.findByStatus(RoutineStatus.ACTIVE)).thenReturn(List.of(routine));
+        when(routineRepository.findByIdForUpdate(routine.getId())).thenReturn(Optional.of(routine));
         when(routineService.parseRecurrenceRule(routine.getRecurrenceRuleJson()))
                 .thenReturn(new RecurrenceRule.Daily());
         when(recurrenceRuleParser.getOccurrencesInRange(any(), eq(today), eq(3)))
                 .thenReturn(dates);
         when(taskRepository.existsByRoutine_IdAndScheduledDate(eq(routine.getId()), any()))
                 .thenReturn(false);
+        when(assignmentPolicyService.determineAssignee(routine)).thenReturn(null);
         when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         RoutineSchedulerService.SchedulerResult result = schedulerService.generateUpcomingTasks();
@@ -86,6 +92,7 @@ class RoutineSchedulerServiceTest {
         List<LocalDate> dates = List.of(today, today.plusDays(1));
 
         when(routineRepository.findByStatus(RoutineStatus.ACTIVE)).thenReturn(List.of(routine));
+        when(routineRepository.findByIdForUpdate(routine.getId())).thenReturn(Optional.of(routine));
         when(routineService.parseRecurrenceRule(routine.getRecurrenceRuleJson()))
                 .thenReturn(new RecurrenceRule.Daily());
         when(recurrenceRuleParser.getOccurrencesInRange(any(), eq(today), eq(2)))
@@ -94,6 +101,7 @@ class RoutineSchedulerServiceTest {
                 .thenReturn(true);
         when(taskRepository.existsByRoutine_IdAndScheduledDate(routine.getId(), today.plusDays(1)))
                 .thenReturn(false);
+        when(assignmentPolicyService.determineAssignee(routine)).thenReturn(null);
         when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         RoutineSchedulerService.SchedulerResult result = schedulerService.generateUpcomingTasks();
@@ -129,6 +137,7 @@ class RoutineSchedulerServiceTest {
         Routine routine = buildRoutine("Daily", 5);
 
         when(routineRepository.findByStatus(RoutineStatus.ACTIVE)).thenReturn(List.of(routine));
+        when(routineRepository.findByIdForUpdate(routine.getId())).thenReturn(Optional.of(routine));
         when(routineService.parseRecurrenceRule(routine.getRecurrenceRuleJson()))
                 .thenReturn(new RecurrenceRule.Daily());
         when(recurrenceRuleParser.getOccurrencesInRange(any(), any(), eq(5))).thenReturn(List.of());
@@ -144,13 +153,20 @@ class RoutineSchedulerServiceTest {
         Routine routineFail = buildRoutine("Fail", 1, "{\"type\":\"WEEKLY\"}");
 
         when(routineRepository.findByStatus(RoutineStatus.ACTIVE)).thenReturn(List.of(routineOk, routineFail));
+        // Use answer to return the correct routine based on input (both have null IDs)
+        when(routineRepository.findByIdForUpdate(any()))
+                .thenAnswer(invocation -> {
+                    // First call returns routineOk, second call returns routineFail
+                    return Optional.of(routineOk);
+                })
+                .thenReturn(Optional.of(routineFail));
         when(routineService.parseRecurrenceRule(routineOk.getRecurrenceRuleJson()))
                 .thenReturn(new RecurrenceRule.Daily());
         when(routineService.parseRecurrenceRule(routineFail.getRecurrenceRuleJson()))
                 .thenThrow(new IllegalStateException("bad json"));
         when(recurrenceRuleParser.getOccurrencesInRange(any(), any(), eq(1))).thenReturn(List.of(LocalDate.now()));
-        when(taskRepository.existsByRoutine_IdAndScheduledDate(eq(routineOk.getId()), any()))
-                .thenReturn(false);
+        when(taskRepository.existsByRoutine_IdAndScheduledDate(any(), any())).thenReturn(false);
+        when(assignmentPolicyService.determineAssignee(any())).thenReturn(null);
         when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         RoutineSchedulerService.SchedulerResult result = schedulerService.generateUpcomingTasks();

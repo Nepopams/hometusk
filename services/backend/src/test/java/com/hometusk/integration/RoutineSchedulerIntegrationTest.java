@@ -4,11 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hometusk.routines.domain.AssignmentPolicy;
 import com.hometusk.routines.domain.RecurrenceRule;
+import com.hometusk.routines.domain.RoundRobinState;
 import com.hometusk.routines.domain.Routine;
 import com.hometusk.routines.repository.RoutineRepository;
 import com.hometusk.routines.service.RoutineSchedulerService;
 import com.hometusk.tasks.domain.Task;
 import com.hometusk.tasks.repository.TaskRepository;
+import com.hometusk.users.domain.Membership;
+import com.hometusk.users.domain.MembershipRole;
+import com.hometusk.users.domain.User;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -75,11 +79,93 @@ class RoutineSchedulerIntegrationTest extends IntegrationTestBase {
         assertThat(tasks).hasSize(1);
     }
 
+    @Test
+    @DisplayName("AC-1: Fixed policy assigns to configured user")
+    void scheduler_withFixedPolicy_assignsToFixedUser() throws Exception {
+        addMember(testUser2);
+        Routine routine = saveRoutineWithPolicy(AssignmentPolicy.FIXED, testUser2, 1);
+
+        schedulerService.generateUpcomingTasks();
+
+        List<Task> tasks = tasksForRoutine(routine);
+        assertThat(tasks).hasSize(1);
+        assertThat(tasks.get(0).getAssigneeId()).isEqualTo(testUser2.getId());
+    }
+
+    @Test
+    @DisplayName("AC-7: Manual policy leaves assignee null")
+    void scheduler_withManualPolicy_noAssignee() throws Exception {
+        Routine routine = saveRoutineWithPolicy(AssignmentPolicy.MANUAL, null, 1);
+
+        schedulerService.generateUpcomingTasks();
+
+        List<Task> tasks = tasksForRoutine(routine);
+        assertThat(tasks).hasSize(1);
+        assertThat(tasks.get(0).getAssignee()).isNull();
+    }
+
+    @Test
+    @DisplayName("AC-3: Round-robin rotates members")
+    void scheduler_withRoundRobin_rotatesMembers() throws Exception {
+        addMember(testUser2);
+        Routine routine = saveRoutineWithPolicy(AssignmentPolicy.ROUND_ROBIN, null, 2);
+
+        schedulerService.generateUpcomingTasks();
+
+        List<Task> tasks = tasksForRoutine(routine).stream()
+                .sorted((a, b) -> a.getScheduledDate().compareTo(b.getScheduledDate()))
+                .toList();
+
+        assertThat(tasks).hasSize(2);
+        assertThat(tasks.get(0).getAssigneeId()).isEqualTo(testUser.getId());
+        assertThat(tasks.get(1).getAssigneeId()).isEqualTo(testUser2.getId());
+    }
+
+    @Test
+    @DisplayName("AC-4: Round-robin state persists across runs")
+    void scheduler_withRoundRobin_statePersistedAcrossRuns() throws Exception {
+        addMember(testUser2);
+        Routine routine = saveRoutineWithPolicy(AssignmentPolicy.ROUND_ROBIN, null, 1);
+
+        schedulerService.generateUpcomingTasks();
+
+        RoundRobinState stateAfterFirstRun = objectMapper.readValue(
+                routineRepository.findById(routine.getId()).orElseThrow().getRoundRobinStateJson(),
+                RoundRobinState.class);
+        assertThat(stateAfterFirstRun.lastAssignedUserId()).isEqualTo(testUser.getId());
+
+        taskRepository.deleteAll(tasksForRoutine(routine));
+        taskRepository.flush();
+
+        schedulerService.generateUpcomingTasks();
+
+        RoundRobinState stateAfterSecondRun = objectMapper.readValue(
+                routineRepository.findById(routine.getId()).orElseThrow().getRoundRobinStateJson(),
+                RoundRobinState.class);
+        assertThat(stateAfterSecondRun.lastAssignedUserId()).isEqualTo(testUser2.getId());
+    }
+
     private Routine saveRoutine(int windowDays) throws Exception {
+        return saveRoutineWithPolicy(AssignmentPolicy.MANUAL, null, windowDays);
+    }
+
+    private Routine saveRoutineWithPolicy(AssignmentPolicy policy, User fixedAssignee, int windowDays)
+            throws Exception {
         String ruleJson = objectMapper.writeValueAsString(new RecurrenceRule.Daily());
-        Routine routine = new Routine(testHousehold, "Daily Routine", ruleJson, AssignmentPolicy.MANUAL, testUser);
+        Routine routine = new Routine(testHousehold, "Daily Routine", ruleJson, policy, testUser);
         routine.setGenerationWindowDays(windowDays);
+        if (policy == AssignmentPolicy.FIXED) {
+            routine.setFixedAssignee(fixedAssignee);
+        }
         return routineRepository.save(routine);
+    }
+
+    private void addMember(User user) {
+        if (membershipRepository.existsByUser_IdAndHousehold_Id(user.getId(), testHousehold.getId())) {
+            return;
+        }
+        Membership membership = new Membership(user, testHousehold, MembershipRole.member);
+        membershipRepository.save(membership);
     }
 
     private List<Task> tasksForRoutine(Routine routine) {

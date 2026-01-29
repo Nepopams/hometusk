@@ -25,16 +25,19 @@ public class RoutineSchedulerService {
     private final TaskRepository taskRepository;
     private final RecurrenceRuleParser recurrenceRuleParser;
     private final RoutineService routineService;
+    private final AssignmentPolicyService assignmentPolicyService;
 
     public RoutineSchedulerService(
             RoutineRepository routineRepository,
             TaskRepository taskRepository,
             RecurrenceRuleParser recurrenceRuleParser,
-            RoutineService routineService) {
+            RoutineService routineService,
+            AssignmentPolicyService assignmentPolicyService) {
         this.routineRepository = routineRepository;
         this.taskRepository = taskRepository;
         this.recurrenceRuleParser = recurrenceRuleParser;
         this.routineService = routineService;
+        this.assignmentPolicyService = assignmentPolicyService;
     }
 
     /**
@@ -77,11 +80,14 @@ public class RoutineSchedulerService {
     }
 
     private RoutineResult generateTasksForRoutine(Routine routine) {
+        Routine lockedRoutine = routineRepository
+                .findByIdForUpdate(routine.getId())
+                .orElseThrow(() -> new IllegalStateException("Routine not found: " + routine.getId()));
         LocalDate today = LocalDate.now();
-        int windowDays = routine.getGenerationWindowDays();
+        int windowDays = lockedRoutine.getGenerationWindowDays();
         LocalDate endDateExclusive = today.plusDays(windowDays);
 
-        RecurrenceRule rule = routineService.parseRecurrenceRule(routine.getRecurrenceRuleJson());
+        RecurrenceRule rule = routineService.parseRecurrenceRule(lockedRoutine.getRecurrenceRuleJson());
         List<LocalDate> dates = recurrenceRuleParser.getOccurrencesInRange(rule, today, windowDays).stream()
                 .filter(date -> date.isBefore(endDateExclusive))
                 .toList();
@@ -90,25 +96,27 @@ public class RoutineSchedulerService {
         int skipped = 0;
 
         for (LocalDate date : dates) {
-            if (taskRepository.existsByRoutine_IdAndScheduledDate(routine.getId(), date)) {
+            if (taskRepository.existsByRoutine_IdAndScheduledDate(lockedRoutine.getId(), date)) {
                 skipped++;
                 continue;
             }
 
             try {
-                createTaskForDate(routine, date);
+                createTaskForDate(lockedRoutine, date);
                 created++;
             } catch (DataIntegrityViolationException e) {
-                log.debug("Task already exists for routine {} on {}", routine.getId(), date);
+                log.debug("Task already exists for routine {} on {}", lockedRoutine.getId(), date);
                 skipped++;
             }
         }
 
-        log.debug("Routine {}: created={}, skipped={}", routine.getId(), created, skipped);
+        log.debug("Routine {}: created={}, skipped={}", lockedRoutine.getId(), created, skipped);
         return new RoutineResult(created, skipped);
     }
 
     private void createTaskForDate(Routine routine, LocalDate date) {
+        String previousState = routine.getRoundRobinStateJson();
+
         Task task = new Task(routine.getHousehold(), routine.getTitle(), routine.getCreatedBy());
         task.setDescription(routine.getDescription());
         task.setZone(routine.getZone());
@@ -120,7 +128,20 @@ public class RoutineSchedulerService {
         task.setDeadline(deadline);
 
         task.setCreatedVia("scheduler");
-        taskRepository.save(task);
+
+        if (routine.getAssignmentPolicy() != null) {
+            var assignee = assignmentPolicyService.determineAssignee(routine);
+            if (assignee != null) {
+                task.setAssignee(assignee);
+            }
+        }
+
+        try {
+            taskRepository.save(task);
+        } catch (DataIntegrityViolationException e) {
+            routine.setRoundRobinStateJson(previousState);
+            throw e;
+        }
     }
 
     public record SchedulerResult(int routinesProcessed, int tasksCreated, int tasksSkipped, int errors) {}
