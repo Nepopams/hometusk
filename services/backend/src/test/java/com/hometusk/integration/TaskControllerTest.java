@@ -1,8 +1,14 @@
 package com.hometusk.integration;
 
+import static org.hamcrest.Matchers.contains;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import com.hometusk.routines.domain.AssignmentPolicy;
+import com.hometusk.routines.domain.RecurrenceRule;
+import com.hometusk.routines.domain.Routine;
+import com.hometusk.routines.domain.RoutineStatus;
+import com.hometusk.routines.repository.RoutineRepository;
 import com.hometusk.shopping.domain.ShoppingItem;
 import com.hometusk.shopping.domain.ShoppingList;
 import com.hometusk.shopping.repository.ShoppingItemRepository;
@@ -27,6 +33,9 @@ class TaskControllerTest extends IntegrationTestBase {
     private TaskRepository taskRepository;
 
     @Autowired
+    private RoutineRepository routineRepository;
+
+    @Autowired
     private ShoppingListRepository shoppingListRepository;
 
     @Autowired
@@ -35,11 +44,13 @@ class TaskControllerTest extends IntegrationTestBase {
     private Task task1;
     private Task task2;
     private Task task3;
+    private Task taskWithRoutine;
+    private Routine routine;
     private ShoppingList shoppingList;
     private ShoppingItem linkedItem;
 
     @BeforeEach
-    void setUpTasks() {
+    void setUpTasks() throws Exception {
         // Add testUser2 as member
         Membership membership2 = new Membership(testUser2, testHousehold, MembershipRole.member);
         membershipRepository.save(membership2);
@@ -61,6 +72,14 @@ class TaskControllerTest extends IntegrationTestBase {
         task3.setZone(testZone);
         task3 = taskRepository.save(task3);
 
+        routine = saveRoutine("Routine Task", RoutineStatus.ACTIVE);
+        taskWithRoutine = new Task(testHousehold, "Task 4 - Routine", testUser);
+        taskWithRoutine.setRoutine(routine);
+        taskWithRoutine.setScheduledDate(java.time.LocalDate.now());
+        taskWithRoutine.setCreatedVia("routine");
+        taskWithRoutine.start();
+        taskWithRoutine = taskRepository.save(taskWithRoutine);
+
         // Create shopping list and linked item
         shoppingList = new ShoppingList(testHousehold, "Default");
         shoppingList = shoppingListRepository.save(shoppingList);
@@ -81,10 +100,22 @@ class TaskControllerTest extends IntegrationTestBase {
             mockMvc.perform(get("/api/v1/households/{id}/tasks", testHousehold.getId())
                             .with(jwt()))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.length()").value(3))
+                    .andExpect(jsonPath("$.length()").value(4))
                     .andExpect(jsonPath("$[0].id").exists())
                     .andExpect(jsonPath("$[0].title").exists())
                     .andExpect(jsonPath("$[0].status").exists());
+        }
+
+        @Test
+        @DisplayName("Should include routine summary when task has routine")
+        void listTasksIncludesRoutineSummary() throws Exception {
+            mockMvc.perform(get("/api/v1/households/{id}/tasks", testHousehold.getId())
+                            .with(jwt()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[?(@.id=='" + taskWithRoutine.getId() + "')].routine.id")
+                            .value(contains(routine.getId().toString())))
+                    .andExpect(jsonPath("$[?(@.id=='" + taskWithRoutine.getId() + "')].routine.status")
+                            .value(contains(RoutineStatus.ACTIVE.name())));
         }
 
         @Test
@@ -178,6 +209,48 @@ class TaskControllerTest extends IntegrationTestBase {
         }
 
         @Test
+        @DisplayName("Should include routine summary for routine task")
+        void getTask_withRoutine_includesRoutineSummary() throws Exception {
+            mockMvc.perform(get(
+                                    "/api/v1/households/{id}/tasks/{taskId}",
+                                    testHousehold.getId(),
+                                    taskWithRoutine.getId())
+                            .with(jwt()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.routine.id").value(routine.getId().toString()))
+                    .andExpect(jsonPath("$.routine.title").value(routine.getTitle()))
+                    .andExpect(jsonPath("$.routine.status").value(RoutineStatus.ACTIVE.name()));
+        }
+
+        @Test
+        @DisplayName("Should include deleted routine status when routine is deleted")
+        void getTask_withDeletedRoutine_includesDeletedStatus() throws Exception {
+            Routine deletedRoutine = saveRoutine("Deleted Routine", RoutineStatus.DELETED);
+            Task deletedRoutineTask = new Task(testHousehold, "Task 5 - Deleted Routine", testUser);
+            deletedRoutineTask.setRoutine(deletedRoutine);
+            deletedRoutineTask.setScheduledDate(java.time.LocalDate.now());
+            deletedRoutineTask.setCreatedVia("routine");
+            deletedRoutineTask = taskRepository.save(deletedRoutineTask);
+
+            mockMvc.perform(get(
+                                    "/api/v1/households/{id}/tasks/{taskId}",
+                                    testHousehold.getId(),
+                                    deletedRoutineTask.getId())
+                            .with(jwt()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.routine.status").value(RoutineStatus.DELETED.name()));
+        }
+
+        @Test
+        @DisplayName("Should return null routine for manual task")
+        void getTask_manualTask_routineIsNull() throws Exception {
+            mockMvc.perform(get("/api/v1/households/{id}/tasks/{taskId}", testHousehold.getId(), task1.getId())
+                            .with(jwt()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.routine").doesNotExist());
+        }
+
+        @Test
         @DisplayName("Should return 404 for non-existent task")
         void getTaskDetailReturnsNotFoundForMissingTask() throws Exception {
             mockMvc.perform(get(
@@ -200,5 +273,14 @@ class TaskControllerTest extends IntegrationTestBase {
                             .with(jwtForUser(testUser2)))
                     .andExpect(status().isForbidden());
         }
+    }
+
+    private Routine saveRoutine(String title, RoutineStatus status) throws Exception {
+        String ruleJson = objectMapper.writeValueAsString(new RecurrenceRule.Daily());
+        Routine routine = new Routine(testHousehold, title, ruleJson, AssignmentPolicy.MANUAL, testUser);
+        if (status == RoutineStatus.DELETED) {
+            routine.softDelete();
+        }
+        return routineRepository.save(routine);
     }
 }

@@ -25,6 +25,7 @@ public record TaskDetailDto(
         @Schema(description = "Creation timestamp") Instant createdAt,
         @Schema(description = "Last update timestamp") Instant updatedAt,
         @Schema(description = "Completion timestamp") Instant completedAt,
+        @Schema(description = "Source routine if auto-generated") RoutineSummaryDto routine,
         @Schema(description = "Shopping items linked to this task") List<ShoppingItemDto> linkedShoppingItems) {
 
     public static TaskDetailDto from(Task task, List<ShoppingItem> linkedItems) {
@@ -47,6 +48,7 @@ public record TaskDetailDto(
                 task.getCreatedAt(),
                 task.getUpdatedAt(),
                 task.getCompletedAt(),
+                RoutineSummaryDto.from(task.getRoutine()),
                 itemDtos);
     }
 }

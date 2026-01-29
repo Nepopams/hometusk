@@ -1512,6 +1512,10 @@ components:
         title:
           type: string
           description: Routine title (e.g., "Мыть посуду")
+        status:
+          type: string
+          enum: [ACTIVE, PAUSED, DELETED]
+          description: Routine status (DELETED if routine was removed)
 
     AnalyticsSummary:
       type: object

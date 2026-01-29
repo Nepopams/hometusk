@@ -21,7 +21,8 @@ public record TaskDto(
         @Schema(description = "How the task was created") String createdVia,
         @Schema(description = "Creation timestamp") Instant createdAt,
         @Schema(description = "Last update timestamp") Instant updatedAt,
-        @Schema(description = "Completion timestamp") Instant completedAt) {
+        @Schema(description = "Completion timestamp") Instant completedAt,
+        @Schema(description = "Source routine if auto-generated") RoutineSummaryDto routine) {
 
     public static TaskDto from(Task task) {
         return new TaskDto(
@@ -38,6 +39,7 @@ public record TaskDto(
                 task.getCreatedVia(),
                 task.getCreatedAt(),
                 task.getUpdatedAt(),
-                task.getCompletedAt());
+                task.getCompletedAt(),
+                RoutineSummaryDto.from(task.getRoutine()));
     }
 }

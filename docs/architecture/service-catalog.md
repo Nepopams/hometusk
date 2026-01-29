@@ -210,6 +210,7 @@ Domain service for task management.
 - Status transitions (assigned → in_progress → done)
 - Deadline management
 - Task queries (by household, by assignee)
+- Expose routine metadata for tasks generated from routines
 
 **Key entities:** Task, TaskStatus, TaskAssignment
 
