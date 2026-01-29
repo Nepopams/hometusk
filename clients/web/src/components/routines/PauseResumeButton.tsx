@@ -69,15 +69,20 @@ export default function PauseResumeButton({
       >
         <div className="pause-confirm">
           <p className="pause-confirm__message">
-            Pause routine? No new tasks will be generated while paused.
+            Pause this routine? No new tasks will be created while paused.
           </p>
+          <p className="pause-confirm__name">&quot;{routine.title}&quot;</p>
           <div className="pause-confirm__actions">
             <Button variant="ghost" size="md" onClick={() => setShowConfirm(false)}>
               Cancel
             </Button>
-            <Button variant="primary" size="md" onClick={handleConfirmPause}>
-              Pause routine
-            </Button>
+            <button
+              type="button"
+              className="pause-confirm__btn"
+              onClick={handleConfirmPause}
+            >
+              Pause
+            </button>
           </div>
         </div>
       </Modal>

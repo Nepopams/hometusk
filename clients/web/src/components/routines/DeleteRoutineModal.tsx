@@ -37,7 +37,12 @@ export default function DeleteRoutineModal({
         {routine && (
           <p className="delete-routine__name">&quot;{routine.title}&quot;</p>
         )}
-        {error && <div className="delete-routine__error">{error}</div>}
+        {error && (
+          <div className="delete-routine__error" role="alert">
+            <span className="delete-routine__error-icon">⚠</span>
+            <span>{error}</span>
+          </div>
+        )}
         <div className="delete-routine__actions">
           <Button type="button" variant="ghost" size="md" onClick={onClose} disabled={isDeleting}>
             Cancel

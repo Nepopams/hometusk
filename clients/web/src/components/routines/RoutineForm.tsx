@@ -250,6 +250,8 @@ export default function RoutineForm({
 
   const isFixedPolicy = assignmentPolicy === 'FIXED';
 
+  const hasFieldErrors = Boolean(titleError || frequencyError || policyError);
+
   return (
     <Modal
       open={open}
@@ -261,6 +263,13 @@ export default function RoutineForm({
       closeOnEscape={!isSubmitting}
     >
       <form className="routine-form" onSubmit={handleSubmit}>
+        {(formError || hasFieldErrors) && (
+          <div className="routine-form__error-banner" role="alert">
+            <span className="routine-form__error-icon">⚠</span>
+            <span>{formError || 'Please fix the errors above to continue.'}</span>
+          </div>
+        )}
+
         <div className="routine-form__section">
           <label className="routine-form__label" htmlFor="routine-title">
             Title
@@ -485,8 +494,6 @@ export default function RoutineForm({
 
           {policyError && <span className="routine-form__error">{policyError}</span>}
         </div>
-
-        {formError && <div className="routine-form__error-banner">{formError}</div>}
 
         <div className="routine-form__actions">
           <Button type="button" variant="ghost" size="md" onClick={onClose} disabled={isSubmitting}>
