@@ -1,0 +1,706 @@
+openapi: 3.0.3
+info:
+  title: ASR Service API
+  description: |
+    REST API для сервиса распознавания речи (Automatic Speech Recognition).
+
+    ## Обзор
+    Сервис предоставляет batch-транскрипцию аудиофайлов с использованием модели Whisper large-v3.
+    Поддерживаются русский и английский языки.
+
+    ## Job-модель
+    Транскрипция выполняется асинхронно:
+    1. `POST /transcriptions` — создаёт job и возвращает `transcriptionId`
+    2. `GET /transcriptions/{id}` — возвращает статус и результат
+
+    Статусы: `queued` → `processing` → `done` | `failed`
+
+    ## Ограничения MVP
+    - Максимальная длительность аудио: 60 секунд
+    - Максимальный размер файла: 10 MB
+    - Поддерживаемые форматы: OGG/Opus, MP3, WAV, M4A
+    - Языки: ru, en (auto-detection опционально)
+
+    ## Аутентификация
+    Все endpoints (кроме /healthz, /readyz) требуют API key в заголовке `X-API-Key`.
+  version: 1.0.0
+  contact:
+    name: ASR Service Team
+  license:
+    name: Proprietary
+
+servers:
+  - url: http://localhost:8000/api/v1/asr
+    description: Local development
+  - url: https://asr.example.com/api/v1/asr
+    description: Production (placeholder)
+
+tags:
+  - name: Transcriptions
+    description: Операции с транскрипциями
+  - name: Health
+    description: Health check endpoints
+
+paths:
+  /transcriptions:
+    post:
+      operationId: createTranscription
+      summary: Создать транскрипцию
+      description: |
+        Загружает аудиофайл и создаёт job для транскрипции.
+        Возвращает `transcriptionId` для отслеживания статуса.
+
+        Поддерживает идемпотентность через заголовок `Idempotency-Key`.
+      tags:
+        - Transcriptions
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateTranscriptionRequest'
+            examples:
+              russian_audio:
+                summary: Русское аудио
+                value:
+                  file: "(binary)"
+                  languageHint: ru
+                  timestamps: none
+                  punctuation: true
+                  profanityFilter: off
+              english_audio:
+                summary: Английское аудио с сегментами
+                value:
+                  file: "(binary)"
+                  languageHint: en
+                  timestamps: segments
+                  punctuation: true
+                  profanityFilter: off
+              auto_detect:
+                summary: Автоопределение языка
+                value:
+                  file: "(binary)"
+                  languageHint: auto
+      responses:
+        '202':
+          description: Job создан, транскрипция в очереди
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/X-Request-Id'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranscriptionCreated'
+              examples:
+                queued:
+                  summary: Job создан
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    status: queued
+                    createdAt: "2026-01-29T10:30:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /transcriptions/{id}:
+    get:
+      operationId: getTranscription
+      summary: Получить статус/результат транскрипции
+      description: |
+        Возвращает текущий статус job и результат (если готов).
+
+        Статусы:
+        - `queued` — в очереди
+        - `processing` — обрабатывается
+        - `done` — готово, результат в поле `text`
+        - `failed` — ошибка, детали в поле `error`
+      tags:
+        - Transcriptions
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TranscriptionId'
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: Транскрипция найдена
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/X-Request-Id'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranscriptionResult'
+              examples:
+                queued:
+                  summary: В очереди
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    status: queued
+                    text: null
+                    segments: null
+                    model: null
+                    durationMs: null
+                    lang: null
+                    createdAt: "2026-01-29T10:30:00Z"
+                    finishedAt: null
+                    error: null
+                processing:
+                  summary: Обрабатывается
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    status: processing
+                    text: null
+                    segments: null
+                    model: "whisper-large-v3"
+                    durationMs: null
+                    lang: null
+                    createdAt: "2026-01-29T10:30:00Z"
+                    finishedAt: null
+                    error: null
+                done:
+                  summary: Готово
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    status: done
+                    text: "Привет, это тестовое сообщение для проверки распознавания речи."
+                    segments: null
+                    model: "whisper-large-v3"
+                    durationMs: 5230
+                    lang: "ru"
+                    createdAt: "2026-01-29T10:30:00Z"
+                    finishedAt: "2026-01-29T10:30:03Z"
+                    error: null
+                done_with_segments:
+                  summary: Готово с сегментами
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    status: done
+                    text: "Hello, this is a test message."
+                    segments:
+                      - startMs: 0
+                        endMs: 1500
+                        text: "Hello,"
+                      - startMs: 1500
+                        endMs: 3200
+                        text: "this is a test message."
+                    model: "whisper-large-v3"
+                    durationMs: 3200
+                    lang: "en"
+                    createdAt: "2026-01-29T10:30:00Z"
+                    finishedAt: "2026-01-29T10:30:02Z"
+                    error: null
+                failed:
+                  summary: Ошибка
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    status: failed
+                    text: null
+                    segments: null
+                    model: "whisper-large-v3"
+                    durationMs: null
+                    lang: null
+                    createdAt: "2026-01-29T10:30:00Z"
+                    finishedAt: "2026-01-29T10:30:05Z"
+                    error:
+                      code: "INFERENCE_TIMEOUT"
+                      message: "Transcription timed out after 60 seconds"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /healthz:
+    get:
+      operationId: healthCheck
+      summary: Liveness probe
+      description: Проверка, что сервис запущен и отвечает.
+      tags:
+        - Health
+      security: []
+      responses:
+        '200':
+          description: Сервис жив
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: ok
+        '503':
+          description: Сервис недоступен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: unhealthy
+
+  /readyz:
+    get:
+      operationId: readinessCheck
+      summary: Readiness probe
+      description: |
+        Проверка готовности сервиса принимать трафик.
+        Проверяет подключение к Redis, PostgreSQL, MinIO.
+      tags:
+        - Health
+      security: []
+      responses:
+        '200':
+          description: Сервис готов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResponse'
+              example:
+                status: ready
+                checks:
+                  redis: ok
+                  postgres: ok
+                  minio: ok
+        '503':
+          description: Сервис не готов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResponse'
+              example:
+                status: not_ready
+                checks:
+                  redis: ok
+                  postgres: failed
+                  minio: ok
+
+  /metrics:
+    get:
+      operationId: getMetrics
+      summary: Prometheus metrics
+      description: Метрики в формате Prometheus для мониторинга.
+      tags:
+        - Health
+      security: []
+      responses:
+        '200':
+          description: Метрики
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: |
+                # HELP http_requests_total Total HTTP requests
+                # TYPE http_requests_total counter
+                http_requests_total{method="POST",endpoint="/transcriptions",status="202"} 1234
+                http_requests_total{method="GET",endpoint="/transcriptions/{id}",status="200"} 5678
+                # HELP http_request_duration_seconds HTTP request duration
+                # TYPE http_request_duration_seconds histogram
+                http_request_duration_seconds_bucket{le="0.1"} 1000
+                http_request_duration_seconds_bucket{le="0.5"} 1200
+                http_request_duration_seconds_bucket{le="1.0"} 1234
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key для аутентификации
+
+  parameters:
+    TranscriptionId:
+      name: id
+      in: path
+      required: true
+      description: UUID транскрипции
+      schema:
+        type: string
+        format: uuid
+      example: "550e8400-e29b-41d4-a716-446655440000"
+
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: |
+        Ключ идемпотентности для предотвращения дублирования.
+        Повторный запрос с тем же ключом вернёт существующий job.
+      schema:
+        type: string
+        maxLength: 64
+      example: "client-req-12345"
+
+    RequestId:
+      name: X-Request-Id
+      in: header
+      required: false
+      description: ID запроса для трейсинга (генерируется автоматически если не указан)
+      schema:
+        type: string
+        format: uuid
+      example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+
+  headers:
+    X-Request-Id:
+      description: ID запроса для трейсинга
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    CreateTranscriptionRequest:
+      type: object
+      required:
+        - file
+      properties:
+        file:
+          type: string
+          format: binary
+          description: |
+            Аудиофайл для транскрипции.
+            Поддерживаемые форматы: OGG/Opus, MP3, WAV, M4A.
+            Максимальный размер: 10 MB.
+            Максимальная длительность: 60 секунд.
+        languageHint:
+          type: string
+          enum: [ru, en, auto]
+          default: auto
+          description: |
+            Подсказка языка аудио.
+            - `ru` — русский
+            - `en` — английский
+            - `auto` — автоопределение (best effort)
+        timestamps:
+          type: string
+          enum: [none, segments]
+          default: none
+          description: |
+            Включить временные метки.
+            - `none` — только текст
+            - `segments` — текст с временными метками сегментов
+        punctuation:
+          type: boolean
+          default: true
+          description: Добавлять пунктуацию в текст
+        profanityFilter:
+          type: string
+          enum: [off, mask]
+          default: off
+          description: |
+            Фильтрация нецензурной лексики.
+            - `off` — без фильтрации
+            - `mask` — заменять на ***
+
+    TranscriptionCreated:
+      type: object
+      required:
+        - id
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор транскрипции
+        status:
+          $ref: '#/components/schemas/TranscriptionStatus'
+        createdAt:
+          type: string
+          format: date-time
+          description: Время создания job
+
+    TranscriptionResult:
+      type: object
+      required:
+        - id
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор транскрипции
+        status:
+          $ref: '#/components/schemas/TranscriptionStatus'
+        text:
+          type: string
+          nullable: true
+          description: Распознанный текст (null если не готов)
+          example: "Привет, это тестовое сообщение."
+        segments:
+          type: array
+          nullable: true
+          description: Сегменты с временными метками (если timestamps=segments)
+          items:
+            $ref: '#/components/schemas/Segment'
+        model:
+          type: string
+          nullable: true
+          description: Использованная модель
+          example: "whisper-large-v3"
+        durationMs:
+          type: integer
+          nullable: true
+          description: Длительность аудио в миллисекундах
+          example: 5230
+        lang:
+          type: string
+          nullable: true
+          description: Определённый язык (ISO 639-1)
+          example: "ru"
+        createdAt:
+          type: string
+          format: date-time
+          description: Время создания job
+        finishedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Время завершения (null если не завершён)
+        error:
+          $ref: '#/components/schemas/TranscriptionError'
+
+    TranscriptionStatus:
+      type: string
+      enum: [queued, processing, done, failed]
+      description: |
+        Статус транскрипции:
+        - `queued` — в очереди на обработку
+        - `processing` — обрабатывается
+        - `done` — успешно завершена
+        - `failed` — ошибка обработки
+
+    Segment:
+      type: object
+      required:
+        - startMs
+        - endMs
+        - text
+      properties:
+        startMs:
+          type: integer
+          description: Начало сегмента в миллисекундах
+          example: 0
+        endMs:
+          type: integer
+          description: Конец сегмента в миллисекундах
+          example: 1500
+        text:
+          type: string
+          description: Текст сегмента
+          example: "Привет,"
+
+    TranscriptionError:
+      type: object
+      nullable: true
+      description: Информация об ошибке (только если status=failed)
+      properties:
+        code:
+          type: string
+          description: Код ошибки
+          example: "INFERENCE_TIMEOUT"
+        message:
+          type: string
+          description: Человекочитаемое описание ошибки
+          example: "Transcription timed out after 60 seconds"
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+        - requestId
+      properties:
+        code:
+          type: string
+          description: Машиночитаемый код ошибки
+          example: "INVALID_FORMAT"
+        message:
+          type: string
+          description: Человекочитаемое описание ошибки
+          example: "Unsupported audio format. Supported: OGG, MP3, WAV, M4A"
+        details:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: Дополнительные детали ошибки
+          example:
+            field: "file"
+            received: "video/mp4"
+            expected: ["audio/ogg", "audio/mpeg", "audio/wav", "audio/mp4"]
+        requestId:
+          type: string
+          format: uuid
+          description: ID запроса для трейсинга
+          example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+
+    HealthResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [ok, unhealthy]
+          description: Статус сервиса
+
+    ReadinessResponse:
+      type: object
+      required:
+        - status
+        - checks
+      properties:
+        status:
+          type: string
+          enum: [ready, not_ready]
+          description: Общий статус готовности
+        checks:
+          type: object
+          properties:
+            redis:
+              type: string
+              enum: [ok, failed]
+            postgres:
+              type: string
+              enum: [ok, failed]
+            minio:
+              type: string
+              enum: [ok, failed]
+
+  responses:
+    BadRequest:
+      description: Невалидный запрос
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            invalid_format:
+              summary: Неподдерживаемый формат
+              value:
+                code: "INVALID_FORMAT"
+                message: "Unsupported audio format. Supported: OGG, MP3, WAV, M4A"
+                details:
+                  field: "file"
+                  received: "video/mp4"
+                requestId: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+            audio_too_long:
+              summary: Аудио слишком длинное
+              value:
+                code: "AUDIO_TOO_LONG"
+                message: "Audio duration exceeds maximum of 60 seconds"
+                details:
+                  maxDurationSeconds: 60
+                  receivedDurationSeconds: 125
+                requestId: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+            unsupported_language:
+              summary: Неподдерживаемый язык
+              value:
+                code: "UNSUPPORTED_LANGUAGE"
+                message: "Language 'de' is not supported. Supported: ru, en, auto"
+                details:
+                  received: "de"
+                  supported: ["ru", "en", "auto"]
+                requestId: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+
+    Unauthorized:
+      description: Отсутствует или невалидный API key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "UNAUTHORIZED"
+            message: "Missing or invalid API key"
+            requestId: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+
+    NotFound:
+      description: Транскрипция не найдена
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "NOT_FOUND"
+            message: "Transcription not found"
+            details:
+              id: "550e8400-e29b-41d4-a716-446655440000"
+            requestId: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+
+    PayloadTooLarge:
+      description: Файл слишком большой
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "FILE_TOO_LARGE"
+            message: "File size exceeds maximum of 10 MB"
+            details:
+              maxSizeBytes: 10485760
+              receivedSizeBytes: 15728640
+            requestId: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+
+    TooManyRequests:
+      description: Превышен лимит запросов
+      headers:
+        Retry-After:
+          description: Секунды до сброса лимита
+          schema:
+            type: integer
+          example: 60
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "RATE_LIMIT_EXCEEDED"
+            message: "Too many requests. Please retry after 60 seconds"
+            details:
+              retryAfterSeconds: 60
+            requestId: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+
+    InternalError:
+      description: Внутренняя ошибка сервера
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "INTERNAL_ERROR"
+            message: "An unexpected error occurred"
+            requestId: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+
+    ServiceUnavailable:
+      description: Сервис временно недоступен
+      headers:
+        Retry-After:
+          description: Секунды до восстановления
+          schema:
+            type: integer
+          example: 30
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "SERVICE_UNAVAILABLE"
+            message: "Service temporarily unavailable. Please retry later"
+            details:
+              reason: "Queue overloaded"
+            requestId: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
