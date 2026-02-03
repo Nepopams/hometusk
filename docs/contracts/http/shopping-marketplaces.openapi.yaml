@@ -1,0 +1,695 @@
+openapi: 3.1.0
+info:
+  title: HomeTusk Shopping Marketplaces API
+  version: 1.0.0
+  description: |
+    API for shopping trip management and marketplace integrations.
+
+    **EP-013:** Shopping Marketplaces
+
+    Features:
+    - Shopping Runs: Snapshot shopping list for a store trip
+    - Export: Download/share shopping list in text/CSV
+    - Marketplace Link-outs: Generate search URLs for external marketplaces
+
+servers:
+  - url: /api/v1
+    description: API version 1
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: ShoppingRuns
+    description: Shopping trip (run) management
+  - name: ShoppingExport
+    description: Shopping list export
+  - name: Marketplaces
+    description: Marketplace template configuration
+
+paths:
+  /households/{householdId}/shopping-runs:
+    post:
+      operationId: createShoppingRun
+      summary: Create a shopping run from a list
+      description: |
+        Creates a new shopping run by snapshotting unpurchased items from a shopping list.
+        The run captures the current state of items for a single shopping trip.
+
+        **Idempotency:** Supports `Idempotency-Key` header for safe retries.
+      tags:
+        - ShoppingRuns
+      parameters:
+        - $ref: '#/components/parameters/HouseholdIdPath'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateShoppingRunRequest'
+            examples:
+              createRun:
+                summary: Create run from default list
+                value:
+                  listId: "123e4567-e89b-12d3-a456-426614174001"
+      responses:
+        '201':
+          description: Shopping run created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingRunDto'
+        '400':
+          description: Invalid request (empty list, list not found)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Shopping list not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Idempotency conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      operationId: listShoppingRuns
+      summary: List shopping runs in a household
+      description: |
+        Returns shopping runs for the household, optionally filtered by status.
+        Default: returns ACTIVE runs. Use status=all for all runs.
+      tags:
+        - ShoppingRuns
+      parameters:
+        - $ref: '#/components/parameters/HouseholdIdPath'
+        - name: status
+          in: query
+          required: false
+          description: Filter by run status (default ACTIVE, use "all" for all)
+          schema:
+            type: string
+            enum: [ACTIVE, COMPLETED, CANCELLED, all]
+            default: ACTIVE
+        - name: listId
+          in: query
+          required: false
+          description: Filter by source list
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          required: false
+          description: Max results (default 20, max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: List of shopping runs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ShoppingRunSummaryDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /households/{householdId}/shopping-runs/{runId}:
+    get:
+      operationId: getShoppingRun
+      summary: Get shopping run details
+      description: Returns full run details including all items and their status.
+      tags:
+        - ShoppingRuns
+      parameters:
+        - $ref: '#/components/parameters/HouseholdIdPath'
+        - $ref: '#/components/parameters/RunIdPath'
+      responses:
+        '200':
+          description: Shopping run details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingRunDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/RunNotFound'
+
+  /households/{householdId}/shopping-runs/{runId}/close:
+    post:
+      operationId: closeShoppingRun
+      summary: Close a shopping run
+      description: |
+        Closes an active shopping run as COMPLETED or CANCELLED.
+
+        **Idempotent:** Closing an already-closed run with same status is a no-op.
+        Attempting to change status of closed run returns 409.
+      tags:
+        - ShoppingRuns
+      parameters:
+        - $ref: '#/components/parameters/HouseholdIdPath'
+        - $ref: '#/components/parameters/RunIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CloseShoppingRunRequest'
+      responses:
+        '200':
+          description: Run closed (or already in requested state)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingRunDto'
+        '400':
+          description: Invalid status value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/RunNotFound'
+        '409':
+          description: Cannot close - run already closed with different status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /households/{householdId}/shopping-runs/{runId}/items/{itemId}:
+    patch:
+      operationId: updateShoppingRunItem
+      summary: Update item status in a run
+      description: |
+        Marks an item as purchased or unpurchased within a run.
+
+        When marking purchased=true, also updates the original ShoppingItem
+        if syncToList=true (default behavior).
+      tags:
+        - ShoppingRuns
+      parameters:
+        - $ref: '#/components/parameters/HouseholdIdPath'
+        - $ref: '#/components/parameters/RunIdPath'
+        - name: itemId
+          in: path
+          required: true
+          description: Shopping run item ID (not original item ID)
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRunItemRequest'
+      responses:
+        '200':
+          description: Item updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingRunItemDto'
+        '400':
+          description: Invalid request (run is closed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Run or item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /households/{householdId}/shopping-lists/{listId}/export:
+    get:
+      operationId: exportShoppingList
+      summary: Export shopping list
+      description: |
+        Exports a shopping list in text or CSV format.
+
+        **Text format:** Simple human-readable list
+        **CSV format:** Structured data with headers, RFC 4180 compliant
+      tags:
+        - ShoppingExport
+      parameters:
+        - $ref: '#/components/parameters/HouseholdIdPath'
+        - name: listId
+          in: path
+          required: true
+          description: Shopping list ID
+          schema:
+            type: string
+            format: uuid
+        - name: format
+          in: query
+          required: false
+          description: Export format (default text)
+          schema:
+            type: string
+            enum: [text, csv]
+            default: text
+        - name: purchased
+          in: query
+          required: false
+          description: Filter by purchase status (null = all items)
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Exported list content
+          content:
+            text/plain:
+              schema:
+                type: string
+            text/csv:
+              schema:
+                type: string
+          headers:
+            Content-Disposition:
+              description: Filename for CSV downloads
+              schema:
+                type: string
+        '400':
+          description: Invalid format parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Shopping list not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /marketplace-templates:
+    get:
+      operationId: getMarketplaceTemplates
+      summary: Get available marketplace templates
+      description: |
+        Returns list of configured marketplace templates for link-out generation.
+        Only enabled templates are returned.
+
+        **Note:** This endpoint does not require household context.
+        Templates are system-wide configuration.
+      tags:
+        - Marketplaces
+      security: []
+      responses:
+        '200':
+          description: List of marketplace templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MarketplaceTemplateDto'
+              examples:
+                twoMarketplaces:
+                  summary: Ozon and Yandex Market
+                  value:
+                    - id: "ozon"
+                      name: "Ozon"
+                      urlTemplate: "https://www.ozon.ru/search/?text={query}"
+                      iconUrl: "/icons/ozon.svg"
+                    - id: "yandex_market"
+                      name: "Yandex Market"
+                      urlTemplate: "https://market.yandex.ru/search?text={query}"
+                      iconUrl: "/icons/yandex-market.svg"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Keycloak JWT token
+
+  parameters:
+    HouseholdIdPath:
+      name: householdId
+      in: path
+      required: true
+      description: Household UUID
+      schema:
+        type: string
+        format: uuid
+
+    RunIdPath:
+      name: runId
+      in: path
+      required: true
+      description: Shopping run UUID
+      schema:
+        type: string
+        format: uuid
+
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: |
+        Idempotency key for safe retries. Unique per user for 24 hours.
+        Reuse with different payload returns 409 IDEMPOTENCY_CONFLICT.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+        pattern: '^[A-Za-z0-9._-]{1,128}$'
+
+  responses:
+    Unauthorized:
+      description: Authentication required or token invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Forbidden:
+      description: User does not have access to this household
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    RunNotFound:
+      description: Shopping run not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    ShoppingRunStatus:
+      type: string
+      enum:
+        - ACTIVE
+        - COMPLETED
+        - CANCELLED
+      description: |
+        - ACTIVE: Run in progress, items can be modified
+        - COMPLETED: Run finished successfully
+        - CANCELLED: Run cancelled (e.g., plans changed)
+
+    ShoppingRunDto:
+      type: object
+      description: Full shopping run details with items
+      required:
+        - id
+        - householdId
+        - listId
+        - listName
+        - status
+        - createdBy
+        - createdAt
+        - items
+        - itemCounts
+      properties:
+        id:
+          type: string
+          format: uuid
+        householdId:
+          type: string
+          format: uuid
+        listId:
+          type: string
+          format: uuid
+          description: Source shopping list ID
+        listName:
+          type: string
+          description: Source shopping list name (snapshot)
+        status:
+          $ref: '#/components/schemas/ShoppingRunStatus'
+        createdBy:
+          $ref: '#/components/schemas/UserSummary'
+        createdAt:
+          type: string
+          format: date-time
+        closedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp when run was closed
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShoppingRunItemDto'
+        itemCounts:
+          $ref: '#/components/schemas/ItemCounts'
+
+    ShoppingRunSummaryDto:
+      type: object
+      description: Shopping run summary (without full item list)
+      required:
+        - id
+        - householdId
+        - listId
+        - listName
+        - status
+        - createdBy
+        - createdAt
+        - itemCounts
+      properties:
+        id:
+          type: string
+          format: uuid
+        householdId:
+          type: string
+          format: uuid
+        listId:
+          type: string
+          format: uuid
+        listName:
+          type: string
+        status:
+          $ref: '#/components/schemas/ShoppingRunStatus'
+        createdBy:
+          $ref: '#/components/schemas/UserSummary'
+        createdAt:
+          type: string
+          format: date-time
+        closedAt:
+          type: string
+          format: date-time
+          nullable: true
+        itemCounts:
+          $ref: '#/components/schemas/ItemCounts'
+
+    ShoppingRunItemDto:
+      type: object
+      description: Item snapshot within a shopping run
+      required:
+        - id
+        - originalItemId
+        - name
+        - quantity
+        - purchased
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Run item ID (unique within run)
+        originalItemId:
+          type: string
+          format: uuid
+          description: Original ShoppingItem ID (for sync)
+        name:
+          type: string
+          description: Item name (snapshot at run creation)
+        quantity:
+          type: integer
+          minimum: 1
+          description: Quantity (snapshot at run creation)
+        unit:
+          type: string
+          nullable: true
+          description: Unit of measurement
+        purchased:
+          type: boolean
+          description: Whether item was purchased in this run
+        purchasedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When item was marked purchased
+
+    ItemCounts:
+      type: object
+      description: Item count summary for a run
+      required:
+        - total
+        - purchased
+        - remaining
+      properties:
+        total:
+          type: integer
+          minimum: 0
+          description: Total items in run
+        purchased:
+          type: integer
+          minimum: 0
+          description: Items marked purchased
+        remaining:
+          type: integer
+          minimum: 0
+          description: Items not yet purchased
+
+    CreateShoppingRunRequest:
+      type: object
+      description: Request to create a shopping run
+      required:
+        - listId
+      properties:
+        listId:
+          type: string
+          format: uuid
+          description: Shopping list to create run from
+
+    CloseShoppingRunRequest:
+      type: object
+      description: Request to close a shopping run
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [COMPLETED, CANCELLED]
+          description: Final status for the run
+
+    UpdateRunItemRequest:
+      type: object
+      description: Request to update a run item
+      required:
+        - purchased
+      properties:
+        purchased:
+          type: boolean
+          description: Whether item is purchased
+        syncToList:
+          type: boolean
+          default: true
+          description: Also update original ShoppingItem (default true)
+
+    MarketplaceTemplateDto:
+      type: object
+      description: Marketplace configuration for link-out URLs
+      required:
+        - id
+        - name
+        - urlTemplate
+      properties:
+        id:
+          type: string
+          description: Unique identifier (e.g., "ozon", "yandex_market")
+        name:
+          type: string
+          description: Display name (e.g., "Ozon", "Yandex Market")
+        urlTemplate:
+          type: string
+          description: |
+            URL template with {query} placeholder.
+            Client must URL-encode the item name before substitution.
+          example: "https://www.ozon.ru/search/?text={query}"
+        iconUrl:
+          type: string
+          nullable: true
+          description: Icon URL for UI display
+
+    UserSummary:
+      type: object
+      required:
+        - id
+        - displayName
+      properties:
+        id:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+
+    ErrorResponse:
+      type: object
+      required:
+        - errorCode
+        - message
+      properties:
+        errorCode:
+          type: string
+          description: Machine-readable error code
+        message:
+          type: string
+          description: Human-readable error message
+        validationErrors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+        violations:
+          type: array
+          items:
+            $ref: '#/components/schemas/BusinessViolation'
+
+    ValidationError:
+      type: object
+      required:
+        - path
+        - code
+        - message
+      properties:
+        path:
+          type: string
+          description: JSON path to invalid field
+        code:
+          type: string
+        message:
+          type: string
+
+    BusinessViolation:
+      type: object
+      required:
+        - rule
+        - message
+      properties:
+        rule:
+          type: string
+          enum:
+            - LIST_MUST_HAVE_ITEMS
+            - RUN_MUST_BE_ACTIVE
+            - ITEM_NOT_IN_RUN
+        message:
+          type: string
