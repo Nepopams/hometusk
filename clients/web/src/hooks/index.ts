@@ -15,3 +15,9 @@ export {
 export { useGamification } from './useGamification';
 export { useAudioRecorder } from './useAudioRecorder';
 export type { UseAudioRecorderResult, AudioRecorderError } from './useAudioRecorder';
+export { useAsrTranscription } from './useAsrTranscription';
+export type {
+  UseAsrTranscriptionResult,
+  AsrTranscriptionError,
+  AsrErrorType,
+} from './useAsrTranscription';
