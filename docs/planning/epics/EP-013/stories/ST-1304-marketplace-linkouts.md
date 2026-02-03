@@ -1,7 +1,8 @@
 # Story: ST-1304 — Marketplace Link-out Templates + Config
 
-## Status: NOT READY
-**Blocker**: Needs ADR-015 (link-out encoding design)
+## Status: READY
+**Sprint:** S16 | **Points:** 5
+**Artifacts:** ADR-015 approved 2026-02-03
 
 ## Description
 Implement marketplace link-out URL generation using configurable templates. URLs allow users to search for shopping items on external marketplaces (Ozon, Yandex Market, etc.).

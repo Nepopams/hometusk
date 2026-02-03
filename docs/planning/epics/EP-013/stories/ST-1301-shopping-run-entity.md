@@ -1,7 +1,8 @@
 # Story: ST-1301 — ShoppingRun Entity + Repository
 
-## Status: NOT READY
-**Blocker**: Needs ADR-014 (ShoppingRun entity design) + contract approval
+## Status: READY
+**Sprint:** S16 | **Points:** 5
+**Artifacts:** ADR-014, Contract approved 2026-02-03
 
 ## Description
 Create the ShoppingRun domain entity and JPA repository to support "shopping trip" functionality. A ShoppingRun captures a snapshot of items to purchase during a single shopping trip, tracking which items were purchased vs. skipped.

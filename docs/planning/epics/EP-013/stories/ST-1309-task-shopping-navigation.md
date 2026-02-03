@@ -1,6 +1,7 @@
 # Story: ST-1309 — Task-Shopping Navigation Surfaces
 
 ## Status: READY
+**Sprint:** S16 | **Points:** 3
 
 ## Description
 Add navigation links between tasks and their linked shopping items. Users should be able to see related shopping items from task detail and navigate to the linked task from shopping items.

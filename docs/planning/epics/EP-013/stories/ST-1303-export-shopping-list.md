@@ -1,7 +1,8 @@
 # Story: ST-1303 — Export Shopping List (Text/CSV)
 
-## Status: NOT READY
-**Blocker**: Needs contract approval for export endpoint
+## Status: READY
+**Sprint:** S16 | **Points:** 3
+**Artifacts:** Contract approved 2026-02-03
 
 ## Description
 Add export functionality for shopping lists, allowing users to download or copy their list in plain text or CSV format.
