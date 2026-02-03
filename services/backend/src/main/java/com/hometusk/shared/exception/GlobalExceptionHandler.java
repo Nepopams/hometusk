@@ -1,12 +1,23 @@
 package com.hometusk.shared.exception;
 
+import com.hometusk.asr.dto.AsrProxyErrorResponse;
+import com.hometusk.asr.exception.AsrException;
+import com.hometusk.asr.exception.AsrIdempotencyConflictException;
+import com.hometusk.asr.exception.AsrMissingFileException;
+import com.hometusk.asr.exception.AsrRateLimitedException;
+import com.hometusk.asr.exception.AsrTimeoutException;
+import com.hometusk.asr.exception.AsrUnauthorizedException;
+import com.hometusk.asr.exception.AsrUnavailableException;
 import com.hometusk.shared.logging.MdcKeys;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -97,6 +108,53 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
 
+    @ExceptionHandler(AsrRateLimitedException.class)
+    public ResponseEntity<AsrProxyErrorResponse> handleAsrRateLimited(AsrRateLimitedException ex) {
+        log.warn("ASR rate limited: {}", ex.getMessage());
+        Integer retryAfterSeconds = ex.getRetryAfterSeconds();
+        Map<String, Object> details = retryAfterSeconds != null ? Map.of("retryAfterSeconds", retryAfterSeconds) : null;
+        return buildAsrResponse(ex, HttpStatus.TOO_MANY_REQUESTS, details, retryAfterSeconds);
+    }
+
+    @ExceptionHandler(AsrMissingFileException.class)
+    public ResponseEntity<AsrProxyErrorResponse> handleAsrMissingFile(AsrMissingFileException ex) {
+        log.warn("ASR missing file: {}", ex.getMessage());
+        return buildAsrResponse(ex, HttpStatus.BAD_REQUEST, null, null);
+    }
+
+    @ExceptionHandler(AsrIdempotencyConflictException.class)
+    public ResponseEntity<AsrProxyErrorResponse> handleAsrIdempotencyConflict(AsrIdempotencyConflictException ex) {
+        log.warn("ASR idempotency conflict: {}", ex.getMessage());
+        return buildAsrResponse(ex, HttpStatus.CONFLICT, null, null);
+    }
+
+    @ExceptionHandler(AsrUnavailableException.class)
+    public ResponseEntity<AsrProxyErrorResponse> handleAsrUnavailable(AsrUnavailableException ex) {
+        log.warn("ASR unavailable: {}", ex.getMessage());
+        Integer retryAfterSeconds = ex.getRetryAfterSeconds();
+        Map<String, Object> details = retryAfterSeconds != null ? Map.of("retryAfterSeconds", retryAfterSeconds) : null;
+        return buildAsrResponse(ex, HttpStatus.SERVICE_UNAVAILABLE, details, retryAfterSeconds);
+    }
+
+    @ExceptionHandler(AsrTimeoutException.class)
+    public ResponseEntity<AsrProxyErrorResponse> handleAsrTimeout(AsrTimeoutException ex) {
+        log.warn("ASR timeout: {}", ex.getMessage());
+        return buildAsrResponse(ex, HttpStatus.SERVICE_UNAVAILABLE, null, null);
+    }
+
+    @ExceptionHandler(AsrUnauthorizedException.class)
+    public ResponseEntity<AsrProxyErrorResponse> handleAsrUnauthorized(AsrUnauthorizedException ex) {
+        log.error("ASR unauthorized: {}", ex.getMessage());
+        return buildAsrResponse(ex, HttpStatus.INTERNAL_SERVER_ERROR, null, null);
+    }
+
+    @ExceptionHandler(AsrException.class)
+    public ResponseEntity<AsrProxyErrorResponse> handleAsrException(AsrException ex) {
+        log.warn("ASR error: {}", ex.getMessage());
+        HttpStatus status = resolveStatus(ex);
+        return buildAsrResponse(ex, status, null, null);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
         log.error("Unexpected error", ex);
@@ -105,6 +163,61 @@ public class GlobalExceptionHandler {
                 getCorrelationId(), ErrorCode.INTERNAL_ERROR.name(), "An unexpected error occurred", null, null);
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+
+    private ResponseEntity<AsrProxyErrorResponse> buildAsrResponse(
+            AsrException ex, HttpStatus status, Map<String, Object> details, Integer retryAfterSeconds) {
+        String correlationId = getCorrelationIdValue();
+        String code = mapAsrCode(ex);
+        AsrProxyErrorResponse response = new AsrProxyErrorResponse(code, ex.getMessage(), correlationId, details);
+
+        HttpHeaders headers = new HttpHeaders();
+        if (correlationId != null) {
+            headers.set("X-Correlation-ID", correlationId);
+        }
+        if (retryAfterSeconds != null) {
+            headers.set("Retry-After", String.valueOf(retryAfterSeconds));
+        }
+
+        return ResponseEntity.status(status).headers(headers).body(response);
+    }
+
+    private HttpStatus resolveStatus(AsrException ex) {
+        HttpStatusCode statusCode = ex.getStatusCode();
+        if (statusCode != null) {
+            HttpStatus status = HttpStatus.resolve(statusCode.value());
+            if (status != null) {
+                return status;
+            }
+        }
+        return HttpStatus.INTERNAL_SERVER_ERROR;
+    }
+
+    private String mapAsrCode(AsrException ex) {
+        String code = ex.getCode();
+        if (code == null || code.isBlank()) {
+            return ErrorCode.INTERNAL_ERROR.name();
+        }
+        if (code.startsWith("ASR_")
+                || ErrorCode.INTERNAL_ERROR.name().equals(code)
+                || ErrorCode.IDEMPOTENCY_CONFLICT.name().equals(code)) {
+            return code;
+        }
+
+        return switch (code) {
+            case "INVALID_FORMAT", "UNSUPPORTED_LANGUAGE", "INVALID_PARAMETER", "CORRUPTED_FILE" -> ErrorCode
+                    .ASR_INVALID_FORMAT
+                    .name();
+            case "MISSING_FILE" -> ErrorCode.ASR_MISSING_FILE.name();
+            case "AUDIO_TOO_LONG" -> ErrorCode.ASR_AUDIO_TOO_LONG.name();
+            case "FILE_TOO_LARGE" -> ErrorCode.ASR_FILE_TOO_LARGE.name();
+            case "RATE_LIMIT_EXCEEDED" -> ErrorCode.ASR_RATE_LIMITED.name();
+            case "SERVICE_UNAVAILABLE" -> ErrorCode.ASR_UNAVAILABLE.name();
+            case "NOT_FOUND" -> ErrorCode.ASR_NOT_FOUND.name();
+            case "INFERENCE_TIMEOUT", "TIMEOUT" -> ErrorCode.ASR_UNAVAILABLE.name();
+            case "INTERNAL_ERROR", "INFERENCE_ERROR" -> ErrorCode.INTERNAL_ERROR.name();
+            default -> ErrorCode.INTERNAL_ERROR.name();
+        };
     }
 
     private UUID getCorrelationId() {
@@ -117,6 +230,11 @@ public class GlobalExceptionHandler {
             }
         }
         return null;
+    }
+
+    private String getCorrelationIdValue() {
+        UUID correlationId = getCorrelationId();
+        return correlationId != null ? correlationId.toString() : null;
     }
 
     private HttpStatus getHttpStatus(ErrorCode errorCode) {

@@ -1,5 +1,5 @@
 # Initiative: INIT-2026Q3-recurring-tasks-scheduling
-Status: APPROVED — Epic EP-010 decomposed, ready for sprint planning
+Status: DONE — Closed 2026-02-02 (EP-010 delivered)
 Owner: Planning/Architecture (Claude Code)
 Epic: TBD (EP-010 candidate)
 Sprint: TBD

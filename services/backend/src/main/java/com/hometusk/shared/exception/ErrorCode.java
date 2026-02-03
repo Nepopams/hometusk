@@ -41,6 +41,15 @@ public enum ErrorCode {
     AI_REJECTED("AI rejected the command"),
     AI_UNAVAILABLE("AI Platform is unavailable"),
 
+    // ASR (EP-011)
+    ASR_INVALID_FORMAT("Unsupported audio format"),
+    ASR_AUDIO_TOO_LONG("Audio duration exceeds maximum"),
+    ASR_MISSING_FILE("Audio file is required"),
+    ASR_FILE_TOO_LARGE("File size exceeds maximum"),
+    ASR_RATE_LIMITED("Too many requests"),
+    ASR_UNAVAILABLE("ASR service is unavailable"),
+    ASR_NOT_FOUND("Transcription not found"),
+
     // Guardrails (Stage 3)
     GUARDRAILS_REJECTED("Command rejected by guardrails policy"),
     // Command continuation

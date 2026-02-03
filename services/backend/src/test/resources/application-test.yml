@@ -18,6 +18,15 @@ spring:
           # Disabled for tests - using mock JWT
           issuer-uri: http://localhost:8180/realms/test
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    prometheus:
+      enabled: true
+
 logging:
   level:
     com.hometusk: DEBUG

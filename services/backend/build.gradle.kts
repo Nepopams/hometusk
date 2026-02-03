@@ -27,6 +27,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-aop")
+    implementation("io.micrometer:micrometer-registry-prometheus")
 
     // Database
     runtimeOnly("org.postgresql:postgresql")
@@ -41,6 +42,9 @@ dependencies {
 
     // Resilience
     implementation("io.github.resilience4j:resilience4j-spring-boot3:2.2.0")
+
+    // Rate limiting
+    implementation("com.bucket4j:bucket4j-core:8.10.1")
 
     // Jackson for JSON/JSONB
     implementation("com.fasterxml.jackson.core:jackson-databind")

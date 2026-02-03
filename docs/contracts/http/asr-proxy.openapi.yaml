@@ -1,0 +1,689 @@
+openapi: 3.1.0
+info:
+  title: HomeTusk ASR Proxy API
+  version: 1.0.0
+  description: |
+    Proxy API for speech-to-text transcription in households.
+
+    **EP-011:** ASR Integration Foundation
+
+    This API proxies requests to the external asr-service, providing:
+    - JWT authentication (no API key exposed to clients)
+    - Household membership enforcement
+    - Consistent error mapping to HomeTusk format
+    - Correlation ID propagation for tracing
+    - Rate limiting per user/household
+
+    ## Job Model
+    Transcription is asynchronous:
+    1. `POST .../asr/transcriptions` — creates job, returns transcriptionId
+    2. `GET .../asr/transcriptions/{id}` — returns status and result
+
+    Statuses: `queued` → `processing` → `done` | `failed`
+
+    ## Limitations (v0)
+    - Max audio duration: 60 seconds
+    - Max file size: 10 MB
+    - Supported formats: OGG/Opus, MP3, WAV, M4A, **WebM/Opus**
+    - Languages: ru, en, auto
+
+    ## Rate Limits
+    - POST /asr/transcriptions: 5 requests/min per user (strict)
+    - GET /asr/transcriptions/{id}: 30 requests/min per user (softer, for polling)
+    - Both return 429 with Retry-After header when exceeded
+
+    ## Polling Guidance
+    - GET responses include `pollAfterMs` field when status is `queued` or `processing`
+    - Clients should wait `pollAfterMs` milliseconds before next poll to avoid rate limits
+
+    See also:
+    - [Epic EP-011](../../planning/epics/EP-011/epic.md)
+    - [External ASR Contract](../external/asr-service/asr/openapi.yaml)
+    - [ASR Error Codes](../external/asr-service/asr/errors.md)
+
+servers:
+  - url: /api/v1
+    description: API version 1
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: ASR
+    description: Speech-to-text transcription endpoints
+
+paths:
+  /households/{householdId}/asr/transcriptions:
+    post:
+      operationId: createTranscription
+      summary: Create a transcription job
+      description: |
+        Uploads an audio file and creates a transcription job.
+        Returns a transcriptionId for polling status.
+
+        **Authentication:** JWT Bearer token required.
+        **Authorization:** User must be a member of the household.
+
+        **Idempotency:** Supports Idempotency-Key header for safe retries.
+        Same key + same file returns existing job; same key + different file returns 409.
+
+        **Traceability:** X-Correlation-ID header propagated to asr-service.
+      tags:
+        - ASR
+      parameters:
+        - $ref: '#/components/parameters/HouseholdIdPath'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateTranscriptionRequest'
+            examples:
+              russianAudio:
+                summary: Russian audio with hint
+                value:
+                  file: "(binary)"
+                  languageHint: ru
+              autoDetect:
+                summary: Auto-detect language
+                value:
+                  file: "(binary)"
+                  languageHint: auto
+      responses:
+        '202':
+          description: Transcription job created
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/X-Correlation-ID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranscriptionCreated'
+              examples:
+                queued:
+                  summary: Job created and queued
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    status: "queued"
+                    createdAt: "2026-02-02T10:30:00Z"
+        '400':
+          description: Invalid request (format, duration, missing file)
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/X-Correlation-ID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidFormat:
+                  summary: Unsupported audio format
+                  value:
+                    code: "ASR_INVALID_FORMAT"
+                    message: "Unsupported audio format. Supported: OGG, MP3, WAV, M4A"
+                    correlationId: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+                    details:
+                      field: "file"
+                      received: "video/mp4"
+                      expected: ["audio/ogg", "audio/mpeg", "audio/wav", "audio/mp4"]
+                audioTooLong:
+                  summary: Audio exceeds max duration
+                  value:
+                    code: "ASR_AUDIO_TOO_LONG"
+                    message: "Audio duration exceeds maximum of 60 seconds"
+                    correlationId: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+                    details:
+                      maxDurationSeconds: 60
+                      receivedDurationSeconds: 125
+                missingFile:
+                  summary: File not provided
+                  value:
+                    code: "ASR_MISSING_FILE"
+                    message: "Audio file is required"
+                    correlationId: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Idempotency conflict
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/X-Correlation-ID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                conflict:
+                  summary: Idempotency key reused with different payload
+                  value:
+                    code: "IDEMPOTENCY_CONFLICT"
+                    message: "Idempotency-Key already used with different payload"
+                    correlationId: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+        '413':
+          description: File too large
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/X-Correlation-ID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                tooLarge:
+                  summary: File exceeds 10 MB
+                  value:
+                    code: "ASR_FILE_TOO_LARGE"
+                    message: "File size exceeds maximum of 10 MB"
+                    correlationId: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+                    details:
+                      maxSizeBytes: 10485760
+                      receivedSizeBytes: 15728640
+        '429':
+          description: Rate limit exceeded
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/X-Correlation-ID'
+            Retry-After:
+              $ref: '#/components/headers/Retry-After'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                rateLimited:
+                  summary: Too many requests
+                  value:
+                    code: "ASR_RATE_LIMITED"
+                    message: "Too many requests. Please retry after 60 seconds"
+                    correlationId: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+                    details:
+                      retryAfterSeconds: 60
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          description: ASR service unavailable
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/X-Correlation-ID'
+            Retry-After:
+              $ref: '#/components/headers/Retry-After'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                unavailable:
+                  summary: ASR service temporarily unavailable
+                  value:
+                    code: "ASR_UNAVAILABLE"
+                    message: "ASR service temporarily unavailable. Please retry later"
+                    correlationId: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+                    details:
+                      retryAfterSeconds: 30
+
+  /households/{householdId}/asr/transcriptions/{transcriptionId}:
+    get:
+      operationId: getTranscription
+      summary: Get transcription status and result
+      description: |
+        Returns the current status of a transcription job and result (if done).
+
+        **Authentication:** JWT Bearer token required.
+        **Authorization:** User must be a member of the household.
+
+        **Statuses:**
+        - `queued` — waiting in queue
+        - `processing` — being transcribed
+        - `done` — completed, result in `text` field
+        - `failed` — error, details in `error` field
+      tags:
+        - ASR
+      parameters:
+        - $ref: '#/components/parameters/HouseholdIdPath'
+        - $ref: '#/components/parameters/TranscriptionIdPath'
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Transcription found
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/X-Correlation-ID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranscriptionResult'
+              examples:
+                queued:
+                  summary: In queue
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    status: "queued"
+                    text: null
+                    segments: null
+                    model: null
+                    durationMs: null
+                    lang: null
+                    createdAt: "2026-02-02T10:30:00Z"
+                    finishedAt: null
+                    pollAfterMs: 2000
+                    error: null
+                processing:
+                  summary: Processing
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    status: "processing"
+                    text: null
+                    segments: null
+                    model: "whisper-large-v3"
+                    durationMs: null
+                    lang: null
+                    createdAt: "2026-02-02T10:30:00Z"
+                    finishedAt: null
+                    pollAfterMs: 2000
+                    error: null
+                done:
+                  summary: Completed successfully
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    status: "done"
+                    text: "Привет, убери пожалуйста на кухне"
+                    segments: null
+                    model: "whisper-large-v3"
+                    durationMs: 3200
+                    lang: "ru"
+                    createdAt: "2026-02-02T10:30:00Z"
+                    finishedAt: "2026-02-02T10:30:05Z"
+                    pollAfterMs: null
+                    error: null
+                failed:
+                  summary: Failed with error
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    status: "failed"
+                    text: null
+                    segments: null
+                    model: "whisper-large-v3"
+                    durationMs: null
+                    lang: null
+                    createdAt: "2026-02-02T10:30:00Z"
+                    finishedAt: "2026-02-02T10:30:10Z"
+                    pollAfterMs: null
+                    error:
+                      code: "INFERENCE_TIMEOUT"
+                      message: "Transcription timed out after 60 seconds"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Transcription not found (or belongs to different household)
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/X-Correlation-ID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notFound:
+                  summary: Transcription not found
+                  value:
+                    code: "ASR_NOT_FOUND"
+                    message: "Transcription not found"
+                    correlationId: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+                    details:
+                      id: "550e8400-e29b-41d4-a716-446655440000"
+        '429':
+          description: Rate limit exceeded
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/X-Correlation-ID'
+            Retry-After:
+              $ref: '#/components/headers/Retry-After'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                rateLimited:
+                  summary: Too many requests (polling too fast)
+                  value:
+                    code: "ASR_RATE_LIMITED"
+                    message: "Too many requests. Please retry after 60 seconds"
+                    correlationId: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+                    details:
+                      retryAfterSeconds: 60
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          description: ASR service unavailable
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/X-Correlation-ID'
+            Retry-After:
+              $ref: '#/components/headers/Retry-After'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                unavailable:
+                  summary: ASR service temporarily unavailable
+                  value:
+                    code: "ASR_UNAVAILABLE"
+                    message: "ASR service temporarily unavailable. Please retry later"
+                    correlationId: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+                    details:
+                      retryAfterSeconds: 30
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Bearer token
+
+  parameters:
+    HouseholdIdPath:
+      name: householdId
+      in: path
+      required: true
+      description: Household UUID (user must be a member)
+      schema:
+        type: string
+        format: uuid
+      example: "123e4567-e89b-12d3-a456-426614174000"
+
+    TranscriptionIdPath:
+      name: transcriptionId
+      in: path
+      required: true
+      description: Transcription job UUID
+      schema:
+        type: string
+        format: uuid
+      example: "550e8400-e29b-41d4-a716-446655440000"
+
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: |
+        Idempotency key for safe retries. Unique per user for 24 hours.
+        Reuse with different payload returns 409 IDEMPOTENCY_CONFLICT.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 64
+      example: "client-asr-req-12345"
+
+    CorrelationId:
+      name: X-Correlation-ID
+      in: header
+      required: false
+      description: Client-provided correlation ID for distributed tracing. Generated if not provided.
+      schema:
+        type: string
+        format: uuid
+      example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+
+  headers:
+    X-Correlation-ID:
+      description: Correlation ID for tracing
+      schema:
+        type: string
+        format: uuid
+
+    Retry-After:
+      description: Seconds until retry is allowed
+      schema:
+        type: integer
+        minimum: 1
+      example: 60
+
+  schemas:
+    # === Request Schemas ===
+    CreateTranscriptionRequest:
+      type: object
+      required:
+        - file
+      properties:
+        file:
+          type: string
+          format: binary
+          description: |
+            Audio file for transcription.
+            Supported formats: OGG/Opus, MP3, WAV, M4A, WebM/Opus.
+            Max size: 10 MB.
+            Max duration: 60 seconds.
+        languageHint:
+          type: string
+          enum: [ru, en, auto]
+          default: auto
+          description: |
+            Language hint for transcription.
+            - `ru` — Russian
+            - `en` — English
+            - `auto` — Auto-detect (best effort)
+
+    # === Response Schemas ===
+    TranscriptionCreated:
+      type: object
+      required:
+        - id
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique transcription job ID
+        status:
+          $ref: '#/components/schemas/TranscriptionStatus'
+        createdAt:
+          type: string
+          format: date-time
+          description: Job creation timestamp
+
+    TranscriptionResult:
+      type: object
+      required:
+        - id
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique transcription job ID
+        status:
+          $ref: '#/components/schemas/TranscriptionStatus'
+        text:
+          type: string
+          nullable: true
+          description: Transcribed text (null if not done)
+          example: "Привет, убери пожалуйста на кухне"
+        segments:
+          type: array
+          nullable: true
+          description: Segments with timestamps (if requested, reserved for future)
+          items:
+            $ref: '#/components/schemas/Segment'
+        model:
+          type: string
+          nullable: true
+          description: Model used for transcription
+          example: "whisper-large-v3"
+        durationMs:
+          type: integer
+          nullable: true
+          description: Audio duration in milliseconds
+          example: 3200
+        lang:
+          type: string
+          nullable: true
+          description: Detected language (ISO 639-1)
+          example: "ru"
+        createdAt:
+          type: string
+          format: date-time
+          description: Job creation timestamp
+        finishedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Job completion timestamp (null if not finished)
+        pollAfterMs:
+          type: integer
+          nullable: true
+          description: |
+            Suggested wait time in milliseconds before next poll.
+            Only present when status is `queued` or `processing`.
+            Clients should wait this long before polling again to avoid rate limits.
+          example: 2000
+        error:
+          $ref: '#/components/schemas/TranscriptionError'
+
+    TranscriptionStatus:
+      type: string
+      enum: [queued, processing, done, failed]
+      description: |
+        Transcription job status:
+        - `queued` — waiting in queue
+        - `processing` — being transcribed
+        - `done` — completed successfully
+        - `failed` — failed with error
+
+    Segment:
+      type: object
+      required:
+        - startMs
+        - endMs
+        - text
+      properties:
+        startMs:
+          type: integer
+          description: Segment start in milliseconds
+          example: 0
+        endMs:
+          type: integer
+          description: Segment end in milliseconds
+          example: 1500
+        text:
+          type: string
+          description: Segment text
+          example: "Привет,"
+
+    TranscriptionError:
+      type: object
+      nullable: true
+      description: Error details (only if status=failed)
+      properties:
+        code:
+          type: string
+          description: Error code from asr-service
+          example: "INFERENCE_TIMEOUT"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Transcription timed out after 60 seconds"
+
+    # === Error Response ===
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+        - correlationId
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code (ASR_ prefix for ASR-specific errors)
+          example: "ASR_INVALID_FORMAT"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Unsupported audio format"
+        correlationId:
+          type: string
+          format: uuid
+          description: Correlation ID for tracing
+        details:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: Additional error details
+
+    AuthErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - UNAUTHORIZED
+            - AUTH_TOKEN_MISSING
+            - AUTH_TOKEN_INVALID
+            - AUTH_TOKEN_EXPIRED
+        message:
+          type: string
+
+  responses:
+    Unauthorized:
+      description: Authentication required or token invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AuthErrorResponse'
+          examples:
+            missing:
+              summary: Token missing
+              value:
+                code: "UNAUTHORIZED"
+                message: "Authorization header is required"
+            invalid:
+              summary: Token invalid
+              value:
+                code: "UNAUTHORIZED"
+                message: "Invalid or expired token"
+
+    Forbidden:
+      description: User is not a member of this household
+      headers:
+        X-Correlation-ID:
+          $ref: '#/components/headers/X-Correlation-ID'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            notMember:
+              summary: Not a household member
+              value:
+                code: "FORBIDDEN"
+                message: "You are not a member of this household"
+                correlationId: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+
+    InternalError:
+      description: Internal server error
+      headers:
+        X-Correlation-ID:
+          $ref: '#/components/headers/X-Correlation-ID'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            internal:
+              summary: Unexpected error
+              value:
+                code: "INTERNAL_ERROR"
+                message: "An unexpected error occurred"
+                correlationId: "f47ac10b-58cc-4372-a567-0e02b2c3d479"

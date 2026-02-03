@@ -1,6 +1,6 @@
 # Initiative: INIT-2026Q2-asr-integration-foundation — ASR Integration Foundation (contract-first)
 
-Status: DRAFT (Gate A)
+Status: APPROVED (Gate A passed 2026-02-02)
 Owner: Planning/Architecture (Claude Code)
 
 ## Goal

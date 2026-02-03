@@ -3,11 +3,17 @@
 > Формат Now/Next/Later фиксирует направление и приоритеты без преждевременных дат.
 > У каждого пункта должен быть "якорь" — initiative/release документ.
 
-## NOW (текущий фокус: Scheduled Routines — автоматизация повторяющихся задач)
+## NOW (текущий фокус: ASR Integration Foundation — голосовой ввод)
 
-- Initiative (current): **INIT-2026Q3-recurring-tasks-scheduling** — Scheduled Routines (Recurring chores)
+- Initiative (current): **INIT-2026Q2-asr-integration-foundation** — ASR Integration Foundation (contract-first)
+  - Anchor: docs/planning/initiatives/INIT-2026Q2-asr-integration-foundation.md
+  - Outcome: backend proxy для ASR-сервиса (без секретов в UI), guardrails (лимиты/rate-limit), observability, интеграционные тесты
+  - External contract: docs/contracts/external/asr-service/asr/openapi.yaml
+
+- Initiative (done): **INIT-2026Q3-recurring-tasks-scheduling** — Scheduled Routines (Recurring chores)
   - Anchor: docs/planning/initiatives/INIT-2026Q3-recurring-tasks-scheduling.md
   - Outcome: автоматическая генерация задач по расписанию (daily/weekly/monthly), round-robin assignment, pause/resume, UI для управления routines
+  - Closed: 2026-02-02 (EP-010)
 
 - Initiative (done): **INIT-2026Q2-gamification-motivation** — Gamification & Motivation v0
   - Anchor: docs/planning/initiatives/INIT-2026Q2-gamification-motivation.md
@@ -49,7 +55,12 @@
   - Purge/TTL housekeeping для idempotency/decision logs (если нужно) + минимальные метрики/алерты
   - Цель: не расширять домен, а снизить риск "всё работает только на демо"
 
-## NEXT (следующие инициативы после recurring tasks)
+## NEXT (следующие инициативы после ASR foundation)
+
+- Initiative (queued): **INIT-2026Q2-voice-input-web** — Voice Input MVP for Web Commands
+  - Anchor: docs/planning/initiatives/INIT-2026Q2-voice-input-web.md
+  - Outcome: голосовой ввод команд в web (record → transcribe → edit → submit), интеграция с ASR proxy endpoints
+  - Dependency: INIT-2026Q2-asr-integration-foundation
 
 - Initiative (candidate): **INIT-2026Q2-shopping-marketplaces** — Shopping List → Marketplace Link-outs / Runs v0
   - Anchor: docs/planning/initiatives/INIT-2026Q2-shopping-marketplaces.md
@@ -62,9 +73,9 @@
 
 - Agreements v1 (rule packs + конфиг + consent)
 - Mobile/PWA (после доказанного value на web)
-- Voice input (после стабилизации command UX)
 - Calendar integrations / внешние интеграции
 - Task dependencies (task A блокирует task B)
+- Voice enhancements (streaming, wake word, hands-free)
 
 ## Примечания по приоритизации
 
