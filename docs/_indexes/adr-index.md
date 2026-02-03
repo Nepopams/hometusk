@@ -21,6 +21,8 @@ This index tracks all ADRs in the project. Update this file when creating/supers
 | ADR-011 | Notifications Stub | accepted | 2024-01-XX | [Link](../architecture/decisions/011-notifications-stub.md) |
 | ADR-012 | Command Reliability & Idempotency | accepted | 2024-01-XX | [Link](../architecture/decisions/012-command-reliability-idempotency.md) |
 | ADR-013 | Routine Scheduler Design (EP-010) | accepted | 2026-01-28 | [Link](../adr/013-routine-scheduler-design.md) |
+| ADR-014 | ShoppingRun Entity Design (EP-013) | proposed | 2026-02-03 | [Link](../adr/014-shopping-run-entity-design.md) |
+| ADR-015 | Marketplace Link-out Encoding (EP-013) | proposed | 2026-02-03 | [Link](../adr/015-marketplace-linkout-encoding.md) |
 
 ## Template
 
