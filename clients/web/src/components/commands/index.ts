@@ -8,6 +8,8 @@ export { RequiredFieldsList } from './RequiredFieldsList';
 export { FieldSuggestions } from './FieldSuggestions';
 export { VoiceMicButton } from './VoiceMicButton';
 export type { VoiceMicButtonProps, VoiceMicButtonState } from './VoiceMicButton';
+export { VoiceRecordingStatus } from './VoiceRecordingStatus';
+export type { VoiceRecordingStatusProps, VoiceRecordingState } from './VoiceRecordingStatus';
 export { RawJsonViewer } from './RawJsonViewer';
 export { StatusBadge } from './StatusBadge';
 export { TraceInfo } from './TraceInfo';
