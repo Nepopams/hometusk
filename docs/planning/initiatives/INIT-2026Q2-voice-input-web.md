@@ -1,6 +1,6 @@
 # Initiative: INIT-2026Q2-voice-input-web — Voice Input MVP for Web Commands
 
-Status: DRAFT (Gate A)
+Status: ACTIVE — Gate A approved 2026-02-03 (Gate A)
 Owner: Planning/Architecture (Claude Code)
 
 ## Goal
