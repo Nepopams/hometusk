@@ -10,7 +10,7 @@
 ---
 
 ## Status
-**Approved** — Epic Gate approved 2026-02-03
+**MVP Complete** — S15 stories delivered 2026-02-03. Polish stories (ST-1206–1208) deferred to S16.
 
 ## Initiative Alignment
 This epic implements INIT-2026Q2-voice-input-web:
