@@ -1,5 +1,5 @@
 # Initiative: INIT-2026Q2-shopping-marketplaces
-Status: DRAFT (Gate A)
+Status: **ACTIVE** — Gate A approved 2026-02-03, decomposed to EP-013
 Owner: Planning/Architecture (Claude Code)
 
 ## Goal
