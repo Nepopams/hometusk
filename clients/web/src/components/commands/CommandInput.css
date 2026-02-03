@@ -1,0 +1,14 @@
+.command-input__voice-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3, 12px);
+  padding: var(--spacing-2, 8px) 0;
+  border-bottom: 1px solid var(--color-border-subtle, #e0ddd8);
+  margin-bottom: var(--spacing-3, 12px);
+}
+
+.command-input__voice-error {
+  color: var(--color-error-text, #b91c1c);
+  font-size: var(--font-size-sm, 0.875rem);
+  margin-bottom: var(--spacing-3, 12px);
+}

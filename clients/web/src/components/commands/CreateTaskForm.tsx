@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useZones } from '../../hooks/useZones';
 import { useMembers } from '../../hooks/useMembers';
 import Select from '../ui/Select';
@@ -9,6 +9,7 @@ interface CreateTaskFormProps {
   onSubmit: (payload: CreateTaskPayload) => void;
   onCancel: () => void;
   isLoading: boolean;
+  initialTitle?: string;
 }
 
 export function CreateTaskForm({
@@ -16,13 +17,20 @@ export function CreateTaskForm({
   onSubmit,
   onCancel,
   isLoading,
+  initialTitle,
 }: CreateTaskFormProps) {
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState(initialTitle ?? '');
   const [description, setDescription] = useState('');
   const [zoneId, setZoneId] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
   const [deadline, setDeadline] = useState('');
   const [validationError, setValidationError] = useState('');
+
+  useEffect(() => {
+    if (initialTitle !== undefined) {
+      setTitle(initialTitle);
+    }
+  }, [initialTitle]);
 
   const { zones } = useZones(householdId);
   const { members } = useMembers(householdId);
