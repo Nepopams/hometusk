@@ -6,6 +6,8 @@ export { CommandHistory } from './CommandHistory';
 export { CommandHistoryEntry } from './CommandHistoryEntry';
 export { RequiredFieldsList } from './RequiredFieldsList';
 export { FieldSuggestions } from './FieldSuggestions';
+export { VoiceMicButton } from './VoiceMicButton';
+export type { VoiceMicButtonProps, VoiceMicButtonState } from './VoiceMicButton';
 export { RawJsonViewer } from './RawJsonViewer';
 export { StatusBadge } from './StatusBadge';
 export { TraceInfo } from './TraceInfo';
