@@ -2,6 +2,7 @@ package com.hometusk.shopping.api;
 
 import com.hometusk.activity.service.ActivityRecorder;
 import com.hometusk.households.service.HouseholdService;
+import com.hometusk.shared.exception.ValidationException;
 import com.hometusk.shared.logging.MdcKeys;
 import com.hometusk.shared.security.CurrentUser;
 import com.hometusk.shopping.domain.ShoppingItem;
@@ -10,6 +11,7 @@ import com.hometusk.shopping.dto.AddShoppingItemRequest;
 import com.hometusk.shopping.dto.ShoppingItemDto;
 import com.hometusk.shopping.dto.ShoppingListDto;
 import com.hometusk.shopping.dto.UpdateShoppingItemRequest;
+import com.hometusk.shopping.service.ShoppingExportService;
 import com.hometusk.shopping.service.ShoppingService;
 import com.hometusk.users.domain.User;
 import com.hometusk.users.service.MembershipService;
@@ -21,12 +23,17 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,6 +45,7 @@ public class ShoppingController {
     private static final Logger log = LoggerFactory.getLogger(ShoppingController.class);
 
     private final ShoppingService shoppingService;
+    private final ShoppingExportService exportService;
     private final MembershipService membershipService;
     private final UserResolver userResolver;
     private final UserService userService;
@@ -46,12 +54,14 @@ public class ShoppingController {
 
     public ShoppingController(
             ShoppingService shoppingService,
+            ShoppingExportService exportService,
             MembershipService membershipService,
             UserResolver userResolver,
             UserService userService,
             HouseholdService householdService,
             ActivityRecorder activityRecorder) {
         this.shoppingService = shoppingService;
+        this.exportService = exportService;
         this.membershipService = membershipService;
         this.userResolver = userResolver;
         this.userService = userService;
@@ -227,6 +237,58 @@ public class ShoppingController {
                 itemId, itemName, listId, householdService.getById(householdId), user, correlationId);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/shopping-lists/{listId}/export")
+    @Operation(summary = "Export shopping list", description = "Exports a shopping list in text or CSV format.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Exported list content"),
+        @ApiResponse(responseCode = "400", description = "Invalid format parameter"),
+        @ApiResponse(responseCode = "401", description = "Authentication required"),
+        @ApiResponse(responseCode = "403", description = "Not a member of this household"),
+        @ApiResponse(responseCode = "404", description = "Shopping list not found")
+    })
+    public ResponseEntity<String> exportShoppingList(
+            @PathVariable UUID householdId,
+            @PathVariable UUID listId,
+            @RequestParam(defaultValue = "text") String format,
+            @RequestParam(required = false) Boolean purchased) {
+        log.debug(
+                "Exporting list: {}, household: {}, format: {}, purchased: {}", listId, householdId, format, purchased);
+
+        // Verify membership (IDOR prevention)
+        CurrentUser currentUser = userResolver.resolveCurrentUser();
+        membershipService.requireMembership(currentUser.id(), householdId);
+
+        if (!"text".equals(format) && !"csv".equals(format)) {
+            throw new ValidationException("$.format", "INVALID_FORMAT", "Format must be 'text' or 'csv'");
+        }
+
+        List<ShoppingItem> items;
+        if (Boolean.FALSE.equals(purchased)) {
+            items = shoppingService.getUnpurchasedItemsInList(listId, householdId);
+        } else if (Boolean.TRUE.equals(purchased)) {
+            items = shoppingService.getItemsInList(listId, householdId).stream()
+                    .filter(ShoppingItem::isPurchased)
+                    .toList();
+        } else {
+            items = shoppingService.getItemsInList(listId, householdId);
+        }
+
+        String content;
+        HttpHeaders headers = new HttpHeaders();
+
+        if ("csv".equals(format)) {
+            content = exportService.exportAsCsv(items);
+            headers.setContentType(new MediaType("text", "csv", StandardCharsets.UTF_8));
+            String filename = "shopping-list-" + LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE) + ".csv";
+            headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"");
+        } else {
+            content = exportService.exportAsText(items);
+            headers.setContentType(new MediaType("text", "plain", StandardCharsets.UTF_8));
+        }
+
+        return ResponseEntity.ok().headers(headers).body(content);
     }
 
     private UUID getCorrelationId() {
