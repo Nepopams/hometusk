@@ -3,6 +3,7 @@ package com.hometusk.gamification.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
 
 import com.hometusk.gamification.domain.PointsLedger;
 import com.hometusk.gamification.domain.PointsReason;
@@ -36,7 +37,8 @@ class PointsServiceTest {
 
     @BeforeEach
     void setUp() {
-        when(settingsService.isGamificationEnabled(any(), any())).thenReturn(true);
+        // lenient: not all tests invoke isGamificationEnabled (e.g., reverseForTaskUncompleted, no-assignee cases)
+        lenient().when(settingsService.isGamificationEnabled(any(), any())).thenReturn(true);
         pointsService = new PointsService(pointsLedgerRepository, settingsService);
     }
 
