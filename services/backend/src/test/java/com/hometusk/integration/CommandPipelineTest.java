@@ -311,7 +311,7 @@ class CommandPipelineTest extends IntegrationTestBase {
                             .with(jwt())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isBadRequest())
+                    .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.errorCode").value("TASK_NOT_FOUND"));
         }
     }
