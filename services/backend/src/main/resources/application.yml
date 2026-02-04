@@ -53,6 +53,18 @@ hometusk:
   scheduler:
     enabled: false
     fixed-rate-ms: 3600000
+  marketplaces:
+    templates:
+      - id: ozon
+        name: Ozon
+        url-template: "https://www.ozon.ru/search/?text={query}"
+        icon-url: /icons/ozon.svg
+        enabled: true
+      - id: yandex_market
+        name: Yandex Market
+        url-template: "https://market.yandex.ru/search?text={query}"
+        icon-url: /icons/yandex-market.svg
+        enabled: true
 
 management:
   endpoints:
