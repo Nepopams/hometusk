@@ -85,6 +85,7 @@ export function useShoppingItems({
       const tempId = `temp-${Date.now()}`;
       const tempItem: ShoppingItem = {
         id: tempId,
+        listId,
         name: data.name,
         quantity: data.quantity,
         unit: data.unit,

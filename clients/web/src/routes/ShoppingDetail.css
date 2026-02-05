@@ -296,6 +296,24 @@
   opacity: 0.3;
 }
 
+/* Task Link */
+.shopping-detail__task-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--color-brand);
+  text-decoration: none;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition-fast);
+  margin-left: 8px;
+}
+
+.shopping-detail__task-link:hover {
+  background-color: var(--color-bg-hover-subtle);
+}
+
 /* ========================================
  * LOADING STATE
  * ======================================== */

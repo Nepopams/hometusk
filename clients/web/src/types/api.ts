@@ -86,6 +86,7 @@ export interface Task {
   createdAt: string;
   updatedAt: string;
   completedAt?: string;
+  linkedShoppingItems?: ShoppingItem[];
 }
 
 export interface TaskFilters {
@@ -257,6 +258,7 @@ export interface ShoppingList {
 
 export interface ShoppingItem {
   id: string;
+  listId: string;
   name: string;
   quantity?: number;
   unit?: string;

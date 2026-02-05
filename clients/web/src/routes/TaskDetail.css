@@ -409,6 +409,56 @@
 }
 
 /* ========================================
+ * SHOPPING ITEMS SECTION
+ * ======================================== */
+
+.task-detail__section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+  margin-bottom: 12px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.task-detail__shopping-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  text-decoration: none;
+  color: inherit;
+  transition: background-color var(--transition-fast);
+}
+
+.task-detail__shopping-item:hover {
+  background-color: var(--color-bg-hover-subtle);
+}
+
+.task-detail__shopping-name {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-heading);
+  font-weight: var(--font-weight-medium);
+}
+
+.task-detail__shopping-name--purchased {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.task-detail__shopping-meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.task-detail__shopping-check {
+  color: var(--color-success);
+}
+
+/* ========================================
  * RESPONSIVE - 1200px
  * ======================================== */
 

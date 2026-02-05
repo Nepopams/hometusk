@@ -9,6 +9,7 @@ import java.util.UUID;
 @Schema(description = "Shopping item")
 public record ShoppingItemDto(
         @Schema(description = "Item ID") UUID id,
+        @Schema(description = "Shopping list ID") UUID listId,
         @Schema(description = "Item name") String name,
         @Schema(description = "Quantity") Integer quantity,
         @Schema(description = "Unit of measurement") String unit,
@@ -21,6 +22,7 @@ public record ShoppingItemDto(
     public static ShoppingItemDto from(ShoppingItem item) {
         return new ShoppingItemDto(
                 item.getId(),
+                item.getShoppingList().getId(),
                 item.getName(),
                 item.getQuantity(),
                 item.getUnit(),
