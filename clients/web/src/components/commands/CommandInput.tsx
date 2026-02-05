@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useAudioRecorder } from '../../hooks/useAudioRecorder';
 import { useAsrTranscription } from '../../hooks/useAsrTranscription';
@@ -46,6 +46,14 @@ export function CommandInput() {
     error: asrError,
     reset: resetTranscription,
   } = useAsrTranscription();
+  const resetVoiceFlow = useCallback(() => {
+    resetRecording();
+    resetTranscription();
+    setVoiceMode('idle');
+    setVoiceTranscript('');
+    setVoiceWasUsed(false);
+    setTranscriptWasEdited(false);
+  }, [resetRecording, resetTranscription]);
 
   useEffect(() => {
     if (errorStatus === 409) {
@@ -82,12 +90,33 @@ export function CommandInput() {
     };
   }, [voiceMode, audioBlob, householdId, transcribe, resetRecording, voiceCorrelationId]);
 
-  // Sync ASR transcript to local state
+  // Sync ASR transcript to local state and focus input
   useEffect(() => {
     if (asrTranscript) {
       setVoiceTranscript(asrTranscript);
+      requestAnimationFrame(() => {
+        const input = containerRef.current?.querySelector<HTMLInputElement>(
+          'input[type="text"], textarea'
+        );
+        input?.focus();
+      });
     }
   }, [asrTranscript]);
+
+  // Escape cancels recording
+  useEffect(() => {
+    if (voiceMode !== 'recording') return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        resetVoiceFlow();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [voiceMode, resetVoiceFlow]);
 
   // Reset voice mode on errors
   useEffect(() => {
@@ -109,15 +138,6 @@ export function CommandInput() {
     }
     return null;
   })();
-
-  const resetVoiceFlow = () => {
-    resetRecording();
-    resetTranscription();
-    setVoiceMode('idle');
-    setVoiceTranscript('');
-    setVoiceWasUsed(false);
-    setTranscriptWasEdited(false);
-  };
 
   const handleModeChange = (nextMode: CommandType) => {
     if (nextMode === mode) return;

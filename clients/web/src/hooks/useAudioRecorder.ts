@@ -74,13 +74,25 @@ export function useAudioRecorder(): UseAudioRecorderResult {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : MediaRecorder.isTypeSupported('audio/webm')
-          ? 'audio/webm'
-          : 'audio/ogg';
+      const mimeType = (() => {
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          return 'audio/webm;codecs=opus';
+        }
+        if (MediaRecorder.isTypeSupported('audio/webm')) {
+          return 'audio/webm';
+        }
+        if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          return 'audio/mp4';
+        }
+        if (MediaRecorder.isTypeSupported('audio/ogg')) {
+          return 'audio/ogg';
+        }
+        return '';
+      })();
 
-      const recorder = new MediaRecorder(stream, { mimeType });
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
       mediaRecorderRef.current = recorder;
 
       recorder.ondataavailable = (event) => {
