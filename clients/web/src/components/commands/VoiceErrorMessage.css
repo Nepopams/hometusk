@@ -1,0 +1,58 @@
+/**
+ * Voice Error Message component styles
+ * Uses project tokens from styles/tokens.css
+ */
+
+.voice-error-message {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4);
+  background: var(--color-error-soft);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-3);
+}
+
+.voice-error-message__content {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+}
+
+.voice-error-message__icon {
+  flex-shrink: 0;
+  color: var(--color-error);
+  margin-top: 2px;
+}
+
+.voice-error-message__text {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-error-text);
+  line-height: 1.4;
+}
+
+.voice-error-message__actions {
+  display: flex;
+  gap: var(--spacing-2);
+  margin-left: 28px;
+}
+
+.voice-error-message__retry,
+.voice-error-message__dismiss {
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-1) var(--spacing-3);
+}
+
+@media (max-width: 480px) {
+  .voice-error-message__actions {
+    flex-direction: column;
+    margin-left: 0;
+  }
+
+  .voice-error-message__retry,
+  .voice-error-message__dismiss {
+    width: 100%;
+  }
+}

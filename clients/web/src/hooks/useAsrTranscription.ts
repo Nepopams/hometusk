@@ -3,6 +3,14 @@ import { getAuthToken } from '../lib/auth/tokenProvider';
 
 const MAX_POLL_ATTEMPTS = 30;
 const DEFAULT_POLL_INTERVAL_MS = 2000;
+const DEFAULT_RETRY_AFTER_MS = 60_000;
+
+const parseRetryAfterMs = (headerValue: string | null): number => {
+  if (!headerValue) return DEFAULT_RETRY_AFTER_MS;
+  const seconds = Number.parseInt(headerValue, 10);
+  if (Number.isNaN(seconds)) return DEFAULT_RETRY_AFTER_MS;
+  return seconds * 1000;
+};
 
 export type AsrErrorType =
   | 'upload_failed'
@@ -16,6 +24,7 @@ export interface AsrTranscriptionError {
   type: AsrErrorType;
   code?: string;
   message?: string;
+  retryAfterMs?: number;
 }
 
 export interface UseAsrTranscriptionResult {
@@ -78,10 +87,12 @@ export function useAsrTranscription(): UseAsrTranscriptionResult {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         if (response.status === 429) {
+          const retryAfterMs = parseRetryAfterMs(response.headers.get('Retry-After'));
           setError({
             type: 'rate_limited',
             code: errorData.code,
             message: errorData.message || 'Rate limit exceeded',
+            retryAfterMs,
           });
         } else {
           setError({
@@ -136,10 +147,12 @@ export function useAsrTranscription(): UseAsrTranscriptionResult {
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           if (response.status === 429) {
+            const retryAfterMs = parseRetryAfterMs(response.headers.get('Retry-After'));
             setError({
               type: 'rate_limited',
               code: errorData.code,
               message: errorData.message,
+              retryAfterMs,
             });
           } else {
             setError({

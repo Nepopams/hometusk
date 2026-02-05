@@ -8,6 +8,7 @@ import { CreateTaskForm } from './CreateTaskForm';
 import { CompleteTaskForm } from './CompleteTaskForm';
 import { VoiceMicButton } from './VoiceMicButton';
 import { VoiceRecordingStatus } from './VoiceRecordingStatus';
+import { VoiceErrorMessage, VoiceErrorType } from './VoiceErrorMessage';
 import './CommandInput.css';
 import type {
   CommandRequest,
@@ -95,34 +96,12 @@ export function CommandInput() {
     return null;
   }
 
-  const voiceErrorMessage = (() => {
+  const voiceErrorType: VoiceErrorType | null = (() => {
     if (recordingError) {
-      switch (recordingError) {
-        case 'permission_denied':
-          return 'Microphone access denied.';
-        case 'not_supported':
-          return 'Audio recording is not supported in this browser.';
-        case 'recording_failed':
-          return 'Recording failed. Please try again.';
-        case 'no_audio_data':
-          return 'No audio captured. Please try again.';
-        default:
-          return 'Recording error.';
-      }
+      return recordingError as VoiceErrorType;
     }
     if (asrError) {
-      return (
-        asrError.message ||
-        {
-          upload_failed: 'Upload failed.',
-          transcription_failed: 'Transcription failed.',
-          timeout: 'Transcription timed out.',
-          rate_limited: 'Rate limit exceeded. Try again shortly.',
-          network_error: 'Network error. Please retry.',
-          not_authenticated: 'Not authenticated.',
-        }[asrError.type] ||
-          'Transcription error.'
-      );
+      return asrError.type as VoiceErrorType;
     }
     return null;
   })();
@@ -212,6 +191,23 @@ export function CommandInput() {
     resetVoiceFlow();
   };
 
+  const handleVoiceRetry = () => {
+    resetVoiceFlow();
+    requestAnimationFrame(() => {
+      handleMicClick();
+    });
+  };
+
+  const handleVoiceDismiss = () => {
+    resetVoiceFlow();
+    requestAnimationFrame(() => {
+      const input = containerRef.current?.querySelector<HTMLInputElement>(
+        'input[type="text"], textarea'
+      );
+      input?.focus();
+    });
+  };
+
   const micState = (() => {
     if (voiceMode === 'recording') return 'recording';
     if (voiceMode === 'uploading' || voiceMode === 'transcribing') return 'processing';
@@ -263,10 +259,13 @@ export function CommandInput() {
               />
             )}
           </div>
-          {voiceErrorMessage && (
-            <div className="command-input__voice-error" role="alert">
-              {voiceErrorMessage}
-            </div>
+          {voiceErrorType && (
+            <VoiceErrorMessage
+              errorType={voiceErrorType}
+              onRetry={handleVoiceRetry}
+              onDismiss={handleVoiceDismiss}
+              rateLimitResetMs={asrError?.retryAfterMs}
+            />
           )}
         </>
       )}
