@@ -3,6 +3,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useAudioRecorder } from '../../hooks/useAudioRecorder';
 import { useAsrTranscription } from '../../hooks/useAsrTranscription';
 import { useCommand } from '../../hooks/useCommand';
+import { logVoiceEvent } from '../../lib/voiceTelemetry';
 import { CommandResult } from './CommandResult';
 import { CreateTaskForm } from './CreateTaskForm';
 import { CompleteTaskForm } from './CompleteTaskForm';
@@ -27,6 +28,8 @@ export function CommandInput() {
   const [lastRequest, setLastRequest] = useState<CommandRequest | null>(null);
   const [voiceMode, setVoiceMode] = useState<VoiceMode>('idle');
   const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [voiceWasUsed, setVoiceWasUsed] = useState(false);
+  const [transcriptWasEdited, setTranscriptWasEdited] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const {
     start: startRecording,
@@ -35,6 +38,7 @@ export function CommandInput() {
     audioBlob,
     error: recordingError,
     reset: resetRecording,
+    correlationId: voiceCorrelationId,
   } = useAudioRecorder();
   const {
     transcribe,
@@ -65,7 +69,7 @@ export function CommandInput() {
     let active = true;
     const run = async () => {
       setVoiceMode('transcribing');
-      await transcribe(audioBlob, householdId);
+      await transcribe(audioBlob, householdId, voiceCorrelationId || undefined);
       if (!active) return;
       setVoiceMode('idle');
       resetRecording();
@@ -76,7 +80,7 @@ export function CommandInput() {
     return () => {
       active = false;
     };
-  }, [voiceMode, audioBlob, householdId, transcribe, resetRecording]);
+  }, [voiceMode, audioBlob, householdId, transcribe, resetRecording, voiceCorrelationId]);
 
   // Sync ASR transcript to local state
   useEffect(() => {
@@ -111,6 +115,8 @@ export function CommandInput() {
     resetTranscription();
     setVoiceMode('idle');
     setVoiceTranscript('');
+    setVoiceWasUsed(false);
+    setTranscriptWasEdited(false);
   };
 
   const handleModeChange = (nextMode: CommandType) => {
@@ -148,6 +154,12 @@ export function CommandInput() {
   };
 
   const handleCreateTask = async (payload: CreateTaskPayload) => {
+    if (voiceWasUsed) {
+      logVoiceEvent({
+        type: 'voice_command_submitted',
+        correlationId: voiceCorrelationId || undefined,
+      });
+    }
     const request: CommandRequest = {
       householdId,
       type: 'create_task',
@@ -184,6 +196,7 @@ export function CommandInput() {
     resetTranscription();
     resetRecording();
     setVoiceMode('recording');
+    setVoiceWasUsed(true);
     await startRecording();
   };
 
@@ -206,6 +219,16 @@ export function CommandInput() {
       );
       input?.focus();
     });
+  };
+
+  const handleTitleChange = (_title: string, wasEdited: boolean) => {
+    if (voiceWasUsed && wasEdited && !transcriptWasEdited) {
+      setTranscriptWasEdited(true);
+      logVoiceEvent({
+        type: 'voice_transcript_edited',
+        correlationId: voiceCorrelationId || undefined,
+      });
+    }
   };
 
   const micState = (() => {
@@ -293,6 +316,7 @@ export function CommandInput() {
           onCancel={handleCancel}
           isLoading={isLoading}
           initialTitle={voiceTranscript || undefined}
+          onTitleChange={handleTitleChange}
         />
       ) : (
         <CompleteTaskForm

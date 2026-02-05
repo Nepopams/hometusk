@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { logVoiceEvent } from '../lib/voiceTelemetry';
 
 const MAX_DURATION_MS = 60_000;
 const DURATION_UPDATE_INTERVAL_MS = 100;
@@ -17,6 +18,7 @@ export interface UseAudioRecorderResult {
   audioBlob: Blob | null;
   error: AudioRecorderError | null;
   reset: () => void;
+  correlationId: string | null;
 }
 
 export function useAudioRecorder(): UseAudioRecorderResult {
@@ -24,6 +26,7 @@ export function useAudioRecorder(): UseAudioRecorderResult {
   const [duration, setDuration] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [error, setError] = useState<AudioRecorderError | null>(null);
+  const [correlationId, setCorrelationId] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -102,6 +105,10 @@ export function useAudioRecorder(): UseAudioRecorderResult {
         setIsRecording(false);
       };
 
+      const newCorrelationId = crypto.randomUUID();
+      setCorrelationId(newCorrelationId);
+      logVoiceEvent({ type: 'voice_start', correlationId: newCorrelationId });
+
       recorder.start(1000);
       startTimeRef.current = Date.now();
       setIsRecording(true);
@@ -129,7 +136,11 @@ export function useAudioRecorder(): UseAudioRecorderResult {
     setDuration(0);
     setAudioBlob(null);
     setError(null);
-  }, [cleanup]);
+    if (isRecording && correlationId) {
+      logVoiceEvent({ type: 'voice_cancel', correlationId });
+    }
+    setCorrelationId(null);
+  }, [cleanup, correlationId, isRecording]);
 
   useEffect(() => {
     return () => {
@@ -145,5 +156,6 @@ export function useAudioRecorder(): UseAudioRecorderResult {
     audioBlob,
     error,
     reset,
+    correlationId,
   };
 }

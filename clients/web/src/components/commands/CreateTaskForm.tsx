@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useZones } from '../../hooks/useZones';
 import { useMembers } from '../../hooks/useMembers';
 import Select from '../ui/Select';
@@ -10,6 +10,7 @@ interface CreateTaskFormProps {
   onCancel: () => void;
   isLoading: boolean;
   initialTitle?: string;
+  onTitleChange?: (title: string, wasEdited: boolean) => void;
 }
 
 export function CreateTaskForm({
@@ -18,6 +19,7 @@ export function CreateTaskForm({
   onCancel,
   isLoading,
   initialTitle,
+  onTitleChange,
 }: CreateTaskFormProps) {
   const [title, setTitle] = useState(initialTitle ?? '');
   const [description, setDescription] = useState('');
@@ -25,10 +27,14 @@ export function CreateTaskForm({
   const [assigneeId, setAssigneeId] = useState('');
   const [deadline, setDeadline] = useState('');
   const [validationError, setValidationError] = useState('');
+  const [wasEdited, setWasEdited] = useState(false);
+  const initialTitleRef = useRef(initialTitle);
 
   useEffect(() => {
     if (initialTitle !== undefined) {
       setTitle(initialTitle);
+      initialTitleRef.current = initialTitle;
+      setWasEdited(false);
     }
   }, [initialTitle]);
 
@@ -67,7 +73,19 @@ export function CreateTaskForm({
       ...(deadline && { deadline: new Date(deadline).toISOString() }),
     };
 
+    onTitleChange?.(trimmedTitle, wasEdited);
     onSubmit(payload);
+  };
+
+  const handleTitleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const newTitle = e.target.value;
+    setTitle(newTitle);
+    const hasInitial = Boolean(initialTitleRef.current);
+    const nextWasEdited = hasInitial && newTitle !== initialTitleRef.current;
+    if (nextWasEdited && !wasEdited) {
+      setWasEdited(true);
+    }
+    onTitleChange?.(newTitle, nextWasEdited || wasEdited);
   };
 
   const zoneOptions = [
@@ -89,7 +107,7 @@ export function CreateTaskForm({
             id="command-title"
             type="text"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={handleTitleChange}
             placeholder="What needs to be done?"
             maxLength={500}
             autoFocus
