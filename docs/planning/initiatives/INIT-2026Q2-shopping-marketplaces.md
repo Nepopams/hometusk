@@ -1,5 +1,9 @@
 # Initiative: INIT-2026Q2-shopping-marketplaces
-Status: **ACTIVE** — Gate A approved 2026-02-03, decomposed to EP-013
+Status: **IN PROGRESS** — 80% complete (8/10 stories)
+- Gate A: approved 2026-02-03
+- S16 (Foundation): DONE 2026-02-06
+- S17 (UI): DONE 2026-02-06
+- S18 (Run UX): planned
 Owner: Planning/Architecture (Claude Code)
 
 ## Goal
@@ -59,9 +63,19 @@ Shopping list без интеграций часто остаётся прост
 - Ожидания пользователей “хочу корзину и оплату” → явно позиционировать как MVP.
 - Дубли и мусор в списке → нужен минимальный дедуп/нормализация названий (без ИИ).
 
-## Candidate Stories
-- ST-5xx: Share/export shopping list (text + CSV)
-- ST-5xx: Marketplace link-outs templates + UI buttons
-- ST-5xx: ShoppingRun (bundle) create/close + checklist UI
-- ST-5xx: Task ↔ shopping navigation surfaces
-- ST-5xx: Config for marketplaces + safe encoding
+## Delivered Stories
+
+| ID | Title | Sprint | Status |
+|----|-------|--------|--------|
+| ST-1301 | ShoppingRun entity + repository | S16 | ✅ DONE |
+| ST-1302 | ShoppingRun REST endpoints | S17 | ✅ DONE |
+| ST-1303 | Export shopping list (text/CSV) | S16 | ✅ DONE |
+| ST-1304 | Marketplace link-out templates | S16 | ✅ DONE |
+| ST-1305 | Share/Export UI buttons | S17 | ✅ DONE |
+| ST-1306 | Marketplace link-out buttons | S17 | ✅ DONE |
+| ST-1307 | ShoppingRun creation UI | S18 | PLANNED |
+| ST-1308 | ShoppingRun checklist UI | S18 | PLANNED |
+| ST-1309 | Task-shopping navigation | S16 | ✅ DONE |
+| ST-1310 | URL safe encoding | S16 | ✅ DONE |
+
+Epic: [EP-013](../epics/EP-013/epic.md)

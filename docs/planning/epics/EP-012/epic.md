@@ -10,7 +10,9 @@
 ---
 
 ## Status
-**MVP Complete** — S15 stories delivered 2026-02-03. Polish stories (ST-1206–1208) deferred to S16.
+**COMPLETE** ✅ — All stories delivered.
+- S15: Core (ST-1201–1205) delivered 2026-02-03
+- S16: Polish (ST-1206–1208) delivered 2026-02-06
 
 ## Initiative Alignment
 This epic implements INIT-2026Q2-voice-input-web:
@@ -64,16 +66,18 @@ Enable HomeTusk web users to:
 
 ## Stories
 
-| ID | Title | Priority | Sprint |
-|----|-------|----------|--------|
-| ST-1201 | VoiceMicButton component | P1 | S15 |
-| ST-1202 | Audio recording with MediaRecorder | P1 | S15 |
-| ST-1203 | ASR upload + polling hook | P1 | S15 |
-| ST-1204 | VoiceRecordingStates UI | P1 | S15 |
-| ST-1205 | Integration with CommandInput | P1 | S15 |
-| ST-1206 | Error handling UX | P1 | S16 |
-| ST-1207 | Client telemetry events | P2 | S16 |
-| ST-1208 | Cross-browser + accessibility | P2 | S16 |
+| ID | Title | Priority | Sprint | Status |
+|----|-------|----------|--------|--------|
+| ST-1201 | VoiceMicButton component | P1 | S15 | ✅ DONE |
+| ST-1202 | Audio recording with MediaRecorder | P1 | S15 | ✅ DONE |
+| ST-1203 | ASR upload + polling hook | P1 | S15 | ✅ DONE |
+| ST-1204 | VoiceRecordingStates UI | P1 | S15 | ✅ DONE |
+| ST-1205 | Integration with CommandInput | P1 | S15 | ✅ DONE |
+| ST-1206 | Error handling UX | P1 | S16 | ✅ DONE |
+| ST-1207 | Client telemetry events | P2 | S16 | ✅ DONE |
+| ST-1208 | Cross-browser + accessibility | P2 | S16 | ✅ DONE |
+
+**All 8 stories complete (100%)**
 
 ---
 

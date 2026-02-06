@@ -12,7 +12,7 @@
 ---
 
 ## Status
-**Committed** — Gate B approved 2026-02-03
+**COMPLETED** ✅ — Retro 2026-02-06 | 27/24 points (112%)
 
 ## Sprint Goal
 **Establish Shopping Marketplaces backend foundation (entity + export + marketplace config) and complete Voice Input EP-012 polish.**

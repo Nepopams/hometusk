@@ -1,7 +1,11 @@
 # Initiative: INIT-2026Q2-voice-input-web — Voice Input MVP for Web Commands
 
-Status: **DONE** — Closed 2026-02-03 (MVP scope delivered via EP-012 S15)
+Status: **COMPLETE** ✅ — 100% delivered
+- S15: Core MVP (ST-1201–1205) closed 2026-02-03
+- S16: Polish (ST-1206–1208) closed 2026-02-06
+
 Owner: Planning/Architecture (Claude Code)
+Epic: [EP-012](../epics/EP-012/epic.md)
 
 ## Goal
 Добавить в web-клиент HomeTusk голосовой ввод **как альтернативу** текстовому command box:
@@ -90,6 +94,17 @@ Owner: Planning/Architecture (Claude Code)
 - Risk: scope creep в “голосовой ассистент”
   - Mitigation: голос — только ввод текста, логика выполнения остаётся прежней
 
-## Epic Candidates
-- EP-0XY Web Voice Input (command box)
-- EP-0XZ Voice UX Hardening (polish + cross-browser)
+## Delivered Stories
+
+| ID | Title | Sprint | Status |
+|----|-------|--------|--------|
+| ST-1201 | VoiceMicButton component | S15 | ✅ DONE |
+| ST-1202 | Audio recording with MediaRecorder | S15 | ✅ DONE |
+| ST-1203 | ASR upload + polling hook | S15 | ✅ DONE |
+| ST-1204 | VoiceRecordingStates UI | S15 | ✅ DONE |
+| ST-1205 | Integration with CommandInput | S15 | ✅ DONE |
+| ST-1206 | Error handling UX | S16 | ✅ DONE |
+| ST-1207 | Client telemetry events | S16 | ✅ DONE |
+| ST-1208 | Cross-browser + accessibility | S16 | ✅ DONE |
+
+Epic: [EP-012](../epics/EP-012/epic.md) — all 8 stories complete
