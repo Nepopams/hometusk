@@ -112,6 +112,37 @@ export async function getShoppingList(householdId: string, listId: string): Prom
   return list;
 }
 
+export async function exportShoppingList(
+  householdId: string,
+  listId: string,
+  format: 'text' | 'csv' = 'text'
+): Promise<string> {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '');
+  const token = getAuthToken();
+  const response = await fetch(
+    `${baseUrl}/api/v1/households/${householdId}/shopping-lists/${listId}/export?format=${format}`,
+    {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    }
+  );
+
+  if (response.status === 401) {
+    const errorBody = (await response.json().catch(() => null)) as AuthErrorResponse | null;
+    handleAuthError('session_expired');
+    throw new AuthError(errorBody?.message || 'Unauthorized', errorBody?.errorCode);
+  }
+
+  if (!response.ok) {
+    const body =
+      (await response.json().catch(async () => await response.text().catch(() => null))) ?? {};
+    throw new ApiError(response.status, body);
+  }
+
+  return response.text();
+}
+
 export async function getShoppingItems(
   householdId: string,
   listId: string,

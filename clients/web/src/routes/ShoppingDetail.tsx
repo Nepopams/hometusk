@@ -2,9 +2,9 @@ import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useShoppingItems } from '../hooks/useShoppingItems';
-import { getShoppingList } from '../lib/api';
+import { exportShoppingList, getShoppingList } from '../lib/api';
 import { ApiError } from '../lib/errors';
-import { Button } from '../components/ui';
+import { Button, Snackbar } from '../components/ui';
 import type { ShoppingItem, ShoppingList } from '../types/api';
 import './ShoppingDetail.css';
 
@@ -47,6 +47,9 @@ export default function ShoppingDetail() {
 
   const [newItemName, setNewItemName] = useState('');
   const [addError, setAddError] = useState<string | null>(null);
+  const [snackbar, setSnackbar] = useState<{ message: string; variant: 'success' | 'error' } | null>(
+    null
+  );
 
   // Fetch list info
   useEffect(() => {
@@ -107,6 +110,38 @@ export default function ShoppingDetail() {
   const handleRetry = useCallback(() => {
     refetch();
   }, [refetch]);
+
+  const handleShare = useCallback(async () => {
+    if (!householdId || !listId) return;
+    try {
+      const text = await exportShoppingList(householdId, listId, 'text');
+      if (!navigator.clipboard) {
+        throw new Error('Clipboard not available');
+      }
+      await navigator.clipboard.writeText(text);
+      setSnackbar({ message: 'List copied to clipboard', variant: 'success' });
+    } catch {
+      setSnackbar({ message: 'Failed to copy list', variant: 'error' });
+    }
+  }, [householdId, listId]);
+
+  const handleExportCsv = useCallback(async () => {
+    if (!householdId || !listId) return;
+    try {
+      const csv = await exportShoppingList(householdId, listId, 'csv');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `shopping-list-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {
+      setSnackbar({ message: 'Failed to export list', variant: 'error' });
+    }
+  }, [householdId, listId]);
 
   if (!householdId) {
     return (
@@ -325,13 +360,41 @@ export default function ShoppingDetail() {
         {/* Header */}
         <div className="shopping-detail__header">
           <h1 className="shopping-detail__title">{list?.name || 'Shopping List'}</h1>
-          <span className="shopping-detail__count">
-            {unpurchasedItems.length === 0
-              ? 'All done!'
-              : unpurchasedItems.length === 1
-                ? '1 item to buy'
-                : `${unpurchasedItems.length} items to buy`}
-          </span>
+          <div className="shopping-detail__header-actions">
+            <span className="shopping-detail__count">
+              {unpurchasedItems.length === 0
+                ? 'All done!'
+                : unpurchasedItems.length === 1
+                  ? '1 item to buy'
+                  : `${unpurchasedItems.length} items to buy`}
+            </span>
+            <button
+              type="button"
+              className="ghost-button shopping-detail__header-btn"
+              onClick={handleShare}
+              aria-label="Copy list to clipboard"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                <polyline points="16 6 12 2 8 6" />
+                <line x1="12" y1="2" x2="12" y2="15" />
+              </svg>
+              Share
+            </button>
+            <button
+              type="button"
+              className="ghost-button shopping-detail__header-btn"
+              onClick={handleExportCsv}
+              aria-label="Export as CSV"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Export
+            </button>
+          </div>
         </div>
 
         {/* Main Card */}
@@ -417,6 +480,11 @@ export default function ShoppingDetail() {
             </>
           )}
         </div>
+        {snackbar && (
+          <Snackbar open onClose={() => setSnackbar(null)} variant={snackbar.variant}>
+            {snackbar.message}
+          </Snackbar>
+        )}
       </div>
     </div>
   );
