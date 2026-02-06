@@ -21,3 +21,4 @@ export type {
   AsrTranscriptionError,
   AsrErrorType,
 } from './useAsrTranscription';
+export { useMarketplaceTemplates } from './useMarketplaceTemplates';

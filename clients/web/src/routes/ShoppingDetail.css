@@ -334,6 +334,40 @@
   background-color: var(--color-bg-hover-subtle);
 }
 
+/* Marketplace Links */
+.shopping-detail__item-marketplaces {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: var(--spacing-2);
+}
+
+.shopping-detail__marketplace-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.shopping-detail__marketplace-link:hover {
+  background-color: var(--color-bg-hover-subtle);
+  color: var(--color-brand);
+}
+
+.shopping-detail__marketplace-link img {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+}
+
+.shopping-detail__item--purchased .shopping-detail__item-marketplaces {
+  display: none;
+}
+
 /* ========================================
  * LOADING STATE
  * ======================================== */

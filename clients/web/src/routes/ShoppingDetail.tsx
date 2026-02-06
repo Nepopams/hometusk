@@ -1,9 +1,11 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useMarketplaceTemplates } from '../hooks/useMarketplaceTemplates';
 import { useShoppingItems } from '../hooks/useShoppingItems';
 import { exportShoppingList, getShoppingList } from '../lib/api';
 import { ApiError } from '../lib/errors';
+import { buildMarketplaceUrl } from '../lib/marketplaceUrl';
 import { Button, Snackbar } from '../components/ui';
 import type { ShoppingItem, ShoppingList } from '../types/api';
 import './ShoppingDetail.css';
@@ -44,6 +46,8 @@ export default function ShoppingDetail() {
     isSaving,
     savingItemIds,
   } = useShoppingItems({ householdId, listId });
+
+  const { templates: marketplaceTemplates } = useMarketplaceTemplates();
 
   const [newItemName, setNewItemName] = useState('');
   const [addError, setAddError] = useState<string | null>(null);
@@ -328,6 +332,32 @@ export default function ShoppingDetail() {
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
             </Link>
+          )}
+          {marketplaceTemplates.length > 0 && (
+            <div className="shopping-detail__item-marketplaces">
+              {marketplaceTemplates.map((mp) => (
+                <a
+                  key={mp.id}
+                  href={buildMarketplaceUrl(mp.urlTemplate, item.name)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shopping-detail__marketplace-link"
+                  aria-label={`Search ${item.name} on ${mp.name}`}
+                  title={mp.name}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {mp.iconUrl ? (
+                    <img src={mp.iconUrl} alt="" width="14" height="14" />
+                  ) : (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                      <polyline points="15 3 21 3 21 9" />
+                      <line x1="10" y1="14" x2="21" y2="3" />
+                    </svg>
+                  )}
+                </a>
+              ))}
+            </div>
           )}
         </div>
 

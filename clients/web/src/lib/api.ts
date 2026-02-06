@@ -143,6 +143,22 @@ export async function exportShoppingList(
   return response.text();
 }
 
+export interface MarketplaceTemplate {
+  id: string;
+  name: string;
+  urlTemplate: string;
+  iconUrl?: string;
+}
+
+export async function getMarketplaceTemplates(): Promise<MarketplaceTemplate[]> {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '');
+  const response = await fetch(`${baseUrl}/api/v1/marketplace-templates`);
+  if (!response.ok) {
+    return [];
+  }
+  return response.json() as Promise<MarketplaceTemplate[]>;
+}
+
 export async function getShoppingItems(
   householdId: string,
   listId: string,
