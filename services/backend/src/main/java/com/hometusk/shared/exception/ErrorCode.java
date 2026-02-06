@@ -22,6 +22,7 @@ public enum ErrorCode {
     ROUTINE_NOT_FOUND("Routine not found"),
     SHOPPING_LIST_NOT_FOUND("Shopping list not found"),
     SHOPPING_ITEM_NOT_FOUND("Shopping item not found"),
+    SHOPPING_RUN_NOT_FOUND("Shopping run not found"),
     INVALID_TOKEN("Invite token not found"),
     NOTIFICATION_NOT_FOUND("Notification not found"),
 

@@ -244,6 +244,7 @@ public class GlobalExceptionHandler {
                     TASK_NOT_FOUND,
                     USER_NOT_FOUND,
                     ZONE_NOT_FOUND,
+                    SHOPPING_RUN_NOT_FOUND,
                     NOTIFICATION_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case INVITE_EXPIRED, INVITE_REDEEMED, INVITE_REVOKED -> HttpStatus.GONE;
             case IDEMPOTENCY_CONFLICT -> HttpStatus.CONFLICT;
