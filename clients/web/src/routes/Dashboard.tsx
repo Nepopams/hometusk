@@ -169,7 +169,7 @@ export default function Dashboard() {
             <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
           <div className="dashboard__error-text">
-            <h3 className="dashboard__error-title">Couldn't load tasks</h3>
+            <h3 className="dashboard__error-title">Couldn&apos;t load tasks</h3>
             <p className="dashboard__error-desc">Check your connection and try again.</p>
           </div>
         </div>

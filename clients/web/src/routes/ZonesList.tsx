@@ -25,7 +25,7 @@ export default function ZonesList() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const handleCreateSuccess = useCallback(
-    (_zone: { id: string; name: string }) => {
+    () => {
       refetch();
     },
     [refetch]

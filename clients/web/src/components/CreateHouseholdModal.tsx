@@ -216,7 +216,7 @@ export default function CreateHouseholdModal({
         {/* Body */}
         <form className="create-household-modal__body" onSubmit={handleSubmit}>
           <p className="create-household-modal__microcopy">
-            Give your household a name you'll recognize.
+            Give your household a name you&apos;ll recognize.
           </p>
 
           <div className="create-household-modal__field">

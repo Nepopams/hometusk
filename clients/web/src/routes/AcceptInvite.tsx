@@ -210,7 +210,7 @@ export default function AcceptInvite() {
       </form>
 
       <p className="accept-invite__link">
-        Don't have an invite? <Link to="/households">Create your own household</Link>
+        Don&apos;t have an invite? <Link to="/households">Create your own household</Link>
       </p>
     </>
   );
@@ -234,7 +234,7 @@ export default function AcceptInvite() {
       <h2 className="accept-invite__result-title">{result?.title}</h2>
       <p className="accept-invite__result-message">
         {result?.message}{' '}
-        {household && <span className="accept-invite__household-name">"{household.name}"</span>}
+        {household && <span className="accept-invite__household-name">&quot;{household.name}&quot;</span>}
       </p>
       <p className="accept-invite__redirect-hint">Taking you there now...</p>
     </div>
@@ -253,7 +253,7 @@ export default function AcceptInvite() {
       <h2 className="accept-invite__result-title">{result?.title}</h2>
       <p className="accept-invite__result-message">
         {result?.message}{' '}
-        {household && <span className="accept-invite__household-name">"{household.name}"</span>}
+        {household && <span className="accept-invite__household-name">&quot;{household.name}&quot;</span>}
       </p>
       <div className="accept-invite__actions">
         <Button variant="primary" size="lg" fullWidth onClick={handleOpenHousehold}>

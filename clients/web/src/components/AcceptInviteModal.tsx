@@ -401,7 +401,7 @@ export default function AcceptInviteModal({
         <h3 className="accept-invite-modal__result-title">{result?.title}</h3>
         <p className="accept-invite-modal__result-message">
           {result?.message}{' '}
-          {household && <span className="accept-invite-modal__household-name">"{household.name}"</span>}
+          {household && <span className="accept-invite-modal__household-name">&quot;{household.name}&quot;</span>}
         </p>
         <p className="accept-invite-modal__redirect-hint">Taking you there now...</p>
       </div>
@@ -448,7 +448,7 @@ export default function AcceptInviteModal({
         <h3 className="accept-invite-modal__result-title">{result?.title}</h3>
         <p className="accept-invite-modal__result-message">
           {result?.message}{' '}
-          {household && <span className="accept-invite-modal__household-name">"{household.name}"</span>}
+          {household && <span className="accept-invite-modal__household-name">&quot;{household.name}&quot;</span>}
         </p>
         <div className="accept-invite-modal__result-footer">
           <Button variant="primary" size="lg" fullWidth onClick={handleOpenHousehold}>

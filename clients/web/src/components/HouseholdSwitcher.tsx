@@ -269,7 +269,7 @@ export default function HouseholdSwitcher() {
             <line x1="12" y1="9" x2="12" y2="13" />
             <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
-          <h3 className="household-switcher__error-title">Couldn't load households</h3>
+          <h3 className="household-switcher__error-title">Couldn&apos;t load households</h3>
         </div>
         <p className="household-switcher__error-desc">Check your connection and try again.</p>
       </div>

@@ -114,7 +114,7 @@ export default function TaskDetail() {
               </svg>
               <h3 className="task-detail__not-found-title">Task not found</h3>
               <p className="task-detail__not-found-desc">
-                This task may have been deleted or you don't have access to it.
+                This task may have been deleted or you don&apos;t have access to it.
               </p>
               <Link to="/tasks">
                 <Button variant="primary" size="md">
