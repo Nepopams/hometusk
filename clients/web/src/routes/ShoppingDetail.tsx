@@ -1,12 +1,12 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useMarketplaceTemplates } from '../hooks/useMarketplaceTemplates';
 import { useShoppingItems } from '../hooks/useShoppingItems';
-import { exportShoppingList, getShoppingList } from '../lib/api';
+import { createShoppingRun, exportShoppingList, getShoppingList } from '../lib/api';
 import { ApiError } from '../lib/errors';
 import { buildMarketplaceUrl } from '../lib/marketplaceUrl';
-import { Button, Snackbar } from '../components/ui';
+import { Button, Modal, Snackbar } from '../components/ui';
 import type { ShoppingItem, ShoppingList } from '../types/api';
 import './ShoppingDetail.css';
 
@@ -30,6 +30,7 @@ import './ShoppingDetail.css';
 export default function ShoppingDetail() {
   const { householdId } = useAuth();
   const { listId } = useParams();
+  const navigate = useNavigate();
 
   const [list, setList] = useState<ShoppingList | null>(null);
   const [listLoading, setListLoading] = useState(true);
@@ -54,6 +55,9 @@ export default function ShoppingDetail() {
   const [snackbar, setSnackbar] = useState<{ message: string; variant: 'success' | 'error' } | null>(
     null
   );
+  const [showStartModal, setShowStartModal] = useState(false);
+  const [isCreatingRun, setIsCreatingRun] = useState(false);
+  const [createRunError, setCreateRunError] = useState<string | null>(null);
 
   // Fetch list info
   useEffect(() => {
@@ -146,6 +150,34 @@ export default function ShoppingDetail() {
       setSnackbar({ message: 'Failed to export list', variant: 'error' });
     }
   }, [householdId, listId]);
+
+  const handleStartTrip = useCallback(async () => {
+    if (!householdId || !listId) return;
+
+    setIsCreatingRun(true);
+    setCreateRunError(null);
+
+    try {
+      const run = await createShoppingRun(householdId, listId);
+      setShowStartModal(false);
+      navigate(`/households/${householdId}/shopping-runs/${run.id}`);
+    } catch (err) {
+      setCreateRunError(err instanceof Error ? err.message : 'Failed to start shopping trip');
+    } finally {
+      setIsCreatingRun(false);
+    }
+  }, [householdId, listId, navigate]);
+
+  const handleOpenStartModal = useCallback(() => {
+    setCreateRunError(null);
+    setShowStartModal(true);
+  }, []);
+
+  const handleCloseStartModal = useCallback(() => {
+    if (!isCreatingRun) {
+      setShowStartModal(false);
+    }
+  }, [isCreatingRun]);
 
   if (!householdId) {
     return (
@@ -424,6 +456,20 @@ export default function ShoppingDetail() {
               </svg>
               Export
             </button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleOpenStartModal}
+              disabled={unpurchasedItems.length === 0}
+              aria-label="Start shopping trip"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <circle cx="9" cy="21" r="1" />
+                <circle cx="20" cy="21" r="1" />
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+              </svg>
+              Start Trip
+            </Button>
           </div>
         </div>
 
@@ -510,6 +556,41 @@ export default function ShoppingDetail() {
             </>
           )}
         </div>
+        <Modal
+          open={showStartModal}
+          onClose={handleCloseStartModal}
+          title="Start Shopping Trip"
+          size="sm"
+          closeOnBackdrop={!isCreatingRun}
+        >
+          <div className="shopping-detail__start-modal">
+            <p className="shopping-detail__start-modal-info">
+              You are about to start a shopping trip for <strong>{list?.name}</strong> with{' '}
+              <strong>{unpurchasedItems.length}</strong> {unpurchasedItems.length === 1 ? 'item' : 'items'} to buy.
+            </p>
+            {createRunError && (
+              <p className="shopping-detail__start-modal-error">{createRunError}</p>
+            )}
+            <div className="shopping-detail__start-modal-actions">
+              <Button
+                variant="secondary"
+                size="md"
+                onClick={handleCloseStartModal}
+                disabled={isCreatingRun}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="md"
+                onClick={handleStartTrip}
+                disabled={isCreatingRun}
+              >
+                {isCreatingRun ? 'Starting...' : 'Start'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
         {snackbar && (
           <Snackbar open onClose={() => setSnackbar(null)} variant={snackbar.variant}>
             {snackbar.message}

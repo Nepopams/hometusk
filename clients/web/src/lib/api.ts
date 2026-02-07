@@ -20,6 +20,7 @@ import type {
   ShoppingItem,
   ShoppingItemFilters,
   ShoppingList,
+  ShoppingRun,
   Task,
   TaskFilters,
   UserProfile,
@@ -199,6 +200,15 @@ export async function updateShoppingItem(
 export async function deleteShoppingItem(householdId: string, itemId: string): Promise<void> {
   return apiFetch<void>(`/households/${householdId}/shopping-items/${itemId}`, {
     method: 'DELETE',
+  });
+}
+
+export async function createShoppingRun(
+  householdId: string,
+  listId: string
+): Promise<ShoppingRun> {
+  return apiFetch<ShoppingRun>(`/households/${householdId}/shopping-lists/${listId}/runs`, {
+    method: 'POST',
   });
 }
 

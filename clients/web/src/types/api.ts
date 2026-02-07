@@ -269,6 +269,30 @@ export interface ShoppingItem {
   purchasedAt?: string;
 }
 
+// Shopping Run Types
+export type ShoppingRunStatus = 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+
+export interface ShoppingRunItem {
+  id: string;
+  name: string;
+  quantity?: number;
+  unit?: string;
+  purchased: boolean;
+  purchasedAt?: string;
+}
+
+export interface ShoppingRun {
+  id: string;
+  listId: string;
+  householdId: string;
+  status: ShoppingRunStatus;
+  items: ShoppingRunItem[];
+  purchasedCount: number;
+  totalCount: number;
+  createdAt: string;
+  closedAt?: string;
+}
+
 export interface ShoppingItemFilters {
   purchased?: boolean;
 }
