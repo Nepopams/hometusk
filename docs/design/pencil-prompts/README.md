@@ -23,12 +23,16 @@ Run the prompts in this order:
 | 6 | `06-dashboard-app-shell.md` | App shell & dashboard | 4 |
 | 7 | `07-tasks-screens.md` | Tasks List & Task Detail | 10 |
 | 8 | `08-shopping-screens.md` | Shopping Lists & Items | 9 |
+| 8a | `08a-shopping-enhancements.md` | Share/Export, Marketplace, Start Trip | 6 |
 | 9 | `09-members-zones-screens.md` | Members & Zones | 9 |
 | 10 | `10-invites-screens.md` | Invites management | 8 |
 | 11 | `11-household-selector.md` | Household selection | 6 |
 | 12 | `12-commands-screen.md` | Natural language input | 9 |
+| 13 | `13-routines-screens.md` | Routines management | 8 |
+| 14 | `14-voice-input.md` | Voice input components | 9 |
+| 15 | `15-shopping-run.md` | Shopping Run checklist | 9 |
 
-**Total: ~95 frames**
+**Total: ~127 frames**
 
 ---
 
@@ -107,9 +111,11 @@ Use these files as specifications while manually building in Pencil:
 - Tasks List: Default, Empty, Loading, Filtered, Mobile
 - Task Detail: Default, Done, Loading, Not Found, Mobile
 
-### Shopping (08)
+### Shopping (08, 08a, 15)
 - Shopping Lists: Default, Empty, Loading, Mobile
 - Shopping Items: Default, With Purchased, Empty, Loading, Mobile
+- Shopping Items Enhanced: With Actions, Share Dropdown, Start Trip Modal, Marketplace Hover, Mobile
+- Shopping Run: Active, Empty, Completed, Cancelled, Loading, Complete Modal, Cancel Modal, Mobile
 
 ### Members & Zones (09)
 - Members List: Default, Empty, Loading, Mobile
@@ -128,10 +134,12 @@ Use these files as specifications while manually building in Pencil:
 ### Gamification (05)
 - Progress page: With data, Empty, Loading, Mobile
 
-### Commands (12)
+### Commands (12, 14)
 - Empty, Processing, Executed, Needs Input
 - Degraded, Rejected, With History
 - Mobile, Mobile History Sheet
+- Voice: Idle, Hover, Recording, Uploading, Transcribing, Ready
+- Voice Errors: Permission, Rate Limit, Mobile Recording
 
 ---
 
