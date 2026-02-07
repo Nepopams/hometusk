@@ -13,10 +13,10 @@
 ---
 
 ## Status
-**In Progress** — 8/10 stories complete (80%).
+**COMPLETE** ✅ — 10/10 stories delivered.
 - S16: Foundation (ST-1301, ST-1303, ST-1304, ST-1309, ST-1310) delivered 2026-02-06
 - S17: UI (ST-1302, ST-1305, ST-1306) delivered 2026-02-06
-- S18: Remaining (ST-1307, ST-1308)
+- S18: Run UX (ST-1307, ST-1308) delivered 2026-02-07
 
 ## Initiative Alignment
 This epic implements INIT-2026Q2-shopping-marketplaces:
@@ -82,8 +82,8 @@ Enable HomeTusk users to:
 | [ST-1304](./stories/ST-1304-marketplace-linkouts.md) | Marketplace link-out templates + config | P1 | S16 | ✅ DONE |
 | [ST-1305](./stories/ST-1305-share-export-ui.md) | Share/Export UI buttons | P2 | S17 | ✅ DONE |
 | [ST-1306](./stories/ST-1306-marketplace-buttons-ui.md) | Marketplace link-out buttons | P2 | S17 | ✅ DONE |
-| [ST-1307](./stories/ST-1307-shopping-run-create-ui.md) | ShoppingRun creation UI | P1 | S18 | READY |
-| [ST-1308](./stories/ST-1308-shopping-run-checklist-ui.md) | ShoppingRun checklist UI | P1 | S18 | READY |
+| [ST-1307](./stories/ST-1307-shopping-run-create-ui.md) | ShoppingRun creation UI | P1 | S18 | ✅ DONE |
+| [ST-1308](./stories/ST-1308-shopping-run-checklist-ui.md) | ShoppingRun checklist UI | P1 | S18 | ✅ DONE |
 | [ST-1309](./stories/ST-1309-task-shopping-navigation.md) | Task-shopping navigation surfaces | P2 | S16 | ✅ DONE |
 | [ST-1310](./stories/ST-1310-url-safe-encoding.md) | URL safe encoding guardrails | P0 | S16 | ✅ DONE |
 

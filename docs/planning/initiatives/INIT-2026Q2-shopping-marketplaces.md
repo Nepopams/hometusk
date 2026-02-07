@@ -1,9 +1,10 @@
 # Initiative: INIT-2026Q2-shopping-marketplaces
-Status: **IN PROGRESS** — 80% complete (8/10 stories)
+Status: **COMPLETE** ✅ — 100% delivered (10/10 stories)
 - Gate A: approved 2026-02-03
 - S16 (Foundation): DONE 2026-02-06
 - S17 (UI): DONE 2026-02-06
-- S18 (Run UX): planned
+- S18 (Run UX): DONE 2026-02-07
+- Closed: 2026-02-07
 Owner: Planning/Architecture (Claude Code)
 
 ## Goal
@@ -73,8 +74,8 @@ Shopping list без интеграций часто остаётся прост
 | ST-1304 | Marketplace link-out templates | S16 | ✅ DONE |
 | ST-1305 | Share/Export UI buttons | S17 | ✅ DONE |
 | ST-1306 | Marketplace link-out buttons | S17 | ✅ DONE |
-| ST-1307 | ShoppingRun creation UI | S18 | PLANNED |
-| ST-1308 | ShoppingRun checklist UI | S18 | PLANNED |
+| ST-1307 | ShoppingRun creation UI | S18 | ✅ DONE |
+| ST-1308 | ShoppingRun checklist UI | S18 | ✅ DONE |
 | ST-1309 | Task-shopping navigation | S16 | ✅ DONE |
 | ST-1310 | URL safe encoding | S16 | ✅ DONE |
 

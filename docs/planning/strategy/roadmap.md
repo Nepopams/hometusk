@@ -3,11 +3,12 @@
 > Формат Now/Next/Later фиксирует направление и приоритеты без преждевременных дат.
 > У каждого пункта должен быть "якорь" — initiative/release документ.
 
-## NOW (текущий фокус: Shopping Marketplaces — исполняемый список покупок)
+## NOW (текущий фокус: следующая инициатива)
 
-- Initiative (current): **INIT-2026Q2-shopping-marketplaces** — Shopping List → Marketplace Link-outs / Runs v0
+- Initiative (done): **INIT-2026Q2-shopping-marketplaces** — Shopping List → Marketplace Link-outs / Runs v0
   - Anchor: docs/planning/initiatives/INIT-2026Q2-shopping-marketplaces.md
   - Outcome: исполняемый список покупок: export/share + link-outs в маркетплейсы + "shopping run" (снимок списка) + сохранение связки "задача ↔ покупки"
+  - Closed: 2026-02-07 (EP-013 S16-S18)
 
 - Initiative (done): **INIT-2026Q2-voice-input-web** — Voice Input MVP for Web Commands
   - Anchor: docs/planning/initiatives/INIT-2026Q2-voice-input-web.md
