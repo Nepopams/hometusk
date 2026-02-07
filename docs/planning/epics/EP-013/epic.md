@@ -83,7 +83,7 @@ Enable HomeTusk users to:
 | [ST-1305](./stories/ST-1305-share-export-ui.md) | Share/Export UI buttons | P2 | S17 | ✅ DONE |
 | [ST-1306](./stories/ST-1306-marketplace-buttons-ui.md) | Marketplace link-out buttons | P2 | S17 | ✅ DONE |
 | [ST-1307](./stories/ST-1307-shopping-run-create-ui.md) | ShoppingRun creation UI | P1 | S18 | READY |
-| [ST-1308](./stories/ST-1308-shopping-run-checklist-ui.md) | ShoppingRun checklist UI | P1 | S18 | NOT READY |
+| [ST-1308](./stories/ST-1308-shopping-run-checklist-ui.md) | ShoppingRun checklist UI | P1 | S18 | READY |
 | [ST-1309](./stories/ST-1309-task-shopping-navigation.md) | Task-shopping navigation surfaces | P2 | S16 | ✅ DONE |
 | [ST-1310](./stories/ST-1310-url-safe-encoding.md) | URL safe encoding guardrails | P0 | S16 | ✅ DONE |
 

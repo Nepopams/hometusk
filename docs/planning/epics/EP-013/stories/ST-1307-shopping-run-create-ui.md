@@ -1,7 +1,7 @@
 # Story: ST-1307 — ShoppingRun Creation UI
 
-## Status: NOT READY
-**Blocker**: Blocked by ST-1302 (backend endpoints)
+## Status: READY
+**Blocker**: ~~ST-1302~~ — RESOLVED (endpoints delivered S17)
 
 ## Description
 Add UI to create a new shopping run from the shopping list page. Users can start a "shopping trip" that snapshots the current list for tracking.

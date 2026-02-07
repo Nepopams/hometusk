@@ -12,7 +12,7 @@
 - Initiative (done): **INIT-2026Q2-voice-input-web** — Voice Input MVP for Web Commands
   - Anchor: docs/planning/initiatives/INIT-2026Q2-voice-input-web.md
   - Outcome: голосовой ввод команд в web (record → transcribe → edit → submit), интеграция с ASR proxy endpoints
-  - Closed: 2026-02-03 (EP-012 S15)
+  - Closed: 2026-02-06 (EP-012: S15 core + S16 polish)
 
 - Initiative (done): **INIT-2026Q2-asr-integration-foundation** — ASR Integration Foundation (contract-first)
   - Anchor: docs/planning/initiatives/INIT-2026Q2-asr-integration-foundation.md
@@ -69,10 +69,6 @@
 - Initiative (candidate): **Agreements v0 (read-only)** (consent-first)
   - Anchor: TBD — requires initiative spec
   - Outcome: отображение договорённостей/правил без конструктора и без токсичных лидербордов
-
-- Initiative (candidate): **Voice Hardening** — polish stories from EP-012
-  - Anchor: docs/planning/epics/EP-012/epic.md (ST-1206–1208)
-  - Outcome: error handling UX, client telemetry, cross-browser + accessibility
 
 ## LATER (длинный хвост)
 

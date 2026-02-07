@@ -1,7 +1,7 @@
 # Story: ST-1308 — ShoppingRun Checklist UI
 
-## Status: NOT READY
-**Blocker**: Blocked by ST-1307 (depends on run creation flow)
+## Status: READY
+**Blocker**: ~~ST-1302, ST-1307~~ — ST-1302 RESOLVED; ST-1307 in same sprint
 
 ## Description
 Create the shopping run checklist page where users can mark items as purchased during their shopping trip, with clear progress indication and run closure.
