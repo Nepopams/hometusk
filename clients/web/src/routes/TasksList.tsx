@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useMembers } from '../hooks/useMembers';
@@ -8,7 +8,8 @@ import { Button } from '../components/ui';
 import TaskFiltersPanel from '../components/tasks/TaskFilters';
 import TasksCard from '../components/tasks/TasksTable';
 import { ApiError } from '../lib/errors';
-import type { TaskFilters as TaskFiltersType, TaskStatus } from '../types/api';
+import { executeCommand, generateIdempotencyKey } from '../lib/api';
+import type { TaskFilters as TaskFiltersType, TaskStatus, CommandRequest } from '../types/api';
 import './TasksList.css';
 
 const validStatuses: TaskStatus[] = ['open', 'in_progress', 'done', 'cancelled'];
@@ -51,6 +52,8 @@ export default function TasksList() {
   const { zones, isLoading: zonesLoading } = useZones(householdId);
   const { members, isLoading: membersLoading } = useMembers(householdId);
 
+  const [completingTaskIds, setCompletingTaskIds] = useState<Set<string>>(new Set());
+
   const setFilter = useCallback(
     (key: string, value: string) => {
       const newParams = new URLSearchParams(searchParams);
@@ -71,6 +74,35 @@ export default function TasksList() {
   const handleRetry = useCallback(() => {
     refetch();
   }, [refetch]);
+
+  const handleCompleteTask = useCallback(
+    async (taskId: string) => {
+      if (!householdId) return;
+
+      setCompletingTaskIds((prev) => new Set(prev).add(taskId));
+
+      const request: CommandRequest = {
+        householdId,
+        type: 'complete_task',
+        payload: { taskId },
+        source: 'web',
+      };
+
+      try {
+        await executeCommand(request, generateIdempotencyKey());
+        refetch();
+      } catch {
+        // Error handling: just stop spinner, user can retry
+      } finally {
+        setCompletingTaskIds((prev) => {
+          const next = new Set(prev);
+          next.delete(taskId);
+          return next;
+        });
+      }
+    },
+    [householdId, refetch]
+  );
 
   if (!householdId) {
     return (
@@ -254,6 +286,8 @@ export default function TasksList() {
             tasks={tasks}
             householdId={householdId}
             hasActiveFilters={hasActiveFilters}
+            onComplete={handleCompleteTask}
+            completingTaskIds={completingTaskIds}
           />
 
           {tasks.length >= 10 && (

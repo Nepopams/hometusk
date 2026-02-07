@@ -7,6 +7,8 @@ interface TasksCardProps {
   tasks: Task[];
   householdId: string;
   hasActiveFilters?: boolean;
+  onComplete?: (taskId: string) => void;
+  completingTaskIds?: Set<string>;
 }
 
 /**
@@ -15,7 +17,7 @@ interface TasksCardProps {
  *
  * @see Pencil frames: dataTask (task row interface)
  */
-export default function TasksCard({ tasks, householdId, hasActiveFilters }: TasksCardProps) {
+export default function TasksCard({ tasks, householdId, hasActiveFilters, onComplete, completingTaskIds }: TasksCardProps) {
   // Empty state
   if (tasks.length === 0) {
     return (
@@ -56,7 +58,12 @@ export default function TasksCard({ tasks, householdId, hasActiveFilters }: Task
       {tasks.map((task, idx) => (
         <div key={task.id}>
           {idx > 0 && <div className="tasks__divider" />}
-          <TaskRow task={task} householdId={householdId} />
+          <TaskRow
+            task={task}
+            householdId={householdId}
+            onComplete={onComplete}
+            isCompleting={completingTaskIds?.has(task.id)}
+          />
         </div>
       ))}
     </div>

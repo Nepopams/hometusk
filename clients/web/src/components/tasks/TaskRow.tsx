@@ -5,6 +5,8 @@ import TaskStatusBadge from './TaskStatusBadge';
 interface TaskRowProps {
   task: Task;
   householdId: string;
+  onComplete?: (taskId: string) => void;
+  isCompleting?: boolean;
 }
 
 function formatDeadline(value?: string): { text: string; isOverdue: boolean } {
@@ -47,7 +49,7 @@ function formatDeadline(value?: string): { text: string; isOverdue: boolean } {
  *
  * @see Pencil frames: dataTask (task row interface)
  */
-export default function TaskRow({ task, householdId }: TaskRowProps) {
+export default function TaskRow({ task, householdId, onComplete, isCompleting }: TaskRowProps) {
   const navigate = useNavigate();
   const isDone = task.status === 'done';
   const deadline = formatDeadline(task.deadline);
@@ -58,23 +60,27 @@ export default function TaskRow({ task, householdId }: TaskRowProps) {
 
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // TODO: Implement complete task action
+    if (isDone || isCompleting || !onComplete) return;
+    onComplete(task.id);
   };
 
   return (
     <div className="tasks__item" onClick={handleClick} role="button" tabIndex={0}>
       <div
-        className={`tasks__item-checkbox ${isDone ? 'tasks__item-checkbox--done' : ''}`}
+        className={`tasks__item-checkbox ${isDone ? 'tasks__item-checkbox--done' : ''} ${isCompleting ? 'tasks__item-checkbox--loading' : ''}`}
         onClick={handleCheckboxClick}
         role="checkbox"
         aria-checked={isDone}
-        tabIndex={0}
+        aria-disabled={isDone || isCompleting}
+        tabIndex={isDone || isCompleting ? -1 : 0}
       >
-        {isDone && (
+        {isCompleting ? (
+          <div className="tasks__item-checkbox-spinner" />
+        ) : isDone ? (
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
             <polyline points="20 6 9 17 4 12" />
           </svg>
-        )}
+        ) : null}
       </div>
 
       <div className="tasks__item-content">
