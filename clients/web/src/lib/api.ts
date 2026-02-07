@@ -21,6 +21,7 @@ import type {
   ShoppingItemFilters,
   ShoppingList,
   ShoppingRun,
+  ShoppingRunItem,
   Task,
   TaskFilters,
   UserProfile,
@@ -209,6 +210,39 @@ export async function createShoppingRun(
 ): Promise<ShoppingRun> {
   return apiFetch<ShoppingRun>(`/households/${householdId}/shopping-lists/${listId}/runs`, {
     method: 'POST',
+  });
+}
+
+export async function getShoppingRun(
+  householdId: string,
+  runId: string
+): Promise<ShoppingRun> {
+  return apiFetch<ShoppingRun>(`/households/${householdId}/shopping-runs/${runId}`);
+}
+
+export async function updateShoppingRunItem(
+  householdId: string,
+  runId: string,
+  itemId: string,
+  purchased: boolean
+): Promise<ShoppingRunItem> {
+  return apiFetch<ShoppingRunItem>(
+    `/households/${householdId}/shopping-runs/${runId}/items/${itemId}`,
+    {
+      method: 'PATCH',
+      body: { purchased },
+    }
+  );
+}
+
+export async function closeShoppingRun(
+  householdId: string,
+  runId: string,
+  status: 'COMPLETED' | 'CANCELLED'
+): Promise<ShoppingRun> {
+  return apiFetch<ShoppingRun>(`/households/${householdId}/shopping-runs/${runId}/close`, {
+    method: 'POST',
+    body: { status },
   });
 }
 

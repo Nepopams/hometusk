@@ -1,0 +1,315 @@
+.shopping-run {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 32px 24px;
+}
+
+.shopping-run__wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 680px;
+}
+
+/* Back Link */
+.shopping-run__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.shopping-run__back:hover {
+  color: var(--color-brand);
+}
+
+.shopping-run__back svg {
+  flex-shrink: 0;
+}
+
+/* Header */
+.shopping-run__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.shopping-run__title {
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.shopping-run__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+}
+
+.shopping-run__badge--completed {
+  background: #E8F5E9;
+  color: var(--color-success);
+}
+
+.shopping-run__badge--cancelled {
+  background: #FAFAFA;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-subtle);
+}
+
+/* Progress */
+.shopping-run__progress-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shopping-run__progress-text {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.shopping-run__progress-count {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.shopping-run__progress-skipped {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.shopping-run__progress-bar {
+  height: 8px;
+  background: var(--color-bg-hover-subtle);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.shopping-run__progress-fill {
+  height: 100%;
+  background: var(--color-success);
+  border-radius: var(--radius-full);
+  transition: width var(--transition-fast);
+}
+
+/* Card */
+.shopping-run__card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+/* Checklist */
+.shopping-run__divider {
+  height: 1px;
+  background: var(--color-border-subtle);
+}
+
+.shopping-run__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  transition: opacity var(--transition-fast);
+}
+
+.shopping-run__item--purchased {
+  opacity: 0.6;
+}
+
+.shopping-run__item--updating {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.shopping-run__checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: transparent;
+  border: 2px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.shopping-run__checkbox:hover:not(:disabled) {
+  border-color: var(--color-brand);
+}
+
+.shopping-run__checkbox--checked {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: white;
+}
+
+.shopping-run__checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.shopping-run__item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.shopping-run__item-name {
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shopping-run__item-name--purchased {
+  text-decoration: line-through;
+  color: var(--color-text-secondary);
+}
+
+.shopping-run__item-meta {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* Empty / Error */
+.shopping-run__empty,
+.shopping-run__error {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.shopping-run__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Actions */
+.shopping-run__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* Summary */
+.shopping-run__summary {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  padding: 16px;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.shopping-run__summary-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.shopping-run__summary-value {
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+.shopping-run__summary-label {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* Modal */
+.shopping-run__modal {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.shopping-run__modal-info {
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.shopping-run__modal-info strong {
+  color: var(--color-text-primary);
+}
+
+.shopping-run__modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Skeleton */
+.shopping-run__skeleton-back,
+.shopping-run__skeleton-header,
+.shopping-run__skeleton-progress,
+.shopping-run__skeleton-item {
+  background: var(--color-bg-hover-subtle);
+  border-radius: var(--radius-sm);
+  animation: shopping-run-pulse 1.5s ease-in-out infinite;
+}
+
+.shopping-run__skeleton-back {
+  width: 140px;
+  height: 18px;
+}
+
+.shopping-run__skeleton-header {
+  width: 220px;
+  height: 28px;
+}
+
+.shopping-run__skeleton-progress {
+  height: 40px;
+}
+
+.shopping-run__skeleton-item {
+  height: 46px;
+  margin: 8px 0;
+}
+
+@keyframes shopping-run-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

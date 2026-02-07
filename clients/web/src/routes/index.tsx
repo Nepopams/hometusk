@@ -16,6 +16,7 @@ import NotFound from './NotFound';
 import Progress from './Progress';
 import SessionExpired from './SessionExpired';
 import ShoppingDetail from './ShoppingDetail';
+import ShoppingRun from './ShoppingRun';
 import ShoppingLists from './ShoppingLists';
 import Unauthorized from './Unauthorized';
 import AccessDenied from './AccessDenied';
@@ -53,6 +54,7 @@ export const router = createBrowserRouter([
           { path: 'routines', element: <Routines /> },
           { path: 'shopping', element: <ShoppingLists /> },
           { path: 'shopping/:listId', element: <ShoppingDetail /> },
+          { path: 'shopping-runs/:runId', element: <ShoppingRun /> },
           { path: 'analytics', element: <Analytics /> },
           { path: 'progress', element: <Progress /> },
           { path: 'zones', element: <ZonesList /> },
