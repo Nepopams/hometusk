@@ -16,9 +16,9 @@ export default function BrandHeader({ tagline = 'Welcome back' }: BrandHeaderPro
   return (
     <div className="brand-header">
       <div className="brand-header__logo">
-        {/* Logo mark - terracotta square */}
-        <div className="brand-header__mark" aria-hidden="true" />
-        <span className="brand-header__name">HOMETUSK</span>
+        {/* Logo mark - terracotta square with "H" */}
+        <div className="brand-header__mark" aria-hidden="true">H</div>
+        <span className="brand-header__name">HomeTusk</span>
       </div>
       {tagline && <p className="brand-header__tagline">{tagline}</p>}
     </div>
