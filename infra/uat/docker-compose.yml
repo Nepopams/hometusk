@@ -1,0 +1,168 @@
+# ==========================================
+# HomeTusk UAT Stack
+# ==========================================
+#
+# Usage:
+#   cd infra/uat
+#   cp .env.example .env   # fill in real values
+#   docker compose up -d --build
+#
+# Architecture:
+#   nginx:80 ──┬── /api/v1     ──▶ backend:8080
+#              ├── /realms      ──▶ keycloak:8080
+#              └── /*           ──▶ SPA static files (built into nginx image)
+#
+# Ports exposed to host:
+#   80  (nginx) - HTTP
+#   443 (nginx) - HTTPS (when SSL configured)
+
+services:
+  # ==========================================
+  # PostgreSQL
+  # ==========================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: hometusk-uat-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-hometusk}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-hometusk}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hometusk} -d ${POSTGRES_DB:-hometusk}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  # ==========================================
+  # Keycloak (OIDC / Auth)
+  # ==========================================
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    container_name: hometusk-uat-keycloak
+    restart: unless-stopped
+    command: start-dev --import-realm --proxy-headers=xforwarded
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-hometusk}
+      KC_DB_USERNAME: ${POSTGRES_USER:-hometusk}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      KC_DB_SCHEMA: keycloak
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env}
+      KC_HEALTH_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_RELATIVE_PATH: /
+      JAVA_OPTS: ${KEYCLOAK_JAVA_OPTS:--Xms512m -Xmx1024m}
+    volumes:
+      - ../compose/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - internal
+    deploy:
+      resources:
+        limits:
+          memory: 1280m
+
+  # ==========================================
+  # Backend (Spring Boot)
+  # ==========================================
+  backend:
+    build:
+      context: ../../services/backend
+      dockerfile: docker/Dockerfile
+    container_name: hometusk-uat-backend
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-hometusk}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-hometusk}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: ${VITE_OIDC_AUTHORITY:-http://keycloak:8080/realms/hometusk}
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/hometusk/protocol/openid-connect/certs
+      DECISION_PROVIDER: ${DECISION_PROVIDER:-manual}
+      DECISION_FALLBACK_ENABLED: ${DECISION_FALLBACK_ENABLED:-true}
+      JAVA_OPTS: ${BACKEND_JAVA_OPTS:--XX:+UseContainerSupport -XX:MaxRAMPercentage=60.0 -Xmx1536m -Djava.security.egd=file:/dev/./urandom}
+      APP_CORS_ALLOWED_ORIGINS: http://localhost,https://${DOMAIN:-localhost}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    networks:
+      - internal
+    deploy:
+      resources:
+        limits:
+          memory: 1792m
+
+  # ==========================================
+  # Nginx (reverse proxy + SPA built-in)
+  # ==========================================
+  # Builds SPA from clients/web in first stage,
+  # then serves static files + proxies API/Keycloak.
+  nginx:
+    build:
+      context: ../..
+      dockerfile: infra/uat/nginx/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
+        VITE_AUTH_PROVIDER: ${VITE_AUTH_PROVIDER:-keycloak}
+        VITE_OIDC_AUTHORITY: ${VITE_OIDC_AUTHORITY:-http://localhost/realms/hometusk}
+        VITE_OIDC_CLIENT_ID: ${VITE_OIDC_CLIENT_ID:-hometusk-web}
+        VITE_OIDC_REDIRECT_URI: ${VITE_OIDC_REDIRECT_URI:-http://localhost/callback}
+    container_name: hometusk-uat-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    # volumes:
+      # SSL certs (uncomment when available)
+      # - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    networks:
+      - internal
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+
+# ==========================================
+# Volumes
+# ==========================================
+volumes:
+  postgres_data:
+    name: hometusk_uat_postgres_data
+
+# ==========================================
+# Networks
+# ==========================================
+networks:
+  internal:
+    name: hometusk_uat_network
