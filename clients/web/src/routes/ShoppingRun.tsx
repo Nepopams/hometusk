@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useI18n } from '../i18n';
 import { closeShoppingRun, getShoppingRun, updateShoppingRunItem } from '../lib/api';
 import { Button, Modal, Snackbar } from '../components/ui';
 import type { ShoppingRun as ShoppingRunType, ShoppingRunItem } from '../types/api';
 import './ShoppingRun.css';
 
 export default function ShoppingRun() {
+  const { t } = useI18n();
   const { householdId } = useAuth();
   const { runId } = useParams();
   const navigate = useNavigate();
@@ -33,9 +35,9 @@ export default function ShoppingRun() {
 
     getShoppingRun(householdId, runId)
       .then((data) => setRun(data))
-      .catch((err) => setError(err instanceof Error ? err : new Error('Failed to load run')))
+      .catch((err) => setError(err instanceof Error ? err : new Error(t('shopping.failedLoadRun'))))
       .finally(() => setIsLoading(false));
-  }, [householdId, runId]);
+  }, [householdId, runId, t]);
 
   const handleToggleItem = useCallback(
     async (item: ShoppingRunItem) => {
@@ -79,7 +81,7 @@ export default function ShoppingRun() {
             items: prev.items.map((i) => (i.id === item.id ? previousItem : i)),
           };
         });
-        setSnackbar({ message: 'Failed to update item', variant: 'error' });
+        setSnackbar({ message: t('shopping.failedUpdateItem'), variant: 'error' });
       } finally {
         setUpdatingItems((prev) => {
           const next = new Set(prev);
@@ -88,7 +90,7 @@ export default function ShoppingRun() {
         });
       }
     },
-    [householdId, runId, run]
+    [householdId, runId, run, t]
   );
 
   const handleCloseRun = useCallback(
@@ -107,12 +109,12 @@ export default function ShoppingRun() {
           navigate(`/households/${householdId}/shopping/${closedRun.listId}`);
         }
       } catch {
-        setSnackbar({ message: 'Failed to close trip', variant: 'error' });
+        setSnackbar({ message: t('shopping.failedCloseTrip'), variant: 'error' });
       } finally {
         setIsClosing(false);
       }
     },
-    [householdId, runId, navigate]
+    [householdId, runId, navigate, t]
   );
 
   const handleRetry = useCallback(() => {
@@ -121,15 +123,15 @@ export default function ShoppingRun() {
     setError(null);
     getShoppingRun(householdId, runId)
       .then((data) => setRun(data))
-      .catch((err) => setError(err instanceof Error ? err : new Error('Failed to load run')))
+      .catch((err) => setError(err instanceof Error ? err : new Error(t('shopping.failedLoadRun'))))
       .finally(() => setIsLoading(false));
-  }, [householdId, runId]);
+  }, [householdId, runId, t]);
 
   if (!householdId) {
     return (
       <div className="shopping-run">
         <div className="shopping-run__wrapper">
-          <p>Please select a household.</p>
+          <p>{t('shopping.noHousehold')}</p>
         </div>
       </div>
     );
@@ -160,13 +162,13 @@ export default function ShoppingRun() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
-            Back to shopping
+            {t('shopping.backToShopping')}
           </Link>
           <div className="shopping-run__card">
             <div className="shopping-run__error">
-              <p>Unable to load shopping trip.</p>
+              <p>{t('shopping.unableLoadTrip')}</p>
               <Button variant="primary" size="sm" onClick={handleRetry}>
-                Retry
+                {t('common.retry')}
               </Button>
             </div>
           </div>
@@ -179,7 +181,7 @@ export default function ShoppingRun() {
     return (
       <div className="shopping-run">
         <div className="shopping-run__wrapper">
-          <p>Shopping trip not found.</p>
+          <p>{t('shopping.tripNotFound')}</p>
         </div>
       </div>
     );
@@ -198,14 +200,14 @@ export default function ShoppingRun() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
-          Back to list
+          {t('shopping.backToList')}
         </Link>
 
         <div className="shopping-run__header">
-          <h1 className="shopping-run__title">Shopping Trip</h1>
+          <h1 className="shopping-run__title">{t('shopping.trip')}</h1>
           {!isActive && (
             <span className={`shopping-run__badge shopping-run__badge--${run.status.toLowerCase()}`}>
-              {run.status === 'COMPLETED' ? 'Completed' : 'Cancelled'}
+              {run.status === 'COMPLETED' ? t('common.completed') : t('common.cancelled')}
             </span>
           )}
         </div>
@@ -213,11 +215,11 @@ export default function ShoppingRun() {
         <div className="shopping-run__progress-section">
           <div className="shopping-run__progress-text">
             <span className="shopping-run__progress-count">
-              {purchasedCount} of {totalCount} purchased
+              {t('shopping.purchasedOf', { purchased: purchasedCount, total: totalCount })}
             </span>
             {!isActive && skippedCount > 0 && (
               <span className="shopping-run__progress-skipped">
-                ({skippedCount} skipped)
+                {t('shopping.skipped', { count: skippedCount })}
               </span>
             )}
           </div>
@@ -231,7 +233,7 @@ export default function ShoppingRun() {
 
         <div className="shopping-run__card">
           {run.items.length === 0 ? (
-            <div className="shopping-run__empty">No items in this trip.</div>
+            <div className="shopping-run__empty">{t('shopping.noItemsTrip')}</div>
           ) : (
             <div className="shopping-run__checklist">
               {run.items.map((item, idx) => {
@@ -247,7 +249,7 @@ export default function ShoppingRun() {
                         className={`shopping-run__checkbox ${item.purchased ? 'shopping-run__checkbox--checked' : ''}`}
                         onClick={() => handleToggleItem(item)}
                         disabled={!isActive || isUpdating}
-                        aria-label={item.purchased ? 'Mark as not purchased' : 'Mark as purchased'}
+                        aria-label={item.purchased ? t('shopping.markNotPurchased') : t('shopping.markPurchased')}
                       >
                         {item.purchased && (
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
@@ -282,14 +284,14 @@ export default function ShoppingRun() {
               size="md"
               onClick={() => setShowCancelModal(true)}
             >
-              Cancel Trip
+              {t('shopping.cancelTrip')}
             </Button>
             <Button
               variant="primary"
               size="md"
               onClick={() => setShowCompleteModal(true)}
             >
-              Complete Trip
+              {t('shopping.completeTrip')}
             </Button>
           </div>
         )}
@@ -298,12 +300,12 @@ export default function ShoppingRun() {
           <div className="shopping-run__summary">
             <div className="shopping-run__summary-stat">
               <span className="shopping-run__summary-value">{purchasedCount}</span>
-              <span className="shopping-run__summary-label">Purchased</span>
+              <span className="shopping-run__summary-label">{t('shopping.purchased')}</span>
             </div>
             {skippedCount > 0 && (
               <div className="shopping-run__summary-stat">
                 <span className="shopping-run__summary-value">{skippedCount}</span>
-                <span className="shopping-run__summary-label">Skipped</span>
+                <span className="shopping-run__summary-label">{t('shopping.skippedLabel')}</span>
               </div>
             )}
           </div>
@@ -312,17 +314,22 @@ export default function ShoppingRun() {
         <Modal
           open={showCompleteModal}
           onClose={() => !isClosing && setShowCompleteModal(false)}
-          title="Complete Shopping Trip"
+          title={t('shopping.completeTripTitle')}
           size="sm"
           closeOnBackdrop={!isClosing}
           closeOnEscape={!isClosing}
         >
           <div className="shopping-run__modal">
             <p className="shopping-run__modal-info">
-              You purchased <strong>{purchasedCount}</strong> of{' '}
-              <strong>{totalCount}</strong> items.
+              {t('shopping.completeTripInfo', { purchased: purchasedCount, total: totalCount })}
               {skippedCount > 0 && (
-                <> <strong>{skippedCount}</strong> {skippedCount === 1 ? 'item' : 'items'} will be skipped.</>
+                <>
+                  {' '}
+                  {t('shopping.skippedWillBe', {
+                    count: skippedCount,
+                    itemLabel: skippedCount === 1 ? t('shopping.item') : t('shopping.items'),
+                  })}
+                </>
               )}
             </p>
             <div className="shopping-run__modal-actions">
@@ -332,7 +339,7 @@ export default function ShoppingRun() {
                 onClick={() => setShowCompleteModal(false)}
                 disabled={isClosing}
               >
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button
                 variant="primary"
@@ -340,7 +347,7 @@ export default function ShoppingRun() {
                 onClick={() => handleCloseRun('COMPLETED')}
                 disabled={isClosing}
               >
-                {isClosing ? 'Completing...' : 'Complete'}
+                {isClosing ? t('shopping.completing') : t('shopping.complete')}
               </Button>
             </div>
           </div>
@@ -349,14 +356,14 @@ export default function ShoppingRun() {
         <Modal
           open={showCancelModal}
           onClose={() => !isClosing && setShowCancelModal(false)}
-          title="Cancel Shopping Trip"
+          title={t('shopping.cancelTripTitle')}
           size="sm"
           closeOnBackdrop={!isClosing}
           closeOnEscape={!isClosing}
         >
           <div className="shopping-run__modal">
             <p className="shopping-run__modal-info">
-              Are you sure you want to cancel this trip? Your progress will be saved but the trip will be marked as cancelled.
+              {t('shopping.cancelTripInfo')}
             </p>
             <div className="shopping-run__modal-actions">
               <Button
@@ -365,7 +372,7 @@ export default function ShoppingRun() {
                 onClick={() => setShowCancelModal(false)}
                 disabled={isClosing}
               >
-                Keep Shopping
+                {t('shopping.keepShopping')}
               </Button>
               <Button
                 variant="primary"
@@ -373,7 +380,7 @@ export default function ShoppingRun() {
                 onClick={() => handleCloseRun('CANCELLED')}
                 disabled={isClosing}
               >
-                {isClosing ? 'Cancelling...' : 'Cancel Trip'}
+                {isClosing ? t('shopping.cancelling') : t('shopping.cancelTrip')}
               </Button>
             </div>
           </div>

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, type FormEvent, type KeyboardEvent } from 
 import { createZone } from '../lib/api';
 import { ApiError } from '../lib/errors';
 import { Button } from './ui';
+import { useI18n } from '../i18n';
 import './CreateZoneModal.css';
 
 const MAX_NAME_LENGTH = 50;
@@ -34,6 +35,7 @@ export default function CreateZoneModal({
 }: CreateZoneModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { t } = useI18n();
 
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -90,10 +92,10 @@ export default function CreateZoneModal({
 
   const getValidationError = (): string | null => {
     if (trimmedName.length === 0) {
-      return 'Please enter a zone name';
+      return t('zones.enterName');
     }
     if (trimmedName.length > MAX_NAME_LENGTH) {
-      return `Name must be ${MAX_NAME_LENGTH} characters or less`;
+      return t('household.nameTooLong', { count: MAX_NAME_LENGTH });
     }
     return null;
   };
@@ -124,9 +126,9 @@ export default function CreateZoneModal({
           typeof err.body === 'object' && err.body !== null && 'message' in err.body
             ? (err.body as { message?: string }).message
             : undefined;
-        setError(apiMessage || 'Unable to create zone. Please try again.');
+        setError(apiMessage || t('zones.unableCreate'));
       } else {
-        setError('Something went wrong. Please try again.');
+        setError(t('common.somethingWentWrong'));
       }
       setIsSubmitting(false);
     }
@@ -176,7 +178,7 @@ export default function CreateZoneModal({
         onKeyDown={handleKeyDown}
         role="dialog"
         aria-modal="true"
-        aria-label="Create zone"
+        aria-label={t('zones.createTitle')}
         tabIndex={-1}
       >
         {/* Header */}
@@ -190,14 +192,14 @@ export default function CreateZoneModal({
                 <rect x="3" y="14" width="7" height="7" />
               </svg>
             </div>
-            <h2 className="create-zone-modal__title">Create zone</h2>
+            <h2 className="create-zone-modal__title">{t('zones.createTitle')}</h2>
           </div>
           <button
             type="button"
             className="create-zone-modal__close"
             onClick={onClose}
             disabled={isSubmitting}
-            aria-label="Close"
+            aria-label={t('common.close')}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -212,19 +214,19 @@ export default function CreateZoneModal({
         {/* Body */}
         <form className="create-zone-modal__body" onSubmit={handleSubmit}>
           <p className="create-zone-modal__microcopy">
-            Zones help organize tasks by area of your home.
+            {t('zones.emptyDesc')}
           </p>
 
           <div className="create-zone-modal__field">
             <label htmlFor="zone-name" className="create-zone-modal__label">
-              Zone name
+              {t('zones.name')}
             </label>
             <input
               ref={inputRef}
               id="zone-name"
               type="text"
               className={`create-zone-modal__input ${error ? 'create-zone-modal__input--error' : ''}`}
-              placeholder="e.g. Kitchen, Living Room, Garage"
+              placeholder={t('zones.namePlaceholder')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={MAX_NAME_LENGTH + 10}
@@ -238,7 +240,7 @@ export default function CreateZoneModal({
               </span>
             )}
             <span id="create-zone-hint" className="create-zone-modal__hint">
-              Max {MAX_NAME_LENGTH} characters
+              {t('common.maxCharacters', { count: MAX_NAME_LENGTH })}
             </span>
           </div>
         </form>
@@ -255,7 +257,7 @@ export default function CreateZoneModal({
             onClick={onClose}
             disabled={isSubmitting}
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             type="submit"
@@ -265,7 +267,7 @@ export default function CreateZoneModal({
             disabled={isSubmitting}
             onClick={handleSubmit}
           >
-            Create zone
+            {t('zones.create')}
           </Button>
         </div>
       </div>

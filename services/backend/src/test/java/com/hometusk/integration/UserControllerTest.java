@@ -9,6 +9,8 @@ import com.hometusk.users.domain.MembershipRole;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Integration tests for UserController.
@@ -21,6 +23,7 @@ class UserControllerTest extends IntegrationTestBase {
     class GetCurrentUserTests {
 
         @Test
+        @Transactional(propagation = Propagation.NOT_SUPPORTED)
         @DisplayName("Should return user profile with household memberships")
         void authenticatedUserCanGetProfile() throws Exception {
             mockMvc.perform(get("/api/v1/users/me").with(jwt()))

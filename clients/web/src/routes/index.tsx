@@ -4,6 +4,7 @@ import AcceptInvite from './AcceptInvite';
 import Analytics from './Analytics';
 import Callback from './Callback';
 import Commands from './Commands';
+import CommandsRedirect from './CommandsRedirect';
 import Dashboard from './Dashboard';
 import HouseholdLayout from './HouseholdLayout';
 import HouseholdSelector from './HouseholdSelector';
@@ -38,6 +39,11 @@ export const router = createBrowserRouter([
       // Legacy: redirect to landing page (create via modal or inline form)
       { path: 'new', element: <Navigate to="/households" replace /> },
     ],
+  },
+  {
+    path: '/commands',
+    element: <ProtectedRoute />,
+    children: [{ index: true, element: <CommandsRedirect /> }],
   },
   {
     path: '/households/:householdId',

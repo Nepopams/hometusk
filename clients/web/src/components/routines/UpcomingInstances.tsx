@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useI18n } from '../../i18n';
 import { getUpcomingInstances } from '../../lib/api';
 import type { UpcomingInstancesResponse } from '../../types/api';
 import './UpcomingInstances.css';
@@ -10,12 +11,15 @@ interface Props {
   assignmentPolicy: string;
 }
 
+type I18nShape = ReturnType<typeof useI18n>;
+
 export default function UpcomingInstances({
   householdId,
   routineId,
   routineStatus,
   assignmentPolicy,
 }: Props) {
+  const { t, formatDate } = useI18n();
   const [data, setData] = useState<UpcomingInstancesResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,23 +36,20 @@ export default function UpcomingInstances({
 
     getUpcomingInstances(householdId, routineId, 7)
       .then(setData)
-      .catch(() => setError('Failed to load upcoming instances'))
+      .catch(() => setError(t('routines.upcomingFailed')))
       .finally(() => setIsLoading(false));
-  }, [householdId, routineId, routineStatus]);
+  }, [householdId, routineId, routineStatus, t]);
 
   const getAssigneeDisplay = (assigneeName?: string): string => {
     if (assigneeName) return assigneeName;
-    if (assignmentPolicy === 'ROUND_ROBIN') return 'Rotating';
-    if (assignmentPolicy === 'MANUAL') return 'Unassigned';
-    return 'Unassigned';
+    if (assignmentPolicy === 'ROUND_ROBIN') return t('routines.rotating');
+    return t('common.unassigned');
   };
 
   if (routineStatus === 'PAUSED') {
     return (
       <div className="upcoming-instances upcoming-instances--paused">
-        <p className="upcoming-instances__empty">
-          Routine is paused. Resume to see upcoming tasks.
-        </p>
+        <p className="upcoming-instances__empty">{t('routines.pausedUpcoming')}</p>
       </div>
     );
   }
@@ -78,19 +79,19 @@ export default function UpcomingInstances({
   if (!data || data.instances.length === 0) {
     return (
       <div className="upcoming-instances upcoming-instances--empty">
-        <p className="upcoming-instances__empty">No upcoming tasks scheduled.</p>
+        <p className="upcoming-instances__empty">{t('routines.noUpcoming')}</p>
       </div>
     );
   }
 
   return (
     <div className="upcoming-instances">
-      <h4 className="upcoming-instances__title">Upcoming tasks</h4>
+      <h4 className="upcoming-instances__title">{t('routines.upcomingTasks')}</h4>
       <ul className="upcoming-instances__list">
         {data.instances.map((instance) => (
           <li key={instance.scheduledDate} className="upcoming-instances__item">
             <span className="upcoming-instances__date">
-              {formatDate(instance.scheduledDate)}
+              {formatUpcomingDate(instance.scheduledDate, t, formatDate)}
             </span>
             <span className="upcoming-instances__assignee">
               {getAssigneeDisplay(instance.projectedAssignee?.displayName)}
@@ -102,16 +103,20 @@ export default function UpcomingInstances({
   );
 }
 
-function formatDate(dateStr: string): string {
+function formatUpcomingDate(
+  dateStr: string,
+  t: I18nShape['t'],
+  formatDate: I18nShape['formatDate']
+): string {
   const date = new Date(dateStr);
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  if (date.toDateString() === today.toDateString()) return 'Today';
-  if (date.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
+  if (date.toDateString() === today.toDateString()) return t('common.today');
+  if (date.toDateString() === tomorrow.toDateString()) return t('common.tomorrow');
 
-  return date.toLocaleDateString('en-US', {
+  return formatDate(date, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',

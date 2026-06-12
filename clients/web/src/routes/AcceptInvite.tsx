@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { acceptInvite } from '../lib/api';
 import { ApiError } from '../lib/errors';
 import { useAuth } from '../hooks/useAuth';
+import { useI18n } from '../i18n';
 import { Button } from '../components/ui';
 import type { AcceptInviteResponse } from '../types/api';
 import './AcceptInvite.css';
@@ -35,6 +36,7 @@ interface ResultInfo {
  * Design follows auth screen patterns (Login, Register).
  */
 export default function AcceptInvite() {
+  const { t } = useI18n();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { selectHousehold, refetchUser } = useAuth();
@@ -68,8 +70,8 @@ export default function AcceptInvite() {
 
       setState('success');
       setResult({
-        title: 'Welcome to the team!',
-        message: `You've joined the household.`,
+        title: t('invite.welcomeTeam'),
+        message: t('invite.joinedHousehold'),
       });
 
       // Refetch user data and select household
@@ -85,16 +87,15 @@ export default function AcceptInvite() {
         if (err.status === 404 || err.status === 410) {
           setState('invalid');
           setResult({
-            title: 'This invite is no longer valid',
-            message:
-              'The invite code may have expired or already been used. Ask the household admin to send you a new invite.',
+            title: t('invite.noLongerValid'),
+            message: t('invite.noLongerValidMsg'),
           });
         } else if (err.status === 409) {
           // Already a member (conflict)
           setState('already_member');
           setResult({
-            title: "You're already a member",
-            message: 'Good news! You already have access to this household.',
+            title: t('invite.alreadyMemberTitle'),
+            message: t('invite.alreadyMemberMsg'),
           });
           // Try to get household info from error response
           const body = err.body as { household?: { id: string; name: string } } | undefined;
@@ -104,15 +105,15 @@ export default function AcceptInvite() {
         } else {
           setState('network_error');
           setResult({
-            title: 'Something went wrong',
-            message: 'We couldn\'t process your invite right now. Please check your connection and try again.',
+            title: t('invite.processErrorTitle'),
+            message: t('invite.processErrorMsg'),
           });
         }
       } else {
         setState('network_error');
         setResult({
-          title: 'Connection problem',
-          message: 'Unable to reach our servers. Please check your internet connection and try again.',
+          title: t('invite.connectionProblem'),
+          message: t('invite.connectionProblemMsg'),
         });
       }
     }
@@ -132,7 +133,7 @@ export default function AcceptInvite() {
 
     const trimmedCode = code.trim();
     if (!trimmedCode) {
-      setInputError('Please enter an invite code');
+      setInputError(t('invite.enterCode'));
       return;
     }
 
@@ -170,22 +171,22 @@ export default function AcceptInvite() {
             <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
           </svg>
         </div>
-        <h1 className="accept-invite__title">Join a household</h1>
+        <h1 className="accept-invite__title">{t('invite.joinHouseholdInputTitle')}</h1>
         <p className="accept-invite__subtitle">
-          Enter the invite code you received to join an existing household.
+          {t('invite.enterCodeToJoin')}
         </p>
       </div>
 
       <form className="accept-invite__form" onSubmit={handleSubmit}>
         <div className="accept-invite__field">
           <label htmlFor="invite-code" className="accept-invite__label">
-            Invite code
+            {t('invite.code')}
           </label>
           <input
             id="invite-code"
             type="text"
             className={`accept-invite__input ${inputError ? 'accept-invite__input--error' : ''}`}
-            placeholder="Paste your code here"
+            placeholder={t('invite.codePlaceholder')}
             value={code}
             onChange={(e) => {
               setCode(e.target.value);
@@ -198,19 +199,19 @@ export default function AcceptInvite() {
           {inputError ? (
             <span className="accept-invite__error-text">{inputError}</span>
           ) : (
-            <span className="accept-invite__hint">The code was sent to you by a household member</span>
+            <span className="accept-invite__hint">{t('invite.codeHint')}</span>
           )}
         </div>
 
         <div className="accept-invite__actions">
           <Button type="submit" variant="primary" size="lg" fullWidth>
-            Continue
+            {t('common.continue')}
           </Button>
         </div>
       </form>
 
       <p className="accept-invite__link">
-        Don&apos;t have an invite? <Link to="/households">Create your own household</Link>
+        {t('invite.noInvitePrompt')} <Link to="/households">{t('invite.createOwnHousehold')}</Link>
       </p>
     </>
   );
@@ -219,7 +220,7 @@ export default function AcceptInvite() {
   const renderValidating = () => (
     <div className="accept-invite__validating">
       <div className="accept-invite__spinner" aria-hidden="true" />
-      <p className="accept-invite__validating-text">Checking your invite...</p>
+      <p className="accept-invite__validating-text">{t('invite.checking')}</p>
     </div>
   );
 
@@ -236,7 +237,7 @@ export default function AcceptInvite() {
         {result?.message}{' '}
         {household && <span className="accept-invite__household-name">&quot;{household.name}&quot;</span>}
       </p>
-      <p className="accept-invite__redirect-hint">Taking you there now...</p>
+      <p className="accept-invite__redirect-hint">{t('invite.redirecting')}</p>
     </div>
   );
 
@@ -257,7 +258,7 @@ export default function AcceptInvite() {
       </p>
       <div className="accept-invite__actions">
         <Button variant="primary" size="lg" fullWidth onClick={handleOpenHousehold}>
-          Open household
+          {t('invite.openHousehold')}
         </Button>
       </div>
     </div>
@@ -286,10 +287,10 @@ export default function AcceptInvite() {
             setResult(null);
           }}
         >
-          Try a different code
+          {t('invite.tryDifferent')}
         </Button>
         <Button variant="ghost" size="md" fullWidth onClick={() => navigate('/households')}>
-          Go to my households
+          {t('household.goToMyHouseholds')}
         </Button>
       </div>
     </div>
@@ -309,10 +310,10 @@ export default function AcceptInvite() {
       <p className="accept-invite__result-message">{result?.message}</p>
       <div className="accept-invite__actions">
         <Button variant="primary" size="lg" fullWidth onClick={handleRetry}>
-          Try again
+          {t('common.tryAgain')}
         </Button>
         <Button variant="ghost" size="md" fullWidth onClick={() => navigate('/households')}>
-          Go to my households
+          {t('household.goToMyHouseholds')}
         </Button>
       </div>
     </div>

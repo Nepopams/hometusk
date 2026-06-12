@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { CommandStatus } from '../../types/api';
 import type { CommandHistoryEntry as HistoryEntry } from '../../lib/commandHistory';
+import { useI18n } from '../../i18n';
 import { StatusBadge } from './StatusBadge';
 import { TraceInfo } from './TraceInfo';
 
@@ -17,23 +18,10 @@ const STATUS_VARIANT: Record<CommandStatus, 'success' | 'warning' | 'error' | 'i
   needs_input: 'info',
 };
 
-function formatRelativeTime(timestamp: string): string {
-  const now = Date.now();
-  const then = new Date(timestamp).getTime();
-  const diffMs = now - then;
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return 'just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  return `${diffDays}d ago`;
-}
-
 export function CommandHistoryEntry({ entry, expanded, onToggle }: CommandHistoryEntryProps) {
   const [copied, setCopied] = useState(false);
   const [showTrace, setShowTrace] = useState(false);
+  const { t, formatRelativeTime, formatDateTime } = useI18n();
 
   const handleCopy = async () => {
     try {
@@ -45,7 +33,20 @@ export function CommandHistoryEntry({ entry, expanded, onToggle }: CommandHistor
     }
   };
 
-  const statusLabel = entry.status.replace(/_/g, ' ');
+  const statusLabel = (() => {
+    switch (entry.status) {
+      case 'executed':
+        return t('commands.completed');
+      case 'executed_degraded':
+        return t('commands.completedLimited');
+      case 'needs_input':
+        return t('commands.clarificationNeeded');
+      case 'rejected':
+        return t('commands.rejected');
+      default:
+        return t('common.unknown');
+    }
+  })();
 
   return (
     <div className="command-history-entry">
@@ -68,30 +69,30 @@ export function CommandHistoryEntry({ entry, expanded, onToggle }: CommandHistor
       {expanded && (
         <div className="command-history-entry__details">
           <div className="command-history-entry__row">
-            <span className="command-history-entry__label">Submitted:</span>
-            <span>{new Date(entry.timestamp).toLocaleString()}</span>
+            <span className="command-history-entry__label">{t('commands.submitted')}</span>
+            <span>{formatDateTime(entry.timestamp)}</span>
           </div>
           <div className="command-history-entry__row">
-            <span className="command-history-entry__label">Command ID:</span>
+            <span className="command-history-entry__label">{t('commands.commandId')}</span>
             <code>{entry.commandId}</code>
           </div>
           <div className="command-history-entry__row">
-            <span className="command-history-entry__label">Correlation ID:</span>
+            <span className="command-history-entry__label">{t('commands.correlationId')}</span>
             <code>{entry.correlationId}</code>
             <button type="button" className="command-history-entry__copy" onClick={handleCopy}>
-              {copied ? 'Copied' : 'Copy'}
+              {copied ? t('common.copied') : t('common.copy')}
             </button>
           </div>
 
           <div className="command-history-entry__section">
-            <span className="command-history-entry__label">Request:</span>
+            <span className="command-history-entry__label">{t('commands.request')}</span>
             <pre className="command-history-entry__json">
               {JSON.stringify(entry.request, null, 2)}
             </pre>
           </div>
 
           <div className="command-history-entry__section">
-            <span className="command-history-entry__label">Response:</span>
+            <span className="command-history-entry__label">{t('commands.response')}</span>
             <pre className="command-history-entry__json">
               {JSON.stringify(entry.response, null, 2)}
             </pre>
@@ -103,7 +104,7 @@ export function CommandHistoryEntry({ entry, expanded, onToggle }: CommandHistor
               className="ghost-button"
               onClick={() => setShowTrace((current) => !current)}
             >
-              {showTrace ? 'Hide Trace' : 'View Trace'}
+              {showTrace ? t('commands.hideTrace') : t('commands.viewTrace')}
             </button>
             {showTrace && <TraceInfo response={entry.response} />}
           </div>

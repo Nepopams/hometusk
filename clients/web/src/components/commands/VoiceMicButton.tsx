@@ -1,4 +1,5 @@
 import './VoiceMicButton.css';
+import { useI18n } from '../../i18n';
 
 export type VoiceMicButtonState = 'idle' | 'recording' | 'processing' | 'disabled';
 
@@ -13,9 +14,11 @@ export function VoiceMicButton({
   state,
   onClick,
   disabled = false,
-  'aria-label': ariaLabel = 'Voice input',
+  'aria-label': ariaLabel,
 }: VoiceMicButtonProps) {
+  const { t } = useI18n();
   const isDisabled = disabled || state === 'disabled';
+  const resolvedAriaLabel = ariaLabel ?? t('voice.input');
 
   return (
     <button
@@ -23,7 +26,7 @@ export function VoiceMicButton({
       className={`voice-mic-button voice-mic-button--${state}`}
       onClick={onClick}
       disabled={isDisabled}
-      aria-label={ariaLabel}
+      aria-label={resolvedAriaLabel}
       aria-pressed={state === 'recording'}
     >
       {state === 'processing' ? (

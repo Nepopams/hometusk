@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useTasks } from '../../hooks/useTasks';
 import Select from '../ui/Select';
+import { useI18n } from '../../i18n';
 import type { CompleteTaskPayload, TaskFilters } from '../../types/api';
 
 interface CompleteTaskFormProps {
@@ -16,6 +17,7 @@ export function CompleteTaskForm({
   onCancel,
   isLoading,
 }: CompleteTaskFormProps) {
+  const { t } = useI18n();
   const [taskId, setTaskId] = useState('');
   const [validationError, setValidationError] = useState('');
 
@@ -27,7 +29,7 @@ export function CompleteTaskForm({
     setValidationError('');
 
     if (!taskId) {
-      setValidationError('Please select a task to complete');
+      setValidationError(t('tasks.selectTaskToComplete'));
       return;
     }
 
@@ -37,7 +39,7 @@ export function CompleteTaskForm({
   const openTasks = tasks.filter((task) => task.status === 'open');
 
   const taskOptions = [
-    { value: '', label: 'Select a task...' },
+    { value: '', label: t('tasks.selectTask') },
     ...openTasks.map((task) => ({ value: task.id, label: task.title })),
   ];
 
@@ -45,11 +47,11 @@ export function CompleteTaskForm({
     <form onSubmit={handleSubmit}>
       <fieldset disabled={isLoading} className="create-household__form">
         <div className="create-household__field">
-          <Select label="Task to complete" value={taskId} onChange={setTaskId} options={taskOptions} />
-          {tasksLoading && <p>Loading tasks...</p>}
-          {!tasksLoading && tasksError && <p>Failed to load tasks.</p>}
+          <Select label={t('tasks.taskToComplete')} value={taskId} onChange={setTaskId} options={taskOptions} />
+          {tasksLoading && <p>{t('tasks.loadingTasks')}</p>}
+          {!tasksLoading && tasksError && <p>{t('tasks.failedLoadTasks')}</p>}
           {!tasksLoading && !tasksError && openTasks.length === 0 && (
-            <p>No open tasks to complete.</p>
+            <p>{t('tasks.noOpenTasks')}</p>
           )}
         </div>
 
@@ -61,10 +63,10 @@ export function CompleteTaskForm({
 
         <div className="create-household__actions">
           <button type="button" className="ghost-button" onClick={onCancel} disabled={isLoading}>
-            Cancel
+            {t('common.cancel')}
           </button>
           <button type="submit" className="button" disabled={isLoading || !taskId}>
-            {isLoading ? 'Completing...' : 'Mark Complete'}
+            {isLoading ? t('tasks.completeTaskLoading') : t('tasks.markComplete')}
           </button>
         </div>
       </fieldset>

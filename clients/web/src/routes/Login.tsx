@@ -1,17 +1,21 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { signinRedirect } from '../lib/auth/oidc';
+import { loginWithPassword } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
+import { STORAGE_KEYS } from '../lib/constants';
+import { ApiError } from '../lib/errors';
+import type { AuthErrorResponse } from '../types/api';
 import AuthLayout from '../components/auth/AuthLayout';
 import BrandHeader from '../components/auth/BrandHeader';
 import { Card, Button, TextField, PasswordField, ErrorBanner, Divider, TextLink } from '../components/ui';
+import { useI18n, type TranslationKey } from '../i18n';
 import './Login.css';
 
-const ERROR_MESSAGES: Record<string, string> = {
-  session_expired: 'Your session has expired. Please sign in again.',
-  auth_unavailable: 'Authentication service is temporarily unavailable. Please try again later.',
-  auth_failed: 'Authentication failed. Please check your credentials and try again.',
-  invalid_credentials: 'The email or password you entered doesn\'t match our records. Please check and try again.',
+const ERROR_MESSAGE_KEYS: Record<string, TranslationKey> = {
+  session_expired: 'auth.sessionExpiredParam',
+  auth_unavailable: 'auth.authUnavailable',
+  auth_failed: 'auth.authFailed',
+  invalid_credentials: 'auth.invalidCredentials',
 };
 
 export default function Login() {
@@ -21,12 +25,14 @@ export default function Login() {
   const [passwordError, setPasswordError] = useState('');
   const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { clearError } = useAuth();
+  const { clearError, refetchUser } = useAuth();
+  const { t } = useI18n();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const authProvider = import.meta.env.VITE_AUTH_PROVIDER;
   const errorParam = searchParams.get('error');
-  const errorMessage = errorParam ? ERROR_MESSAGES[errorParam] || 'An error occurred. Please try again.' : null;
+  const errorMessage = errorParam ? t(ERROR_MESSAGE_KEYS[errorParam] ?? 'auth.genericError') : null;
 
   const clearErrorParam = () => {
     if (errorParam) {
@@ -39,11 +45,11 @@ export default function Login() {
   // Validate email format
   const validateEmail = (value: string): string => {
     if (!value.trim()) {
-      return 'Email is required';
+      return t('auth.emailRequired');
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(value)) {
-      return 'Please enter a valid email address';
+      return t('auth.validEmail');
     }
     return '';
   };
@@ -51,7 +57,7 @@ export default function Login() {
   // Validate password
   const validatePassword = (value: string): string => {
     if (!value) {
-      return 'Password is required';
+      return t('auth.passwordRequired');
     }
     return '';
   };
@@ -73,12 +79,23 @@ export default function Login() {
 
     setLoading(true);
     try {
-      // For Keycloak mode, we redirect to the OIDC provider
-      // Email/password are visual only - actual auth happens on Keycloak
-      await signinRedirect();
+      if (authProvider !== 'keycloak') {
+        throw new Error(t('auth.unsupportedProvider'));
+      }
+
+      await loginWithPassword({ email: email.trim(), password });
+      const profile = await refetchUser();
+
+      if (!profile) {
+        throw new Error(t('auth.profileAfterSignIn'));
+      }
+
+      const storedRedirect = sessionStorage.getItem(STORAGE_KEYS.POST_LOGIN_REDIRECT);
+      sessionStorage.removeItem(STORAGE_KEYS.POST_LOGIN_REDIRECT);
+      navigate(storedRedirect || '/households', { replace: true });
     } catch (err) {
-      console.error('[Login] OIDC redirect failed', err);
-      setFormError('Unable to connect to authentication service. Please try again.');
+      console.error('[Login] Sign in failed', err);
+      setFormError(resolveLoginError(err, t));
       setLoading(false);
     }
   };
@@ -95,11 +112,11 @@ export default function Login() {
             noValidate
           >
             {/* Brand Header */}
-            <BrandHeader tagline="Welcome back" />
+            <BrandHeader tagline={t('auth.welcomeBack')} />
 
             {/* Error Banner (form-level errors) */}
             {(errorMessage || formError) && (
-              <ErrorBanner title="Unable to sign in">
+              <ErrorBanner title={t('auth.unableSignIn')}>
                 {errorMessage || formError}
               </ErrorBanner>
             )}
@@ -107,7 +124,7 @@ export default function Login() {
             {/* Form Fields */}
             <div className="login-form__fields">
               <TextField
-                label="Email"
+                label={t('auth.email')}
                 type="email"
                 value={email}
                 onChange={(e) => {
@@ -122,7 +139,7 @@ export default function Login() {
                 autoFocus
               />
               <PasswordField
-                label="Password"
+                label={t('auth.password')}
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
@@ -146,20 +163,17 @@ export default function Login() {
                 loading={loading}
                 disabled={loading}
               >
-                {loading ? 'Signing in...' : 'Sign in'}
+                {loading ? t('auth.signingIn') : t('auth.signIn')}
               </Button>
-              <TextLink to="/forgot-password" centered>
-                Forgot password?
-              </TextLink>
             </div>
 
             {/* Divider */}
-            <Divider text="or" />
+            <Divider text={t('auth.or')} />
 
             {/* Create Account Link */}
             <div className="login-form__footer">
               <TextLink to="/register" centered>
-                Create account
+                {t('auth.createAccount')}
               </TextLink>
             </div>
           </form>
@@ -177,15 +191,29 @@ export default function Login() {
   return (
     <AuthLayout>
       <Card padding="lg">
-        <BrandHeader tagline="Configuration Error" />
-        <ErrorBanner title="Authentication Not Available">
-          VITE_AUTH_PROVIDER must be &apos;dev&apos; or &apos;keycloak&apos;.
+        <BrandHeader tagline={t('auth.configurationError')} />
+        <ErrorBanner title={t('auth.authenticationNotAvailable')}>
+          {t('auth.providerRequired')}
           <br />
-          Current value: {authProvider || 'not set'}
+          {t('auth.currentValue', { value: authProvider || t('auth.notSet') })}
         </ErrorBanner>
       </Card>
     </AuthLayout>
   );
+}
+
+function resolveLoginError(err: unknown, t: (key: TranslationKey) => string): string {
+  if (err instanceof ApiError) {
+    const body = err.body as Partial<AuthErrorResponse> | null;
+    if (body?.errorCode === 'AUTH_INVALID_CREDENTIALS' || err.status === 401) {
+      return t('auth.invalidCredentials');
+    }
+    if (body?.errorCode === 'AUTH_PROVIDER_UNAVAILABLE' || err.status === 503) {
+      return t('auth.authUnavailable');
+    }
+  }
+
+  return t('auth.unableSignInTry');
 }
 
 /**
@@ -193,6 +221,7 @@ export default function Login() {
  * Uses JWT token pasting for local development.
  */
 function DevModeLogin() {
+  const { t } = useI18n();
   const [token, setToken] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -201,7 +230,7 @@ function DevModeLogin() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const errorParam = searchParams.get('error');
-  const errorMessage = errorParam ? ERROR_MESSAGES[errorParam] || 'An error occurred.' : null;
+  const errorMessage = errorParam ? t(ERROR_MESSAGE_KEYS[errorParam] ?? 'auth.genericError') : null;
 
   const clearErrorParam = () => {
     if (errorParam) {
@@ -220,7 +249,7 @@ function DevModeLogin() {
       await login(token.trim());
       navigate('/households');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : t('auth.loginFailed'));
     } finally {
       setLoading(false);
     }
@@ -228,13 +257,13 @@ function DevModeLogin() {
 
   return (
     <div className="login-dev">
-      <h1 className="login-dev__title">Login (Dev Mode)</h1>
+      <h1 className="login-dev__title">{t('auth.loginDevMode')}</h1>
       <p className="login-dev__description">
-        Paste your JWT token to authenticate in development mode.
+        {t('auth.jwtDescription')}
       </p>
 
       {errorMessage && (
-        <ErrorBanner title="Authentication Error">
+        <ErrorBanner title={t('auth.unableSignIn')}>
           {errorMessage}
         </ErrorBanner>
       )}
@@ -242,7 +271,7 @@ function DevModeLogin() {
       <form onSubmit={handleSubmit} className="login-dev__form">
         <div>
           <label htmlFor="jwt-token" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
-            JWT Token
+            {t('auth.jwtToken')}
           </label>
           <textarea
             id="jwt-token"
@@ -265,7 +294,7 @@ function DevModeLogin() {
           loading={loading}
           disabled={loading || !token.trim()}
         >
-          {loading ? 'Logging in...' : 'Login with Token'}
+          {loading ? t('auth.loggingIn') : t('auth.loginWithToken')}
         </Button>
       </form>
     </div>

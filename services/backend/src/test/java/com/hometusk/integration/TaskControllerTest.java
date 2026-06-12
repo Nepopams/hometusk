@@ -22,6 +22,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Integration tests for TaskController.
@@ -104,6 +106,24 @@ class TaskControllerTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$[0].id").exists())
                     .andExpect(jsonPath("$[0].title").exists())
                     .andExpect(jsonPath("$[0].status").exists());
+        }
+
+        @Test
+        @Transactional(propagation = Propagation.NOT_SUPPORTED)
+        @DisplayName("Should list command-created unassigned task without open session")
+        void listTasksReturnsCommandCreatedUnassignedTaskWithoutOpenSession() throws Exception {
+            Task commandTask = new Task(testHousehold, "Command-created task", testUser);
+            commandTask.setCommandId(java.util.UUID.randomUUID());
+            commandTask.setCreatedVia("command");
+            commandTask = taskRepository.saveAndFlush(commandTask);
+
+            mockMvc.perform(get("/api/v1/households/{id}/tasks", testHousehold.getId())
+                            .with(jwt()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[?(@.id=='" + commandTask.getId() + "')].title")
+                            .value(contains("Command-created task")))
+                    .andExpect(jsonPath("$[?(@.id=='" + commandTask.getId() + "')].createdBy.id")
+                            .value(contains(testUser.getId().toString())));
         }
 
         @Test

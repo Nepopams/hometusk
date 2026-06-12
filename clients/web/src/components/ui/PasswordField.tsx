@@ -1,4 +1,5 @@
 import { forwardRef, type InputHTMLAttributes, useState } from 'react';
+import { useI18n } from '../../i18n';
 import TextField from './TextField';
 import './PasswordField.css';
 
@@ -31,6 +32,7 @@ interface PasswordFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>,
 const PasswordField = forwardRef<HTMLInputElement, PasswordFieldProps>(
   ({ label, hint, hintPosition, error, ...props }, ref) => {
     const [showPassword, setShowPassword] = useState(false);
+    const { t } = useI18n();
 
     const toggleVisibility = () => {
       setShowPassword((prev) => !prev);
@@ -49,7 +51,7 @@ const PasswordField = forwardRef<HTMLInputElement, PasswordFieldProps>(
             type="button"
             className="password-toggle"
             onClick={toggleVisibility}
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
             tabIndex={-1}
           >
             {showPassword ? (

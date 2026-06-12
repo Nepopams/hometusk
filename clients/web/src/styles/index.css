@@ -58,6 +58,8 @@ a {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .app-shell__body {
@@ -143,6 +145,39 @@ a {
   border: 1px dashed #c7bfb2;
   background: transparent;
   color: #6a6257;
+}
+
+.language-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid #e2ddd3;
+}
+
+.language-switcher__button {
+  min-width: 34px;
+  height: 28px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #6a6257;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.language-switcher__button:hover {
+  color: #0b3d3a;
+}
+
+.language-switcher__button.is-active {
+  background: #0b3d3a;
+  color: #ffffff;
 }
 
 @media (max-width: 900px) {

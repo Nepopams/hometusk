@@ -10,6 +10,7 @@ import { CompleteTaskForm } from './CompleteTaskForm';
 import { VoiceMicButton } from './VoiceMicButton';
 import { VoiceRecordingStatus } from './VoiceRecordingStatus';
 import { VoiceErrorMessage, VoiceErrorType } from './VoiceErrorMessage';
+import { useI18n } from '../../i18n';
 import './CommandInput.css';
 import type {
   CommandRequest,
@@ -22,6 +23,7 @@ type VoiceMode = 'idle' | 'recording' | 'uploading' | 'transcribing';
 
 export function CommandInput() {
   const { householdId } = useAuth();
+  const { t } = useI18n();
   const { execute, isLoading, response, error, errorStatus, reset } = useCommand();
   const [mode, setMode] = useState<CommandType>('create_task');
   const [formKey, setFormKey] = useState(0);
@@ -267,7 +269,7 @@ export function CommandInput() {
           onClick={() => handleModeChange('create_task')}
           disabled={isLoading}
         >
-          Create Task
+          {t('tasks.createTask')}
         </button>
         <button
           type="button"
@@ -275,7 +277,7 @@ export function CommandInput() {
           onClick={() => handleModeChange('complete_task')}
           disabled={isLoading}
         >
-          Complete Task
+          {t('tasks.completeTask')}
         </button>
       </div>
 
@@ -286,7 +288,7 @@ export function CommandInput() {
               state={micState}
               onClick={handleMicClick}
               disabled={micState === 'disabled' || micState === 'processing'}
-              aria-label="Voice input"
+              aria-label={t('voice.input')}
             />
             {voiceMode !== 'idle' && (
               <VoiceRecordingStatus

@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Modal, Button } from '../ui';
 import { useIsMobile } from '../../hooks/useMediaQuery';
+import { useI18n } from '../../i18n';
 import './SessionExpiredModal.css';
 
 interface SessionExpiredModalProps {
@@ -39,6 +40,7 @@ export default function SessionExpiredModal({
 }: SessionExpiredModalProps) {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { t } = useI18n();
 
   // On mobile, redirect to full-page instead of showing modal
   if (isMobile && open) {
@@ -63,7 +65,7 @@ export default function SessionExpiredModal({
       closeOnBackdrop={!loading}
       closeOnEscape={!loading}
       showCloseButton={false}
-      aria-label={isError ? 'Unable to sign in' : 'Session expired'}
+      aria-label={isError ? t('session.unableSignIn') : t('session.expired')}
     >
       <div className="session-expired-modal">
         {/* Header with icon */}
@@ -83,15 +85,15 @@ export default function SessionExpiredModal({
             )}
           </div>
           <h2 className="session-expired-modal__title">
-            {isError ? 'Unable to sign in' : 'Session expired'}
+            {isError ? t('session.unableSignIn') : t('session.expired')}
           </h2>
         </div>
 
         {/* Body text */}
         <p className="session-expired-modal__body">
           {isError
-            ? "We couldn't verify your credentials. Please check your email and password and try again."
-            : 'For your security, you\'ve been signed out after a period of inactivity. Sign in again to continue where you left off.'}
+            ? t('session.verifyCredentials')
+            : t('session.expiredBody')}
         </p>
 
         {/* Error banner (when re-auth failed) */}
@@ -113,14 +115,14 @@ export default function SessionExpiredModal({
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
               <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
-            <span>Your unsaved input has been preserved</span>
+            <span>{t('session.unsavedInputPreserved')}</span>
           </div>
         )}
 
         {/* Help text (error state only) */}
         {isError && (
           <p className="session-expired-modal__help">
-            If you&apos;ve forgotten your password, you can reset it from the login page.
+            {t('session.forgotPasswordHelp')}
           </p>
         )}
 
@@ -132,7 +134,7 @@ export default function SessionExpiredModal({
             onClick={onClose}
             disabled={loading}
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             variant="primary"
@@ -141,7 +143,7 @@ export default function SessionExpiredModal({
             loading={loading}
             disabled={loading}
           >
-            {isError ? 'Try again' : 'Sign in again'}
+            {isError ? t('common.tryAgain') : t('session.signInAgain')}
           </Button>
         </div>
       </div>

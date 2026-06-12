@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useCommand } from '../hooks/useCommand';
 import { useCommandHistory } from '../hooks/useCommandHistory';
 import { Button } from '../components/ui';
+import { useI18n } from '../i18n';
 import type {
   CommandRequest,
   CreateTaskPayload,
@@ -22,6 +23,7 @@ import './Commands.css';
  */
 export default function Commands() {
   const { householdId } = useAuth();
+  const { t, formatRelativeTime } = useI18n();
   const { execute, isLoading, response, error, reset } = useCommand();
   const { entries, clearHistory } = useCommandHistory(householdId);
 
@@ -57,7 +59,7 @@ export default function Commands() {
   };
 
   const handleClearHistory = () => {
-    if (window.confirm('Clear all command history for this household?')) {
+    if (window.confirm(t('commands.clearHistoryConfirm'))) {
       clearHistory();
     }
   };
@@ -66,25 +68,11 @@ export default function Commands() {
     return (
       <div className="commands">
         <div className="commands__empty">
-          <p>Please select a household to use commands.</p>
+          <p>{t('commands.noHousehold')}</p>
         </div>
       </div>
     );
   }
-
-  const formatRelativeTime = (timestamp: string): string => {
-    const now = Date.now();
-    const then = new Date(timestamp).getTime();
-    const diffMs = now - then;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return 'just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return `${diffDays}d ago`;
-  };
 
   const getStatusClass = (status: string): string => {
     switch (status) {
@@ -101,6 +89,21 @@ export default function Commands() {
     }
   };
 
+  const getStatusLabel = (status: string): string => {
+    switch (status) {
+      case 'executed':
+        return t('commands.completed');
+      case 'executed_degraded':
+        return t('commands.completedLimited');
+      case 'needs_input':
+        return t('commands.clarificationNeeded');
+      case 'rejected':
+        return t('commands.rejected');
+      default:
+        return status.replace(/_/g, ' ');
+    }
+  };
+
   const renderResult = () => {
     if (isLoading) {
       return (
@@ -108,8 +111,8 @@ export default function Commands() {
           <div className="commands__banner commands__banner--info">
             <div className="commands__banner-spinner" />
             <div className="commands__banner-content">
-              <h4 className="commands__banner-title">Executing command...</h4>
-              <p className="commands__banner-subtitle">Processing your request</p>
+              <h4 className="commands__banner-title">{t('commands.executing')}</h4>
+              <p className="commands__banner-subtitle">{t('commands.processing')}</p>
             </div>
           </div>
           <div className="commands__skeleton-section">
@@ -131,16 +134,16 @@ export default function Commands() {
               <line x1="9" y1="9" x2="15" y2="15" />
             </svg>
             <div className="commands__banner-content">
-              <h4 className="commands__banner-title">Command failed</h4>
+              <h4 className="commands__banner-title">{t('commands.failed')}</h4>
               <p className="commands__banner-subtitle">{error}</p>
             </div>
           </div>
           <div className="commands__result-actions">
             <Button variant="secondary" size="sm" onClick={handleClear}>
-              Try Again
+              {t('commands.tryAgain')}
             </Button>
             <Button variant="primary" size="sm" onClick={handleNewCommand}>
-              New Command
+              {t('commands.newCommand')}
             </Button>
           </div>
         </div>
@@ -155,8 +158,8 @@ export default function Commands() {
             <path d="M2 17l10 5 10-5" />
             <path d="M2 12l10 5 10-5" />
           </svg>
-          <h3 className="commands__result-empty-title">No result yet</h3>
-          <p className="commands__result-empty-desc">Type a command and click Run to see results</p>
+          <h3 className="commands__result-empty-title">{t('commands.noResult')}</h3>
+          <p className="commands__result-empty-desc">{t('commands.noResultDesc')}</p>
         </div>
       );
     }
@@ -170,15 +173,15 @@ export default function Commands() {
               <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
             <div className="commands__banner-content">
-              <h4 className="commands__banner-title">Command completed</h4>
+              <h4 className="commands__banner-title">{t('commands.completed')}</h4>
               <p className="commands__banner-subtitle">
-                {response.result.taskId ? '1 task created' : 'Command executed successfully'}
+                {response.result.taskId ? t('commands.oneTaskCreated') : t('commands.executedSuccessfully')}
               </p>
             </div>
           </div>
           {response.result.taskId && (
             <div className="commands__changes-section">
-              <h5 className="commands__changes-title">Changes made:</h5>
+              <h5 className="commands__changes-title">{t('commands.changesMade')}</h5>
               <div className="commands__changes-list">
                 <div className="commands__change-item">
                   <svg className="commands__change-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -186,8 +189,8 @@ export default function Commands() {
                     <line x1="5" y1="12" x2="19" y2="12" />
                   </svg>
                   <div className="commands__change-text">
-                    <span className="commands__change-label">Task created</span>
-                    <span className="commands__change-detail">ID: {response.result.taskId}</span>
+                    <span className="commands__change-label">{t('commands.taskCreated')}</span>
+                    <span className="commands__change-detail">{t('common.id')}: {response.result.taskId}</span>
                   </div>
                 </div>
               </div>
@@ -197,11 +200,11 @@ export default function Commands() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="9 18 15 12 9 6" />
             </svg>
-            <span>Show details (correlation: {response.correlationId.slice(0, 12)}...)</span>
+            <span>{t('commands.showDetails', { id: response.correlationId.slice(0, 12) })}</span>
           </div>
           <div className="commands__result-actions">
             <Button variant="primary" size="sm" onClick={handleNewCommand}>
-              New Command
+              {t('commands.newCommand')}
             </Button>
           </div>
         </div>
@@ -218,17 +221,17 @@ export default function Commands() {
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
             <div className="commands__banner-content">
-              <h4 className="commands__banner-title">Clarification needed</h4>
-              <p className="commands__banner-subtitle">Please provide more details to complete the command</p>
+              <h4 className="commands__banner-title">{t('commands.clarificationNeeded')}</h4>
+              <p className="commands__banner-subtitle">{t('commands.provideMoreDetails')}</p>
             </div>
           </div>
           <div className="commands__question-section">
             <h5 className="commands__question-text">{response.question}</h5>
-            <p className="commands__question-hint">Required fields: {response.requiredFields.join(', ')}</p>
+            <p className="commands__question-hint">{t('commands.requiredFields', { fields: response.requiredFields.join(', ') })}</p>
           </div>
           <div className="commands__result-actions">
             <Button variant="primary" size="sm" onClick={handleClear}>
-              Edit & Retry
+              {t('commands.editRetry')}
             </Button>
           </div>
         </div>
@@ -245,19 +248,19 @@ export default function Commands() {
               <line x1="9" y1="9" x2="15" y2="15" />
             </svg>
             <div className="commands__banner-content">
-              <h4 className="commands__banner-title">Command rejected</h4>
+              <h4 className="commands__banner-title">{t('commands.rejected')}</h4>
               <p className="commands__banner-subtitle">{response.reason}</p>
             </div>
           </div>
           <div className="commands__error-details">
-            <span className="commands__error-code">Error: {response.errorCode}</span>
+            <span className="commands__error-code">{t('commands.errorCode', { code: response.errorCode })}</span>
           </div>
           <div className="commands__result-actions">
             <Button variant="secondary" size="sm" onClick={handleClear}>
-              Retry
+              {t('common.retry')}
             </Button>
             <Button variant="primary" size="sm" onClick={handleNewCommand}>
-              New Command
+              {t('commands.newCommand')}
             </Button>
           </div>
         </div>
@@ -274,17 +277,17 @@ export default function Commands() {
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
             <div className="commands__banner-content">
-              <h4 className="commands__banner-title">Command completed with limitations</h4>
+              <h4 className="commands__banner-title">{t('commands.completedLimited')}</h4>
               <p className="commands__banner-subtitle">
-                {response.degradedReason === 'ai_unavailable' && 'AI service temporarily unavailable'}
-                {response.degradedReason === 'ai_timeout' && 'AI service timed out'}
-                {response.degradedReason === 'ai_low_confidence' && 'Low confidence result'}
+                {response.degradedReason === 'ai_unavailable' && t('commands.aiUnavailable')}
+                {response.degradedReason === 'ai_timeout' && t('commands.aiTimeout')}
+                {response.degradedReason === 'ai_low_confidence' && t('commands.aiLowConfidence')}
               </p>
             </div>
           </div>
           {response.result.taskId && (
             <div className="commands__changes-section">
-              <h5 className="commands__changes-title">Changes made:</h5>
+              <h5 className="commands__changes-title">{t('commands.changesMade')}</h5>
               <div className="commands__changes-list">
                 <div className="commands__change-item">
                   <svg className="commands__change-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -292,8 +295,8 @@ export default function Commands() {
                     <line x1="5" y1="12" x2="19" y2="12" />
                   </svg>
                   <div className="commands__change-text">
-                    <span className="commands__change-label">Task created</span>
-                    <span className="commands__change-detail">ID: {response.result.taskId}</span>
+                    <span className="commands__change-label">{t('commands.taskCreated')}</span>
+                    <span className="commands__change-detail">{t('common.id')}: {response.result.taskId}</span>
                   </div>
                 </div>
               </div>
@@ -301,7 +304,7 @@ export default function Commands() {
           )}
           <div className="commands__result-actions">
             <Button variant="primary" size="sm" onClick={handleNewCommand}>
-              New Command
+              {t('commands.newCommand')}
             </Button>
           </div>
         </div>
@@ -324,7 +327,7 @@ export default function Commands() {
             <circle cx="12" cy="12" r="10" />
             <polyline points="12 6 12 12 16 14" />
           </svg>
-          <span>Recent Commands</span>
+          <span>{t('commands.recent')}</span>
         </button>
       </div>
 
@@ -332,13 +335,13 @@ export default function Commands() {
       {showHistory && (
         <div className="commands__history-sheet show-mobile">
           <div className="commands__history-sheet-header">
-            <h3>Recent Commands</h3>
-            <button type="button" onClick={() => setShowHistory(false)}>Close</button>
+            <h3>{t('commands.recent')}</h3>
+            <button type="button" onClick={() => setShowHistory(false)}>{t('commands.closeHistory')}</button>
           </div>
           <div className="commands__history-list">
             {entries.length === 0 ? (
               <div className="commands__history-empty">
-                <p>No commands yet.</p>
+                <p>{t('commands.noCommands')}</p>
               </div>
             ) : (
               entries.map((entry) => (
@@ -346,7 +349,7 @@ export default function Commands() {
                   <div className="commands__history-item-header">
                     <span className="commands__history-item-title">{entry.displayText}</span>
                     <span className={`commands__history-status ${getStatusClass(entry.status)}`}>
-                      {entry.status.replace(/_/g, ' ')}
+                      {getStatusLabel(entry.status)}
                     </span>
                   </div>
                   <span className="commands__history-item-time">{formatRelativeTime(entry.timestamp)}</span>
@@ -361,12 +364,12 @@ export default function Commands() {
       <div className="commands__left-col">
         {/* Composer Section */}
         <div className="commands__section">
-          <h2 className="commands__section-title">Command Composer</h2>
+          <h2 className="commands__section-title">{t('commands.title')}</h2>
           <form className="commands__composer-card" onSubmit={handleSubmit}>
             <div className="commands__textarea-wrapper">
               <textarea
                 className="commands__textarea"
-                placeholder='Examples: "Assign...", "Buy...", "Remind..."'
+                placeholder={t('commands.placeholder')}
                 value={commandText}
                 onChange={(e) => setCommandText(e.target.value)}
                 disabled={isLoading}
@@ -375,10 +378,10 @@ export default function Commands() {
             </div>
             <div className="commands__composer-actions">
               <Button type="submit" variant="primary" size="md" disabled={isLoading || !commandText.trim()}>
-                Run
+                {t('commands.run')}
               </Button>
               <Button type="button" variant="secondary" size="sm" onClick={handleClear} disabled={isLoading}>
-                Clear
+                {t('common.clear')}
               </Button>
               <button type="button" className="commands__help-btn">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -386,7 +389,7 @@ export default function Commands() {
                   <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
                   <line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
-                <span>Help</span>
+                <span>{t('commands.help')}</span>
               </button>
             </div>
           </form>
@@ -394,19 +397,19 @@ export default function Commands() {
 
         {/* Result Section */}
         <div className="commands__section">
-          <h2 className="commands__section-title">Result</h2>
+          <h2 className="commands__section-title">{t('commands.result')}</h2>
           {renderResult()}
         </div>
       </div>
 
       {/* Right Column: History (Desktop) */}
       <div className="commands__right-col hide-mobile">
-        <h2 className="commands__section-title">Recent Commands</h2>
+        <h2 className="commands__section-title">{t('commands.recent')}</h2>
         <div className="commands__history-card">
           {entries.length === 0 ? (
             <div className="commands__history-empty">
-              <p>No commands yet.</p>
-              <p className="commands__history-hint">Type a command above to get started.</p>
+              <p>{t('commands.noCommands')}</p>
+              <p className="commands__history-hint">{t('commands.startHint')}</p>
             </div>
           ) : (
             <>
@@ -416,7 +419,7 @@ export default function Commands() {
                     <div className="commands__history-item-header">
                       <span className="commands__history-item-title">{entry.displayText}</span>
                       <span className={`commands__history-status ${getStatusClass(entry.status)}`}>
-                        {entry.status.replace(/_/g, ' ')}
+                        {getStatusLabel(entry.status)}
                       </span>
                     </div>
                     <span className="commands__history-item-time">{formatRelativeTime(entry.timestamp)}</span>
@@ -424,7 +427,7 @@ export default function Commands() {
                 ))}
               </div>
               <button type="button" className="commands__history-clear" onClick={handleClearHistory}>
-                Clear History
+                {t('commands.clearHistory')}
               </button>
             </>
           )}

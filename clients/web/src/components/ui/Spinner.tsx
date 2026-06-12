@@ -1,4 +1,5 @@
 import './Spinner.css';
+import { useI18n } from '../../i18n';
 
 type SpinnerSize = 'sm' | 'md' | 'lg';
 
@@ -26,9 +27,12 @@ interface SpinnerProps {
  */
 export default function Spinner({
   size = 'md',
-  label = 'Loading...',
+  label,
   showLabel = false,
 }: SpinnerProps) {
+  const { t } = useI18n();
+  const resolvedLabel = label ?? t('common.loading');
+
   return (
     <div className={`spinner spinner--${size}`} role="status">
       <svg
@@ -48,7 +52,7 @@ export default function Spinner({
           strokeDasharray="31.4 31.4"
         />
       </svg>
-      <span className={showLabel ? 'spinner__label' : 'sr-only'}>{label}</span>
+      <span className={showLabel ? 'spinner__label' : 'sr-only'}>{resolvedLabel}</span>
     </div>
   );
 }

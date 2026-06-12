@@ -125,7 +125,8 @@ class RoutineServiceTest {
                 new User("ext", "test@example.com", "Test User"));
         routine.setDescription("Original");
 
-        when(routineRepository.findByIdAndHousehold_Id(any(), eq(householdId))).thenReturn(Optional.of(routine));
+        when(routineRepository.findByIdAndHouseholdIdWithDetails(any(), eq(householdId)))
+                .thenReturn(Optional.of(routine));
         when(routineRepository.save(any(Routine.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         UpdateRoutineRequest request = new UpdateRoutineRequest("New Title", null, null, null, null, null, null);
@@ -146,7 +147,8 @@ class RoutineServiceTest {
                 AssignmentPolicy.MANUAL,
                 new User("ext", "test@example.com", "Test User"));
 
-        when(routineRepository.findByIdAndHousehold_Id(any(), eq(householdId))).thenReturn(Optional.of(routine));
+        when(routineRepository.findByIdAndHouseholdIdWithDetails(any(), eq(householdId)))
+                .thenReturn(Optional.of(routine));
 
         routineService.deleteRoutine(UUID.randomUUID(), householdId);
 
@@ -161,10 +163,23 @@ class RoutineServiceTest {
 
         routineService.listRoutines(householdId, null, null);
 
-        verify(routineRepository)
-                .findByHousehold_IdAndStatusInOrderByCreatedAtDesc(eq(householdId), statusCaptor.capture());
+        verify(routineRepository).findByHouseholdIdAndStatusInWithDetails(eq(householdId), statusCaptor.capture());
 
         assertThat(statusCaptor.getValue()).containsExactlyInAnyOrder(RoutineStatus.ACTIVE, RoutineStatus.PAUSED);
+    }
+
+    @Test
+    void listRoutines_withAssignmentPolicy_fetchesDtoDetails() {
+        UUID householdId = UUID.randomUUID();
+        ArgumentCaptor<List<RoutineStatus>> statusCaptor = ArgumentCaptor.forClass(List.class);
+
+        routineService.listRoutines(householdId, RoutineStatus.ACTIVE, AssignmentPolicy.FIXED);
+
+        verify(routineRepository)
+                .findByHouseholdIdAndStatusInAndAssignmentPolicyWithDetails(
+                        eq(householdId), statusCaptor.capture(), eq(AssignmentPolicy.FIXED));
+
+        assertThat(statusCaptor.getValue()).containsExactly(RoutineStatus.ACTIVE);
     }
 
     @Test
@@ -227,7 +242,8 @@ class RoutineServiceTest {
                 AssignmentPolicy.MANUAL,
                 new User("ext", "test@example.com", "Test User"));
 
-        when(routineRepository.findByIdAndHousehold_Id(any(), eq(householdId))).thenReturn(Optional.of(routine));
+        when(routineRepository.findByIdAndHouseholdIdWithDetails(any(), eq(householdId)))
+                .thenReturn(Optional.of(routine));
 
         UpdateRoutineRequest request = new UpdateRoutineRequest(null, null, null, null, null, UUID.randomUUID(), null);
 

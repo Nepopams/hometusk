@@ -80,7 +80,7 @@ What did we decide to do?
 ---
 
 **Maintenance**:
-- Run `adr-designer` agent when creating/updating ADRs
+- Use the `hometusk-adr-diagram-governance` skill when creating/updating ADRs
 - Update `docs/_indexes/adr-index.md` when adding new ADR
 
 See also:

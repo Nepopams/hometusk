@@ -1,6 +1,7 @@
+import { useI18n } from '../../i18n';
+import type { Routine } from '../../types/api';
 import { Button } from '../ui';
 import Modal from '../ui/Modal';
-import type { Routine } from '../../types/api';
 import './DeleteRoutineModal.css';
 
 interface DeleteRoutineModalProps {
@@ -20,35 +21,33 @@ export default function DeleteRoutineModal({
   onClose,
   onConfirm,
 }: DeleteRoutineModalProps) {
+  const { t } = useI18n();
+
   return (
     <Modal
       open={open}
       onClose={onClose}
-      title="Delete routine"
-      aria-label="Delete routine"
+      title={t('routines.deleteRoutine')}
+      aria-label={t('routines.deleteRoutine')}
       closeOnBackdrop={!isDeleting}
       closeOnEscape={!isDeleting}
       size="sm"
     >
       <div className="delete-routine">
-        <p className="delete-routine__message">
-          Delete routine? Pending tasks will remain.
-        </p>
-        {routine && (
-          <p className="delete-routine__name">&quot;{routine.title}&quot;</p>
-        )}
+        <p className="delete-routine__message">{t('routines.deleteMessage')}</p>
+        {routine && <p className="delete-routine__name">&quot;{routine.title}&quot;</p>}
         {error && (
           <div className="delete-routine__error" role="alert">
-            <span className="delete-routine__error-icon">⚠</span>
+            <span className="delete-routine__error-icon">!</span>
             <span>{error}</span>
           </div>
         )}
         <div className="delete-routine__actions">
           <Button type="button" variant="ghost" size="md" onClick={onClose} disabled={isDeleting}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="button" variant="primary" size="md" loading={isDeleting} onClick={onConfirm}>
-            Delete
+            {t('common.delete')}
           </Button>
         </div>
       </div>

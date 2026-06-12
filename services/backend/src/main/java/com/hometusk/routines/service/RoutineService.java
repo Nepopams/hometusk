@@ -68,17 +68,17 @@ public class RoutineService {
                 status != null ? List.of(status) : List.of(RoutineStatus.ACTIVE, RoutineStatus.PAUSED);
 
         if (assignmentPolicy != null) {
-            return routineRepository.findByHousehold_IdAndStatusInAndAssignmentPolicyOrderByCreatedAtDesc(
+            return routineRepository.findByHouseholdIdAndStatusInAndAssignmentPolicyWithDetails(
                     householdId, statuses, assignmentPolicy);
         }
 
-        return routineRepository.findByHousehold_IdAndStatusInOrderByCreatedAtDesc(householdId, statuses);
+        return routineRepository.findByHouseholdIdAndStatusInWithDetails(householdId, statuses);
     }
 
     @Transactional(readOnly = true)
     public Routine getRoutine(UUID routineId, UUID householdId) {
         return routineRepository
-                .findByIdAndHousehold_Id(routineId, householdId)
+                .findByIdAndHouseholdIdWithDetails(routineId, householdId)
                 .orElseThrow(
                         () -> new NotFoundException(ErrorCode.ROUTINE_NOT_FOUND, "Routine not found: " + routineId));
     }

@@ -10,10 +10,12 @@ import Spinner from '../components/ui/Spinner';
 import { useAuth } from '../hooks/useAuth';
 import { useGamification } from '../hooks/useGamification';
 import { ApiError } from '../lib/errors';
+import { useI18n } from '../i18n';
 import './Progress.css';
 
 export default function Progress() {
   const { householdId } = useAuth();
+  const { t } = useI18n();
   const { householdId: paramId } = useParams();
   const activeId = paramId ?? householdId ?? undefined;
 
@@ -23,8 +25,8 @@ export default function Progress() {
   if (!activeId) {
     return (
       <div className="page progress">
-        <h1>Progress</h1>
-        <p>Select a household to view progress.</p>
+        <h1>{t('progress.title')}</h1>
+        <p>{t('progress.selectHousehold')}</p>
       </div>
     );
   }
@@ -32,10 +34,10 @@ export default function Progress() {
   if (error instanceof ApiError && error.status === 403) {
     return (
       <div className="page progress">
-        <h1>Access Denied</h1>
-        <p>You do not have access to this household.</p>
+        <h1>{t('common.accessDenied')}</h1>
+        <p>{t('tasks.noAccess')}</p>
         <Link className="button" to="/households">
-          Back to Household Selector
+          {t('common.backToHouseholdSelector')}
         </Link>
       </div>
     );
@@ -44,7 +46,7 @@ export default function Progress() {
   if (error) {
     return (
       <div className="page progress">
-        <h1>Progress</h1>
+        <h1>{t('progress.title')}</h1>
         <ErrorMessage error={error} onRetry={refetch} />
       </div>
     );
@@ -53,7 +55,7 @@ export default function Progress() {
   if (isLoading || !progress) {
     return (
       <div className="page progress progress__loading">
-        <h1>Progress</h1>
+        <h1>{t('progress.title')}</h1>
         <Spinner />
       </div>
     );
@@ -64,8 +66,8 @@ export default function Progress() {
   return (
     <div className="page progress">
       <div className="progress__header">
-        <h1>Progress</h1>
-        <p className="progress__subtitle">Track your achievements and household team progress.</p>
+        <h1>{t('progress.title')}</h1>
+        <p className="progress__subtitle">{t('progress.subtitle')}</p>
       </div>
 
       <div className="progress__grid">
@@ -87,7 +89,7 @@ export default function Progress() {
 
       {badges && badges.badges.length > 0 && (
         <div className="progress__catalog">
-          <BadgeGrid badges={badges.badges} title="All Badges" emptyLabel="No badges available." />
+          <BadgeGrid badges={badges.badges} title={t('progress.allBadges')} emptyLabel={t('progress.noBadgesAvailable')} />
         </div>
       )}
 

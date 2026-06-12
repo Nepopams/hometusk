@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useTasks } from '../hooks/useTasks';
 import { useZones } from '../hooks/useZones';
 import { Button } from '../components/ui';
+import { useI18n } from '../i18n';
 import type { Task } from '../types/api';
 import './Dashboard.css';
 
@@ -39,6 +40,7 @@ function getZoneBadgeClass(zoneName?: string): string {
  */
 export default function Dashboard() {
   const { householdId } = useAuth();
+  const { t } = useI18n();
   const { householdId: householdIdParam } = useParams();
   const activeHouseholdId = householdIdParam ?? householdId ?? undefined;
 
@@ -107,10 +109,10 @@ export default function Dashboard() {
   if (tasksError instanceof ApiError && tasksError.status === 403) {
     return (
       <div className="page">
-        <h1>Access Denied</h1>
-        <p>You do not have access to this household.</p>
+        <h1>{t('common.accessDenied')}</h1>
+        <p>{t('tasks.noAccess')}</p>
         <Link className="button" to="/households">
-          Back to Household Selector
+          {t('common.backToHouseholdSelector')}
         </Link>
       </div>
     );
@@ -122,7 +124,7 @@ export default function Dashboard() {
       <div className="dashboard">
         <div className="dashboard__tasks-col">
           <div className="dashboard__header">
-            <h2 className="dashboard__title">Tasks</h2>
+            <h2 className="dashboard__title">{t('tasks.title')}</h2>
           </div>
           <div className="dashboard__card">
             {[1, 2, 3].map((i) => (
@@ -141,7 +143,7 @@ export default function Dashboard() {
         </div>
         <div className="dashboard__shopping-col">
           <div className="dashboard__header">
-            <h2 className="dashboard__title">Shopping</h2>
+            <h2 className="dashboard__title">{t('dashboard.shopping')}</h2>
           </div>
           <div className="dashboard__card">
             {[1, 2, 3].map((i) => (
@@ -169,8 +171,8 @@ export default function Dashboard() {
             <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
           <div className="dashboard__error-text">
-            <h3 className="dashboard__error-title">Couldn&apos;t load tasks</h3>
-            <p className="dashboard__error-desc">Check your connection and try again.</p>
+            <h3 className="dashboard__error-title">{t('tasks.couldntLoad')}</h3>
+            <p className="dashboard__error-desc">{t('common.checkConnection')}</p>
           </div>
         </div>
         <button type="button" className="dashboard__retry-btn" onClick={() => void refetch()}>
@@ -178,7 +180,7 @@ export default function Dashboard() {
             <polyline points="23 4 23 10 17 10" />
             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
           </svg>
-          Try again
+          {t('common.tryAgain')}
         </button>
       </div>
     </div>
@@ -192,11 +194,11 @@ export default function Dashboard() {
           <path d="M9 11l3 3L22 4" />
           <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
         </svg>
-        <h3 className="dashboard__empty-title">No tasks yet</h3>
-        <p className="dashboard__empty-desc">Create tasks using voice commands or quick add</p>
+        <h3 className="dashboard__empty-title">{t('tasks.noTasksYet')}</h3>
+        <p className="dashboard__empty-desc">{t('tasks.emptyDashboardDesc')}</p>
         <div className="dashboard__empty-actions">
           <Button variant="primary" size="md" fullWidth>
-            Add task
+            {t('tasks.addTask')}
           </Button>
         </div>
       </div>
@@ -236,7 +238,7 @@ export default function Dashboard() {
             )}
             {task.deadline && (
               <span className="dashboard__badge dashboard__badge--due">
-                {formatDeadline(task.deadline)}
+                {formatDeadline(task.deadline, t)}
               </span>
             )}
           </div>
@@ -253,8 +255,8 @@ export default function Dashboard() {
         <circle cx="20" cy="21" r="1" />
         <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
       </svg>
-      <h3 className="dashboard__empty-title">Your list is empty</h3>
-      <p className="dashboard__empty-desc">Type an item and press Enter to add</p>
+      <h3 className="dashboard__empty-title">{t('dashboard.emptyShopping')}</h3>
+      <p className="dashboard__empty-desc">{t('dashboard.emptyShoppingDesc')}</p>
     </div>
   );
 
@@ -286,9 +288,13 @@ export default function Dashboard() {
       {/* Tasks Column */}
       <div className="dashboard__tasks-col">
         <div className="dashboard__header">
-          <h2 className="dashboard__title">Tasks</h2>
+          <h2 className="dashboard__title">{t('tasks.title')}</h2>
           <span className="dashboard__count">
-            {activeTasksCount > 0 ? `${activeTasksCount} active` : doneTasksCount > 0 ? `${doneTasksCount} done` : '0 tasks'}
+            {activeTasksCount > 0
+              ? t('tasks.countActive', { count: activeTasksCount })
+              : doneTasksCount > 0
+                ? t('tasks.countDone', { count: doneTasksCount })
+                : t('tasks.countZero')}
           </span>
         </div>
         {tasksError ? (
@@ -305,18 +311,18 @@ export default function Dashboard() {
       {/* Shopping Column */}
       <div className="dashboard__shopping-col">
         <div className="dashboard__header">
-          <h2 className="dashboard__title">Shopping</h2>
+          <h2 className="dashboard__title">{t('dashboard.shopping')}</h2>
         </div>
         <div className="dashboard__card">
           <form className="dashboard__add-input-row" onSubmit={handleAddShoppingItem}>
             <input
               type="text"
               className="dashboard__add-input"
-              placeholder="Add item…"
+              placeholder={t('dashboard.addItemPlaceholder')}
               value={newItemText}
               onChange={(e) => setNewItemText(e.target.value)}
             />
-            <button type="submit" className="dashboard__add-btn" aria-label="Add item">
+            <button type="submit" className="dashboard__add-btn" aria-label={t('common.addItem')}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
@@ -334,14 +340,14 @@ export default function Dashboard() {
   );
 }
 
-function formatDeadline(deadline: string): string {
+function formatDeadline(deadline: string, t: ReturnType<typeof useI18n>['t']): string {
   const date = new Date(deadline);
   const now = new Date();
   const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Tomorrow';
-  if (diffDays < 0) return `${Math.abs(diffDays)}d overdue`;
-  if (diffDays <= 7) return `In ${diffDays}d`;
+  if (diffDays === 0) return t('common.today');
+  if (diffDays === 1) return t('common.tomorrow');
+  if (diffDays < 0) return t('tasks.overdueDays', { count: Math.abs(diffDays) });
+  if (diffDays <= 7) return t('tasks.inDays', { count: diffDays });
   return date.toLocaleDateString();
 }

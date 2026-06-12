@@ -1,16 +1,20 @@
 import { useState, type FormEvent } from 'react';
-import { signinRedirect } from '../lib/auth/oidc';
+import { registerWithPassword } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { STORAGE_KEYS } from '../lib/constants';
+import { ApiError } from '../lib/errors';
+import type { AuthErrorResponse } from '../types/api';
 import AuthLayout from '../components/auth/AuthLayout';
 import BrandHeader from '../components/auth/BrandHeader';
 import { Card, Button, TextField, PasswordField, ErrorBanner, Divider, TextLink } from '../components/ui';
+import { useI18n, type TranslationKey } from '../i18n';
 import './Register.css';
 
-const ERROR_MESSAGES: Record<string, string> = {
-  registration_failed: 'Registration failed. Please try again.',
-  email_exists: 'An account with this email already exists.',
-  auth_unavailable: 'Authentication service is temporarily unavailable. Please try again later.',
+const ERROR_MESSAGE_KEYS: Record<string, TranslationKey> = {
+  registration_failed: 'auth.registrationFailed',
+  email_exists: 'auth.emailExists',
+  auth_unavailable: 'auth.authUnavailable',
 };
 
 export default function Register() {
@@ -21,12 +25,14 @@ export default function Register() {
   const [passwordError, setPasswordError] = useState('');
   const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { clearError } = useAuth();
+  const { clearError, refetchUser } = useAuth();
+  const { t } = useI18n();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const authProvider = import.meta.env.VITE_AUTH_PROVIDER;
   const errorParam = searchParams.get('error');
-  const errorMessage = errorParam ? ERROR_MESSAGES[errorParam] || 'An error occurred. Please try again.' : null;
+  const errorMessage = errorParam ? t(ERROR_MESSAGE_KEYS[errorParam] ?? 'auth.genericError') : null;
 
   const clearErrorParam = () => {
     if (errorParam) {
@@ -39,11 +45,11 @@ export default function Register() {
   // Validate email format
   const validateEmail = (value: string): string => {
     if (!value.trim()) {
-      return 'Email is required';
+      return t('auth.emailRequired');
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(value)) {
-      return 'Please enter a valid email address';
+      return t('auth.validEmail');
     }
     return '';
   };
@@ -51,10 +57,10 @@ export default function Register() {
   // Validate password (minimum 8 characters)
   const validatePassword = (value: string): string => {
     if (!value) {
-      return 'Password is required';
+      return t('auth.passwordRequired');
     }
     if (value.length < 8) {
-      return 'Password must be at least 8 characters';
+      return t('auth.passwordMin');
     }
     return '';
   };
@@ -76,12 +82,27 @@ export default function Register() {
 
     setLoading(true);
     try {
-      // Redirect to Keycloak for actual registration
-      // Name/email/password are visual - Keycloak handles the real registration
-      await signinRedirect();
+      if (authProvider !== 'keycloak') {
+        throw new Error(t('auth.unsupportedProvider'));
+      }
+
+      await registerWithPassword({
+        name: name.trim() || undefined,
+        email: email.trim(),
+        password,
+      });
+      const profile = await refetchUser();
+
+      if (!profile) {
+        throw new Error(t('auth.profileAfterRegistration'));
+      }
+
+      const storedRedirect = sessionStorage.getItem(STORAGE_KEYS.POST_LOGIN_REDIRECT);
+      sessionStorage.removeItem(STORAGE_KEYS.POST_LOGIN_REDIRECT);
+      navigate(storedRedirect || '/households', { replace: true });
     } catch (err) {
-      console.error('[Register] OIDC redirect failed', err);
-      setFormError('Unable to connect to authentication service. Please try again.');
+      console.error('[Register] Registration failed', err);
+      setFormError(resolveRegisterError(err, t));
       setLoading(false);
     }
   };
@@ -97,11 +118,11 @@ export default function Register() {
             noValidate
           >
             {/* Brand Header */}
-            <BrandHeader tagline="Create your account" />
+            <BrandHeader tagline={t('auth.createYourAccount')} />
 
             {/* Error Banner (form-level errors) */}
             {(errorMessage || formError) && (
-              <ErrorBanner title="Unable to create account">
+              <ErrorBanner title={t('auth.unableCreateAccount')}>
                 {errorMessage || formError}
               </ErrorBanner>
             )}
@@ -109,18 +130,18 @@ export default function Register() {
             {/* Form Fields */}
             <div className="register-form__fields">
               <TextField
-                label="Name"
-                labelSuffix="(optional)"
+                label={t('auth.name')}
+                labelSuffix={t('common.optional')}
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Your name"
+                placeholder={t('auth.yourName')}
                 disabled={loading}
                 autoComplete="name"
                 autoFocus
               />
               <TextField
-                label="Email"
+                label={t('auth.email')}
                 type="email"
                 value={email}
                 onChange={(e) => {
@@ -134,7 +155,7 @@ export default function Register() {
                 autoComplete="email"
               />
               <PasswordField
-                label="Password"
+                label={t('auth.password')}
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
@@ -142,7 +163,7 @@ export default function Register() {
                 }}
                 onBlur={() => setPasswordError(validatePassword(password))}
                 placeholder="••••••••"
-                hint="At least 8 characters"
+                hint={t('auth.passwordHint')}
                 hintPosition="bottom"
                 error={passwordError}
                 disabled={loading}
@@ -160,17 +181,17 @@ export default function Register() {
                 loading={loading}
                 disabled={loading}
               >
-                {loading ? 'Creating account...' : 'Create account'}
+                {loading ? t('auth.creatingAccount') : t('auth.createAccount')}
               </Button>
             </div>
 
             {/* Divider */}
-            <Divider text="or" />
+            <Divider text={t('auth.or')} />
 
             {/* Sign In Link */}
             <div className="register-form__footer">
-              <span className="register-form__footer-text">Already have an account? </span>
-              <TextLink to="/login">Sign in</TextLink>
+              <span className="register-form__footer-text">{t('auth.alreadyHaveAccount')}</span>
+              <TextLink to="/login">{t('auth.signIn')}</TextLink>
             </div>
           </form>
         </Card>
@@ -183,12 +204,12 @@ export default function Register() {
     return (
       <AuthLayout>
         <Card padding="lg">
-          <BrandHeader tagline="Dev Mode" />
-          <ErrorBanner title="Registration Not Available">
-            In dev mode, use the login page to authenticate with a JWT token.
+          <BrandHeader tagline={t('auth.devMode')} />
+          <ErrorBanner title={t('auth.registrationUnavailable')}>
+            {t('auth.devRegistrationHint')}
           </ErrorBanner>
           <div className="register-form__footer" style={{ marginTop: 'var(--spacing-6)' }}>
-            <TextLink to="/login" centered>Go to Login</TextLink>
+            <TextLink to="/login" centered>{t('auth.goToLogin')}</TextLink>
           </div>
         </Card>
       </AuthLayout>
@@ -199,13 +220,30 @@ export default function Register() {
   return (
     <AuthLayout>
       <Card padding="lg">
-        <BrandHeader tagline="Configuration Error" />
-        <ErrorBanner title="Authentication Not Available">
-          VITE_AUTH_PROVIDER must be &apos;dev&apos; or &apos;keycloak&apos;.
+        <BrandHeader tagline={t('auth.configurationError')} />
+        <ErrorBanner title={t('auth.authenticationNotAvailable')}>
+          {t('auth.providerRequired')}
           <br />
-          Current value: {authProvider || 'not set'}
+          {t('auth.currentValue', { value: authProvider || t('auth.notSet') })}
         </ErrorBanner>
       </Card>
     </AuthLayout>
   );
+}
+
+function resolveRegisterError(err: unknown, t: (key: TranslationKey) => string): string {
+  if (err instanceof ApiError) {
+    const body = err.body as Partial<AuthErrorResponse> | null;
+    if (body?.errorCode === 'AUTH_EMAIL_EXISTS' || err.status === 409) {
+      return t('auth.emailExists');
+    }
+    if (body?.errorCode === 'AUTH_PROVIDER_UNAVAILABLE' || err.status === 503) {
+      return t('auth.authUnavailable');
+    }
+    if (err.status === 400) {
+      return t('auth.checkRegistration');
+    }
+  }
+
+  return t('auth.unableCreateAccount');
 }

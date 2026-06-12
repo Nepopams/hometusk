@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { FairnessInfo } from '../../types/api';
+import { useI18n } from '../../i18n';
 
 interface BalanceScoreCardProps {
   fairness: FairnessInfo;
@@ -14,11 +15,12 @@ function getBalanceClass(balance: number | null): string {
 
 export function BalanceScoreCard({ fairness }: BalanceScoreCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const { t } = useI18n();
   const { balance, interpretation, formula } = fairness;
 
   return (
     <div className="card balance-card">
-      <h3>Balance Score</h3>
+      <h3>{t('analytics.balanceScore')}</h3>
       <div className={`balance-value ${getBalanceClass(balance)}`}>
         {balance !== null ? balance : 'N/A'}
       </div>
@@ -29,7 +31,7 @@ export function BalanceScoreCard({ fairness }: BalanceScoreCardProps) {
         onClick={() => setExpanded((prev) => !prev)}
         aria-expanded={expanded}
       >
-        {expanded ? 'Hide calculation' : 'How is this calculated?'}
+        {expanded ? t('analytics.hideCalculation') : t('analytics.howCalculated')}
       </button>
       {expanded && formula && (
         <div className="balance-formula">

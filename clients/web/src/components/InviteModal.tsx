@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type MouseEvent } from 'react';
 import { createInvite } from '../lib/api';
 import { ApiError } from '../lib/errors';
+import { useI18n, type TranslationKey } from '../i18n';
 import type { CreateInviteResponse } from '../types/api';
 
 interface InviteModalProps {
@@ -9,18 +10,24 @@ interface InviteModalProps {
   onClose: () => void;
 }
 
-function formatExpiry(expiresAt: string): string {
+type TFunction = (
+  key: TranslationKey,
+  params?: Record<string, string | number | boolean | null | undefined>
+) => string;
+
+function formatExpiry(expiresAt: string, t: TFunction): string {
   const expiry = new Date(expiresAt);
   const now = new Date();
   const diffMs = expiry.getTime() - now.getTime();
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
-  if (diffDays <= 0) return 'Expired';
-  if (diffDays === 1) return 'Expires in 1 day';
-  return `Expires in ${diffDays} days`;
+  if (diffDays <= 0) return t('common.expired');
+  if (diffDays === 1) return t('invite.expiresOneDay');
+  return t('invite.expiresDays', { count: diffDays });
 }
 
 export default function InviteModal({ householdId, isOpen, onClose }: InviteModalProps) {
+  const { t } = useI18n();
   const [isLoading, setIsLoading] = useState(false);
   const [invite, setInvite] = useState<CreateInviteResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,21 +51,21 @@ export default function InviteModal({ householdId, isOpen, onClose }: InviteModa
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 403) {
-          setError('You are not a member of this household');
+          setError(t('invite.notMember'));
         } else {
           const msg =
             typeof err.body === 'object' && err.body && 'message' in err.body
               ? (err.body as { message?: string }).message
               : undefined;
-          setError(msg || 'Failed to create invite');
+          setError(msg || t('invite.failedCreate'));
         }
       } else {
-        setError('An unexpected error occurred');
+        setError(t('household.unexpectedError'));
       }
     } finally {
       setIsLoading(false);
     }
-  }, [householdId]);
+  }, [householdId, t]);
 
   useEffect(() => {
     if (isOpen && householdId) {
@@ -90,7 +97,7 @@ export default function InviteModal({ householdId, isOpen, onClose }: InviteModa
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      setError('Copy not supported — please select and copy manually');
+      setError(t('invite.copyUnsupported'));
     }
   };
 
@@ -105,22 +112,22 @@ export default function InviteModal({ householdId, isOpen, onClose }: InviteModa
   return (
     <div className="invite-modal__overlay" onClick={handleOverlayClick}>
       <div className="invite-modal__panel" role="dialog" aria-modal="true">
-        <h2>Invite a Member</h2>
+        <h2>{t('invite.memberTitle')}</h2>
 
-        {isLoading && <div className="invite-modal__loading">Creating invite...</div>}
+        {isLoading && <div className="invite-modal__loading">{t('invite.creating')}</div>}
 
         {error && (
           <div className="invite-modal__error" role="alert">
             <p>{error}</p>
             <button type="button" className="ghost-button" onClick={fetchInvite}>
-              Retry
+              {t('common.retry')}
             </button>
           </div>
         )}
 
         {invite && !error && (
           <>
-            <p className="invite-modal__hint">Share this link to invite someone:</p>
+            <p className="invite-modal__hint">{t('invite.shareLink')}</p>
 
             <div className="invite-modal__field">
               <input
@@ -134,17 +141,17 @@ export default function InviteModal({ householdId, isOpen, onClose }: InviteModa
                 className={`button invite-modal__copy ${copied ? 'is-copied' : ''}`}
                 onClick={handleCopy}
               >
-                {copied ? 'Copied!' : 'Copy Link'}
+                {copied ? t('common.copiedBang') : t('invite.copyLink')}
               </button>
             </div>
 
-            <p className="invite-modal__expiry">{formatExpiry(invite.expiresAt)}</p>
+            <p className="invite-modal__expiry">{formatExpiry(invite.expiresAt, t)}</p>
           </>
         )}
 
         <div className="invite-modal__actions">
           <button type="button" className="button" onClick={onClose}>
-            Done
+            {t('invite.done')}
           </button>
         </div>
       </div>

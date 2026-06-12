@@ -10,6 +10,7 @@ import type {
   CommandRequest,
   CommandResponse,
   CreateInviteResponse,
+  LoginRequest,
   GamificationProgress,
   GamificationSettings,
   Household,
@@ -26,6 +27,7 @@ import type {
   TaskFilters,
   UserProfile,
   CreateRoutineRequest,
+  RegisterRequest,
   UpdateRoutineRequest,
   Zone,
 } from '../types/api';
@@ -34,7 +36,13 @@ export type ApiOptions = {
   method?: string;
   body?: unknown;
   headers?: HeadersInit;
+  skipAuthRefresh?: boolean;
+  suppressAuthError?: boolean;
 };
+
+function getApiBaseUrl(): string {
+  return import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '');
+}
 
 export interface NotificationFilters {
   since?: string;
@@ -42,26 +50,42 @@ export interface NotificationFilters {
 }
 
 export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '');
+  const baseUrl = getApiBaseUrl();
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   const url = `${baseUrl}${normalizedPath}`;
 
   const token = getAuthToken();
+  const body = options.body !== undefined ? JSON.stringify(options.body) : undefined;
   const headers: HeadersInit = {
     ...(options.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };
 
-  const response = await fetch(url, {
+  let response = await fetch(url, {
     method: options.method ?? 'GET',
     headers,
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    body,
+    credentials: 'include',
   });
+
+  if (response.status === 401 && !options.skipAuthRefresh && !normalizedPath.startsWith('/auth/')) {
+    const refreshed = await refreshAuthSession().catch(() => false);
+    if (refreshed) {
+      response = await fetch(url, {
+        method: options.method ?? 'GET',
+        headers,
+        body,
+        credentials: 'include',
+      });
+    }
+  }
 
   if (response.status === 401) {
     const errorBody = (await response.json().catch(() => null)) as AuthErrorResponse | null;
-    handleAuthError('session_expired');
+    if (!options.suppressAuthError) {
+      handleAuthError('session_expired');
+    }
     throw new AuthError(errorBody?.message || 'Unauthorized', errorBody?.errorCode);
   }
 
@@ -79,6 +103,17 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
 
 export async function getMe(): Promise<UserProfile> {
   return apiFetch<UserProfile>('/users/me');
+}
+
+export async function getMeOptional(): Promise<UserProfile | null> {
+  try {
+    return await apiFetch<UserProfile>('/users/me', { suppressAuthError: true });
+  } catch (err) {
+    if (err instanceof AuthError) {
+      return null;
+    }
+    throw err;
+  }
 }
 
 function buildQueryString(filters: TaskFilters): string {
@@ -403,8 +438,45 @@ export async function executeCommand(
   });
 }
 
+async function postAuthVoid(path: string, body?: unknown): Promise<void> {
+  const baseUrl = getApiBaseUrl();
+  const response = await fetch(`${baseUrl}${path}`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+
+  if (!response.ok) {
+    const responseBody = await response.json().catch(() => ({}));
+    throw new ApiError(response.status, responseBody);
+  }
+}
+
+async function refreshAuthSession(): Promise<boolean> {
+  const baseUrl = getApiBaseUrl();
+  const response = await fetch(`${baseUrl}/auth/refresh`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+
+  return response.ok;
+}
+
+export async function loginWithPassword(request: LoginRequest): Promise<void> {
+  await postAuthVoid('/auth/login', request);
+}
+
+export async function registerWithPassword(request: RegisterRequest): Promise<void> {
+  await postAuthVoid('/auth/register', request);
+}
+
+export async function logoutAuthSession(): Promise<void> {
+  await postAuthVoid('/auth/logout');
+}
+
 export async function createAuthSession(tokenOverride?: string): Promise<void> {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '');
+  const baseUrl = getApiBaseUrl();
   const token = tokenOverride ?? getAuthToken();
 
   if (!token) {

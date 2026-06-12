@@ -1,16 +1,17 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useI18n, type TranslationKey } from '../../i18n';
 import { createRoutine, updateRoutine } from '../../lib/api';
 import { ApiError } from '../../lib/errors';
 import type {
   AssignmentPolicy,
   CreateRoutineRequest,
   DayOfWeek,
+  HouseholdMember,
   RecurrenceRule,
   RecurrenceType,
   Routine,
   UpdateRoutineRequest,
   Zone,
-  HouseholdMember,
 } from '../../types/api';
 import { Button } from '../ui';
 import Modal from '../ui/Modal';
@@ -26,14 +27,14 @@ const WEEK_DAYS: DayOfWeek[] = [
   'SUNDAY',
 ];
 
-const DAY_LABELS: Record<DayOfWeek, string> = {
-  MONDAY: 'Mon',
-  TUESDAY: 'Tue',
-  WEDNESDAY: 'Wed',
-  THURSDAY: 'Thu',
-  FRIDAY: 'Fri',
-  SATURDAY: 'Sat',
-  SUNDAY: 'Sun',
+const DAY_LABELS: Record<DayOfWeek, TranslationKey> = {
+  MONDAY: 'day.mon',
+  TUESDAY: 'day.tue',
+  WEDNESDAY: 'day.wed',
+  THURSDAY: 'day.thu',
+  FRIDAY: 'day.fri',
+  SATURDAY: 'day.sat',
+  SUNDAY: 'day.sun',
 };
 
 interface RoutineFormProps {
@@ -57,6 +58,7 @@ export default function RoutineForm({
   onClose,
   onSaved,
 }: RoutineFormProps) {
+  const { t } = useI18n();
   const isEdit = Boolean(routine);
 
   const [title, setTitle] = useState('');
@@ -110,33 +112,31 @@ export default function RoutineForm({
       return;
     }
 
-    if (routine) {
-      setTitle(routine.title);
-      setDescription(routine.description ?? '');
-      setZoneId(routine.zone?.id || '');
-      setAssignmentPolicy(routine.assignmentPolicy);
-      setFixedAssigneeId(routine.fixedAssignee?.id || '');
-      setFrequencyType(routine.recurrenceRule.type);
+    setTitle(routine.title);
+    setDescription(routine.description ?? '');
+    setZoneId(routine.zone?.id || '');
+    setAssignmentPolicy(routine.assignmentPolicy);
+    setFixedAssigneeId(routine.fixedAssignee?.id || '');
+    setFrequencyType(routine.recurrenceRule.type);
 
-      switch (routine.recurrenceRule.type) {
-        case 'WEEKLY':
-          setDaysOfWeek(routine.recurrenceRule.daysOfWeek || []);
-          break;
-        case 'MONTHLY':
-          setDayOfMonth(routine.recurrenceRule.dayOfMonth || 1);
-          break;
-        case 'EVERY_N_DAYS':
-          setInterval(routine.recurrenceRule.interval || 2);
-          break;
-        default:
-          break;
-      }
+    switch (routine.recurrenceRule.type) {
+      case 'WEEKLY':
+        setDaysOfWeek(routine.recurrenceRule.daysOfWeek || []);
+        break;
+      case 'MONTHLY':
+        setDayOfMonth(routine.recurrenceRule.dayOfMonth || 1);
+        break;
+      case 'EVERY_N_DAYS':
+        setInterval(routine.recurrenceRule.interval || 2);
+        break;
+      default:
+        break;
     }
   }, [open, routine]);
 
   const handleToggleDay = (day: DayOfWeek) => {
     setDaysOfWeek((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+      prev.includes(day) ? prev.filter((current) => current !== day) : [...prev, day]
     );
   };
 
@@ -149,27 +149,27 @@ export default function RoutineForm({
     const trimmedTitle = title.trim();
 
     if (!trimmedTitle) {
-      setTitleError('Title is required');
+      setTitleError(t('routines.titleRequired'));
       valid = false;
     }
 
     if (frequencyType === 'WEEKLY' && daysOfWeek.length === 0) {
-      setFrequencyError('Select at least one day');
+      setFrequencyError(t('routines.selectOneDay'));
       valid = false;
     }
 
     if (frequencyType === 'MONTHLY' && (dayOfMonth < 1 || dayOfMonth > 31)) {
-      setFrequencyError('Select a valid day of month');
+      setFrequencyError(t('routines.validMonthDay'));
       valid = false;
     }
 
     if (frequencyType === 'EVERY_N_DAYS' && interval < 1) {
-      setFrequencyError('Interval must be at least 1');
+      setFrequencyError(t('routines.intervalMin'));
       valid = false;
     }
 
     if (assignmentPolicy === 'FIXED' && !fixedAssigneeId) {
-      setPolicyError('Select a household member');
+      setPolicyError(t('routines.selectMember'));
       valid = false;
     }
 
@@ -200,7 +200,6 @@ export default function RoutineForm({
 
     const trimmedTitle = title.trim();
     const trimmedDescription = description.trim();
-
     const recurrenceRule = buildRecurrenceRule();
     const zoneValue = zoneId || undefined;
     const assigneeValue = assignmentPolicy === 'FIXED' ? fixedAssigneeId || undefined : undefined;
@@ -239,9 +238,9 @@ export default function RoutineForm({
           typeof err.body === 'object' && err.body !== null && 'message' in err.body
             ? (err.body as { message?: string }).message
             : undefined;
-        setFormError(msg || 'Unable to save routine. Please try again.');
+        setFormError(msg || t('routines.saveUnable'));
       } else {
-        setFormError('Unable to save routine. Please try again.');
+        setFormError(t('routines.saveUnable'));
       }
     } finally {
       setIsSubmitting(false);
@@ -249,15 +248,14 @@ export default function RoutineForm({
   };
 
   const isFixedPolicy = assignmentPolicy === 'FIXED';
-
   const hasFieldErrors = Boolean(titleError || frequencyError || policyError);
 
   return (
     <Modal
       open={open}
       onClose={onClose}
-      title={isEdit ? 'Edit routine' : 'Create routine'}
-      aria-label={isEdit ? 'Edit routine' : 'Create routine'}
+      title={isEdit ? t('routines.edit') : t('routines.create')}
+      aria-label={isEdit ? t('routines.edit') : t('routines.create')}
       size="lg"
       closeOnBackdrop={!isSubmitting}
       closeOnEscape={!isSubmitting}
@@ -265,14 +263,14 @@ export default function RoutineForm({
       <form className="routine-form" onSubmit={handleSubmit}>
         {(formError || hasFieldErrors) && (
           <div className="routine-form__error-banner" role="alert">
-            <span className="routine-form__error-icon">⚠</span>
-            <span>{formError || 'Please fix the errors above to continue.'}</span>
+            <span className="routine-form__error-icon">!</span>
+            <span>{formError || t('routines.fixErrors')}</span>
           </div>
         )}
 
         <div className="routine-form__section">
           <label className="routine-form__label" htmlFor="routine-title">
-            Title
+            {t('routines.titleField')}
             <span className="routine-form__required"> *</span>
           </label>
           <input
@@ -280,7 +278,7 @@ export default function RoutineForm({
             className={`routine-form__input ${titleError ? 'routine-form__input--error' : ''}`}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Clean kitchen"
+            placeholder={t('routines.titlePlaceholder')}
             disabled={isSubmitting}
             maxLength={255}
           />
@@ -289,14 +287,15 @@ export default function RoutineForm({
 
         <div className="routine-form__section">
           <label className="routine-form__label" htmlFor="routine-description">
-            Description <span className="routine-form__optional">(optional)</span>
+            {t('common.description')}{' '}
+            <span className="routine-form__optional">{t('common.optional')}</span>
           </label>
           <textarea
             id="routine-description"
             className="routine-form__textarea"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Add a helpful note"
+            placeholder={t('routines.descriptionPlaceholder')}
             disabled={isSubmitting}
             rows={3}
           />
@@ -304,7 +303,8 @@ export default function RoutineForm({
 
         <div className="routine-form__section">
           <label className="routine-form__label" htmlFor="routine-zone">
-            Zone <span className="routine-form__optional">(optional)</span>
+            {t('common.zone')}{' '}
+            <span className="routine-form__optional">{t('common.optional')}</span>
           </label>
           <select
             id="routine-zone"
@@ -313,7 +313,7 @@ export default function RoutineForm({
             onChange={(e) => setZoneId(e.target.value)}
             disabled={isSubmitting || isLookupsLoading}
           >
-            <option value="">No zone</option>
+            <option value="">{t('routines.noZone')}</option>
             {zoneOptions.map((zone) => (
               <option key={zone.id} value={zone.id}>
                 {zone.name}
@@ -323,7 +323,7 @@ export default function RoutineForm({
         </div>
 
         <div className="routine-form__section">
-          <div className="routine-form__label">Frequency</div>
+          <div className="routine-form__label">{t('routines.frequency')}</div>
           <div className="routine-form__radio-group">
             <label className="routine-form__radio">
               <input
@@ -334,7 +334,7 @@ export default function RoutineForm({
                 onChange={() => setFrequencyType('DAILY')}
                 disabled={isSubmitting}
               />
-              Daily
+              {t('routines.daily')}
             </label>
             <label className="routine-form__radio">
               <input
@@ -345,7 +345,7 @@ export default function RoutineForm({
                 onChange={() => setFrequencyType('WEEKLY')}
                 disabled={isSubmitting}
               />
-              Weekly
+              {t('routines.weekly')}
             </label>
             <label className="routine-form__radio">
               <input
@@ -356,7 +356,7 @@ export default function RoutineForm({
                 onChange={() => setFrequencyType('MONTHLY')}
                 disabled={isSubmitting}
               />
-              Monthly
+              {t('routines.monthly')}
             </label>
             <label className="routine-form__radio">
               <input
@@ -367,13 +367,13 @@ export default function RoutineForm({
                 onChange={() => setFrequencyType('EVERY_N_DAYS')}
                 disabled={isSubmitting}
               />
-              Every N days
+              {t('routines.everyNDays')}
             </label>
           </div>
 
           {frequencyType === 'WEEKLY' && (
             <div className="routine-form__subsection">
-              <div className="routine-form__helper">Select days of the week</div>
+              <div className="routine-form__helper">{t('routines.selectDays')}</div>
               <div className="routine-form__checkbox-grid">
                 {WEEK_DAYS.map((day) => (
                   <label key={day} className="routine-form__checkbox">
@@ -383,7 +383,7 @@ export default function RoutineForm({
                       onChange={() => handleToggleDay(day)}
                       disabled={isSubmitting}
                     />
-                    {DAY_LABELS[day]}
+                    {t(DAY_LABELS[day])}
                   </label>
                 ))}
               </div>
@@ -393,7 +393,7 @@ export default function RoutineForm({
           {frequencyType === 'MONTHLY' && (
             <div className="routine-form__subsection">
               <label className="routine-form__label" htmlFor="routine-day-of-month">
-                Day of month
+                {t('routines.dayOfMonth')}
               </label>
               <select
                 id="routine-day-of-month"
@@ -414,7 +414,7 @@ export default function RoutineForm({
           {frequencyType === 'EVERY_N_DAYS' && (
             <div className="routine-form__subsection">
               <label className="routine-form__label" htmlFor="routine-interval">
-                Interval (days)
+                {t('routines.intervalDays')}
               </label>
               <input
                 id="routine-interval"
@@ -433,7 +433,7 @@ export default function RoutineForm({
         </div>
 
         <div className="routine-form__section">
-          <div className="routine-form__label">Assignment policy</div>
+          <div className="routine-form__label">{t('routines.assignmentPolicy')}</div>
           <div className="routine-form__radio-group">
             <label className="routine-form__radio">
               <input
@@ -444,7 +444,7 @@ export default function RoutineForm({
                 onChange={() => setAssignmentPolicy('ROUND_ROBIN')}
                 disabled={isSubmitting}
               />
-              Round-robin
+              {t('routines.roundRobin')}
             </label>
             <label className="routine-form__radio">
               <input
@@ -455,7 +455,7 @@ export default function RoutineForm({
                 onChange={() => setAssignmentPolicy('FIXED')}
                 disabled={isSubmitting}
               />
-              Fixed
+              {t('routines.fixed')}
             </label>
             <label className="routine-form__radio">
               <input
@@ -466,14 +466,14 @@ export default function RoutineForm({
                 onChange={() => setAssignmentPolicy('MANUAL')}
                 disabled={isSubmitting}
               />
-              Manual
+              {t('routines.manual')}
             </label>
           </div>
 
           {isFixedPolicy && (
             <div className="routine-form__subsection">
               <label className="routine-form__label" htmlFor="routine-assignee">
-                Fixed assignee
+                {t('routines.fixedAssignee')}
               </label>
               <select
                 id="routine-assignee"
@@ -482,7 +482,7 @@ export default function RoutineForm({
                 onChange={(e) => setFixedAssigneeId(e.target.value)}
                 disabled={isSubmitting || isLookupsLoading}
               >
-                <option value="">Select a member</option>
+                <option value="">{t('routines.selectMember')}</option>
                 {memberOptions.map((member) => (
                   <option key={member.userId} value={member.userId}>
                     {member.displayName}
@@ -497,10 +497,10 @@ export default function RoutineForm({
 
         <div className="routine-form__actions">
           <Button type="button" variant="ghost" size="md" onClick={onClose} disabled={isSubmitting}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="submit" variant="primary" size="md" loading={isSubmitting}>
-            {isEdit ? 'Save changes' : 'Create routine'}
+            {isEdit ? t('common.saveChanges') : t('routines.create')}
           </Button>
         </div>
       </form>

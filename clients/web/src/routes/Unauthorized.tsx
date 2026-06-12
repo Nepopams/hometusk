@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui';
+import { useI18n } from '../i18n';
 import './Unauthorized.css';
 
 /**
@@ -13,6 +14,7 @@ import './Unauthorized.css';
  */
 export default function Unauthorized() {
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   const handleSignIn = () => {
     navigate('/login');
@@ -36,9 +38,9 @@ export default function Unauthorized() {
 
         {/* Text section */}
         <div className="unauthorized-page__text">
-          <h1 className="unauthorized-page__title">Please sign in to continue</h1>
+          <h1 className="unauthorized-page__title">{t('error.unauthorizedTitle')}</h1>
           <p className="unauthorized-page__subtitle">
-            Sign in to access your household tasks and stay organized.
+            {t('error.unauthorizedSubtitle')}
           </p>
         </div>
 
@@ -50,7 +52,7 @@ export default function Unauthorized() {
             fullWidth
             onClick={handleSignIn}
           >
-            Sign in
+            {t('auth.signIn')}
           </Button>
           <Button
             variant="secondary"
@@ -58,7 +60,7 @@ export default function Unauthorized() {
             fullWidth
             onClick={handleCreateAccount}
           >
-            Create account
+            {t('auth.createAccount')}
           </Button>
         </div>
       </div>

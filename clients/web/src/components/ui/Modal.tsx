@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode, type KeyboardEvent } from 'react';
+import { useI18n } from '../../i18n';
 import './Modal.css';
 
 interface ModalProps {
@@ -48,6 +49,7 @@ export default function Modal({
 }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<Element | null>(null);
+  const { t } = useI18n();
 
   // Handle Escape key
   useEffect(() => {
@@ -142,7 +144,7 @@ export default function Modal({
                 type="button"
                 className="modal__close"
                 onClick={onClose}
-                aria-label="Close modal"
+                aria-label={t('common.close')}
               >
                 <svg
                   width="24"

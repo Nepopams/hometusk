@@ -1,29 +1,32 @@
 import type { MemberStats } from '../../types/api';
+import { useI18n } from '../../i18n';
 
 interface MemberStatsListProps {
   members: MemberStats[];
 }
 
 export function MemberStatsList({ members }: MemberStatsListProps) {
+  const { t } = useI18n();
+
   if (members.length === 0) {
     return (
       <div className="card">
-        <h3>Member Contributions</h3>
-        <p className="analytics-empty">No member data available.</p>
+        <h3>{t('analytics.memberContributions')}</h3>
+        <p className="analytics-empty">{t('analytics.noMemberData')}</p>
       </div>
     );
   }
 
   return (
     <div className="card">
-      <h3>Member Contributions</h3>
+      <h3>{t('analytics.memberContributions')}</h3>
       <table className="analytics-table">
         <thead>
           <tr>
-            <th>Member</th>
-            <th>Completed</th>
-            <th>Open</th>
-            <th>Overdue</th>
+            <th>{t('analytics.member')}</th>
+            <th>{t('analytics.completed')}</th>
+            <th>{t('analytics.open')}</th>
+            <th>{t('analytics.overdue')}</th>
           </tr>
         </thead>
         <tbody>

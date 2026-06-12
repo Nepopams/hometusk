@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useParams } from 'react-router-dom';
+import { useI18n } from '../../i18n';
 import InviteModal from '../InviteModal';
 
 const getLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -7,40 +8,41 @@ const getLinkClass = ({ isActive }: { isActive: boolean }) =>
 
 export default function Sidebar() {
   const { householdId } = useParams();
+  const { t } = useI18n();
   const basePath = `/households/${householdId ?? 'demo'}`;
   const [isInviteOpen, setIsInviteOpen] = useState(false);
 
   return (
     <aside className="app-sidebar">
       <div className="app-sidebar__section">
-        <div className="app-sidebar__title">Navigation</div>
+        <div className="app-sidebar__title">{t('nav.navigation')}</div>
         <nav className="app-nav">
           <NavLink className={getLinkClass} to={`${basePath}/tasks`}>
-            Tasks
+            {t('nav.tasks')}
           </NavLink>
           <NavLink className={getLinkClass} to={`${basePath}/routines`}>
-            Routines
+            {t('nav.routines')}
           </NavLink>
           <NavLink className={getLinkClass} to={`${basePath}/analytics`}>
-            Analytics
+            {t('nav.analytics')}
           </NavLink>
           <NavLink className={getLinkClass} to={`${basePath}/progress`}>
-            Progress
+            {t('nav.progress')}
           </NavLink>
           <NavLink className={getLinkClass} to={`${basePath}/zones`}>
-            Zones
+            {t('nav.zones')}
           </NavLink>
           <NavLink className={getLinkClass} to={`${basePath}/notifications`}>
-            Notifications
+            {t('nav.notifications')}
           </NavLink>
           <NavLink className={getLinkClass} to={`${basePath}/members`}>
-            Members
+            {t('nav.members')}
           </NavLink>
         </nav>
       </div>
 
       <div className="app-sidebar__section">
-        <div className="app-sidebar__title">Actions</div>
+        <div className="app-sidebar__title">{t('nav.actions')}</div>
         <div className="app-sidebar__actions">
           <button
             type="button"
@@ -48,7 +50,7 @@ export default function Sidebar() {
             onClick={() => setIsInviteOpen(true)}
             disabled={!householdId}
           >
-            + Invite Member
+            {t('nav.inviteMember')}
           </button>
         </div>
       </div>

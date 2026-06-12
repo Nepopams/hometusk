@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useI18n } from '../../i18n';
 import type { Routine } from '../../types/api';
 import { Button } from '../ui';
 import Modal from '../ui/Modal';
@@ -19,6 +20,7 @@ export default function PauseResumeButton({
   onPause,
   onResume,
 }: Props) {
+  const { t } = useI18n();
   const [showConfirm, setShowConfirm] = useState(false);
 
   if (routine.status === 'DELETED') {
@@ -43,7 +45,7 @@ export default function PauseResumeButton({
         loading={isResuming}
         disabled={isPausing}
       >
-        Resume
+        {t('routines.resume')}
       </Button>
     );
   }
@@ -57,31 +59,25 @@ export default function PauseResumeButton({
         loading={isPausing}
         disabled={isResuming}
       >
-        Pause
+        {t('routines.pause')}
       </Button>
 
       <Modal
         open={showConfirm}
         onClose={() => setShowConfirm(false)}
-        title="Pause routine"
-        aria-label="Pause routine"
+        title={t('routines.pauseRoutine')}
+        aria-label={t('routines.pauseRoutine')}
         size="sm"
       >
         <div className="pause-confirm">
-          <p className="pause-confirm__message">
-            Pause this routine? No new tasks will be created while paused.
-          </p>
+          <p className="pause-confirm__message">{t('routines.pauseMessage')}</p>
           <p className="pause-confirm__name">&quot;{routine.title}&quot;</p>
           <div className="pause-confirm__actions">
             <Button variant="ghost" size="md" onClick={() => setShowConfirm(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
-            <button
-              type="button"
-              className="pause-confirm__btn"
-              onClick={handleConfirmPause}
-            >
-              Pause
+            <button type="button" className="pause-confirm__btn" onClick={handleConfirmPause}>
+              {t('routines.pause')}
             </button>
           </div>
         </div>

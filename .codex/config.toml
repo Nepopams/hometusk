@@ -1,0 +1,9 @@
+# Project-scoped Codex configuration for HomeTusk.
+# Keep sandbox/approval choices user-controlled; this file only tunes shared
+# instruction loading and subagent fan-out limits.
+
+project_doc_max_bytes = 65536
+
+[agents]
+max_threads = 4
+max_depth = 1

@@ -116,7 +116,9 @@
       "defaultClientScopes": [
         "openid",
         "profile",
-        "email"
+        "email",
+        "roles",
+        "offline_access"
       ],
       "optionalClientScopes": []
     },
@@ -134,10 +136,30 @@
       "serviceAccountsEnabled": true,
       "authorizationServicesEnabled": false,
       "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "hometusk realm-management client roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-client-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "usermodel.clientRoleMapping.clientId": "realm-management",
+            "usermodel.clientRoleMapping.rolePrefix": "",
+            "claim.name": "resource_access.realm-management.roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "userinfo.token.claim": "false"
+          }
+        }
+      ],
       "defaultClientScopes": [
         "openid",
         "profile",
-        "email"
+        "email",
+        "roles",
+        "offline_access"
       ]
     }
   ],
@@ -244,12 +266,22 @@
           }
         }
       ]
+    },
+    {
+      "name": "offline_access",
+      "description": "Offline access scope for refresh tokens",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "true"
+      }
     }
   ],
   "defaultDefaultClientScopes": [
     "openid",
     "profile",
-    "email"
+    "email",
+    "offline_access"
   ],
   "defaultOptionalClientScopes": [],
   "browserSecurityHeaders": {

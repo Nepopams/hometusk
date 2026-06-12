@@ -1,15 +1,10 @@
 import type { ReactNode } from 'react';
 import { createContext, useCallback, useEffect, useRef, useState } from 'react';
-import { createAuthSession, getMe } from '../lib/api';
+import { createAuthSession, getMe, getMeOptional, logoutAuthSession } from '../lib/api';
 import { STORAGE_KEYS } from '../lib/constants';
 import { AuthError } from '../lib/errors';
 import type { UserProfile } from '../types/api';
 import { setAuthErrorHandler, setTokenGetter } from '../lib/auth/tokenProvider';
-import {
-  getUser as getOidcUser,
-  registerTokenEvents,
-  removeUser as removeOidcUser,
-} from '../lib/auth/oidc';
 
 type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated';
 type AuthErrorCode = 'session_expired' | 'auth_unavailable' | 'auth_failed' | null;
@@ -22,7 +17,7 @@ interface AuthContextType {
   householdId: string | null;
   error: AuthErrorCode;
   login: (token: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   selectHousehold: (id: string) => void;
   refetchUser: () => Promise<UserProfile | null>;
   clearError: () => void;
@@ -52,26 +47,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    if (isKeycloakMode) {
+      try {
+        await logoutAuthSession();
+      } catch (err) {
+        console.warn('[Auth] Failed to clear backend auth session:', err);
+      }
+    }
+
     localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
     sessionStorage.removeItem(STORAGE_KEYS.HOUSEHOLD_ID);
     setToken(null);
     setUser(null);
     setHouseholdId(null);
     setStatus('unauthenticated');
-
-    if (isKeycloakMode) {
-      try {
-        await removeOidcUser();
-      } catch (err) {
-        console.error('[Auth] Failed to remove OIDC user:', err);
-      }
-    }
   }, [isKeycloakMode]);
 
   const handleAuthErrorInternal = useCallback(
     (reason?: string) => {
       setError((reason as AuthErrorCode) ?? 'session_expired');
-      logout();
+      void logout();
     },
     [logout]
   );
@@ -98,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [handleAuthErrorInternal]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || isKeycloakMode) return;
 
     let isMounted = true;
 
@@ -117,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       isMounted = false;
     };
-  }, [token]);
+  }, [token, isKeycloakMode]);
 
   useEffect(() => {
     if (!isKeycloakMode) return;
@@ -126,31 +121,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     async function initKeycloakAuth() {
       try {
-        const oidcUser = await getOidcUser();
+        const profile = await getMeOptional();
 
         if (!isMounted) return;
 
-        if (oidcUser?.access_token) {
-          setToken(oidcUser.access_token);
-
-          try {
-            const profile = await getMe();
-            if (!isMounted) return;
-
-            setUser(profile);
-            setStatus('authenticated');
-            reconcileHouseholdSelection(profile);
-          } catch (err) {
-            if (!isMounted) return;
-            console.error('[Auth] Failed to fetch profile:', err);
-            handleAuthErrorInternal('auth_failed');
-          }
+        if (profile) {
+          setToken(null);
+          setUser(profile);
+          setStatus('authenticated');
+          reconcileHouseholdSelection(profile);
         } else {
           setStatus('unauthenticated');
         }
       } catch (err) {
         if (!isMounted) return;
-        console.error('[Auth] Failed to get OIDC user:', err);
+        console.error('[Auth] Failed to initialize backend auth session:', err);
         setStatus('unauthenticated');
       }
     }
@@ -160,45 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       isMounted = false;
     };
-  }, [isKeycloakMode, handleAuthErrorInternal, reconcileHouseholdSelection]);
-
-  useEffect(() => {
-    if (!isKeycloakMode) return;
-
-    const cleanup = registerTokenEvents(
-      () => {
-        console.log('[Auth] Token expiring, attempting silent refresh...');
-      },
-      () => {
-        console.log('[Auth] Token expired');
-        handleAuthErrorInternal('session_expired');
-      },
-      (err) => {
-        console.error('[Auth] Silent renew failed:', err);
-        handleAuthErrorInternal('session_expired');
-      }
-    );
-
-    return cleanup;
-  }, [isKeycloakMode, handleAuthErrorInternal]);
-
-  useEffect(() => {
-    if (!isKeycloakMode) return;
-
-    const checkUserToken = async () => {
-      try {
-        const oidcUser = await getOidcUser();
-        if (oidcUser?.access_token && oidcUser.access_token !== tokenRef.current) {
-          setToken(oidcUser.access_token);
-        }
-      } catch (err) {
-        console.error('[Auth] Failed to refresh OIDC user token:', err);
-      }
-    };
-
-    const interval = setInterval(checkUserToken, 30000);
-    return () => clearInterval(interval);
-  }, [isKeycloakMode]);
+  }, [isKeycloakMode, reconcileHouseholdSelection]);
 
   const login = useCallback(
     async (newToken: string) => {
@@ -218,7 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setStatus('authenticated');
         reconcileHouseholdSelection(profile);
       } catch (err) {
-        logout();
+        void logout();
         throw err;
       }
     },
@@ -237,7 +184,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })
         .catch((err) => {
           if (err instanceof AuthError) {
-            logout();
+            void logout();
           } else {
             setStatus('unauthenticated');
           }
@@ -256,11 +203,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const profile = await getMe();
       setUser(profile);
+      setStatus('authenticated');
       reconcileHouseholdSelection(profile);
       return profile;
     } catch (err) {
       if (err instanceof AuthError) {
-        logout();
+        void logout();
       }
       return null;
     }

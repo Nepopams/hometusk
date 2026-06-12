@@ -234,6 +234,116 @@ paths:
               schema:
                 $ref: '#/components/schemas/CommandErrorResponse'
 
+  /auth/login:
+    post:
+      operationId: loginWithPassword
+      summary: Login with email and password
+      description: |
+        Authenticates against Keycloak and sets HttpOnly access/refresh cookies.
+      tags:
+        - Auth
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '204':
+          description: Auth cookies set
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '503':
+          description: Authentication provider unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+
+  /auth/register:
+    post:
+      operationId: registerWithPassword
+      summary: Register with email and password
+      description: |
+        Creates an enabled Keycloak user, assigns the default user role, then logs the user in by setting HttpOnly cookies.
+      tags:
+        - Auth
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '204':
+          description: User created and auth cookies set
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '409':
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '503':
+          description: Authentication provider unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+
+  /auth/refresh:
+    post:
+      operationId: refreshAuthSession
+      summary: Refresh auth cookies
+      description: Uses the HttpOnly refresh cookie to renew access/refresh cookies.
+      tags:
+        - Auth
+      security: []
+      responses:
+        '204':
+          description: Auth cookies refreshed
+        '401':
+          description: Refresh required or refresh token invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '503':
+          description: Authentication provider unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+
+  /auth/logout:
+    post:
+      operationId: logoutAuthSession
+      summary: Logout and clear auth cookies
+      description: Best-effort logout from Keycloak, then clears local auth cookies.
+      tags:
+        - Auth
+      security: []
+      responses:
+        '204':
+          description: Auth cookies cleared
+
   /auth/session:
     post:
       operationId: createAuthSession
@@ -1013,6 +1123,35 @@ components:
       description: Keycloak JWT token
 
   schemas:
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 1
+
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        name:
+          type: string
+          maxLength: 120
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+
     # Command Request/Response
     CommandRequest:
       type: object
@@ -1348,14 +1487,31 @@ components:
         - errorCode
         - message
       properties:
+        correlationId:
+          type: string
+          format: uuid
+          nullable: true
         errorCode:
           type: string
           enum:
             - AUTH_TOKEN_MISSING
             - AUTH_TOKEN_INVALID
             - AUTH_TOKEN_EXPIRED
+            - AUTH_INVALID_CREDENTIALS
+            - AUTH_EMAIL_EXISTS
+            - AUTH_REFRESH_REQUIRED
+            - AUTH_PROVIDER_UNAVAILABLE
+            - SCHEMA_INVALID
         message:
           type: string
+        validationErrors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+        violations:
+          type: array
+          items:
+            $ref: '#/components/schemas/BusinessViolation'
 
     # Domain entities
     UserProfile:

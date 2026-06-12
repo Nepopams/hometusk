@@ -1,4 +1,5 @@
 import './BrandHeader.css';
+import { useI18n } from '../../i18n';
 
 interface BrandHeaderProps {
   /** Tagline text below brand name */
@@ -12,7 +13,10 @@ interface BrandHeaderProps {
  * <BrandHeader tagline="Welcome back" />
  * <BrandHeader tagline="Create your account" />
  */
-export default function BrandHeader({ tagline = 'Welcome back' }: BrandHeaderProps) {
+export default function BrandHeader({ tagline }: BrandHeaderProps) {
+  const { t } = useI18n();
+  const resolvedTagline = tagline ?? t('auth.welcomeBack');
+
   return (
     <div className="brand-header">
       <div className="brand-header__logo">
@@ -20,7 +24,7 @@ export default function BrandHeader({ tagline = 'Welcome back' }: BrandHeaderPro
         <div className="brand-header__mark" aria-hidden="true">H</div>
         <span className="brand-header__name">HomeTusk</span>
       </div>
-      {tagline && <p className="brand-header__tagline">{tagline}</p>}
+      {resolvedTagline && <p className="brand-header__tagline">{resolvedTagline}</p>}
     </div>
   );
 }

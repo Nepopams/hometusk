@@ -26,7 +26,7 @@ This index tracks all architecture and flow diagrams in the project.
 
 ## When to Update
 
-Run `diagram-steward` agent when:
+Use `hometusk-adr-diagram-governance` when:
 - New service/component added
 - Service boundaries change
 - Integration points change
@@ -36,4 +36,4 @@ Run `diagram-steward` agent when:
 
 ---
 
-**Maintenance**: Update this index when running diagram-steward agent or manually adding diagrams.
+**Maintenance**: Update this index when using `hometusk-adr-diagram-governance` or manually adding diagrams.

@@ -329,7 +329,39 @@ Realm-export уже содержит пользователей `alice`, `bob`, 
 3. Credentials → Set password (Temporary: OFF)
 4. Role mapping → Assign role `user`
 
-### 6.4. Убрать временный порт
+### 6.4. Выдать backend service account права на регистрацию
+
+Backend-cookie auth flow создает пользователей через Keycloak Admin API. Для этого client `hometusk-backend` должен иметь роли `realm-management:manage-users` и `realm-management:view-users`.
+
+Выполните один раз после импорта realm:
+
+```bash
+cd /opt/hometusk/hometusk/infra/uat
+docker compose exec -T keycloak sh < keycloak/configure-auth-service-account.sh
+```
+
+Required `realm-management` client roles: `manage-users`, `view-users`, `view-realm`, `query-users`.
+Required client setting: `hometusk-backend.fullScopeAllowed=true`.
+Required default client scope: `roles`.
+Required protocol mapper: `hometusk realm-management client roles` on `hometusk-backend`.
+Required token issuer: `https://$DOMAIN/realms/hometusk`.
+Required Keycloak container env: `KC_HOSTNAME_URL=https://$DOMAIN`.
+Required realm attribute: `frontendUrl=https://$DOMAIN`.
+
+Проверка:
+
+```bash
+docker compose exec -T keycloak sh -lc '
+KC=/opt/keycloak/bin/kcadm.sh
+$KC config credentials --server http://localhost:8080 --realm master --user "$KEYCLOAK_ADMIN" --password "$KEYCLOAK_ADMIN_PASSWORD" >/dev/null
+CLIENT_UUID=$($KC get clients -r hometusk -q clientId=hometusk-backend --fields id --format csv | tail -n 1 | tr -d "\"")
+REALM_MANAGEMENT_UUID=$($KC get clients -r hometusk -q clientId=realm-management --fields id --format csv | tail -n 1 | tr -d "\"")
+SERVICE_ACCOUNT_USER_ID=$($KC get clients/$CLIENT_UUID/service-account-user -r hometusk --fields id --format csv | tail -n 1 | tr -d "\"")
+$KC get users/$SERVICE_ACCOUNT_USER_ID/role-mappings/clients/$REALM_MANAGEMENT_UUID/composite -r hometusk --fields name
+'
+```
+
+### 6.5. Убрать временный порт
 
 Если пробрасывали порт Keycloak, уберите `ports` из docker-compose.yml и перезапустите:
 
@@ -461,6 +493,10 @@ DOMAIN="uat.hometusk.example.com"
 curl -s -o /dev/null -w "%{http_code}" http://$DOMAIN/
 # Ожидание: 200 (или 301 если SSL включен)
 
+# Nginx health
+curl -s http://$DOMAIN/healthz
+# Ожидание: ok
+
 # Backend health
 curl -s http://$DOMAIN/actuator/health | python3 -m json.tool
 # Ожидание: {"status":"UP"}
@@ -472,15 +508,22 @@ curl -s http://$DOMAIN/realms/hometusk/.well-known/openid-configuration | python
 # Backend API (без токена — 401)
 curl -s -o /dev/null -w "%{http_code}" http://$DOMAIN/api/v1/households
 # Ожидание: 401
+
+# Backend-cookie login (Set-Cookie)
+curl -i -s -X POST "http://$DOMAIN/api/v1/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"alice@test.local","password":"alice123"}' \
+  | grep -i 'set-cookie'
+# Ожидание: hometusk_token и hometusk_refresh_token
 ```
 
 ### 8.2. Проверка в браузере
 
 1. Открыть `http(s)://uat.hometusk.example.com/`
 2. Должна загрузиться страница входа HomeTusk
-3. Нажать "Войти" — перенаправление на Keycloak
-4. Ввести alice / alice123
-5. Перенаправление обратно в приложение
+3. Ввести `alice@test.local` / `alice123` в форму HomeTusk
+4. Нажать "Sign in" — без redirect на Keycloak
+5. Убедиться, что открылся внутренний UI
 6. Убедиться, что нет ошибок в DevTools Console
 
 ### 8.3. Проверка из CLI (получение токена)
@@ -526,14 +569,29 @@ docker compose up -d --build backend     # только backend
 docker compose up -d --build nginx       # только nginx (+ SPA)
 ```
 
-### 9.3. Пересборка без кэша (если проблемы)
+### 9.3. Smoke-проверка auth flow
+
+После обновления auth/backend/frontend запустите smoke-тест. Он проверяет регистрацию, сохранение cookie-сессии после F5-эквивалента, загрузку members, создание/загрузку routines, logout и повторный login тем же пользователем.
+
+```bash
+cd /opt/hometusk/hometusk/infra/uat
+sh smoke-auth-flow.sh
+```
+
+Ожидаемый финал:
+
+```text
+Smoke auth flow passed
+```
+
+### 9.4. Пересборка без кэша (если проблемы)
 
 ```bash
 docker compose build --no-cache backend
 docker compose up -d backend
 ```
 
-### 9.4. Rolling update (минимальный downtime)
+### 9.5. Rolling update (минимальный downtime)
 
 Для минимизации простоя перестраивайте сервисы по одному:
 
@@ -705,6 +763,18 @@ deploy:
 KEYCLOAK_JAVA_OPTS=-Xms256m -Xmx768m
 ```
 
+### Keycloak падает с `schema "keycloak" does not exist`
+
+В свежих установках схема `keycloak` создается init-скриптом PostgreSQL из `infra/uat/postgres/init`.
+Если volume `hometusk_uat_postgres_data` уже был создан до появления init-скрипта, создайте схему вручную:
+
+```bash
+cd /opt/hometusk/hometusk/infra/uat
+docker compose stop keycloak
+docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "CREATE SCHEMA IF NOT EXISTS keycloak;"'
+docker compose up -d --force-recreate keycloak
+```
+
 ### Backend не может подключиться к Keycloak
 
 ```bash
@@ -740,7 +810,7 @@ docker exec hometusk-uat-nginx nginx -t
 ### CORS ошибки в браузере
 
 Проверьте:
-1. В `.env` → `APP_CORS_ALLOWED_ORIGINS` включает ваш домен
+1. В `.env` → `HOMETUSK_CORS_ALLOWED_ORIGINS` включает ваш домен
 2. В Keycloak → клиент → Web Origins включает ваш домен
 3. Протокол совпадает (http vs https)
 

@@ -52,11 +52,12 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 - Java 21 + Spring Boot 3.x
 - PostgreSQL 15 + Flyway migrations
 - Spring Data JPA
-- Spring Security OAuth2 Resource Server (Keycloak JWT)
+- Spring Security OAuth2 Resource Server (Keycloak JWT) + backend-cookie auth facade
 - springdoc-openapi
 - JUnit 5 + Testcontainers
 
 **Internal Packages:**
+- `auth` — Keycloak-backed login, registration, refresh, logout, and session cookies
 - `commands` — Command pipeline (POST /api/v1/commands)
 - `tasks` — Task domain
 - `households` — Household, Zone, and Invite management
@@ -68,6 +69,10 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 - `shared` — Security, logging, exceptions, validation
 
 **Key Endpoints (MVP Iteration 1):**
+- `POST /api/v1/auth/login` — Login via Keycloak and set HttpOnly cookies
+- `POST /api/v1/auth/register` — Create Keycloak user and auto-login
+- `POST /api/v1/auth/refresh` — Refresh HttpOnly auth cookies
+- `POST /api/v1/auth/logout` — Clear cookies and best-effort Keycloak logout
 - `POST /api/v1/commands` — Execute command (create_task, complete_task)
 - `GET /api/v1/users/me` — Current user profile with household memberships
 - `POST /api/v1/households` — Create household
@@ -82,6 +87,7 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 
 | Controller | Endpoints | Scope |
 |------------|-----------|-------|
+| AuthController | `POST /api/v1/auth/login`, `POST /api/v1/auth/register`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout`, `POST /api/v1/auth/session` | Keycloak-backed browser auth and legacy session cookie bridge |
 | CommandController | `POST /api/v1/commands` | Intent-driven command execution |
 | UserController | `GET /api/v1/users/me` | User profile with household memberships |
 | HouseholdController | `POST /api/v1/households`, `GET/POST /*/zones`, `GET /*/members`, `POST /*/invites` | Household administration |

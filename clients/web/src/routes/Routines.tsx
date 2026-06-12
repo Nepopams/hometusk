@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useMembers } from '../hooks/useMembers';
 import { useRoutines } from '../hooks/useRoutines';
 import { useZones } from '../hooks/useZones';
+import { useI18n } from '../i18n';
 import { deleteRoutine, pauseRoutine, resumeRoutine } from '../lib/api';
 import { ApiError } from '../lib/errors';
 import { Button } from '../components/ui';
@@ -17,6 +18,7 @@ import type { Routine } from '../types/api';
 import './Routines.css';
 
 export default function Routines() {
+  const { t } = useI18n();
   const { householdId } = useAuth();
   const { routines, isLoading, error, refetch } = useRoutines(householdId);
   const { zones, isLoading: zonesLoading } = useZones(householdId);
@@ -76,14 +78,14 @@ export default function Routines() {
           typeof err.body === 'object' && err.body !== null && 'message' in err.body
             ? (err.body as { message?: string }).message
             : undefined;
-        setDeleteError(msg || 'Unable to delete routine. Please try again.');
+        setDeleteError(msg || t('routines.deleteUnable'));
       } else {
-        setDeleteError('Unable to delete routine. Please try again.');
+        setDeleteError(t('routines.deleteUnable'));
       }
     } finally {
       setIsDeleting(false);
     }
-  }, [householdId, deleteTarget, refetch]);
+  }, [householdId, deleteTarget, refetch, t]);
 
   const handlePause = useCallback(
     async (routine: Routine) => {
@@ -130,7 +132,7 @@ export default function Routines() {
       <div className="routines">
         <div className="routines__wrapper">
           <div className="routines__empty-page">
-            <p>Please select a household to view routines.</p>
+            <p>{t('routines.noHousehold')}</p>
           </div>
         </div>
       </div>
@@ -143,19 +145,19 @@ export default function Routines() {
         <div className="routines__wrapper">
           <section className="routines__section">
             <div className="routines__section-header">
-              <h2 className="routines__section-title">Routines</h2>
+              <h2 className="routines__section-title">{t('routines.title')}</h2>
             </div>
             <div className="routines__card">
               <div className="routines__error">
                 <div className="routines__error-content">
-                  <h3 className="routines__error-title">Access Denied</h3>
+                  <h3 className="routines__error-title">{t('common.accessDenied')}</h3>
                   <p className="routines__error-message">
-                    You do not have access to this household.
+                    {t('error.accessDeniedSubtitle')}
                   </p>
                 </div>
                 <Link to="/households">
                   <Button variant="primary" size="sm">
-                    Back to Households
+                    {t('common.backToHouseholds')}
                   </Button>
                 </Link>
               </div>
@@ -172,16 +174,16 @@ export default function Routines() {
         <div className="routines__wrapper">
           <section className="routines__section">
             <div className="routines__section-header">
-              <h2 className="routines__section-title">Routines</h2>
+              <h2 className="routines__section-title">{t('routines.title')}</h2>
             </div>
             <div className="routines__card">
               <div className="routines__error">
                 <div className="routines__error-content">
-                  <h3 className="routines__error-title">Unable to load routines</h3>
-                  <p className="routines__error-message">Check your connection and try again.</p>
+                  <h3 className="routines__error-title">{t('routines.unableLoad')}</h3>
+                  <p className="routines__error-message">{t('common.checkConnection')}</p>
                 </div>
                 <Button variant="primary" size="sm" onClick={handleRetry}>
-                  Retry
+                  {t('common.retry')}
                 </Button>
               </div>
             </div>
@@ -197,9 +199,9 @@ export default function Routines() {
         <div className="routines__wrapper">
           <section className="routines__section">
             <div className="routines__section-header">
-              <h2 className="routines__section-title">Routines</h2>
+              <h2 className="routines__section-title">{t('routines.title')}</h2>
               <Button variant="primary" size="sm" disabled>
-                Create routine
+                {t('routines.create')}
               </Button>
             </div>
             <div className="routines__card">
@@ -225,16 +227,16 @@ export default function Routines() {
         <div className="routines__wrapper">
           <section className="routines__section">
             <div className="routines__section-header">
-              <h2 className="routines__section-title">Routines</h2>
+              <h2 className="routines__section-title">{t('routines.title')}</h2>
             </div>
             <div className="routines__card">
               <div className="routines__empty">
-                <h3 className="routines__empty-title">No routines yet</h3>
+                <h3 className="routines__empty-title">{t('routines.noRoutines')}</h3>
                 <p className="routines__empty-desc">
-                  No routines yet. Create your first routine to automate recurring tasks.
+                  {t('routines.emptyDesc')}
                 </p>
                 <Button variant="primary" size="md" onClick={openCreate}>
-                  Create routine
+                  {t('routines.create')}
                 </Button>
               </div>
             </div>
@@ -260,9 +262,9 @@ export default function Routines() {
       <div className="routines__wrapper">
         <section className="routines__section">
           <div className="routines__section-header">
-            <h2 className="routines__section-title">Routines</h2>
+            <h2 className="routines__section-title">{t('routines.title')}</h2>
             <Button variant="primary" size="sm" onClick={openCreate}>
-              Create routine
+              {t('routines.create')}
             </Button>
           </div>
           <div className="routines__card">
@@ -292,7 +294,7 @@ export default function Routines() {
             ))}
           </div>
           {routines.length >= 10 && (
-            <p className="routines__hint">{routines.length} routines in this household</p>
+            <p className="routines__hint">{t('routines.countHint', { count: routines.length })}</p>
           )}
         </section>
       </div>

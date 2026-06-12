@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import type { Task } from '../../types/api';
 import TaskRow from './TaskRow';
 import { Button } from '../ui';
+import { useI18n } from '../../i18n';
 
 interface TasksCardProps {
   tasks: Task[];
@@ -18,6 +19,8 @@ interface TasksCardProps {
  * @see Pencil frames: dataTask (task row interface)
  */
 export default function TasksCard({ tasks, householdId, hasActiveFilters, onComplete, completingTaskIds }: TasksCardProps) {
+  const { t } = useI18n();
+
   // Empty state
   if (tasks.length === 0) {
     return (
@@ -36,16 +39,16 @@ export default function TasksCard({ tasks, householdId, hasActiveFilters, onComp
             <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
           </svg>
           <h3 className="tasks__empty-title">
-            {hasActiveFilters ? 'No tasks match filters' : 'No tasks yet'}
+            {hasActiveFilters ? t('tasks.noMatch') : t('tasks.noTasksYet')}
           </h3>
           <p className="tasks__empty-desc">
             {hasActiveFilters
-              ? 'Try adjusting your filters or create a new task.'
-              : 'Create tasks using natural language commands to get started.'}
+              ? t('tasks.adjustFilters')
+              : t('tasks.emptyDesc')}
           </p>
           <Link to="/commands">
             <Button variant="primary" size="md">
-              Add via command
+              {t('tasks.addViaCommand')}
             </Button>
           </Link>
         </div>

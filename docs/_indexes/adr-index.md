@@ -50,4 +50,4 @@ What other options did we evaluate and why were they rejected?
 
 ---
 
-**Maintenance**: Update this index when running adr-designer agent or manually creating ADRs.
+**Maintenance**: Update this index when using `hometusk-adr-diagram-governance` or manually creating ADRs.

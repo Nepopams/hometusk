@@ -85,7 +85,9 @@ Notification sent
 ## Project Structure
 
 ```
-├── .claude/          # Claude Code configuration
+├── .agents/          # Codex workflow skills
+├── .codex/           # Codex project config and read-only custom agents
+├── .claude/          # Legacy Claude Code configuration (kept temporarily)
 ├── apps/
 │   ├── web/          # Web application
 │   ├── mobile/       # Mobile application (post-MVP)
@@ -127,11 +129,14 @@ Notification sent
 
 ## Documentation
 
-- [Architecture Decisions](docs/architecture/decisions/) — ADRs for key decisions
+- [Codex Workflow](docs/CODEX-WORKFLOW.md) — Codex-only delivery pipeline
+- [Architecture Decisions](docs/adr/) — Canonical ADRs for new decisions
+- [Legacy Architecture Decisions](docs/architecture/decisions/) — Older ADRs not yet migrated
 - [Service Catalog](docs/architecture/service-catalog.md) — Registry of all services
-- [C4 Diagrams](docs/architecture/decisions/mvp/) — System architecture diagrams
+- [Architecture Diagrams](docs/diagrams/) — Canonical diagram location
+- [Legacy C4 Diagrams](docs/architecture/diagrams/) — Older PlantUML diagrams not yet migrated
 - [AI Platform Integration](docs/integration/ai-platform/v1/) — AI Platform integration package
-- [CLAUDE.md](CLAUDE.md) — AI-assisted development guidelines
+- [AGENTS.md](AGENTS.md) — Canonical Codex working agreements
 - [CONTRIBUTING.md](CONTRIBUTING.md) — How to contribute
 
 ---

@@ -1,4 +1,5 @@
 import type { CommandDegradedResponse, DegradedReason } from '../../types/api';
+import { useI18n, type TranslationKey } from '../../i18n';
 import { StatusBadge } from './StatusBadge';
 import { TraceInfo } from './TraceInfo';
 
@@ -7,17 +8,18 @@ interface DegradedResultProps {
   onNewCommand: () => void;
 }
 
-const DEGRADED_REASON_LABELS: Record<DegradedReason, string> = {
-  ai_unavailable: 'AI service temporarily unavailable',
-  ai_timeout: 'AI service timed out',
-  ai_low_confidence: 'Low confidence result',
+const DEGRADED_REASON_LABELS: Record<DegradedReason, TranslationKey> = {
+  ai_unavailable: 'commands.aiUnavailable',
+  ai_timeout: 'commands.aiTimeout',
+  ai_low_confidence: 'commands.aiLowConfidence',
 };
 
 export function DegradedResult({ data, onNewCommand }: DegradedResultProps) {
   const { result, degradedReason, fallbackStrategy } = data;
+  const { t } = useI18n();
 
   const formatConfidence = (confidence?: number) => {
-    if (confidence === undefined) return 'N/A';
+    if (confidence === undefined) return t('common.na');
     return `${Math.round(confidence * 100)}%`;
   };
 
@@ -30,28 +32,28 @@ export function DegradedResult({ data, onNewCommand }: DegradedResultProps) {
 
   return (
     <div className="command-result command-result--warning">
-      <StatusBadge variant="warning" title="Command completed with limitations" />
+      <StatusBadge variant="warning" title={t('commands.completedLimited')} />
 
       <div className="command-result__body">
         <p className="command-result__degraded-reason">
-          {DEGRADED_REASON_LABELS[degradedReason]}
+          {t(DEGRADED_REASON_LABELS[degradedReason])}
           {fallbackStrategy ? ` ${fallbackStrategy}` : ''}
         </p>
 
         {result.taskId && (
           <div className="command-summary__row">
-            <span className="command-summary__label">Task ID:</span>
+            <span className="command-summary__label">{t('common.taskId')}:</span>
             <code>{result.taskId}</code>
           </div>
         )}
         {result.assigneeId && (
           <div className="command-summary__row">
-            <span className="command-summary__label">Assignee ID:</span>
+            <span className="command-summary__label">{t('common.assigneeId')}:</span>
             <code>{result.assigneeId}</code>
           </div>
         )}
         <div className="command-summary__row">
-          <span className="command-summary__label">Confidence:</span>
+          <span className="command-summary__label">{t('common.confidence')}:</span>
           <span>{formatConfidence(result.decisionConfidence)}</span>
         </div>
       </div>
@@ -59,11 +61,11 @@ export function DegradedResult({ data, onNewCommand }: DegradedResultProps) {
       <div className="command-result__actions">
         {result.taskId && (
           <button type="button" className="ghost-button" onClick={handleViewTask}>
-            View Task
+            {t('commands.viewTask')}
           </button>
         )}
         <button type="button" className="button" onClick={onNewCommand}>
-          New Command
+          {t('commands.newCommand')}
         </button>
       </div>
 

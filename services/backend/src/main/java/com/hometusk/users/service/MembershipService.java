@@ -40,12 +40,12 @@ public class MembershipService {
 
     @Transactional(readOnly = true)
     public List<Membership> findByUserId(UUID userId) {
-        return membershipRepository.findByUser_Id(userId);
+        return membershipRepository.findByUser_IdWithHousehold(userId);
     }
 
     @Transactional(readOnly = true)
     public List<Membership> findByHouseholdId(UUID householdId) {
-        return membershipRepository.findByHousehold_Id(householdId);
+        return membershipRepository.findByHousehold_IdWithUser(householdId);
     }
 
     @Transactional(readOnly = true)

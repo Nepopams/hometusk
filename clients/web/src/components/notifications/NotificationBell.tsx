@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { useI18n } from '../../i18n';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useNotificationStream } from '../../hooks/useNotificationStream';
 import NotificationDropdown from './NotificationDropdown';
 import UnreadBadge from './UnreadBadge';
 
 export default function NotificationBell() {
+  const { t } = useI18n();
   const { householdId, logout } = useAuth();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
@@ -68,7 +70,7 @@ export default function NotificationBell() {
       <button
         type="button"
         className="notification-bell__button"
-        aria-label="Notifications"
+        aria-label={t('notifications.title')}
         aria-expanded={isOpen}
         aria-haspopup="menu"
         onClick={() => setIsOpen((prev) => !prev)}
@@ -84,7 +86,7 @@ export default function NotificationBell() {
       {mode === 'polling' && (
         <span
           className="notification-bell__degraded"
-          title="Real-time updates unavailable. Checking every 30 seconds."
+          title={t('notifications.realtimeUnavailable')}
         >
           !
         </span>

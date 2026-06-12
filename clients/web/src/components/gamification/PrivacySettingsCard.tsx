@@ -1,4 +1,5 @@
 import type { GamificationSettings } from '../../types/api';
+import { useI18n } from '../../i18n';
 
 interface PrivacySettingsCardProps {
   settings: GamificationSettings;
@@ -11,9 +12,11 @@ export function PrivacySettingsCard({
   onUpdate,
   isUpdating,
 }: PrivacySettingsCardProps) {
+  const { t } = useI18n();
+
   return (
     <div className="progress__card privacy-settings">
-      <h2>Privacy Settings</h2>
+      <h2>{t('progress.privacySettings')}</h2>
 
       <div className="privacy-settings__option">
         <label className="privacy-settings__label">
@@ -23,7 +26,7 @@ export function PrivacySettingsCard({
             onChange={(e) => onUpdate({ showProgressToOthers: e.target.checked })}
             disabled={isUpdating}
           />
-          <span>Show my progress to household members</span>
+          <span>{t('progress.showProgress')}</span>
         </label>
       </div>
 
@@ -35,7 +38,7 @@ export function PrivacySettingsCard({
             onChange={(e) => onUpdate({ streakVisible: e.target.checked })}
             disabled={isUpdating}
           />
-          <span>Show my streak to household members</span>
+          <span>{t('progress.showStreak')}</span>
         </label>
       </div>
 
@@ -47,16 +50,16 @@ export function PrivacySettingsCard({
             onChange={(e) => onUpdate({ gamificationEnabled: e.target.checked })}
             disabled={isUpdating}
           />
-          <span>Enable gamification</span>
+          <span>{t('progress.enableGamification')}</span>
         </label>
         {!settings.gamificationEnabled && (
           <p className="privacy-settings__warning">
-            You will not earn points or badges while gamification is disabled.
+            {t('progress.disabledWarning')}
           </p>
         )}
       </div>
 
-      {isUpdating && <p className="privacy-settings__saving">Saving...</p>}
+      {isUpdating && <p className="privacy-settings__saving">{t('common.saving')}</p>}
     </div>
   );
 }

@@ -1,8 +1,29 @@
-export type AuthErrorCode = 'AUTH_TOKEN_MISSING' | 'AUTH_TOKEN_INVALID' | 'AUTH_TOKEN_EXPIRED';
+export type AuthErrorCode =
+  | 'AUTH_TOKEN_MISSING'
+  | 'AUTH_TOKEN_INVALID'
+  | 'AUTH_TOKEN_EXPIRED'
+  | 'AUTH_INVALID_CREDENTIALS'
+  | 'AUTH_EMAIL_EXISTS'
+  | 'AUTH_REFRESH_REQUIRED'
+  | 'AUTH_PROVIDER_UNAVAILABLE';
 
 export interface AuthErrorResponse {
+  correlationId?: string;
   errorCode: AuthErrorCode;
   message: string;
+  validationErrors?: Array<{ path: string; code: string; message: string }>;
+  violations?: Array<{ rule: string; message: string }>;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  name?: string;
+  email: string;
+  password: string;
 }
 
 export type HouseholdRole = 'admin' | 'member';

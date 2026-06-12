@@ -4,28 +4,11 @@ import Button from '../components/ui/Button';
 import ErrorMessage from '../components/ui/ErrorMessage';
 import Spinner from '../components/ui/Spinner';
 import { useAuth } from '../hooks/useAuth';
+import { useI18n } from '../i18n';
 import { useNotifications } from '../hooks/useNotifications';
 import { useNotificationStream } from '../hooks/useNotificationStream';
 import type { Notification, NotificationType } from '../types/api';
 import './Notifications.css';
-
-function formatRelativeTime(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
-
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
-
-  const diffDays = Math.floor(diffHours / 24);
-  if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
-
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
 
 function getNotificationIcon(type: NotificationType): { icon: JSX.Element; className: string } {
   switch (type) {
@@ -81,6 +64,7 @@ interface NotificationItemProps {
 }
 
 function NotificationItem({ notification, onMarkRead }: NotificationItemProps) {
+  const { formatRelativeTime } = useI18n();
   const { icon, className } = getNotificationIcon(notification.type);
   const isUnread = !notification.readAt;
 
@@ -109,6 +93,7 @@ function NotificationItem({ notification, onMarkRead }: NotificationItemProps) {
 }
 
 export default function Notifications() {
+  const { t } = useI18n();
   const { householdId, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -135,7 +120,7 @@ export default function Notifications() {
     return (
       <div className="page notifications">
         <div className="notifications__header">
-          <h1 className="notifications__title">Notifications</h1>
+          <h1 className="notifications__title">{t('notifications.title')}</h1>
         </div>
         <div className="notifications__card">
           <div className="notifications__empty">
@@ -144,9 +129,9 @@ export default function Notifications() {
                 <path d="M12 22a2 2 0 002-2h-4a2 2 0 002 2zm6-6V11a6 6 0 00-5-5.92V4a1 1 0 00-2 0v1.08A6 6 0 006 11v5l-2 2v1h16v-1l-2-2z" />
               </svg>
             </div>
-            <h2 className="notifications__empty-title">Select a household</h2>
+            <h2 className="notifications__empty-title">{t('notifications.selectHousehold')}</h2>
             <p className="notifications__empty-text">
-              Choose a household to view notifications.
+              {t('notifications.selectHouseholdText')}
             </p>
           </div>
         </div>
@@ -158,7 +143,7 @@ export default function Notifications() {
     return (
       <div className="page notifications">
         <div className="notifications__header">
-          <h1 className="notifications__title">Notifications</h1>
+          <h1 className="notifications__title">{t('notifications.title')}</h1>
         </div>
         <div className="notifications__card">
           <div className="notifications__loading">
@@ -173,7 +158,7 @@ export default function Notifications() {
     return (
       <div className="page notifications">
         <div className="notifications__header">
-          <h1 className="notifications__title">Notifications</h1>
+          <h1 className="notifications__title">{t('notifications.title')}</h1>
         </div>
         <ErrorMessage error={error} onRetry={refresh} />
       </div>
@@ -183,7 +168,7 @@ export default function Notifications() {
   return (
     <div className="page notifications">
       <div className="notifications__header">
-        <h1 className="notifications__title">Notifications</h1>
+        <h1 className="notifications__title">{t('notifications.title')}</h1>
         {unreadCount > 0 && (
           <Button
             variant="ghost"
@@ -191,7 +176,7 @@ export default function Notifications() {
             onClick={markAllAsRead}
             disabled={isMarkingAll}
           >
-            {isMarkingAll ? 'Marking...' : 'Mark all as read'}
+            {isMarkingAll ? t('notifications.marking') : t('notifications.markAllRead')}
           </Button>
         )}
       </div>
@@ -204,9 +189,9 @@ export default function Notifications() {
                 <path d="M12 22a2 2 0 002-2h-4a2 2 0 002 2zm6-6V11a6 6 0 00-5-5.92V4a1 1 0 00-2 0v1.08A6 6 0 006 11v5l-2 2v1h16v-1l-2-2z" />
               </svg>
             </div>
-            <h2 className="notifications__empty-title">No notifications</h2>
+            <h2 className="notifications__empty-title">{t('notifications.noNotifications')}</h2>
             <p className="notifications__empty-text">
-              You&apos;re all caught up! Notifications will appear here.
+              {t('notifications.caughtUp')}
             </p>
           </div>
         ) : (
@@ -221,7 +206,9 @@ export default function Notifications() {
             {notifications.length > 0 && (
               <div className="notifications__footer">
                 <span className="notifications__clear-btn">
-                  {notifications.length} notification{notifications.length !== 1 ? 's' : ''}
+                  {notifications.length === 1
+                    ? t('notifications.countOne')
+                    : t('notifications.countMany', { count: notifications.length })}
                 </span>
               </div>
             )}
