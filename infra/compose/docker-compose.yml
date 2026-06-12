@@ -73,6 +73,11 @@ services:
   #     SPRING_DATASOURCE_PASSWORD: hometusk_dev
   #     SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/hometusk
   #     SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/hometusk/protocol/openid-connect/certs
+  #     HOMETUSK_AUTH_KEYCLOAK_BASE_URL: http://keycloak:8080
+  #     HOMETUSK_AUTH_KEYCLOAK_REALM: hometusk
+  #     HOMETUSK_AUTH_KEYCLOAK_USER_CLIENT_ID: hometusk-api
+  #     HOMETUSK_AUTH_KEYCLOAK_ADMIN_CLIENT_ID: hometusk-backend
+  #     HOMETUSK_AUTH_KEYCLOAK_ADMIN_CLIENT_SECRET: hometusk-backend-secret
   #   ports:
   #     - "8080:8080"
   #   depends_on:

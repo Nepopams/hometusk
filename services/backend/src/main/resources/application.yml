@@ -50,6 +50,15 @@ hometusk:
     same-site: Lax
   cors:
     allowed-origins: http://localhost:5173,http://127.0.0.1:5173
+  auth:
+    keycloak:
+      base-url: ${HOMETUSK_AUTH_KEYCLOAK_BASE_URL:http://localhost:8180}
+      realm: ${HOMETUSK_AUTH_KEYCLOAK_REALM:hometusk}
+      user-client-id: ${HOMETUSK_AUTH_KEYCLOAK_USER_CLIENT_ID:hometusk-api}
+      admin-client-id: ${HOMETUSK_AUTH_KEYCLOAK_ADMIN_CLIENT_ID:hometusk-backend}
+      admin-client-secret: ${HOMETUSK_AUTH_KEYCLOAK_ADMIN_CLIENT_SECRET:hometusk-backend-secret}
+      connect-timeout-ms: ${HOMETUSK_AUTH_KEYCLOAK_CONNECT_TIMEOUT_MS:3000}
+      read-timeout-ms: ${HOMETUSK_AUTH_KEYCLOAK_READ_TIMEOUT_MS:5000}
   scheduler:
     enabled: false
     fixed-rate-ms: 3600000

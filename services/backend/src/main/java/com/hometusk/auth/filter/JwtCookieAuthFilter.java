@@ -21,6 +21,15 @@ public class JwtCookieAuthFilter extends OncePerRequestFilter {
     private static final String COOKIE_NAME = "hometusk_token";
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return "/api/v1/auth/login".equals(path)
+                || "/api/v1/auth/register".equals(path)
+                || "/api/v1/auth/refresh".equals(path)
+                || "/api/v1/auth/logout".equals(path);
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 

@@ -1,7 +1,10 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { signinRedirect } from '../lib/auth/oidc';
+import { loginWithPassword } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
+import { STORAGE_KEYS } from '../lib/constants';
+import { ApiError } from '../lib/errors';
+import type { AuthErrorResponse } from '../types/api';
 import AuthLayout from '../components/auth/AuthLayout';
 import BrandHeader from '../components/auth/BrandHeader';
 import { Card, Button, TextField, PasswordField, ErrorBanner, Divider, TextLink } from '../components/ui';
@@ -21,7 +24,8 @@ export default function Login() {
   const [passwordError, setPasswordError] = useState('');
   const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { clearError } = useAuth();
+  const { clearError, refetchUser } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const authProvider = import.meta.env.VITE_AUTH_PROVIDER;
@@ -60,18 +64,6 @@ export default function Login() {
     e.preventDefault();
     clearErrorParam();
 
-    if (authProvider === 'keycloak') {
-      setLoading(true);
-      try {
-        await signinRedirect();
-      } catch (err) {
-        console.error('[Login] OIDC redirect failed', err);
-        setFormError('Unable to connect to authentication service. Please try again.');
-        setLoading(false);
-      }
-      return;
-    }
-
     // Validate fields
     const emailErr = validateEmail(email);
     const passwordErr = validatePassword(password);
@@ -85,10 +77,23 @@ export default function Login() {
 
     setLoading(true);
     try {
-      await signinRedirect();
+      if (authProvider !== 'keycloak') {
+        throw new Error('Unsupported auth provider');
+      }
+
+      await loginWithPassword({ email: email.trim(), password });
+      const profile = await refetchUser();
+
+      if (!profile) {
+        throw new Error('Unable to load profile after sign in');
+      }
+
+      const storedRedirect = sessionStorage.getItem(STORAGE_KEYS.POST_LOGIN_REDIRECT);
+      sessionStorage.removeItem(STORAGE_KEYS.POST_LOGIN_REDIRECT);
+      navigate(storedRedirect || '/households', { replace: true });
     } catch (err) {
-      console.error('[Login] OIDC redirect failed', err);
-      setFormError('Unable to connect to authentication service. Please try again.');
+      console.error('[Login] Sign in failed', err);
+      setFormError(resolveLoginError(err));
       setLoading(false);
     }
   };
@@ -158,9 +163,6 @@ export default function Login() {
               >
                 {loading ? 'Signing in...' : 'Sign in'}
               </Button>
-              <TextLink to="/forgot-password" centered>
-                Forgot password?
-              </TextLink>
             </div>
 
             {/* Divider */}
@@ -196,6 +198,20 @@ export default function Login() {
       </Card>
     </AuthLayout>
   );
+}
+
+function resolveLoginError(err: unknown): string {
+  if (err instanceof ApiError) {
+    const body = err.body as Partial<AuthErrorResponse> | null;
+    if (body?.errorCode === 'AUTH_INVALID_CREDENTIALS' || err.status === 401) {
+      return 'The email or password you entered doesn\'t match our records. Please check and try again.';
+    }
+    if (body?.errorCode === 'AUTH_PROVIDER_UNAVAILABLE' || err.status === 503) {
+      return 'Authentication service is temporarily unavailable. Please try again later.';
+    }
+  }
+
+  return 'Unable to sign in. Please try again.';
 }
 
 /**

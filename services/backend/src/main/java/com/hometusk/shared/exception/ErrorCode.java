@@ -38,6 +38,12 @@ public enum ErrorCode {
     // Access control
     ACCESS_DENIED("Access denied to this resource"),
 
+    // Authentication
+    AUTH_INVALID_CREDENTIALS("Invalid email or password"),
+    AUTH_EMAIL_EXISTS("An account with this email already exists"),
+    AUTH_REFRESH_REQUIRED("Authentication session must be refreshed"),
+    AUTH_PROVIDER_UNAVAILABLE("Authentication provider is unavailable"),
+
     // AI Platform (Stage 2)
     AI_REJECTED("AI rejected the command"),
     AI_UNAVAILABLE("AI Platform is unavailable"),

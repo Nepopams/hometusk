@@ -1,7 +1,10 @@
 import { useState, type FormEvent } from 'react';
-import { signupRedirect } from '../lib/auth/oidc';
+import { registerWithPassword } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { STORAGE_KEYS } from '../lib/constants';
+import { ApiError } from '../lib/errors';
+import type { AuthErrorResponse } from '../types/api';
 import AuthLayout from '../components/auth/AuthLayout';
 import BrandHeader from '../components/auth/BrandHeader';
 import { Card, Button, TextField, PasswordField, ErrorBanner, Divider, TextLink } from '../components/ui';
@@ -21,7 +24,8 @@ export default function Register() {
   const [passwordError, setPasswordError] = useState('');
   const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { clearError } = useAuth();
+  const { clearError, refetchUser } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const authProvider = import.meta.env.VITE_AUTH_PROVIDER;
@@ -63,18 +67,6 @@ export default function Register() {
     e.preventDefault();
     clearErrorParam();
 
-    if (authProvider === 'keycloak') {
-      setLoading(true);
-      try {
-        await signupRedirect();
-      } catch (err) {
-        console.error('[Register] OIDC redirect failed', err);
-        setFormError('Unable to connect to authentication service. Please try again.');
-        setLoading(false);
-      }
-      return;
-    }
-
     // Validate fields
     const emailErr = validateEmail(email);
     const passwordErr = validatePassword(password);
@@ -88,10 +80,27 @@ export default function Register() {
 
     setLoading(true);
     try {
-      await signupRedirect();
+      if (authProvider !== 'keycloak') {
+        throw new Error('Unsupported auth provider');
+      }
+
+      await registerWithPassword({
+        name: name.trim() || undefined,
+        email: email.trim(),
+        password,
+      });
+      const profile = await refetchUser();
+
+      if (!profile) {
+        throw new Error('Unable to load profile after registration');
+      }
+
+      const storedRedirect = sessionStorage.getItem(STORAGE_KEYS.POST_LOGIN_REDIRECT);
+      sessionStorage.removeItem(STORAGE_KEYS.POST_LOGIN_REDIRECT);
+      navigate(storedRedirect || '/households', { replace: true });
     } catch (err) {
-      console.error('[Register] OIDC redirect failed', err);
-      setFormError('Unable to connect to authentication service. Please try again.');
+      console.error('[Register] Registration failed', err);
+      setFormError(resolveRegisterError(err));
       setLoading(false);
     }
   };
@@ -218,4 +227,21 @@ export default function Register() {
       </Card>
     </AuthLayout>
   );
+}
+
+function resolveRegisterError(err: unknown): string {
+  if (err instanceof ApiError) {
+    const body = err.body as Partial<AuthErrorResponse> | null;
+    if (body?.errorCode === 'AUTH_EMAIL_EXISTS' || err.status === 409) {
+      return 'An account with this email already exists.';
+    }
+    if (body?.errorCode === 'AUTH_PROVIDER_UNAVAILABLE' || err.status === 503) {
+      return 'Authentication service is temporarily unavailable. Please try again later.';
+    }
+    if (err.status === 400) {
+      return 'Please check the registration form and try again.';
+    }
+  }
+
+  return 'Unable to create account. Please try again.';
 }

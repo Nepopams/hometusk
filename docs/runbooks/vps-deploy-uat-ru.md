@@ -329,7 +329,28 @@ Realm-export уже содержит пользователей `alice`, `bob`, 
 3. Credentials → Set password (Temporary: OFF)
 4. Role mapping → Assign role `user`
 
-### 6.4. Убрать временный порт
+### 6.4. Выдать backend service account права на регистрацию
+
+Backend-cookie auth flow создает пользователей через Keycloak Admin API. Для этого client `hometusk-backend` должен иметь роли `realm-management:manage-users` и `realm-management:view-users`.
+
+Выполните один раз после импорта realm:
+
+```bash
+cd /opt/hometusk/hometusk/infra/uat
+docker compose exec -T keycloak sh < keycloak/configure-auth-service-account.sh
+```
+
+Проверка:
+
+```bash
+docker compose exec -T keycloak sh -lc '
+KC=/opt/keycloak/bin/kcadm.sh
+$KC config credentials --server http://localhost:8080 --realm master --user "$KEYCLOAK_ADMIN" --password "$KEYCLOAK_ADMIN_PASSWORD" >/dev/null
+$KC get users -r hometusk -q username=service-account-hometusk-backend --fields username,clientRoles
+'
+```
+
+### 6.5. Убрать временный порт
 
 Если пробрасывали порт Keycloak, уберите `ports` из docker-compose.yml и перезапустите:
 
@@ -476,15 +497,22 @@ curl -s http://$DOMAIN/realms/hometusk/.well-known/openid-configuration | python
 # Backend API (без токена — 401)
 curl -s -o /dev/null -w "%{http_code}" http://$DOMAIN/api/v1/households
 # Ожидание: 401
+
+# Backend-cookie login (Set-Cookie)
+curl -i -s -X POST "http://$DOMAIN/api/v1/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"alice@test.local","password":"alice123"}' \
+  | grep -i 'set-cookie'
+# Ожидание: hometusk_token и hometusk_refresh_token
 ```
 
 ### 8.2. Проверка в браузере
 
 1. Открыть `http(s)://uat.hometusk.example.com/`
 2. Должна загрузиться страница входа HomeTusk
-3. Нажать "Войти" — перенаправление на Keycloak
-4. Ввести alice / alice123
-5. Перенаправление обратно в приложение
+3. Ввести `alice@test.local` / `alice123` в форму HomeTusk
+4. Нажать "Sign in" — без redirect на Keycloak
+5. Убедиться, что открылся внутренний UI
 6. Убедиться, что нет ошибок в DevTools Console
 
 ### 8.3. Проверка из CLI (получение токена)

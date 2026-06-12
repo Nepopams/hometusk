@@ -239,6 +239,7 @@ public class GlobalExceptionHandler {
 
     private HttpStatus getHttpStatus(ErrorCode errorCode) {
         return switch (errorCode) {
+            case AUTH_INVALID_CREDENTIALS, AUTH_REFRESH_REQUIRED -> HttpStatus.UNAUTHORIZED;
             case ACCESS_DENIED -> HttpStatus.FORBIDDEN;
             case HOUSEHOLD_NOT_FOUND,
                     TASK_NOT_FOUND,
@@ -247,7 +248,8 @@ public class GlobalExceptionHandler {
                     SHOPPING_RUN_NOT_FOUND,
                     NOTIFICATION_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case INVITE_EXPIRED, INVITE_REDEEMED, INVITE_REVOKED -> HttpStatus.GONE;
-            case IDEMPOTENCY_CONFLICT -> HttpStatus.CONFLICT;
+            case AUTH_EMAIL_EXISTS, IDEMPOTENCY_CONFLICT -> HttpStatus.CONFLICT;
+            case AUTH_PROVIDER_UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
             case INTERNAL_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR;
             default -> HttpStatus.BAD_REQUEST;
         };
