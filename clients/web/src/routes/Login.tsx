@@ -60,6 +60,18 @@ export default function Login() {
     e.preventDefault();
     clearErrorParam();
 
+    if (authProvider === 'keycloak') {
+      setLoading(true);
+      try {
+        await signinRedirect();
+      } catch (err) {
+        console.error('[Login] OIDC redirect failed', err);
+        setFormError('Unable to connect to authentication service. Please try again.');
+        setLoading(false);
+      }
+      return;
+    }
+
     // Validate fields
     const emailErr = validateEmail(email);
     const passwordErr = validatePassword(password);
@@ -73,8 +85,6 @@ export default function Login() {
 
     setLoading(true);
     try {
-      // For Keycloak mode, we redirect to the OIDC provider
-      // Email/password are visual only - actual auth happens on Keycloak
       await signinRedirect();
     } catch (err) {
       console.error('[Login] OIDC redirect failed', err);

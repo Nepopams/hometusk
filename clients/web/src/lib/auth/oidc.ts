@@ -35,7 +35,7 @@ function getUserManager(): UserManager | null {
     redirect_uri: resolvedRedirectUri,
     post_logout_redirect_uri: postLogoutRedirectUri,
     response_type: 'code',
-    scope: 'openid profile offline_access',
+    scope: 'openid profile email',
     userStore: new WebStorageStateStore({ store: window.sessionStorage }),
     automaticSilentRenew: true,
   });
@@ -49,6 +49,18 @@ export async function signinRedirect(): Promise<void> {
     throw new Error('OIDC configuration is invalid. Check environment variables.');
   }
   await manager.signinRedirect();
+}
+
+export async function signupRedirect(): Promise<void> {
+  const manager = getUserManager();
+  if (!manager) {
+    throw new Error('OIDC configuration is invalid. Check environment variables.');
+  }
+  await manager.signinRedirect({
+    extraQueryParams: {
+      kc_action: 'register',
+    },
+  });
 }
 
 export async function signinCallback(): Promise<User> {

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { signinRedirect } from '../lib/auth/oidc';
+import { signupRedirect } from '../lib/auth/oidc';
 import { useAuth } from '../hooks/useAuth';
 import { useSearchParams } from 'react-router-dom';
 import AuthLayout from '../components/auth/AuthLayout';
@@ -63,6 +63,18 @@ export default function Register() {
     e.preventDefault();
     clearErrorParam();
 
+    if (authProvider === 'keycloak') {
+      setLoading(true);
+      try {
+        await signupRedirect();
+      } catch (err) {
+        console.error('[Register] OIDC redirect failed', err);
+        setFormError('Unable to connect to authentication service. Please try again.');
+        setLoading(false);
+      }
+      return;
+    }
+
     // Validate fields
     const emailErr = validateEmail(email);
     const passwordErr = validatePassword(password);
@@ -76,9 +88,7 @@ export default function Register() {
 
     setLoading(true);
     try {
-      // Redirect to Keycloak for actual registration
-      // Name/email/password are visual - Keycloak handles the real registration
-      await signinRedirect();
+      await signupRedirect();
     } catch (err) {
       console.error('[Register] OIDC redirect failed', err);
       setFormError('Unable to connect to authentication service. Please try again.');

@@ -461,6 +461,10 @@ DOMAIN="uat.hometusk.example.com"
 curl -s -o /dev/null -w "%{http_code}" http://$DOMAIN/
 # Ожидание: 200 (или 301 если SSL включен)
 
+# Nginx health
+curl -s http://$DOMAIN/healthz
+# Ожидание: ok
+
 # Backend health
 curl -s http://$DOMAIN/actuator/health | python3 -m json.tool
 # Ожидание: {"status":"UP"}
@@ -703,6 +707,18 @@ deploy:
 
 # Или уменьшить heap в .env
 KEYCLOAK_JAVA_OPTS=-Xms256m -Xmx768m
+```
+
+### Keycloak падает с `schema "keycloak" does not exist`
+
+В свежих установках схема `keycloak` создается init-скриптом PostgreSQL из `infra/uat/postgres/init`.
+Если volume `hometusk_uat_postgres_data` уже был создан до появления init-скрипта, создайте схему вручную:
+
+```bash
+cd /opt/hometusk/hometusk/infra/uat
+docker compose stop keycloak
+docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "CREATE SCHEMA IF NOT EXISTS keycloak;"'
+docker compose up -d --force-recreate keycloak
 ```
 
 ### Backend не может подключиться к Keycloak

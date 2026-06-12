@@ -116,7 +116,8 @@
       "defaultClientScopes": [
         "openid",
         "profile",
-        "email"
+        "email",
+        "offline_access"
       ],
       "optionalClientScopes": []
     },
@@ -137,7 +138,8 @@
       "defaultClientScopes": [
         "openid",
         "profile",
-        "email"
+        "email",
+        "offline_access"
       ]
     }
   ],
@@ -244,12 +246,22 @@
           }
         }
       ]
+    },
+    {
+      "name": "offline_access",
+      "description": "Offline access scope for refresh tokens",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "true"
+      }
     }
   ],
   "defaultDefaultClientScopes": [
     "openid",
     "profile",
-    "email"
+    "email",
+    "offline_access"
   ],
   "defaultOptionalClientScopes": [],
   "browserSecurityHeaders": {
