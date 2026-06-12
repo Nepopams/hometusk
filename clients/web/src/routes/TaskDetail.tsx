@@ -26,6 +26,7 @@ export default function TaskDetail() {
   const { t, formatDateTime, formatRelativeTime } = useI18n();
   const { taskId } = useParams();
   const { task, isLoading, error, refetch } = useTask(householdId, taskId);
+  const tasksPath = householdId ? `/households/${householdId}/tasks` : '/households';
 
   const handleRetry = useCallback(() => {
     refetch();
@@ -48,7 +49,7 @@ export default function TaskDetail() {
     return (
       <div className="task-detail">
         <div className="task-detail__wrapper">
-          <Link to="/tasks" className="task-detail__back">
+          <Link to={tasksPath} className="task-detail__back">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
@@ -84,7 +85,7 @@ export default function TaskDetail() {
     return (
       <div className="task-detail">
         <div className="task-detail__wrapper">
-          <Link to="/tasks" className="task-detail__back">
+          <Link to={tasksPath} className="task-detail__back">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
@@ -111,7 +112,7 @@ export default function TaskDetail() {
               <p className="task-detail__not-found-desc">
                 {t('tasks.taskNotFoundDesc')}
               </p>
-              <Link to="/tasks">
+              <Link to={tasksPath}>
                 <Button variant="primary" size="md">
                   {t('tasks.goToTasks')}
                 </Button>
@@ -128,7 +129,7 @@ export default function TaskDetail() {
     return (
       <div className="task-detail">
         <div className="task-detail__wrapper">
-          <Link to="/tasks" className="task-detail__back">
+          <Link to={tasksPath} className="task-detail__back">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
@@ -183,7 +184,7 @@ export default function TaskDetail() {
   return (
     <div className="task-detail">
       <div className="task-detail__wrapper">
-        <Link to="/tasks" className="task-detail__back">
+        <Link to={tasksPath} className="task-detail__back">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
