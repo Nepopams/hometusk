@@ -139,9 +139,8 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    # volumes:
-      # SSL certs (uncomment when available)
-      # - ./nginx/ssl:/etc/nginx/ssl:ro
+    volumes:
+      - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       backend:
         condition: service_healthy
