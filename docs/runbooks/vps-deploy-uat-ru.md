@@ -349,8 +349,10 @@ Required client setting: `hometusk-backend.fullScopeAllowed=true`.
 docker compose exec -T keycloak sh -lc '
 KC=/opt/keycloak/bin/kcadm.sh
 $KC config credentials --server http://localhost:8080 --realm master --user "$KEYCLOAK_ADMIN" --password "$KEYCLOAK_ADMIN_PASSWORD" >/dev/null
-USER_ID=$($KC get users -r hometusk -q username=service-account-hometusk-backend --fields id --format csv | tail -n 1 | tr -d "\"")
-$KC get users/$USER_ID/role-mappings -r hometusk
+CLIENT_UUID=$($KC get clients -r hometusk -q clientId=hometusk-backend --fields id --format csv | tail -n 1 | tr -d "\"")
+REALM_MANAGEMENT_UUID=$($KC get clients -r hometusk -q clientId=realm-management --fields id --format csv | tail -n 1 | tr -d "\"")
+SERVICE_ACCOUNT_USER_ID=$($KC get clients/$CLIENT_UUID/service-account-user -r hometusk --fields id --format csv | tail -n 1 | tr -d "\"")
+$KC get users/$SERVICE_ACCOUNT_USER_ID/role-mappings/clients/$REALM_MANAGEMENT_UUID/composite -r hometusk --fields name
 '
 ```
 

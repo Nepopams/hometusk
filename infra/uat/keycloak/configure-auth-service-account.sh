@@ -21,8 +21,29 @@ CLIENT_UUID=$("$KC" get clients \
   --fields id \
   --format csv | tail -n 1 | tr -d '"')
 
+REALM_MANAGEMENT_UUID=$("$KC" get clients \
+  -r "$REALM" \
+  -q clientId=realm-management \
+  --fields id \
+  --format csv | tail -n 1 | tr -d '"')
+
 if [ -z "$CLIENT_UUID" ]; then
   echo "Client $BACKEND_CLIENT_ID was not found in realm $REALM" >&2
+  exit 1
+fi
+
+if [ -z "$REALM_MANAGEMENT_UUID" ]; then
+  echo "Client realm-management was not found in realm $REALM" >&2
+  exit 1
+fi
+
+SERVICE_ACCOUNT_USER_ID=$("$KC" get "clients/$CLIENT_UUID/service-account-user" \
+  -r "$REALM" \
+  --fields id \
+  --format csv | tail -n 1 | tr -d '"')
+
+if [ -z "$SERVICE_ACCOUNT_USER_ID" ]; then
+  echo "Service account user for $BACKEND_CLIENT_ID was not found in realm $REALM" >&2
   exit 1
 fi
 
@@ -30,29 +51,30 @@ fi
   -r "$REALM" \
   -s fullScopeAllowed=true
 
-"$KC" add-roles \
-  -r "$REALM" \
-  --uusername "service-account-$BACKEND_CLIENT_ID" \
-  --cclientid realm-management \
-  --rolename manage-users
+grant_realm_management_role() {
+  "$KC" add-roles \
+    -r "$REALM" \
+    --uid "$SERVICE_ACCOUNT_USER_ID" \
+    --cclientid realm-management \
+    --rolename "$1"
+}
 
-"$KC" add-roles \
-  -r "$REALM" \
-  --uusername "service-account-$BACKEND_CLIENT_ID" \
-  --cclientid realm-management \
-  --rolename view-users
+grant_realm_management_role manage-users
+grant_realm_management_role view-users
+grant_realm_management_role query-users
+grant_realm_management_role view-realm
 
-"$KC" add-roles \
+EFFECTIVE_ROLES=$("$KC" get "users/$SERVICE_ACCOUNT_USER_ID/role-mappings/clients/$REALM_MANAGEMENT_UUID/composite" \
   -r "$REALM" \
-  --uusername "service-account-$BACKEND_CLIENT_ID" \
-  --cclientid realm-management \
-  --rolename query-users
+  --fields name \
+  --format csv)
 
-"$KC" add-roles \
-  -r "$REALM" \
-  --uusername "service-account-$BACKEND_CLIENT_ID" \
-  --cclientid realm-management \
-  --rolename view-realm
+for role in manage-users view-users query-users view-realm; do
+  if ! printf '%s\n' "$EFFECTIVE_ROLES" | grep -q "\"$role\""; then
+    echo "Role realm-management:$role is not effective for service-account-$BACKEND_CLIENT_ID" >&2
+    exit 1
+  fi
+done
 
 echo "Configured $BACKEND_CLIENT_ID fullScopeAllowed=true"
-echo "Granted realm-management manage-users/view-users/query-users/view-realm to service-account-$BACKEND_CLIENT_ID in realm $REALM"
+echo "Granted effective realm-management manage-users/view-users/query-users/view-realm to service-account-$BACKEND_CLIENT_ID in realm $REALM"
