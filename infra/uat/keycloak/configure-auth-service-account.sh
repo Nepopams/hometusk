@@ -66,10 +66,15 @@ fi
   -r "$REALM"
 
 MAPPER_NAME="hometusk realm-management client roles"
-EXISTING_MAPPER_ID=$("$KC" get "clients/$CLIENT_UUID/protocol-mappers/models" \
+MAPPERS_CSV=$("$KC" get "clients/$CLIENT_UUID/protocol-mappers/models" \
   -r "$REALM" \
   --fields id,name \
-  --format csv | awk -F, -v name="\"$MAPPER_NAME\"" '$2 == name { gsub(/"/, "", $1); print $1; exit }')
+  --format csv)
+EXISTING_MAPPER_ID=$(printf '%s\n' "$MAPPERS_CSV" \
+  | grep -F ",\"$MAPPER_NAME\"" \
+  | head -n 1 \
+  | cut -d, -f1 \
+  | tr -d '"')
 
 if [ -n "$EXISTING_MAPPER_ID" ]; then
   "$KC" delete "clients/$CLIENT_UUID/protocol-mappers/models/$EXISTING_MAPPER_ID" \
