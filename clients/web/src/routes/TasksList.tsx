@@ -251,7 +251,7 @@ export default function TasksList() {
           <div className="tasks__section-header">
             <h2 className="tasks__section-title">{t('tasks.title')}</h2>
             <div className="tasks__section-actions">
-              <Link to="/commands">
+              <Link to={`/households/${householdId}/commands`}>
                 <Button variant="primary" size="sm">
                   {t('tasks.addViaCommand')}
                 </Button>
