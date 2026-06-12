@@ -342,6 +342,7 @@ docker compose exec -T keycloak sh < keycloak/configure-auth-service-account.sh
 
 Required `realm-management` client roles: `manage-users`, `view-users`, `view-realm`, `query-users`.
 Required client setting: `hometusk-backend.fullScopeAllowed=true`.
+Required default client scope: `roles`.
 
 Проверка:
 

@@ -117,6 +117,7 @@
         "openid",
         "profile",
         "email",
+        "roles",
         "offline_access"
       ],
       "optionalClientScopes": []
@@ -139,6 +140,7 @@
         "openid",
         "profile",
         "email",
+        "roles",
         "offline_access"
       ]
     }

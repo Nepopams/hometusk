@@ -27,6 +27,12 @@ REALM_MANAGEMENT_UUID=$("$KC" get clients \
   --fields id \
   --format csv | tail -n 1 | tr -d '"')
 
+ROLES_SCOPE_UUID=$("$KC" get client-scopes \
+  -r "$REALM" \
+  -q name=roles \
+  --fields id \
+  --format csv | tail -n 1 | tr -d '"')
+
 if [ -z "$CLIENT_UUID" ]; then
   echo "Client $BACKEND_CLIENT_ID was not found in realm $REALM" >&2
   exit 1
@@ -34,6 +40,11 @@ fi
 
 if [ -z "$REALM_MANAGEMENT_UUID" ]; then
   echo "Client realm-management was not found in realm $REALM" >&2
+  exit 1
+fi
+
+if [ -z "$ROLES_SCOPE_UUID" ]; then
+  echo "Client scope roles was not found in realm $REALM" >&2
   exit 1
 fi
 
@@ -50,6 +61,9 @@ fi
 "$KC" update "clients/$CLIENT_UUID" \
   -r "$REALM" \
   -s fullScopeAllowed=true
+
+"$KC" update "clients/$CLIENT_UUID/default-client-scopes/$ROLES_SCOPE_UUID" \
+  -r "$REALM"
 
 grant_realm_management_role() {
   "$KC" add-roles \
@@ -77,4 +91,5 @@ for role in manage-users view-users query-users view-realm; do
 done
 
 echo "Configured $BACKEND_CLIENT_ID fullScopeAllowed=true"
+echo "Configured $BACKEND_CLIENT_ID default client scope roles"
 echo "Granted effective realm-management manage-users/view-users/query-users/view-realm to service-account-$BACKEND_CLIENT_ID in realm $REALM"
