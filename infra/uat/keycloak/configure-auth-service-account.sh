@@ -15,6 +15,21 @@ SERVER="${KEYCLOAK_ADMIN_SERVER:-http://localhost:8080}"
   --user "$KEYCLOAK_ADMIN" \
   --password "$KEYCLOAK_ADMIN_PASSWORD" >/dev/null
 
+CLIENT_UUID=$("$KC" get clients \
+  -r "$REALM" \
+  -q clientId="$BACKEND_CLIENT_ID" \
+  --fields id \
+  --format csv | tail -n 1 | tr -d '"')
+
+if [ -z "$CLIENT_UUID" ]; then
+  echo "Client $BACKEND_CLIENT_ID was not found in realm $REALM" >&2
+  exit 1
+fi
+
+"$KC" update "clients/$CLIENT_UUID" \
+  -r "$REALM" \
+  -s fullScopeAllowed=true
+
 "$KC" add-roles \
   -r "$REALM" \
   --uusername "service-account-$BACKEND_CLIENT_ID" \
@@ -31,6 +46,13 @@ SERVER="${KEYCLOAK_ADMIN_SERVER:-http://localhost:8080}"
   -r "$REALM" \
   --uusername "service-account-$BACKEND_CLIENT_ID" \
   --cclientid realm-management \
+  --rolename query-users
+
+"$KC" add-roles \
+  -r "$REALM" \
+  --uusername "service-account-$BACKEND_CLIENT_ID" \
+  --cclientid realm-management \
   --rolename view-realm
 
-echo "Granted realm-management manage-users/view-users/view-realm to service-account-$BACKEND_CLIENT_ID in realm $REALM"
+echo "Configured $BACKEND_CLIENT_ID fullScopeAllowed=true"
+echo "Granted realm-management manage-users/view-users/query-users/view-realm to service-account-$BACKEND_CLIENT_ID in realm $REALM"

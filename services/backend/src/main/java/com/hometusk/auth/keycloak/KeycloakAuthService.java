@@ -65,9 +65,9 @@ public class KeycloakAuthService {
             if (isInvalidGrant(ex)) {
                 throw new BusinessException(ErrorCode.AUTH_INVALID_CREDENTIALS, "Invalid email or password");
             }
-            throw authProviderUnavailable(ex);
+            throw authProviderUnavailable("user-token-grant", ex);
         } catch (RestClientException ex) {
-            throw authProviderUnavailable(ex);
+            throw authProviderUnavailable("user-token-grant", ex);
         }
     }
 
@@ -75,17 +75,8 @@ public class KeycloakAuthService {
         String normalizedEmail = normalizeEmail(email);
         String adminToken = requestAdminToken();
 
-        try {
-            String userId = createUser(adminToken, name, normalizedEmail, password);
-            assignRealmRole(adminToken, userId, USER_ROLE);
-        } catch (RestClientResponseException ex) {
-            if (isStatus(ex, 409)) {
-                throw new BusinessException(ErrorCode.AUTH_EMAIL_EXISTS, "An account with this email already exists");
-            }
-            throw authProviderUnavailable(ex);
-        } catch (RestClientException ex) {
-            throw authProviderUnavailable(ex);
-        }
+        String userId = createUser(adminToken, name, normalizedEmail, password);
+        assignRealmRole(adminToken, userId, USER_ROLE);
 
         return login(normalizedEmail, password);
     }
@@ -101,9 +92,9 @@ public class KeycloakAuthService {
                 throw new BusinessException(
                         ErrorCode.AUTH_REFRESH_REQUIRED, "Authentication session must be refreshed");
             }
-            throw authProviderUnavailable(ex);
+            throw authProviderUnavailable("refresh-token-grant", ex);
         } catch (RestClientException ex) {
-            throw authProviderUnavailable(ex);
+            throw authProviderUnavailable("refresh-token-grant", ex);
         }
     }
 
@@ -153,9 +144,9 @@ public class KeycloakAuthService {
             }
             return response.accessToken();
         } catch (RestClientResponseException ex) {
-            throw authProviderUnavailable(ex);
+            throw authProviderUnavailable("admin-token-grant", ex);
         } catch (RestClientException ex) {
-            throw authProviderUnavailable(ex);
+            throw authProviderUnavailable("admin-token-grant", ex);
         }
     }
 
@@ -172,14 +163,24 @@ public class KeycloakAuthService {
     private String createUser(String adminToken, String name, String email, String password) {
         UserCreateRequest request = UserCreateRequest.from(name, email, password);
 
-        ResponseEntity<Void> response = restClient
-                .post()
-                .uri(properties.adminRealmPath() + "/users")
-                .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(request)
-                .retrieve()
-                .toBodilessEntity();
+        ResponseEntity<Void> response;
+        try {
+            response = restClient
+                    .post()
+                    .uri(properties.adminRealmPath() + "/users")
+                    .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(request)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (RestClientResponseException ex) {
+            if (isStatus(ex, 409)) {
+                throw new BusinessException(ErrorCode.AUTH_EMAIL_EXISTS, "An account with this email already exists");
+            }
+            throw authProviderUnavailable("admin-create-user", ex);
+        } catch (RestClientException ex) {
+            throw authProviderUnavailable("admin-create-user", ex);
+        }
 
         String userId = extractUserId(response.getHeaders().getLocation());
         if (userId != null) {
@@ -190,16 +191,23 @@ public class KeycloakAuthService {
     }
 
     private String lookupUserId(String adminToken, String email) {
-        KeycloakUser[] users = restClient
-                .get()
-                .uri(uriBuilder -> uriBuilder
-                        .path(properties.adminRealmPath() + "/users")
-                        .queryParam("username", email)
-                        .queryParam("exact", "true")
-                        .build())
-                .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
-                .retrieve()
-                .body(KeycloakUser[].class);
+        KeycloakUser[] users;
+        try {
+            users = restClient
+                    .get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path(properties.adminRealmPath() + "/users")
+                            .queryParam("username", email)
+                            .queryParam("exact", "true")
+                            .build())
+                    .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
+                    .retrieve()
+                    .body(KeycloakUser[].class);
+        } catch (RestClientResponseException ex) {
+            throw authProviderUnavailable("admin-lookup-user", ex);
+        } catch (RestClientException ex) {
+            throw authProviderUnavailable("admin-lookup-user", ex);
+        }
 
         if (users == null || users.length == 0 || users[0].id() == null) {
             throw new BusinessException(
@@ -209,25 +217,38 @@ public class KeycloakAuthService {
     }
 
     private void assignRealmRole(String adminToken, String userId, String roleName) {
-        RoleRepresentation role = restClient
-                .get()
-                .uri(properties.adminRealmPath() + "/roles/" + roleName)
-                .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
-                .retrieve()
-                .body(RoleRepresentation.class);
+        RoleRepresentation role;
+        try {
+            role = restClient
+                    .get()
+                    .uri(properties.adminRealmPath() + "/roles/" + roleName)
+                    .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
+                    .retrieve()
+                    .body(RoleRepresentation.class);
+        } catch (RestClientResponseException ex) {
+            throw authProviderUnavailable("admin-get-realm-role", ex);
+        } catch (RestClientException ex) {
+            throw authProviderUnavailable("admin-get-realm-role", ex);
+        }
 
         if (role == null || role.name() == null) {
             throw new BusinessException(ErrorCode.AUTH_PROVIDER_UNAVAILABLE, "Authentication provider role is missing");
         }
 
-        restClient
-                .post()
-                .uri(properties.adminRealmPath() + "/users/" + userId + "/role-mappings/realm")
-                .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(List.of(role))
-                .retrieve()
-                .toBodilessEntity();
+        try {
+            restClient
+                    .post()
+                    .uri(properties.adminRealmPath() + "/users/" + userId + "/role-mappings/realm")
+                    .header(HttpHeaders.AUTHORIZATION, bearer(adminToken))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(List.of(role))
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (RestClientResponseException ex) {
+            throw authProviderUnavailable("admin-assign-realm-role", ex);
+        } catch (RestClientException ex) {
+            throw authProviderUnavailable("admin-assign-realm-role", ex);
+        }
     }
 
     private MultiValueMap<String, String> baseUserClientForm(String grantType) {
@@ -239,20 +260,24 @@ public class KeycloakAuthService {
         return form;
     }
 
-    private BusinessException authProviderUnavailable(Exception ex) {
+    private BusinessException authProviderUnavailable(String operation, Exception ex) {
         if (ex instanceof RestClientResponseException responseException) {
             log.warn(
-                    "Keycloak auth request failed: status={}, response={}",
+                    "Keycloak auth request failed: operation={}, status={}, response={}",
+                    operation,
                     responseException.getStatusCode().value(),
                     sanitizeResponse(responseException.getResponseBodyAsString()));
             return new BusinessException(ErrorCode.AUTH_PROVIDER_UNAVAILABLE, "Authentication provider is unavailable");
         }
         if (ex instanceof ResourceAccessException resourceAccessException
                 && resourceAccessException.getCause() instanceof SocketTimeoutException) {
-            log.warn("Keycloak auth request timed out: {}", resourceAccessException.getMessage());
+            log.warn(
+                    "Keycloak auth request timed out: operation={}, message={}",
+                    operation,
+                    resourceAccessException.getMessage());
             return new BusinessException(ErrorCode.AUTH_PROVIDER_UNAVAILABLE, "Authentication provider timed out");
         }
-        log.warn("Keycloak auth request failed: {}", ex.getMessage());
+        log.warn("Keycloak auth request failed: operation={}, message={}", operation, ex.getMessage());
         return new BusinessException(ErrorCode.AUTH_PROVIDER_UNAVAILABLE, "Authentication provider is unavailable");
     }
 
