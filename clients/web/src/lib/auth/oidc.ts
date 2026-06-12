@@ -1,4 +1,10 @@
-import { UserManager, WebStorageStateStore, type User } from 'oidc-client-ts';
+import {
+  UserManager,
+  WebStorageStateStore,
+  type CreateSigninRequestArgs,
+  type SigninRequest,
+  type User,
+} from 'oidc-client-ts';
 
 const authority = import.meta.env.VITE_OIDC_AUTHORITY;
 const clientId = import.meta.env.VITE_OIDC_CLIENT_ID;
@@ -19,6 +25,12 @@ function validateConfig(): boolean {
 }
 
 let userManager: UserManager | null = null;
+
+type RegistrationCapableUserManager = UserManager & {
+  _client: {
+    createSigninRequest(args: CreateSigninRequestArgs): Promise<SigninRequest>;
+  };
+};
 
 function getUserManager(): UserManager | null {
   if (userManager) return userManager;
@@ -56,11 +68,17 @@ export async function signupRedirect(): Promise<void> {
   if (!manager) {
     throw new Error('OIDC configuration is invalid. Check environment variables.');
   }
-  await manager.signinRedirect({
-    extraQueryParams: {
-      kc_action: 'register',
-    },
+
+  const request = await (manager as RegistrationCapableUserManager)._client.createSigninRequest({
+    request_type: 'si:r',
   });
+  const registrationUrl = new URL(request.url);
+  registrationUrl.pathname = registrationUrl.pathname.replace(
+    /\/protocol\/openid-connect\/auth$/,
+    '/protocol/openid-connect/registrations'
+  );
+
+  window.location.assign(registrationUrl.toString());
 }
 
 export async function signinCallback(): Promise<User> {
