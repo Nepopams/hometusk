@@ -136,6 +136,24 @@
       "serviceAccountsEnabled": true,
       "authorizationServicesEnabled": false,
       "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "hometusk realm-management client roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-client-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "usermodel.clientRoleMapping.clientId": "realm-management",
+            "usermodel.clientRoleMapping.rolePrefix": "",
+            "claim.name": "resource_access.realm-management.roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "userinfo.token.claim": "false"
+          }
+        }
+      ],
       "defaultClientScopes": [
         "openid",
         "profile",

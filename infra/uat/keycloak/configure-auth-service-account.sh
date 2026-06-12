@@ -65,6 +65,31 @@ fi
 "$KC" update "clients/$CLIENT_UUID/default-client-scopes/$ROLES_SCOPE_UUID" \
   -r "$REALM"
 
+MAPPER_NAME="hometusk realm-management client roles"
+EXISTING_MAPPER_ID=$("$KC" get "clients/$CLIENT_UUID/protocol-mappers/models" \
+  -r "$REALM" \
+  --fields id,name \
+  --format csv | awk -F, -v name="\"$MAPPER_NAME\"" '$2 == name { gsub(/"/, "", $1); print $1; exit }')
+
+if [ -n "$EXISTING_MAPPER_ID" ]; then
+  "$KC" delete "clients/$CLIENT_UUID/protocol-mappers/models/$EXISTING_MAPPER_ID" \
+    -r "$REALM"
+fi
+
+"$KC" create "clients/$CLIENT_UUID/protocol-mappers/models" \
+  -r "$REALM" \
+  -s name="$MAPPER_NAME" \
+  -s protocol=openid-connect \
+  -s protocolMapper=oidc-usermodel-client-role-mapper \
+  -s config.\"usermodel.clientRoleMapping.clientId\"=realm-management \
+  -s config.\"usermodel.clientRoleMapping.rolePrefix\"= \
+  -s config.\"claim.name\"=resource_access.realm-management.roles \
+  -s config.\"jsonType.label\"=String \
+  -s config.\"multivalued\"=true \
+  -s config.\"access.token.claim\"=true \
+  -s config.\"id.token.claim\"=false \
+  -s config.\"userinfo.token.claim\"=false
+
 grant_realm_management_role() {
   "$KC" add-roles \
     -r "$REALM" \
@@ -92,4 +117,5 @@ done
 
 echo "Configured $BACKEND_CLIENT_ID fullScopeAllowed=true"
 echo "Configured $BACKEND_CLIENT_ID default client scope roles"
+echo "Configured $BACKEND_CLIENT_ID protocol mapper $MAPPER_NAME"
 echo "Granted effective realm-management manage-users/view-users/query-users/view-realm to service-account-$BACKEND_CLIENT_ID in realm $REALM"
