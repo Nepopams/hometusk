@@ -240,11 +240,28 @@ public class KeycloakAuthService {
     }
 
     private BusinessException authProviderUnavailable(Exception ex) {
+        if (ex instanceof RestClientResponseException responseException) {
+            log.warn(
+                    "Keycloak auth request failed: status={}, response={}",
+                    responseException.getStatusCode().value(),
+                    sanitizeResponse(responseException.getResponseBodyAsString()));
+            return new BusinessException(ErrorCode.AUTH_PROVIDER_UNAVAILABLE, "Authentication provider is unavailable");
+        }
         if (ex instanceof ResourceAccessException resourceAccessException
                 && resourceAccessException.getCause() instanceof SocketTimeoutException) {
+            log.warn("Keycloak auth request timed out: {}", resourceAccessException.getMessage());
             return new BusinessException(ErrorCode.AUTH_PROVIDER_UNAVAILABLE, "Authentication provider timed out");
         }
+        log.warn("Keycloak auth request failed: {}", ex.getMessage());
         return new BusinessException(ErrorCode.AUTH_PROVIDER_UNAVAILABLE, "Authentication provider is unavailable");
+    }
+
+    private String sanitizeResponse(String responseBody) {
+        if (responseBody == null || responseBody.isBlank()) {
+            return "<empty>";
+        }
+        String compact = responseBody.replaceAll("\\s+", " ").trim();
+        return compact.length() <= 500 ? compact : compact.substring(0, 500) + "...";
     }
 
     private boolean isInvalidGrant(RestClientResponseException ex) {
