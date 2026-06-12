@@ -1,17 +1,19 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { STORAGE_KEYS } from '../lib/constants';
 import { useAuth } from '../hooks/useAuth';
+import { useI18n } from '../i18n';
 
 interface ProtectedRouteProps {
   requireHousehold?: boolean;
 }
 
 export function ProtectedRoute({ requireHousehold = false }: ProtectedRouteProps) {
+  const { t } = useI18n();
   const { status, isAuthenticated, householdId, error } = useAuth();
   const location = useLocation();
 
   if (status === 'loading') {
-    return <div className="page">Loading...</div>;
+    return <div className="page">{t('common.loading')}</div>;
   }
 
   if (!isAuthenticated) {

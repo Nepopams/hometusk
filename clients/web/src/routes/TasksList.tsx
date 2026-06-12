@@ -9,6 +9,7 @@ import TaskFiltersPanel from '../components/tasks/TaskFilters';
 import TasksCard from '../components/tasks/TasksTable';
 import { ApiError } from '../lib/errors';
 import { executeCommand, generateIdempotencyKey } from '../lib/api';
+import { useI18n } from '../i18n';
 import type { TaskFilters as TaskFiltersType, TaskStatus, CommandRequest } from '../types/api';
 import './TasksList.css';
 
@@ -30,6 +31,7 @@ const validStatuses: TaskStatus[] = ['open', 'in_progress', 'done', 'cancelled']
  */
 export default function TasksList() {
   const { householdId } = useAuth();
+  const { t } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const statusParam = searchParams.get('status');
@@ -109,7 +111,7 @@ export default function TasksList() {
       <div className="tasks">
         <div className="tasks__wrapper">
           <div className="tasks__empty-page">
-            <p>Please select a household to view tasks.</p>
+            <p>{t('tasks.noHousehold')}</p>
           </div>
         </div>
       </div>
@@ -123,7 +125,7 @@ export default function TasksList() {
         <div className="tasks__wrapper">
           <section className="tasks__section">
             <div className="tasks__section-header">
-              <h2 className="tasks__section-title">Tasks</h2>
+              <h2 className="tasks__section-title">{t('tasks.title')}</h2>
             </div>
             <div className="tasks__card">
               <div className="tasks__error">
@@ -140,14 +142,14 @@ export default function TasksList() {
                   <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
                 </svg>
                 <div className="tasks__error-content">
-                  <h3 className="tasks__error-title">Access Denied</h3>
+                  <h3 className="tasks__error-title">{t('common.accessDenied')}</h3>
                   <p className="tasks__error-message">
-                    You do not have access to this household.
+                    {t('tasks.noAccess')}
                   </p>
                 </div>
                 <Link to="/households">
                   <Button variant="primary" size="sm">
-                    Back to Households
+                    {t('common.backToHouseholds')}
                   </Button>
                 </Link>
               </div>
@@ -165,7 +167,7 @@ export default function TasksList() {
         <div className="tasks__wrapper">
           <section className="tasks__section">
             <div className="tasks__section-header">
-              <h2 className="tasks__section-title">Tasks</h2>
+              <h2 className="tasks__section-title">{t('tasks.title')}</h2>
             </div>
             <div className="tasks__card">
               <div className="tasks__error">
@@ -183,13 +185,13 @@ export default function TasksList() {
                   <line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
                 <div className="tasks__error-content">
-                  <h3 className="tasks__error-title">Unable to load tasks</h3>
+                  <h3 className="tasks__error-title">{t('tasks.unableLoad')}</h3>
                   <p className="tasks__error-message">
-                    Check your connection and try again.
+                    {t('common.checkConnection')}
                   </p>
                 </div>
                 <Button variant="primary" size="sm" onClick={handleRetry}>
-                  Retry
+                  {t('common.retry')}
                 </Button>
               </div>
             </div>
@@ -206,7 +208,7 @@ export default function TasksList() {
         <div className="tasks__wrapper">
           <section className="tasks__section">
             <div className="tasks__section-header">
-              <h2 className="tasks__section-title">Tasks</h2>
+              <h2 className="tasks__section-title">{t('tasks.title')}</h2>
             </div>
 
             <TaskFiltersPanel
@@ -247,11 +249,11 @@ export default function TasksList() {
       <div className="tasks__wrapper">
         <section className="tasks__section">
           <div className="tasks__section-header">
-            <h2 className="tasks__section-title">Tasks</h2>
+            <h2 className="tasks__section-title">{t('tasks.title')}</h2>
             <div className="tasks__section-actions">
               <Link to="/commands">
                 <Button variant="primary" size="sm">
-                  Add via command
+                  {t('tasks.addViaCommand')}
                 </Button>
               </Link>
             </div>
@@ -271,13 +273,13 @@ export default function TasksList() {
 
           {hasActiveFilters && (
             <div className="tasks__active-filters">
-              <span>Filters active</span>
+              <span>{t('common.filtersActive')}</span>
               <button
                 type="button"
                 className="tasks__clear-filters"
                 onClick={clearAllFilters}
               >
-                Clear all
+                {t('common.clearAll')}
               </button>
             </div>
           )}
@@ -292,7 +294,9 @@ export default function TasksList() {
 
           {tasks.length >= 10 && (
             <p className="tasks__hint">
-              {tasks.length} tasks {hasActiveFilters ? 'matching filters' : 'total'}
+              {hasActiveFilters
+                ? t('tasks.countMatching', { count: tasks.length })
+                : t('tasks.countTotal', { count: tasks.length })}
             </p>
           )}
         </section>

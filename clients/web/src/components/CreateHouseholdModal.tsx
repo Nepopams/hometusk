@@ -4,6 +4,7 @@ import { createHousehold } from '../lib/api';
 import { ApiError } from '../lib/errors';
 import { useAuth } from '../hooks/useAuth';
 import { Button } from './ui';
+import { useI18n } from '../i18n';
 import './CreateHouseholdModal.css';
 
 const MAX_NAME_LENGTH = 50;
@@ -32,6 +33,7 @@ export default function CreateHouseholdModal({
 }: CreateHouseholdModalProps) {
   const navigate = useNavigate();
   const { selectHousehold, refetchUser } = useAuth();
+  const { t } = useI18n();
 
   const modalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -92,10 +94,10 @@ export default function CreateHouseholdModal({
 
   const getValidationError = (): string | null => {
     if (trimmedName.length === 0) {
-      return 'Please enter a household name';
+      return t('household.enterName');
     }
     if (trimmedName.length > MAX_NAME_LENGTH) {
-      return `Name must be ${MAX_NAME_LENGTH} characters or less`;
+      return t('household.nameTooLong', { count: MAX_NAME_LENGTH });
     }
     return null;
   };
@@ -130,9 +132,9 @@ export default function CreateHouseholdModal({
           typeof err.body === 'object' && err.body !== null && 'message' in err.body
             ? (err.body as { message?: string }).message
             : undefined;
-        setError(apiMessage || 'Unable to create household. Please try again.');
+        setError(apiMessage || t('household.unableCreateTry'));
       } else {
-        setError('Something went wrong. Please try again.');
+        setError(t('common.somethingWentWrong'));
       }
       setIsSubmitting(false);
     }
@@ -182,7 +184,7 @@ export default function CreateHouseholdModal({
         onKeyDown={handleKeyDown}
         role="dialog"
         aria-modal="true"
-        aria-label="Create household"
+        aria-label={t('household.createTitle')}
         tabIndex={-1}
       >
         {/* Header */}
@@ -194,14 +196,14 @@ export default function CreateHouseholdModal({
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
             </div>
-            <h2 className="create-household-modal__title">Create household</h2>
+            <h2 className="create-household-modal__title">{t('household.createTitle')}</h2>
           </div>
           <button
             type="button"
             className="create-household-modal__close"
             onClick={onClose}
             disabled={isSubmitting}
-            aria-label="Close"
+            aria-label={t('common.close')}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -216,19 +218,19 @@ export default function CreateHouseholdModal({
         {/* Body */}
         <form className="create-household-modal__body" onSubmit={handleSubmit}>
           <p className="create-household-modal__microcopy">
-            Give your household a name you&apos;ll recognize.
+            {t('household.createMicrocopy')}
           </p>
 
           <div className="create-household-modal__field">
             <label htmlFor="household-name" className="create-household-modal__label">
-              Household name
+              {t('household.nameLabel')}
             </label>
             <input
               ref={inputRef}
               id="household-name"
               type="text"
               className={`create-household-modal__input ${error ? 'create-household-modal__input--error' : ''}`}
-              placeholder="e.g. The Smiths, Beach House"
+              placeholder={t('household.nameExample')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={MAX_NAME_LENGTH + 10}
@@ -242,7 +244,7 @@ export default function CreateHouseholdModal({
               </span>
             )}
             <span id="create-household-hint" className="create-household-modal__hint">
-              Max {MAX_NAME_LENGTH} characters
+              {t('common.maxCharacters', { count: MAX_NAME_LENGTH })}
             </span>
           </div>
         </form>
@@ -259,7 +261,7 @@ export default function CreateHouseholdModal({
             onClick={onClose}
             disabled={isSubmitting}
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             type="submit"
@@ -269,7 +271,7 @@ export default function CreateHouseholdModal({
             disabled={isSubmitting}
             onClick={handleSubmit}
           >
-            Create household
+            {t('household.create')}
           </Button>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { createHousehold, acceptInvite } from '../lib/api';
 import { ApiError } from '../lib/errors';
 import { Button } from '../components/ui';
+import { useI18n } from '../i18n';
 import './HouseholdSelector.css';
 
 const MAX_NAME_LENGTH = 80;
@@ -26,6 +27,7 @@ type IconVariant = (typeof ICON_VARIANTS)[number];
  */
 export default function HouseholdSelector() {
   const { user, status, selectHousehold, refetchUser } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
 
   // Create household state
@@ -77,11 +79,11 @@ export default function HouseholdSelector() {
 
     const trimmedName = createName.trim();
     if (!trimmedName) {
-      setCreateError('Name is required');
+      setCreateError(t('household.nameRequired'));
       return;
     }
     if (trimmedName.length > MAX_NAME_LENGTH) {
-      setCreateError(`Name must be ${MAX_NAME_LENGTH} characters or less`);
+      setCreateError(t('household.nameTooLong', { count: MAX_NAME_LENGTH }));
       return;
     }
 
@@ -97,9 +99,9 @@ export default function HouseholdSelector() {
           typeof err.body === 'object' && err.body !== null && 'message' in err.body
             ? (err.body as { message?: string }).message
             : undefined;
-        setCreateError(apiMessage || 'Failed to create household');
+        setCreateError(apiMessage || t('household.failedCreate'));
       } else {
-        setCreateError('An unexpected error occurred');
+        setCreateError(t('household.unexpectedError'));
       }
       setIsCreating(false);
     }
@@ -112,7 +114,7 @@ export default function HouseholdSelector() {
 
     const trimmedCode = inviteCode.trim();
     if (!trimmedCode) {
-      setJoinError('Invite code is required');
+      setJoinError(t('household.inviteRequired'));
       return;
     }
 
@@ -125,14 +127,14 @@ export default function HouseholdSelector() {
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 404) {
-          setJoinError('Invalid invite code');
+          setJoinError(t('household.invalidInvite'));
         } else if (err.status === 410) {
-          setJoinError('This invite has expired');
+          setJoinError(t('household.inviteExpired'));
         } else {
-          setJoinError('Failed to join household');
+          setJoinError(t('household.failedJoin'));
         }
       } else {
-        setJoinError('An unexpected error occurred');
+        setJoinError(t('household.unexpectedError'));
       }
       setIsJoining(false);
     }
@@ -144,7 +146,7 @@ export default function HouseholdSelector() {
     try {
       await refetchUser();
     } catch {
-      setListError('Unable to load households');
+      setListError(t('household.unableLoad'));
     }
   };
 
@@ -165,7 +167,7 @@ export default function HouseholdSelector() {
           {user ? getInitials(user.displayName) : '?'}
         </div>
         <span className="household-landing__account-name">
-          {user?.displayName || 'Loading...'}
+          {user?.displayName || t('household.loadingAccount')}
         </span>
         <svg
           className="household-landing__account-chevron"
@@ -192,15 +194,15 @@ export default function HouseholdSelector() {
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
         </div>
-        <h3 className="action-block__title">Create household</h3>
+        <h3 className="action-block__title">{t('household.createTitle')}</h3>
       </div>
       <p className="action-block__description">
-        Start a new household to organize tasks and invite members.
+        {t('household.createDesc')}
       </p>
       <input
         type="text"
         className="action-block__input"
-        placeholder="Household name"
+        placeholder={t('household.namePlaceholder')}
         value={createName}
         onChange={(e) => setCreateName(e.target.value)}
         maxLength={MAX_NAME_LENGTH + 10}
@@ -216,7 +218,7 @@ export default function HouseholdSelector() {
         loading={isCreating}
         disabled={isCreating}
       >
-        Create
+        {t('common.create')}
       </Button>
     </form>
   );
@@ -233,15 +235,15 @@ export default function HouseholdSelector() {
             <path d="M12 22v-6a2 2 0 0 1 2-2h6" />
           </svg>
         </div>
-        <h3 className="action-block__title">Join via invite</h3>
+        <h3 className="action-block__title">{t('household.joinViaInvite')}</h3>
       </div>
       <p className="action-block__description">
-        Have an invite code? Enter it below to join an existing household.
+        {t('household.emptyDesc')}
       </p>
       <input
         type="text"
         className="action-block__input"
-        placeholder="Paste invite code"
+        placeholder={t('common.pasteCode')}
         value={inviteCode}
         onChange={(e) => setInviteCode(e.target.value)}
         disabled={isJoining}
@@ -256,7 +258,7 @@ export default function HouseholdSelector() {
         loading={isJoining}
         disabled={isJoining}
       >
-        Join
+        {t('common.join')}
       </Button>
     </form>
   );
@@ -277,11 +279,11 @@ export default function HouseholdSelector() {
   const renderError = () => (
     <div className="household-error">
       <div className="household-error__box">
-        <h3 className="household-error__title">Unable to load households</h3>
-        <p className="household-error__message">Check your connection and try again</p>
+        <h3 className="household-error__title">{t('household.unableLoad')}</h3>
+        <p className="household-error__message">{t('common.checkConnection')}</p>
       </div>
       <Button variant="primary" size="md" onClick={handleRetry}>
-        Retry
+        {t('common.retry')}
       </Button>
     </div>
   );
@@ -297,7 +299,7 @@ export default function HouseholdSelector() {
           onKeyDown={(e) => e.key === 'Enter' && handleSelect(household.id)}
           tabIndex={0}
           role="button"
-          aria-label={`Open ${household.name}`}
+          aria-label={t('household.openNamed', { name: household.name })}
         >
           <div className={`household-item__icon household-item__icon--${getIconVariant(index)}`}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -318,7 +320,7 @@ export default function HouseholdSelector() {
               handleSelect(household.id);
             }}
           >
-            Open
+            {t('household.open')}
           </Button>
         </div>
       ))}
@@ -338,9 +340,9 @@ export default function HouseholdSelector() {
             </svg>
           </div>
           <div className="household-empty__text">
-            <h1 className="household-empty__title">Welcome to HomeTusk!</h1>
+            <h1 className="household-empty__title">{t('household.welcome')}</h1>
             <p className="household-empty__subtitle">
-              Get started by creating your first household or joining one with an invite code.
+              {t('household.welcomeSubtitle')}
             </p>
           </div>
           <div className="household-empty__cards">
@@ -358,7 +360,7 @@ export default function HouseholdSelector() {
       {renderHeader()}
       <main className="household-landing__main">
         <div className="household-landing__left">
-          <h2 className="household-landing__title">Your households</h2>
+          <h2 className="household-landing__title">{t('household.yourHouseholds')}</h2>
           {isLoading && renderSkeletons()}
           {listError && renderError()}
           {!isLoading && !listError && renderList()}

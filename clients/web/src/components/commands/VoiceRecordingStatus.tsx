@@ -1,4 +1,5 @@
 import './VoiceRecordingStatus.css';
+import { useI18n, type TranslationKey } from '../../i18n';
 
 export type VoiceRecordingState = 'recording' | 'uploading' | 'transcribing';
 
@@ -15,14 +16,14 @@ const formatDuration = (ms: number): string => {
   return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 };
 
-const getStateLabel = (state: VoiceRecordingState): string => {
+const getStateLabelKey = (state: VoiceRecordingState): TranslationKey => {
   switch (state) {
     case 'recording':
-      return 'Recording...';
+      return 'voice.recording';
     case 'uploading':
-      return 'Uploading...';
+      return 'voice.uploading';
     case 'transcribing':
-      return 'Transcribing...';
+      return 'voice.transcribing';
   }
 };
 
@@ -31,7 +32,8 @@ export function VoiceRecordingStatus({
   durationMs,
   onCancel,
 }: VoiceRecordingStatusProps) {
-  const stateLabel = getStateLabel(state);
+  const { t } = useI18n();
+  const stateLabel = t(getStateLabelKey(state));
 
   return (
     <div className="voice-recording-status" role="status" aria-live="polite">
@@ -44,7 +46,7 @@ export function VoiceRecordingStatus({
             />
             <span
               className="voice-recording-status__timer"
-              aria-label={`Recording time: ${formatDuration(durationMs)}`}
+              aria-label={t('voice.recordingTime', { time: formatDuration(durationMs) })}
             >
               {formatDuration(durationMs)}
             </span>
@@ -60,9 +62,9 @@ export function VoiceRecordingStatus({
         type="button"
         className="voice-recording-status__cancel"
         onClick={onCancel}
-        aria-label="Cancel voice input"
+        aria-label={t('voice.cancelInput')}
       >
-        Cancel
+        {t('voice.cancel')}
       </button>
       <span className="sr-only" aria-live="assertive">
         {stateLabel}

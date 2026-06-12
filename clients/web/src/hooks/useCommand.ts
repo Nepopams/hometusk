@@ -7,6 +7,7 @@ import {
   generateEntryId,
 } from '../lib/commandHistory';
 import { ApiError } from '../lib/errors';
+import { useI18n, type TranslationKey } from '../i18n';
 import type { CommandRequest, CommandResponse } from '../types/api';
 
 interface UseCommandState {
@@ -21,10 +22,10 @@ interface UseCommandReturn extends UseCommandState {
   reset: () => void;
 }
 
-const ERROR_MESSAGES: Record<number, string> = {
-  400: 'Invalid request. Please check your input.',
-  403: 'Access denied. You are not a member of this household.',
-  409: 'Command already submitted.',
+const ERROR_MESSAGE_KEYS: Record<number, TranslationKey> = {
+  400: 'commands.invalidRequest',
+  403: 'commands.accessDenied',
+  409: 'commands.alreadySubmitted',
 };
 
 const getApiErrorMessage = (err: ApiError): string | undefined => {
@@ -35,6 +36,7 @@ const getApiErrorMessage = (err: ApiError): string | undefined => {
 };
 
 export function useCommand(): UseCommandReturn {
+  const { t } = useI18n();
   const [state, setState] = useState<UseCommandState>({
     isLoading: false,
     response: null,
@@ -66,12 +68,12 @@ export function useCommand(): UseCommandReturn {
       idempotencyKeyRef.current = generateIdempotencyKey();
       return response;
     } catch (err) {
-      let errorMessage = 'An unexpected error occurred.';
+      let errorMessage = t('household.unexpectedError');
       let errorStatus: number | null = null;
 
       if (err instanceof ApiError) {
         errorStatus = err.status;
-        errorMessage = ERROR_MESSAGES[err.status] || getApiErrorMessage(err) || errorMessage;
+        errorMessage = (ERROR_MESSAGE_KEYS[err.status] && t(ERROR_MESSAGE_KEYS[err.status])) || getApiErrorMessage(err) || errorMessage;
         if (err.status === 409) {
           idempotencyKeyRef.current = generateIdempotencyKey();
         }
@@ -80,7 +82,7 @@ export function useCommand(): UseCommandReturn {
       setState({ isLoading: false, response: null, error: errorMessage, errorStatus });
       return null;
     }
-  }, []);
+  }, [t]);
 
   const reset = useCallback(() => {
     setState({ isLoading: false, response: null, error: null, errorStatus: null });

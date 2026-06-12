@@ -1,4 +1,5 @@
 import type { Badge } from '../../types/api';
+import { useI18n } from '../../i18n';
 
 interface BadgeGridProps {
   badges: Badge[];
@@ -17,11 +18,14 @@ const ICONS: Record<string, string> = {
 };
 
 export function BadgeGrid({ badges, title, emptyLabel = 'No badges yet' }: BadgeGridProps) {
+  const { t } = useI18n();
+  const resolvedEmptyLabel = emptyLabel === 'No badges yet' ? t('progress.noBadgesYet') : emptyLabel;
+
   return (
     <div className="badge-grid">
       {title && <h3 className="badge-grid__title">{title}</h3>}
       {badges.length === 0 ? (
-        <p className="badge-grid__empty">{emptyLabel}</p>
+        <p className="badge-grid__empty">{resolvedEmptyLabel}</p>
       ) : (
         <div className="badge-grid__items">
           {badges.map((badge) => (

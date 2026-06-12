@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom';
+import { useI18n } from '../i18n';
 import './NotFound.css';
 
 export default function NotFound() {
+  const { t } = useI18n();
+
   return (
     <div className="not-found">
       <div className="not-found__card">
@@ -12,16 +15,16 @@ export default function NotFound() {
           </svg>
         </div>
         <div className="not-found__code">404</div>
-        <h1 className="not-found__title">Page Not Found</h1>
+        <h1 className="not-found__title">{t('error.notFoundTitle')}</h1>
         <p className="not-found__message">
-          The page you are looking for does not exist or has been moved.
+          {t('error.notFoundMessage')}
         </p>
         <div className="not-found__actions">
           <Link to="/households" className="btn btn--primary btn--lg btn--full-width">
-            <span className="btn__label">Go to Home</span>
+            <span className="btn__label">{t('error.goToHome')}</span>
           </Link>
           <Link to="/login" className="btn btn--ghost btn--md btn--full-width">
-            <span className="btn__label">Sign In</span>
+            <span className="btn__label">{t('error.signIn')}</span>
           </Link>
         </div>
       </div>

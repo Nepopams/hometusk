@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useI18n } from '../../i18n';
 
 interface CopyButtonProps {
   text: string;
@@ -9,11 +10,14 @@ interface CopyButtonProps {
 
 export function CopyButton({
   text,
-  label = 'Copy',
-  successLabel = 'Copied',
+  label,
+  successLabel,
   className = '',
 }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
+  const { t } = useI18n();
+  const resolvedLabel = label ?? t('common.copy');
+  const resolvedSuccessLabel = successLabel ?? t('common.copied');
 
   const handleCopy = async () => {
     if (copied) return;
@@ -33,7 +37,7 @@ export function CopyButton({
       className={`copy-button ${className}`.trim()}
       onClick={handleCopy}
     >
-      {copied ? successLabel : label}
+      {copied ? resolvedSuccessLabel : resolvedLabel}
     </button>
   );
 }

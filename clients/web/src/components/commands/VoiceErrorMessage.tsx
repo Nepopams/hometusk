@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useI18n, type TranslationKey } from '../../i18n';
 import './VoiceErrorMessage.css';
 
 export type VoiceErrorType =
@@ -20,45 +21,45 @@ export interface VoiceErrorMessageProps {
   rateLimitResetMs?: number;
 }
 
-const ERROR_CONFIG: Record<VoiceErrorType, { message: string; showRetry: boolean }> = {
+const ERROR_CONFIG: Record<VoiceErrorType, { messageKey: TranslationKey; showRetry: boolean }> = {
   permission_denied: {
-    message: 'We need microphone access for voice input. Please allow it in your browser settings.',
+    messageKey: 'voice.permissionDenied',
     showRetry: false,
   },
   not_supported: {
-    message: "Voice input isn't available in this browser. Try Chrome, Firefox, or Edge.",
+    messageKey: 'voice.notSupported',
     showRetry: false,
   },
   recording_failed: {
-    message: 'Something went wrong with the recording. Want to try again?',
+    messageKey: 'voice.recordingFailed',
     showRetry: true,
   },
   no_audio_data: {
-    message: "We didn't catch any audio. Make sure your microphone is working.",
+    messageKey: 'voice.noAudio',
     showRetry: true,
   },
   upload_failed: {
-    message: "Couldn't upload the recording. Check your connection and try again.",
+    messageKey: 'voice.uploadFailed',
     showRetry: true,
   },
   transcription_failed: {
-    message: "We couldn't understand the audio. Try speaking more clearly.",
+    messageKey: 'voice.transcriptionFailed',
     showRetry: true,
   },
   timeout: {
-    message: 'The transcription took too long. Please try a shorter message.',
+    messageKey: 'voice.timeout',
     showRetry: true,
   },
   rate_limited: {
-    message: 'Too many requests.',
+    messageKey: 'voice.rateLimited',
     showRetry: true,
   },
   network_error: {
-    message: 'Network issue. Check your connection and try again.',
+    messageKey: 'voice.network',
     showRetry: true,
   },
   not_authenticated: {
-    message: 'Please sign in to use voice input.',
+    messageKey: 'voice.notAuthenticated',
     showRetry: false,
   },
 };
@@ -69,8 +70,9 @@ export function VoiceErrorMessage({
   onDismiss,
   rateLimitResetMs,
 }: VoiceErrorMessageProps) {
+  const { t } = useI18n();
   const config = ERROR_CONFIG[errorType] ?? {
-    message: 'Something went wrong. Please try again.',
+    messageKey: 'common.somethingWentWrong',
     showRetry: true,
   };
 
@@ -105,8 +107,8 @@ export function VoiceErrorMessage({
 
   const displayMessage =
     errorType === 'rate_limited' && countdown !== null && countdown > 0
-      ? `Too many requests. You can try again in ${countdown}s.`
-      : config.message;
+      ? t('voice.rateLimitedCountdown', { count: countdown })
+      : t(config.messageKey);
 
   return (
     <div className="voice-error-message" role="alert" aria-live="assertive">
@@ -122,7 +124,7 @@ export function VoiceErrorMessage({
             onClick={onRetry}
             disabled={errorType === 'rate_limited' && countdown !== null && countdown > 0}
           >
-            Try again
+            {t('common.tryAgain')}
           </button>
         )}
         <button
@@ -130,7 +132,7 @@ export function VoiceErrorMessage({
           className="ghost-button voice-error-message__dismiss"
           onClick={onDismiss}
         >
-          Type instead
+          {t('voice.typeInstead')}
         </button>
       </div>
     </div>

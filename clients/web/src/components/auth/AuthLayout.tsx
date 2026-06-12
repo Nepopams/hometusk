@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import LanguageSwitcher from '../LanguageSwitcher';
 import './AuthLayout.css';
 
 interface AuthLayoutProps {
@@ -27,6 +28,9 @@ interface AuthLayoutProps {
 export default function AuthLayout({ children, footer }: AuthLayoutProps) {
   return (
     <div className="auth-layout">
+      <div className="auth-layout__language">
+        <LanguageSwitcher />
+      </div>
       <div className="auth-layout__content">{children}</div>
       {footer && <div className="auth-layout__footer">{footer}</div>}
     </div>

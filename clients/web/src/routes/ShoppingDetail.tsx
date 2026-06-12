@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useMarketplaceTemplates } from '../hooks/useMarketplaceTemplates';
 import { useShoppingItems } from '../hooks/useShoppingItems';
+import { useI18n } from '../i18n';
 import { createShoppingRun, exportShoppingList, getShoppingList } from '../lib/api';
 import { ApiError } from '../lib/errors';
 import { buildMarketplaceUrl } from '../lib/marketplaceUrl';
@@ -28,6 +29,7 @@ import './ShoppingDetail.css';
  * @see Pencil frames: dataShopping (shopping item interface)
  */
 export default function ShoppingDetail() {
+  const { t } = useI18n();
   const { householdId } = useAuth();
   const { listId } = useParams();
   const navigate = useNavigate();
@@ -72,9 +74,9 @@ export default function ShoppingDetail() {
 
     getShoppingList(householdId, listId)
       .then((data) => setList(data))
-      .catch((e) => setListError(e instanceof Error ? e : new Error('Failed to load list')))
+      .catch((e) => setListError(e instanceof Error ? e : new Error(t('shopping.failedLoadList'))))
       .finally(() => setListLoading(false));
-  }, [householdId, listId]);
+  }, [householdId, listId, t]);
 
   const handleAddItem = useCallback(
     async (e: FormEvent) => {
@@ -87,10 +89,10 @@ export default function ShoppingDetail() {
         await addItem({ name });
         setNewItemName('');
       } catch (err) {
-        setAddError(err instanceof Error ? err.message : 'Failed to add item');
+        setAddError(err instanceof Error ? err.message : t('shopping.failedAddItem'));
       }
     },
-    [newItemName, addItem]
+    [newItemName, addItem, t]
   );
 
   const handleToggle = useCallback(
@@ -124,14 +126,14 @@ export default function ShoppingDetail() {
     try {
       const text = await exportShoppingList(householdId, listId, 'text');
       if (!navigator.clipboard) {
-        throw new Error('Clipboard not available');
+        throw new Error(t('invite.copyUnsupported'));
       }
       await navigator.clipboard.writeText(text);
-      setSnackbar({ message: 'List copied to clipboard', variant: 'success' });
+      setSnackbar({ message: t('shopping.listCopied'), variant: 'success' });
     } catch {
-      setSnackbar({ message: 'Failed to copy list', variant: 'error' });
+      setSnackbar({ message: t('shopping.failedCopyList'), variant: 'error' });
     }
-  }, [householdId, listId]);
+  }, [householdId, listId, t]);
 
   const handleExportCsv = useCallback(async () => {
     if (!householdId || !listId) return;
@@ -147,9 +149,9 @@ export default function ShoppingDetail() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch {
-      setSnackbar({ message: 'Failed to export list', variant: 'error' });
+      setSnackbar({ message: t('shopping.failedExport'), variant: 'error' });
     }
-  }, [householdId, listId]);
+  }, [householdId, listId, t]);
 
   const handleStartTrip = useCallback(async () => {
     if (!householdId || !listId) return;
@@ -162,11 +164,11 @@ export default function ShoppingDetail() {
       setShowStartModal(false);
       navigate(`/households/${householdId}/shopping-runs/${run.id}`);
     } catch (err) {
-      setCreateRunError(err instanceof Error ? err.message : 'Failed to start shopping trip');
+      setCreateRunError(err instanceof Error ? err.message : t('shopping.failedStartTrip'));
     } finally {
       setIsCreatingRun(false);
     }
-  }, [householdId, listId, navigate]);
+  }, [householdId, listId, navigate, t]);
 
   const handleOpenStartModal = useCallback(() => {
     setCreateRunError(null);
@@ -184,7 +186,7 @@ export default function ShoppingDetail() {
       <div className="shopping-detail">
         <div className="shopping-detail__wrapper">
           <div className="shopping-detail__empty-page">
-            <p>Please select a household to view shopping items.</p>
+            <p>{t('shopping.noHouseholdItems')}</p>
           </div>
         </div>
       </div>
@@ -203,7 +205,7 @@ export default function ShoppingDetail() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
-            Back to shopping lists
+            {t('shopping.backToLists')}
           </Link>
 
           <div className="shopping-detail__skeleton-header">
@@ -240,7 +242,7 @@ export default function ShoppingDetail() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
-            Back to shopping lists
+            {t('shopping.backToLists')}
           </Link>
 
           <div className="shopping-detail__card">
@@ -259,13 +261,13 @@ export default function ShoppingDetail() {
                 <line x1="9" y1="9" x2="9.01" y2="9" />
                 <line x1="15" y1="9" x2="15.01" y2="9" />
               </svg>
-              <h3 className="shopping-detail__not-found-title">Shopping list not found</h3>
+              <h3 className="shopping-detail__not-found-title">{t('shopping.listNotFound')}</h3>
               <p className="shopping-detail__not-found-desc">
-                This list may have been deleted or you don&apos;t have access to it.
+                {t('shopping.listNotFoundDesc')}
               </p>
               <Link to={`/households/${householdId}/shopping`}>
                 <Button variant="primary" size="md">
-                  Go to shopping lists
+                  {t('shopping.goToLists')}
                 </Button>
               </Link>
             </div>
@@ -284,7 +286,7 @@ export default function ShoppingDetail() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
-            Back to shopping lists
+            {t('shopping.backToLists')}
           </Link>
 
           <div className="shopping-detail__card">
@@ -303,11 +305,11 @@ export default function ShoppingDetail() {
                 <line x1="12" y1="17" x2="12.01" y2="17" />
               </svg>
               <div className="shopping-detail__error-content">
-                <h3 className="shopping-detail__error-title">Unable to load shopping items</h3>
-                <p className="shopping-detail__error-message">Check your connection and try again.</p>
+                <h3 className="shopping-detail__error-title">{t('shopping.unableLoadItems')}</h3>
+                <p className="shopping-detail__error-message">{t('common.checkConnection')}</p>
               </div>
               <Button variant="primary" size="sm" onClick={handleRetry}>
-                Retry
+                {t('common.retry')}
               </Button>
             </div>
           </div>
@@ -333,7 +335,7 @@ export default function ShoppingDetail() {
           className={`shopping-detail__checkbox ${item.purchased ? 'shopping-detail__checkbox--checked' : ''}`}
           onClick={() => handleToggle(item.id)}
           disabled={isItemSaving || isTemp}
-          aria-label={item.purchased ? 'Mark as not purchased' : 'Mark as purchased'}
+          aria-label={item.purchased ? t('shopping.markNotPurchased') : t('shopping.markPurchased')}
         >
           {item.purchased && (
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
@@ -359,7 +361,7 @@ export default function ShoppingDetail() {
               className="shopping-detail__task-link"
               onClick={(e) => e.stopPropagation()}
             >
-              For task
+              {t('shopping.forTask')}
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
@@ -374,7 +376,7 @@ export default function ShoppingDetail() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="shopping-detail__marketplace-link"
-                  aria-label={`Search ${item.name} on ${mp.name}`}
+                  aria-label={t('shopping.searchOn', { item: item.name, market: mp.name })}
                   title={mp.name}
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -398,7 +400,7 @@ export default function ShoppingDetail() {
           className="shopping-detail__delete-btn"
           onClick={() => handleDelete(item.id)}
           disabled={isItemSaving || isTemp}
-          aria-label="Delete item"
+          aria-label={t('shopping.deleteItem')}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="3 6 5 6 21 6" />
@@ -416,59 +418,55 @@ export default function ShoppingDetail() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
-          Back to shopping lists
+          {t('shopping.backToLists')}
         </Link>
 
         {/* Header */}
         <div className="shopping-detail__header">
-          <h1 className="shopping-detail__title">{list?.name || 'Shopping List'}</h1>
+          <h1 className="shopping-detail__title">{list?.name || t('shopping.listFallback')}</h1>
           <div className="shopping-detail__header-actions">
             <span className="shopping-detail__count">
-              {unpurchasedItems.length === 0
-                ? 'All done!'
-                : unpurchasedItems.length === 1
-                  ? '1 item to buy'
-                  : `${unpurchasedItems.length} items to buy`}
+              {getItemsToBuyLabel(unpurchasedItems.length, t)}
             </span>
             <button
               type="button"
               className="ghost-button shopping-detail__header-btn"
               onClick={handleShare}
-              aria-label="Copy list to clipboard"
+              aria-label={t('shopping.copyClipboard')}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                 <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
                 <polyline points="16 6 12 2 8 6" />
                 <line x1="12" y1="2" x2="12" y2="15" />
               </svg>
-              Share
+              {t('shopping.share')}
             </button>
             <button
               type="button"
               className="ghost-button shopping-detail__header-btn"
               onClick={handleExportCsv}
-              aria-label="Export as CSV"
+              aria-label={t('shopping.exportCsv')}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
-              Export
+              {t('common.export')}
             </button>
             <Button
               variant="primary"
               size="sm"
               onClick={handleOpenStartModal}
               disabled={unpurchasedItems.length === 0}
-              aria-label="Start shopping trip"
+              aria-label={t('shopping.startTrip')}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                 <circle cx="9" cy="21" r="1" />
                 <circle cx="20" cy="21" r="1" />
                 <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
               </svg>
-              Start Trip
+              {t('shopping.startTrip')}
             </Button>
           </div>
         </div>
@@ -480,7 +478,7 @@ export default function ShoppingDetail() {
             <input
               type="text"
               className="shopping-detail__add-input"
-              placeholder="Add item..."
+              placeholder={t('shopping.addPlaceholder')}
               value={newItemName}
               onChange={(e) => setNewItemName(e.target.value)}
               disabled={isSaving}
@@ -489,7 +487,7 @@ export default function ShoppingDetail() {
               type="submit"
               className="shopping-detail__add-btn"
               disabled={!newItemName.trim() || isSaving}
-              aria-label="Add item"
+              aria-label={t('common.addItem')}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="12" y1="5" x2="12" y2="19" />
@@ -520,8 +518,8 @@ export default function ShoppingDetail() {
                 <circle cx="20" cy="21" r="1" />
                 <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
               </svg>
-              <h3 className="shopping-detail__empty-title">Your list is empty</h3>
-              <p className="shopping-detail__empty-desc">Type an item name above and press Enter to add</p>
+              <h3 className="shopping-detail__empty-title">{t('shopping.emptyList')}</h3>
+              <p className="shopping-detail__empty-desc">{t('shopping.emptyListDesc')}</p>
             </div>
           )}
 
@@ -542,7 +540,9 @@ export default function ShoppingDetail() {
             <>
               {unpurchasedItems.length > 0 && (
                 <div className="shopping-detail__section-divider">
-                  <span className="shopping-detail__section-label">Purchased ({purchasedItems.length})</span>
+                  <span className="shopping-detail__section-label">
+                    {t('shopping.purchasedCount', { count: purchasedItems.length })}
+                  </span>
                 </div>
               )}
               <div className="shopping-detail__section shopping-detail__section--purchased">
@@ -559,14 +559,17 @@ export default function ShoppingDetail() {
         <Modal
           open={showStartModal}
           onClose={handleCloseStartModal}
-          title="Start Shopping Trip"
+          title={t('shopping.startTripTitle')}
           size="sm"
           closeOnBackdrop={!isCreatingRun}
         >
           <div className="shopping-detail__start-modal">
             <p className="shopping-detail__start-modal-info">
-              You are about to start a shopping trip for <strong>{list?.name}</strong> with{' '}
-              <strong>{unpurchasedItems.length}</strong> {unpurchasedItems.length === 1 ? 'item' : 'items'} to buy.
+              {t('shopping.startTripInfo', {
+                name: list?.name ?? t('shopping.listFallback'),
+                count: unpurchasedItems.length,
+                itemLabel: unpurchasedItems.length === 1 ? t('shopping.item') : t('shopping.items'),
+              })}
             </p>
             {createRunError && (
               <p className="shopping-detail__start-modal-error">{createRunError}</p>
@@ -578,7 +581,7 @@ export default function ShoppingDetail() {
                 onClick={handleCloseStartModal}
                 disabled={isCreatingRun}
               >
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button
                 variant="primary"
@@ -586,7 +589,7 @@ export default function ShoppingDetail() {
                 onClick={handleStartTrip}
                 disabled={isCreatingRun}
               >
-                {isCreatingRun ? 'Starting...' : 'Start'}
+                {isCreatingRun ? t('shopping.starting') : t('shopping.start')}
               </Button>
             </div>
           </div>
@@ -599,4 +602,10 @@ export default function ShoppingDetail() {
       </div>
     </div>
   );
+}
+
+function getItemsToBuyLabel(count: number, t: ReturnType<typeof useI18n>['t']): string {
+  if (count === 0) return t('common.allDone');
+  if (count === 1) return t('shopping.oneToBuy');
+  return t('shopping.manyToBuy', { count });
 }

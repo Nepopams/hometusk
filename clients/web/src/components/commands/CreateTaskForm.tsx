@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'r
 import { useZones } from '../../hooks/useZones';
 import { useMembers } from '../../hooks/useMembers';
 import Select from '../ui/Select';
+import { useI18n } from '../../i18n';
 import type { CreateTaskPayload } from '../../types/api';
 
 interface CreateTaskFormProps {
@@ -21,6 +22,7 @@ export function CreateTaskForm({
   initialTitle,
   onTitleChange,
 }: CreateTaskFormProps) {
+  const { t } = useI18n();
   const [title, setTitle] = useState(initialTitle ?? '');
   const [description, setDescription] = useState('');
   const [zoneId, setZoneId] = useState('');
@@ -49,19 +51,19 @@ export function CreateTaskForm({
     const trimmedDescription = description.trim();
 
     if (!trimmedTitle) {
-      setValidationError('Title is required');
+      setValidationError(t('tasks.titleRequired'));
       return;
     }
     if (trimmedTitle.length > 500) {
-      setValidationError('Title must be 500 characters or less');
+      setValidationError(t('tasks.titleTooLong'));
       return;
     }
     if (trimmedDescription.length > 2000) {
-      setValidationError('Description must be 2000 characters or less');
+      setValidationError(t('tasks.descriptionTooLong'));
       return;
     }
     if (deadline && new Date(deadline) <= new Date()) {
-      setValidationError('Deadline must be in the future');
+      setValidationError(t('tasks.deadlineFuture'));
       return;
     }
 
@@ -89,12 +91,12 @@ export function CreateTaskForm({
   };
 
   const zoneOptions = [
-    { value: '', label: 'Select zone (optional)' },
+    { value: '', label: t('tasks.selectZoneOptional') },
     ...zones.map((zone) => ({ value: zone.id, label: zone.name })),
   ];
 
   const assigneeOptions = [
-    { value: '', label: 'Auto-assign' },
+    { value: '', label: t('tasks.autoAssign') },
     ...members.map((member) => ({ value: member.userId, label: member.displayName })),
   ];
 
@@ -102,37 +104,37 @@ export function CreateTaskForm({
     <form onSubmit={handleSubmit}>
       <fieldset disabled={isLoading} className="create-household__form">
         <div className="create-household__field">
-          <label htmlFor="command-title">Title</label>
+          <label htmlFor="command-title">{t('tasks.titleField')}</label>
           <input
             id="command-title"
             type="text"
             value={title}
             onChange={handleTitleChange}
-            placeholder="What needs to be done?"
+            placeholder={t('tasks.titlePlaceholder')}
             maxLength={500}
             autoFocus
           />
         </div>
 
         <div className="create-household__field">
-          <label htmlFor="command-description">Description</label>
+          <label htmlFor="command-description">{t('tasks.descriptionField')}</label>
           <textarea
             id="command-description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Optional details"
+            placeholder={t('tasks.descriptionPlaceholder')}
             rows={3}
             maxLength={2000}
           />
         </div>
 
         <div className="create-household__field">
-          <Select label="Zone" value={zoneId} onChange={setZoneId} options={zoneOptions} />
+          <Select label={t('common.zone')} value={zoneId} onChange={setZoneId} options={zoneOptions} />
         </div>
 
         <div className="create-household__field">
           <Select
-            label="Assign to"
+            label={t('tasks.assignTo')}
             value={assigneeId}
             onChange={setAssigneeId}
             options={assigneeOptions}
@@ -140,7 +142,7 @@ export function CreateTaskForm({
         </div>
 
         <div className="create-household__field">
-          <label htmlFor="command-deadline">Deadline</label>
+          <label htmlFor="command-deadline">{t('common.deadline')}</label>
           <input
             id="command-deadline"
             type="datetime-local"
@@ -157,10 +159,10 @@ export function CreateTaskForm({
 
         <div className="create-household__actions">
           <button type="button" className="ghost-button" onClick={onCancel} disabled={isLoading}>
-            Cancel
+            {t('common.cancel')}
           </button>
           <button type="submit" className="button" disabled={isLoading}>
-            {isLoading ? 'Creating...' : 'Create Task'}
+            {isLoading ? t('tasks.createTaskLoading') : t('tasks.createTask')}
           </button>
         </div>
       </fieldset>

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useMembers } from '../hooks/useMembers';
+import { useI18n } from '../i18n';
 import { Button } from '../components/ui';
 import InviteModal from '../components/InviteModal';
 import { ApiError } from '../lib/errors';
@@ -20,6 +21,7 @@ import './Members.css';
  * @see Pencil frames: TmZLg (list), gCEwX (empty), ZWWj9 (mobile)
  */
 export default function Members() {
+  const { t, formatRelativeTime } = useI18n();
   const { householdId } = useAuth();
   const { members, isLoading, error, refetch } = useMembers(householdId);
 
@@ -34,7 +36,7 @@ export default function Members() {
       <div className="members">
         <div className="members__wrapper">
           <div className="members__empty-page">
-            <p>Please select a household to view members.</p>
+            <p>{t('members.noHousehold')}</p>
           </div>
         </div>
       </div>
@@ -48,9 +50,9 @@ export default function Members() {
         <div className="members__wrapper">
           <section className="members__section">
             <div className="members__section-header">
-              <h2 className="members__section-title">Members</h2>
+              <h2 className="members__section-title">{t('members.title')}</h2>
               <Button variant="primary" size="sm" disabled>
-                Invite member
+                {t('members.invite')}
               </Button>
             </div>
             <div className="members__card">
@@ -81,7 +83,7 @@ export default function Members() {
         <div className="members__wrapper">
           <section className="members__section">
             <div className="members__section-header">
-              <h2 className="members__section-title">Members</h2>
+              <h2 className="members__section-title">{t('members.title')}</h2>
             </div>
             <div className="members__card">
               <div className="members__error">
@@ -100,17 +102,17 @@ export default function Members() {
                 </svg>
                 <div className="members__error-content">
                   <h3 className="members__error-title">
-                    {is403 ? 'Access Denied' : 'Unable to load members'}
+                    {is403 ? t('common.accessDenied') : t('members.unableLoad')}
                   </h3>
                   <p className="members__error-message">
                     {is403
-                      ? 'You are not a member of this household.'
-                      : 'Check your connection and try again.'}
+                      ? t('members.notMember')
+                      : t('common.checkConnection')}
                   </p>
                 </div>
                 {!is403 && (
                   <Button variant="primary" size="sm" onClick={handleRetry}>
-                    Retry
+                    {t('common.retry')}
                   </Button>
                 )}
               </div>
@@ -128,7 +130,7 @@ export default function Members() {
         <div className="members__wrapper">
           <section className="members__section">
             <div className="members__section-header">
-              <h2 className="members__section-title">Members</h2>
+              <h2 className="members__section-title">{t('members.title')}</h2>
             </div>
             <div className="members__card">
               <div className="members__empty">
@@ -146,12 +148,12 @@ export default function Members() {
                   <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
                   <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                 </svg>
-                <h3 className="members__empty-title">No members yet</h3>
+                <h3 className="members__empty-title">{t('members.noMembers')}</h3>
                 <p className="members__empty-desc">
-                  Invite people to join your household and collaborate on tasks.
+                  {t('members.emptyDesc')}
                 </p>
                 <Button variant="primary" size="md" onClick={() => setIsInviteOpen(true)}>
-                  Invite member
+                  {t('members.invite')}
                 </Button>
               </div>
             </div>
@@ -173,9 +175,9 @@ export default function Members() {
       <div className="members__wrapper">
         <section className="members__section">
           <div className="members__section-header">
-            <h2 className="members__section-title">Members</h2>
+            <h2 className="members__section-title">{t('members.title')}</h2>
             <Button variant="primary" size="sm" onClick={() => setIsInviteOpen(true)}>
-              Invite member
+              {t('members.invite')}
             </Button>
           </div>
           <div className="members__card">
@@ -195,10 +197,10 @@ export default function Members() {
                         {member.email}
                       </span>
                       <span className={`members__role members__role--${member.role}`}>
-                        {member.role}
+                        {getRoleLabel(member.role, t)}
                       </span>
                       <span className="members__joined">
-                        Joined {formatRelativeTime(member.joinedAt)}
+                        {t('members.joined', { time: formatRelativeTime(member.joinedAt) })}
                       </span>
                     </div>
                   </div>
@@ -208,7 +210,7 @@ export default function Members() {
           </div>
           {members.length >= 5 && (
             <p className="members__hint">
-              {members.length} members in this household
+              {t('members.countHint', { count: members.length })}
             </p>
           )}
         </section>
@@ -231,16 +233,6 @@ function getInitials(name: string): string {
   return name.slice(0, 2).toUpperCase();
 }
 
-function formatRelativeTime(timestamp: string): string {
-  const now = Date.now();
-  const then = new Date(timestamp).getTime();
-  const diffMs = now - then;
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return 'just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  return `${diffDays}d ago`;
+function getRoleLabel(role: HouseholdMember['role'], t: ReturnType<typeof useI18n>['t']): string {
+  return role === 'admin' ? t('members.roleAdmin') : t('members.roleMember');
 }

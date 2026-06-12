@@ -4,6 +4,7 @@ import { acceptInvite } from '../lib/api';
 import { ApiError } from '../lib/errors';
 import { useAuth } from '../hooks/useAuth';
 import { Button } from './ui';
+import { useI18n } from '../i18n';
 import type { AcceptInviteResponse } from '../types/api';
 import './AcceptInviteModal.css';
 
@@ -47,6 +48,7 @@ export default function AcceptInviteModal({
 }: AcceptInviteModalProps) {
   const navigate = useNavigate();
   const { selectHousehold, refetchUser } = useAuth();
+  const { t } = useI18n();
 
   const modalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -126,8 +128,8 @@ export default function AcceptInviteModal({
 
       setState('success');
       setResult({
-        title: 'Welcome to the team!',
-        message: `You've joined the household.`,
+        title: t('invite.welcomeTeam'),
+        message: t('invite.joinedHousehold'),
       });
 
       // Refetch user data and select household
@@ -148,16 +150,15 @@ export default function AcceptInviteModal({
         if (err.status === 404 || err.status === 410) {
           setState('invalid');
           setResult({
-            title: 'This invite is no longer valid',
-            message:
-              'The invite code may have expired or already been used. Ask the household admin to send you a new invite.',
+            title: t('invite.noLongerValid'),
+            message: t('invite.noLongerValidMsg'),
           });
         } else if (err.status === 409) {
           // Already a member (conflict)
           setState('already_member');
           setResult({
-            title: "You're already a member",
-            message: 'Good news! You already have access to this household.',
+            title: t('invite.alreadyMemberTitle'),
+            message: t('invite.alreadyMemberMsg'),
           });
           // Try to get household info from error response
           const body = err.body as { household?: { id: string; name: string } } | undefined;
@@ -167,15 +168,15 @@ export default function AcceptInviteModal({
         } else {
           setState('network_error');
           setResult({
-            title: 'Something went wrong',
-            message: 'We couldn\'t process your invite right now. Please check your connection and try again.',
+            title: t('invite.processErrorTitle'),
+            message: t('invite.processErrorMsg'),
           });
         }
       } else {
         setState('network_error');
         setResult({
-          title: 'Connection problem',
-          message: 'Unable to reach our servers. Please check your internet connection and try again.',
+          title: t('invite.connectionProblem'),
+          message: t('invite.connectionProblemMsg'),
         });
       }
     }
@@ -187,7 +188,7 @@ export default function AcceptInviteModal({
 
     const trimmedCode = code.trim();
     if (!trimmedCode) {
-      setInputError('Please enter an invite code');
+      setInputError(t('invite.enterCode'));
       return;
     }
 
@@ -259,13 +260,13 @@ export default function AcceptInviteModal({
               <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
             </svg>
           </div>
-          <h2 className="accept-invite-modal__title">Join household</h2>
+          <h2 className="accept-invite-modal__title">{t('invite.joinHousehold')}</h2>
         </div>
         <button
           type="button"
           className="accept-invite-modal__close"
           onClick={onClose}
-          aria-label="Close"
+          aria-label={t('common.close')}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18" />
@@ -279,19 +280,19 @@ export default function AcceptInviteModal({
       {/* Body */}
       <form className="accept-invite-modal__body" onSubmit={handleSubmit}>
         <p className="accept-invite-modal__microcopy">
-          Enter the invite code you received from a household member.
+          {t('invite.enterCodeFromMember')}
         </p>
 
         <div className="accept-invite-modal__field">
           <label htmlFor="invite-code" className="accept-invite-modal__label">
-            Invite code
+            {t('invite.code')}
           </label>
           <input
             ref={inputRef}
             id="invite-code"
             type="text"
             className={`accept-invite-modal__input ${inputError ? 'accept-invite-modal__input--error' : ''}`}
-            placeholder="Paste your code here"
+            placeholder={t('invite.codePlaceholder')}
             value={code}
             onChange={(e) => {
               setCode(e.target.value);
@@ -308,7 +309,7 @@ export default function AcceptInviteModal({
             </span>
           ) : (
             <span id="invite-hint" className="accept-invite-modal__hint">
-              The code was sent to you by a household member
+              {t('invite.codeHint')}
             </span>
           )}
         </div>
@@ -319,10 +320,10 @@ export default function AcceptInviteModal({
       {/* Footer */}
       <div className="accept-invite-modal__footer">
         <Button type="button" variant="ghost" size="md" onClick={onClose}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="submit" variant="secondary" size="md" onClick={handleSubmit}>
-          Join
+          {t('common.join')}
         </Button>
       </div>
     </>
@@ -339,14 +340,14 @@ export default function AcceptInviteModal({
               <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
             </svg>
           </div>
-          <h2 className="accept-invite-modal__title">Join household</h2>
+          <h2 className="accept-invite-modal__title">{t('invite.joinHousehold')}</h2>
         </div>
         <button
           type="button"
           className="accept-invite-modal__close"
           onClick={onClose}
           disabled
-          aria-label="Close"
+          aria-label={t('common.close')}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18" />
@@ -359,7 +360,7 @@ export default function AcceptInviteModal({
 
       <div className="accept-invite-modal__validating">
         <div className="accept-invite-modal__spinner" aria-hidden="true" />
-        <p className="accept-invite-modal__validating-text">Checking your invite...</p>
+        <p className="accept-invite-modal__validating-text">{t('invite.checking')}</p>
       </div>
     </>
   );
@@ -374,14 +375,14 @@ export default function AcceptInviteModal({
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
-          <h2 className="accept-invite-modal__title">Joined!</h2>
+          <h2 className="accept-invite-modal__title">{t('invite.joined')}</h2>
         </div>
         <button
           type="button"
           className="accept-invite-modal__close"
           onClick={onClose}
           disabled
-          aria-label="Close"
+          aria-label={t('common.close')}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18" />
@@ -403,7 +404,7 @@ export default function AcceptInviteModal({
           {result?.message}{' '}
           {household && <span className="accept-invite-modal__household-name">&quot;{household.name}&quot;</span>}
         </p>
-        <p className="accept-invite-modal__redirect-hint">Taking you there now...</p>
+        <p className="accept-invite-modal__redirect-hint">{t('invite.redirecting')}</p>
       </div>
     </>
   );
@@ -420,13 +421,13 @@ export default function AcceptInviteModal({
               <line x1="12" y1="8" x2="12.01" y2="8" />
             </svg>
           </div>
-          <h2 className="accept-invite-modal__title">Already a member</h2>
+          <h2 className="accept-invite-modal__title">{t('invite.alreadyMember')}</h2>
         </div>
         <button
           type="button"
           className="accept-invite-modal__close"
           onClick={onClose}
-          aria-label="Close"
+          aria-label={t('common.close')}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18" />
@@ -452,7 +453,7 @@ export default function AcceptInviteModal({
         </p>
         <div className="accept-invite-modal__result-footer">
           <Button variant="primary" size="lg" fullWidth onClick={handleOpenHousehold}>
-            Open household
+            {t('invite.openHousehold')}
           </Button>
         </div>
       </div>
@@ -471,13 +472,13 @@ export default function AcceptInviteModal({
               <line x1="9" y1="9" x2="15" y2="15" />
             </svg>
           </div>
-          <h2 className="accept-invite-modal__title">Invalid invite</h2>
+          <h2 className="accept-invite-modal__title">{t('invite.invalid')}</h2>
         </div>
         <button
           type="button"
           className="accept-invite-modal__close"
           onClick={onClose}
-          aria-label="Close"
+          aria-label={t('common.close')}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18" />
@@ -509,10 +510,10 @@ export default function AcceptInviteModal({
               setResult(null);
             }}
           >
-            Try a different code
+            {t('invite.tryDifferent')}
           </Button>
           <Button variant="ghost" size="md" fullWidth onClick={onClose}>
-            Close
+            {t('common.close')}
           </Button>
         </div>
       </div>
@@ -531,13 +532,13 @@ export default function AcceptInviteModal({
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
           </div>
-          <h2 className="accept-invite-modal__title">Connection error</h2>
+          <h2 className="accept-invite-modal__title">{t('common.connectionError')}</h2>
         </div>
         <button
           type="button"
           className="accept-invite-modal__close"
           onClick={onClose}
-          aria-label="Close"
+          aria-label={t('common.close')}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18" />
@@ -560,10 +561,10 @@ export default function AcceptInviteModal({
         <p className="accept-invite-modal__result-message">{result?.message}</p>
         <div className="accept-invite-modal__result-footer">
           <Button variant="primary" size="lg" fullWidth onClick={handleRetry}>
-            Try again
+            {t('common.tryAgain')}
           </Button>
           <Button variant="ghost" size="md" fullWidth onClick={onClose}>
-            Close
+            {t('common.close')}
           </Button>
         </div>
       </div>
@@ -600,7 +601,7 @@ export default function AcceptInviteModal({
         onKeyDown={handleKeyDown}
         role="dialog"
         aria-modal="true"
-        aria-label="Join household"
+        aria-label={t('invite.joinHousehold')}
         tabIndex={-1}
       >
         {/* Mobile sheet handle */}

@@ -1,3 +1,4 @@
+import { useI18n } from '../../i18n';
 import type { Routine } from '../../types/api';
 import RoutineStatusBadge from './RoutineStatusBadge';
 import PauseResumeButton from './PauseResumeButton';
@@ -16,12 +17,6 @@ interface Props {
   onToggleExpand: (routine: Routine) => void;
 }
 
-const POLICY_LABELS: Record<string, string> = {
-  ROUND_ROBIN: 'Round-robin',
-  FIXED: 'Fixed',
-  MANUAL: 'Manual',
-};
-
 export default function RoutineRow({
   routine,
   isPausing,
@@ -33,10 +28,17 @@ export default function RoutineRow({
   onResume,
   onToggleExpand,
 }: Props) {
+  const { t } = useI18n();
   const policyLabel =
     routine.assignmentPolicy === 'FIXED' && routine.fixedAssignee
-      ? `Fixed: ${routine.fixedAssignee.displayName}`
-      : POLICY_LABELS[routine.assignmentPolicy] || routine.assignmentPolicy;
+      ? t('routines.fixedWithName', { name: routine.fixedAssignee.displayName })
+      : routine.assignmentPolicy === 'ROUND_ROBIN'
+        ? t('routines.roundRobin')
+        : routine.assignmentPolicy === 'FIXED'
+          ? t('routines.fixed')
+          : routine.assignmentPolicy === 'MANUAL'
+            ? t('routines.manual')
+            : routine.assignmentPolicy;
 
   return (
     <div className="routine-row">
@@ -45,14 +47,14 @@ export default function RoutineRow({
           type="button"
           className="routine-row__expand-btn"
           onClick={() => onToggleExpand(routine)}
-          aria-label={isExpanded ? 'Collapse' : 'Expand'}
+          aria-label={isExpanded ? t('routines.collapse') : t('routines.expand')}
           aria-expanded={isExpanded}
         >
-          {isExpanded ? '▼' : '▶'}
+          {isExpanded ? 'v' : '>'}
         </button>
         <span className="routine-row__title">{routine.title}</span>
-        <span className="routine-row__zone">{routine.zone?.name || '—'}</span>
-        <span className="routine-row__frequency">{formatFrequency(routine.recurrenceRule)}</span>
+        <span className="routine-row__zone">{routine.zone?.name || '-'}</span>
+        <span className="routine-row__frequency">{formatFrequency(routine.recurrenceRule, t)}</span>
         <span className="routine-row__policy">{policyLabel}</span>
         <RoutineStatusBadge status={routine.status} />
       </div>
@@ -68,17 +70,17 @@ export default function RoutineRow({
           type="button"
           className="routine-row__btn routine-row__btn--edit"
           onClick={() => onEdit(routine)}
-          aria-label="Edit routine"
+          aria-label={t('routines.edit')}
         >
-          Edit
+          {t('common.edit')}
         </button>
         <button
           type="button"
           className="routine-row__btn routine-row__btn--delete"
           onClick={() => onDelete(routine)}
-          aria-label="Delete routine"
+          aria-label={t('routines.deleteRoutine')}
         >
-          Delete
+          {t('common.delete')}
         </button>
       </div>
     </div>

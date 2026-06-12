@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Button, TextLink } from '../components/ui';
+import { useI18n } from '../i18n';
 import './SessionExpired.css';
 
 /**
@@ -10,6 +11,7 @@ import './SessionExpired.css';
  */
 export default function SessionExpired() {
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   const handleSignIn = () => {
     navigate('/login');
@@ -27,12 +29,11 @@ export default function SessionExpired() {
         </div>
 
         {/* Title */}
-        <h1 className="session-expired-page__title">Session expired</h1>
+        <h1 className="session-expired-page__title">{t('session.expired')}</h1>
 
         {/* Body */}
         <p className="session-expired-page__body">
-          For your security, you&apos;ve been signed out after a period of inactivity.
-          Sign in again to continue where you left off.
+          {t('session.expiredBody')}
         </p>
 
         {/* Preserved hint */}
@@ -41,7 +42,7 @@ export default function SessionExpired() {
             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
             <polyline points="22 4 12 14.01 9 11.01" />
           </svg>
-          <span>Your input has been preserved</span>
+          <span>{t('session.inputPreserved')}</span>
         </div>
 
         {/* Buttons */}
@@ -52,10 +53,10 @@ export default function SessionExpired() {
             fullWidth
             onClick={handleSignIn}
           >
-            Sign in again
+            {t('session.signInAgain')}
           </Button>
           <TextLink to="/" centered>
-            Back to Home
+            {t('common.backHome')}
           </TextLink>
         </div>
       </div>

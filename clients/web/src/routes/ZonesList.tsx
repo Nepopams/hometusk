@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useZones } from '../hooks/useZones';
+import { useI18n } from '../i18n';
 import { Button } from '../components/ui';
 import CreateZoneModal from '../components/CreateZoneModal';
 import type { Zone } from '../types/api';
@@ -19,6 +20,7 @@ import './ZonesList.css';
  * @see Pencil frames: TmZLg (list), gCEwX (empty), ZWWj9 (mobile)
  */
 export default function ZonesList() {
+  const { t, formatRelativeTime } = useI18n();
   const { householdId } = useAuth();
   const { zones, isLoading, error, refetch } = useZones(householdId);
 
@@ -40,7 +42,7 @@ export default function ZonesList() {
       <div className="zones">
         <div className="zones__wrapper">
           <div className="zones__empty-page">
-            <p>Please select a household to view zones.</p>
+            <p>{t('zones.noHousehold')}</p>
           </div>
         </div>
       </div>
@@ -54,9 +56,9 @@ export default function ZonesList() {
         <div className="zones__wrapper">
           <section className="zones__section">
             <div className="zones__section-header">
-              <h2 className="zones__section-title">Zones</h2>
+              <h2 className="zones__section-title">{t('zones.title')}</h2>
               <Button variant="primary" size="sm" disabled>
-                Create zone
+                {t('zones.create')}
               </Button>
             </div>
             <div className="zones__card">
@@ -86,7 +88,7 @@ export default function ZonesList() {
         <div className="zones__wrapper">
           <section className="zones__section">
             <div className="zones__section-header">
-              <h2 className="zones__section-title">Zones</h2>
+              <h2 className="zones__section-title">{t('zones.title')}</h2>
             </div>
             <div className="zones__card">
               <div className="zones__error">
@@ -104,11 +106,11 @@ export default function ZonesList() {
                   <line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
                 <div className="zones__error-content">
-                  <h3 className="zones__error-title">Unable to load zones</h3>
-                  <p className="zones__error-message">Check your connection and try again.</p>
+                  <h3 className="zones__error-title">{t('zones.unableLoad')}</h3>
+                  <p className="zones__error-message">{t('common.checkConnection')}</p>
                 </div>
                 <Button variant="primary" size="sm" onClick={handleRetry}>
-                  Retry
+                  {t('common.retry')}
                 </Button>
               </div>
             </div>
@@ -125,7 +127,7 @@ export default function ZonesList() {
         <div className="zones__wrapper">
           <section className="zones__section">
             <div className="zones__section-header">
-              <h2 className="zones__section-title">Zones</h2>
+              <h2 className="zones__section-title">{t('zones.title')}</h2>
             </div>
             <div className="zones__card">
               <div className="zones__empty">
@@ -143,12 +145,12 @@ export default function ZonesList() {
                   <rect x="14" y="14" width="7" height="7" />
                   <rect x="3" y="14" width="7" height="7" />
                 </svg>
-                <h3 className="zones__empty-title">No zones yet</h3>
+                <h3 className="zones__empty-title">{t('zones.noZones')}</h3>
                 <p className="zones__empty-desc">
-                  Zones help organize tasks by area of your home.
+                  {t('zones.emptyDesc')}
                 </p>
                 <Button variant="primary" size="md" onClick={() => setIsCreateOpen(true)}>
-                  Create zone
+                  {t('zones.create')}
                 </Button>
               </div>
             </div>
@@ -171,9 +173,9 @@ export default function ZonesList() {
       <div className="zones__wrapper">
         <section className="zones__section">
           <div className="zones__section-header">
-            <h2 className="zones__section-title">Zones</h2>
+            <h2 className="zones__section-title">{t('zones.title')}</h2>
             <Button variant="primary" size="sm" onClick={() => setIsCreateOpen(true)}>
-              Create zone
+              {t('zones.create')}
             </Button>
           </div>
           <div className="zones__card">
@@ -201,7 +203,7 @@ export default function ZonesList() {
                       {zone.name}
                     </span>
                     <span className="zones__item-meta">
-                      Created {formatRelativeTime(zone.createdAt)}
+                      {t('zones.created', { time: formatRelativeTime(zone.createdAt) })}
                     </span>
                   </div>
                 </div>
@@ -210,7 +212,7 @@ export default function ZonesList() {
           </div>
           {zones.length >= 10 && (
             <p className="zones__hint">
-              {zones.length} zones in this household
+              {t('zones.countHint', { count: zones.length })}
             </p>
           )}
         </section>
@@ -224,18 +226,4 @@ export default function ZonesList() {
       />
     </div>
   );
-}
-
-function formatRelativeTime(timestamp: string): string {
-  const now = Date.now();
-  const then = new Date(timestamp).getTime();
-  const diffMs = now - then;
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return 'just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  return `${diffDays}d ago`;
 }

@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useShoppingLists } from '../hooks/useShoppingLists';
+import { useI18n } from '../i18n';
 import { Button } from '../components/ui';
 import type { ShoppingList } from '../types/api';
 import './ShoppingLists.css';
@@ -19,6 +20,7 @@ import './ShoppingLists.css';
  * @see Pencil frames: dataShopping (shopping item interface)
  */
 export default function ShoppingLists() {
+  const { t } = useI18n();
   const { householdId } = useAuth();
   const { lists, isLoading, error, refetch } = useShoppingLists(householdId);
 
@@ -31,7 +33,7 @@ export default function ShoppingLists() {
       <div className="shopping-lists">
         <div className="shopping-lists__wrapper">
           <div className="shopping-lists__empty-page">
-            <p>Please select a household to view shopping lists.</p>
+            <p>{t('shopping.noHouseholdLists')}</p>
           </div>
         </div>
       </div>
@@ -45,7 +47,7 @@ export default function ShoppingLists() {
         <div className="shopping-lists__wrapper">
           <section className="shopping-lists__section">
             <div className="shopping-lists__section-header">
-              <h2 className="shopping-lists__section-title">Shopping Lists</h2>
+              <h2 className="shopping-lists__section-title">{t('shopping.lists')}</h2>
             </div>
             <div className="shopping-lists__card">
               {[1, 2, 3].map((i, idx) => (
@@ -74,7 +76,7 @@ export default function ShoppingLists() {
         <div className="shopping-lists__wrapper">
           <section className="shopping-lists__section">
             <div className="shopping-lists__section-header">
-              <h2 className="shopping-lists__section-title">Shopping Lists</h2>
+              <h2 className="shopping-lists__section-title">{t('shopping.lists')}</h2>
             </div>
             <div className="shopping-lists__card">
               <div className="shopping-lists__error">
@@ -92,11 +94,11 @@ export default function ShoppingLists() {
                   <line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
                 <div className="shopping-lists__error-content">
-                  <h3 className="shopping-lists__error-title">Unable to load shopping lists</h3>
-                  <p className="shopping-lists__error-message">Check your connection and try again.</p>
+                  <h3 className="shopping-lists__error-title">{t('shopping.unableLoadLists')}</h3>
+                  <p className="shopping-lists__error-message">{t('common.checkConnection')}</p>
                 </div>
                 <Button variant="primary" size="sm" onClick={handleRetry}>
-                  Retry
+                  {t('common.retry')}
                 </Button>
               </div>
             </div>
@@ -113,7 +115,7 @@ export default function ShoppingLists() {
         <div className="shopping-lists__wrapper">
           <section className="shopping-lists__section">
             <div className="shopping-lists__section-header">
-              <h2 className="shopping-lists__section-title">Shopping Lists</h2>
+              <h2 className="shopping-lists__section-title">{t('shopping.lists')}</h2>
             </div>
             <div className="shopping-lists__card">
               <div className="shopping-lists__empty">
@@ -130,9 +132,9 @@ export default function ShoppingLists() {
                   <circle cx="20" cy="21" r="1" />
                   <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
                 </svg>
-                <h3 className="shopping-lists__empty-title">No shopping lists yet</h3>
+                <h3 className="shopping-lists__empty-title">{t('shopping.noLists')}</h3>
                 <p className="shopping-lists__empty-desc">
-                  Shopping lists help track items to buy for your household.
+                  {t('shopping.noListsDesc')}
                 </p>
               </div>
             </div>
@@ -148,7 +150,7 @@ export default function ShoppingLists() {
       <div className="shopping-lists__wrapper">
         <section className="shopping-lists__section">
           <div className="shopping-lists__section-header">
-            <h2 className="shopping-lists__section-title">Shopping Lists</h2>
+            <h2 className="shopping-lists__section-title">{t('shopping.lists')}</h2>
           </div>
           <div className="shopping-lists__card">
             {lists.map((list: ShoppingList, idx: number) => (
@@ -177,11 +179,7 @@ export default function ShoppingLists() {
                       {list.name}
                     </span>
                     <span className="shopping-lists__item-meta">
-                      {list.unpurchasedCount === 0
-                        ? 'All items purchased'
-                        : list.unpurchasedCount === 1
-                          ? '1 item to buy'
-                          : `${list.unpurchasedCount} items to buy`}
+                      {getItemsToBuyLabel(list.unpurchasedCount, t)}
                     </span>
                   </div>
                   <div className="shopping-lists__item-badge">
@@ -206,11 +204,17 @@ export default function ShoppingLists() {
           </div>
           {lists.length >= 10 && (
             <p className="shopping-lists__hint">
-              {lists.length} shopping lists in this household
+              {t('shopping.listsCountHint', { count: lists.length })}
             </p>
           )}
         </section>
       </div>
     </div>
   );
+}
+
+function getItemsToBuyLabel(count: number, t: ReturnType<typeof useI18n>['t']): string {
+  if (count === 0) return t('shopping.allPurchased');
+  if (count === 1) return t('shopping.oneToBuy');
+  return t('shopping.manyToBuy', { count });
 }

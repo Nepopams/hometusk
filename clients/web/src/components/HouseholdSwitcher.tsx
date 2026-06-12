@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useI18n } from '../i18n';
 import CreateHouseholdModal from './CreateHouseholdModal';
 import AcceptInviteModal from './AcceptInviteModal';
 import './HouseholdSwitcher.css';
@@ -16,6 +17,7 @@ import './HouseholdSwitcher.css';
  */
 export default function HouseholdSwitcher() {
   const { user, status, householdId, selectHousehold, refetchUser } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -118,9 +120,9 @@ export default function HouseholdSwitcher() {
     try {
       await refetchUser();
     } catch {
-      setError('Unable to load households');
+      setError(t('household.unableLoad'));
     }
-  }, [refetchUser]);
+  }, [refetchUser, t]);
 
   // Keyboard navigation in list
   const handleKeyDown = (e: React.KeyboardEvent, items: NodeListOf<Element> | null) => {
@@ -155,7 +157,7 @@ export default function HouseholdSwitcher() {
       onClick={() => setIsOpen(!isOpen)}
       aria-expanded={isOpen}
       aria-haspopup="listbox"
-      aria-label="Switch household"
+      aria-label={t('household.switch')}
     >
       <div className={`household-switcher__trigger-icon ${isEmpty ? 'household-switcher__trigger-icon--empty' : ''}`}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -164,7 +166,7 @@ export default function HouseholdSwitcher() {
         </svg>
       </div>
       <span className={`household-switcher__trigger-name ${isEmpty ? 'household-switcher__trigger-name--empty' : ''}`}>
-        {currentHousehold?.name ?? 'No household'}
+        {currentHousehold?.name ?? t('household.noHousehold')}
       </span>
       <svg className="household-switcher__trigger-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <polyline points="6 9 12 15 18 9" />
@@ -191,7 +193,7 @@ export default function HouseholdSwitcher() {
       <div className="household-switcher__item-content">
         <span className="household-switcher__item-name">{household.name}</span>
         <span className="household-switcher__item-meta">
-          {household.role}{isSelected && isMobile ? ' • Current' : ''}
+          {household.role}{isSelected && isMobile ? ` - ${t('common.current')}` : ''}
         </span>
       </div>
       {isSelected && (
@@ -225,9 +227,9 @@ export default function HouseholdSwitcher() {
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
           <polyline points="9 22 9 12 15 12 15 22" />
         </svg>
-        <h3 className="household-switcher__empty-title">No households yet</h3>
+        <h3 className="household-switcher__empty-title">{t('household.noHouseholdsYet')}</h3>
         <p className="household-switcher__empty-desc">
-          Create your first household or join one with an invite code.
+          {t('household.emptyDesc')}
         </p>
       </div>
       <div className="household-switcher__footer">
@@ -240,7 +242,7 @@ export default function HouseholdSwitcher() {
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          <span className="household-switcher__action-text">Create household</span>
+          <span className="household-switcher__action-text">{t('household.create')}</span>
         </button>
         <button
           type="button"
@@ -253,7 +255,7 @@ export default function HouseholdSwitcher() {
             <line x1="20" y1="8" x2="20" y2="14" />
             <line x1="23" y1="11" x2="17" y2="11" />
           </svg>
-          <span className="household-switcher__action-text">Join via invite</span>
+          <span className="household-switcher__action-text">{t('household.joinViaInvite')}</span>
         </button>
       </div>
     </>
@@ -269,9 +271,9 @@ export default function HouseholdSwitcher() {
             <line x1="12" y1="9" x2="12" y2="13" />
             <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
-          <h3 className="household-switcher__error-title">Couldn&apos;t load households</h3>
+          <h3 className="household-switcher__error-title">{t('household.unableLoadShort')}</h3>
         </div>
-        <p className="household-switcher__error-desc">Check your connection and try again.</p>
+        <p className="household-switcher__error-desc">{t('common.checkConnection')}</p>
       </div>
       <div className="household-switcher__error-footer">
         <button type="button" className="household-switcher__retry" onClick={handleRetry}>
@@ -279,7 +281,7 @@ export default function HouseholdSwitcher() {
             <polyline points="23 4 23 10 17 10" />
             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
           </svg>
-          Try again
+          {t('common.tryAgain')}
         </button>
       </div>
     </>
@@ -289,7 +291,7 @@ export default function HouseholdSwitcher() {
   const renderNormal = () => (
     <>
       <div className="household-switcher__header">
-        <span className="household-switcher__header-label">Your households</span>
+        <span className="household-switcher__header-label">{t('household.yourHouseholds')}</span>
       </div>
       <div
         className="household-switcher__list"
@@ -304,7 +306,7 @@ export default function HouseholdSwitcher() {
             <circle cx="12" cy="12" r="3" />
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
           </svg>
-          <span className="household-switcher__action-text">Manage households</span>
+          <span className="household-switcher__action-text">{t('household.manage')}</span>
         </button>
         <button type="button" className="household-switcher__action" onClick={handleJoinViaInvite}>
           <svg className="household-switcher__action-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -313,7 +315,7 @@ export default function HouseholdSwitcher() {
             <line x1="20" y1="8" x2="20" y2="14" />
             <line x1="23" y1="11" x2="17" y2="11" />
           </svg>
-          <span className="household-switcher__action-text">Join via invite</span>
+          <span className="household-switcher__action-text">{t('household.joinViaInvite')}</span>
         </button>
       </div>
     </>
@@ -353,18 +355,18 @@ export default function HouseholdSwitcher() {
           onClick={(e) => e.stopPropagation()}
           role="dialog"
           aria-modal="true"
-          aria-label="Switch household"
+          aria-label={t('household.switch')}
         >
           <div className="household-switcher__sheet-handle">
             <div className="household-switcher__sheet-handle-bar" />
           </div>
           <div className="household-switcher__sheet-header">
-            <h2 className="household-switcher__sheet-title">Switch household</h2>
+            <h2 className="household-switcher__sheet-title">{t('household.switch')}</h2>
             <button
               type="button"
               className="household-switcher__sheet-close"
               onClick={() => setIsOpen(false)}
-              aria-label="Close"
+              aria-label={t('common.close')}
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="18" y1="6" x2="6" y2="18" />

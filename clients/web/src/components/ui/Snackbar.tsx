@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
+import { useI18n } from '../../i18n';
 import './Snackbar.css';
 
 export type SnackbarVariant = 'default' | 'success' | 'error' | 'warning' | 'info';
@@ -52,6 +53,8 @@ export default function Snackbar({
   action,
   position = 'bottom',
 }: SnackbarProps) {
+  const { t } = useI18n();
+
   // Auto-dismiss
   useEffect(() => {
     if (!open || duration === 0) return;
@@ -89,7 +92,7 @@ export default function Snackbar({
         type="button"
         className="snackbar__close"
         onClick={onClose}
-        aria-label="Dismiss"
+        aria-label={t('common.dismiss')}
       >
         <svg
           width="20"

@@ -1,4 +1,5 @@
 import type { HouseholdMember, TaskStatus, Zone } from '../../types/api';
+import { useI18n } from '../../i18n';
 
 interface TaskFiltersProps {
   status: TaskStatus | undefined;
@@ -29,21 +30,22 @@ export default function TaskFilters({
   members,
   isLoading,
 }: TaskFiltersProps) {
+  const { t } = useI18n();
   const statusOptions = [
-    { value: '', label: 'All statuses' },
-    { value: 'open', label: 'Open' },
-    { value: 'in_progress', label: 'In Progress' },
-    { value: 'done', label: 'Done' },
-    { value: 'cancelled', label: 'Cancelled' },
+    { value: '', label: t('tasks.allStatuses') },
+    { value: 'open', label: t('common.open') },
+    { value: 'in_progress', label: t('common.inProgress') },
+    { value: 'done', label: t('common.done') },
+    { value: 'cancelled', label: t('common.cancelled') },
   ];
 
   const assigneeOptions = [
-    { value: '', label: 'All assignees' },
+    { value: '', label: t('tasks.allAssignees') },
     ...members.map((member) => ({ value: member.userId, label: member.displayName })),
   ];
 
   const zoneOptions = [
-    { value: '', label: 'All zones' },
+    { value: '', label: t('tasks.allZones') },
     ...zones.map((zone) => ({ value: zone.id, label: zone.name })),
   ];
 
@@ -71,7 +73,7 @@ export default function TaskFilters({
               />
             </path>
           </svg>
-          <span>Loading filters...</span>
+          <span>{t('tasks.loadingFilters')}</span>
         </div>
       </div>
     );
@@ -81,7 +83,7 @@ export default function TaskFilters({
     <div className="tasks__filters">
       <div className="tasks__filter">
         <label htmlFor="filter-status" className="tasks__filter-label">
-          Status
+          {t('tasks.status')}
         </label>
         <select
           id="filter-status"
@@ -99,7 +101,7 @@ export default function TaskFilters({
 
       <div className="tasks__filter">
         <label htmlFor="filter-assignee" className="tasks__filter-label">
-          Assignee
+          {t('common.assignee')}
         </label>
         <select
           id="filter-assignee"
@@ -117,7 +119,7 @@ export default function TaskFilters({
 
       <div className="tasks__filter">
         <label htmlFor="filter-zone" className="tasks__filter-label">
-          Zone
+          {t('common.zone')}
         </label>
         <select
           id="filter-zone"

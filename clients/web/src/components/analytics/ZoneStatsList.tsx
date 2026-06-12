@@ -1,28 +1,31 @@
 import type { ZoneStats } from '../../types/api';
+import { useI18n } from '../../i18n';
 
 interface ZoneStatsListProps {
   zones: ZoneStats[];
 }
 
 export function ZoneStatsList({ zones }: ZoneStatsListProps) {
+  const { t } = useI18n();
+
   if (zones.length === 0) {
     return (
       <div className="card">
-        <h3>Zone Breakdown</h3>
-        <p className="analytics-empty">No zone data available.</p>
+        <h3>{t('analytics.zoneBreakdown')}</h3>
+        <p className="analytics-empty">{t('analytics.noZoneData')}</p>
       </div>
     );
   }
 
   return (
     <div className="card">
-      <h3>Zone Breakdown</h3>
+      <h3>{t('analytics.zoneBreakdown')}</h3>
       <table className="analytics-table">
         <thead>
           <tr>
-            <th>Zone</th>
-            <th>Completed</th>
-            <th>Overdue</th>
+            <th>{t('common.zone')}</th>
+            <th>{t('analytics.completed')}</th>
+            <th>{t('analytics.overdue')}</th>
           </tr>
         </thead>
         <tbody>

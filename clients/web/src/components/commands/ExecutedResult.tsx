@@ -1,4 +1,5 @@
 import type { CommandExecutedResponse } from '../../types/api';
+import { useI18n } from '../../i18n';
 import { StatusBadge } from './StatusBadge';
 import { TraceInfo } from './TraceInfo';
 
@@ -9,9 +10,10 @@ interface ExecutedResultProps {
 
 export function ExecutedResult({ data, onNewCommand }: ExecutedResultProps) {
   const { result } = data;
+  const { t } = useI18n();
 
   const formatConfidence = (confidence?: number) => {
-    if (confidence === undefined) return 'N/A';
+    if (confidence === undefined) return t('common.na');
     return `${Math.round(confidence * 100)}%`;
   };
 
@@ -24,23 +26,23 @@ export function ExecutedResult({ data, onNewCommand }: ExecutedResultProps) {
 
   return (
     <div className="command-result command-result--success">
-      <StatusBadge variant="success" title="Command executed successfully" />
+      <StatusBadge variant="success" title={t('commands.executedSuccessfully')} />
 
       <div className="command-result__body">
         {result.taskId && (
           <div className="command-summary__row">
-            <span className="command-summary__label">Task ID:</span>
+            <span className="command-summary__label">{t('common.taskId')}:</span>
             <code>{result.taskId}</code>
           </div>
         )}
         {result.assigneeId && (
           <div className="command-summary__row">
-            <span className="command-summary__label">Assignee ID:</span>
+            <span className="command-summary__label">{t('common.assigneeId')}:</span>
             <code>{result.assigneeId}</code>
           </div>
         )}
         <div className="command-summary__row">
-          <span className="command-summary__label">Confidence:</span>
+          <span className="command-summary__label">{t('common.confidence')}:</span>
           <span>{formatConfidence(result.decisionConfidence)}</span>
         </div>
       </div>
@@ -48,11 +50,11 @@ export function ExecutedResult({ data, onNewCommand }: ExecutedResultProps) {
       <div className="command-result__actions">
         {result.taskId && (
           <button type="button" className="ghost-button" onClick={handleViewTask}>
-            View Task
+            {t('commands.viewTask')}
           </button>
         )}
         <button type="button" className="button" onClick={onNewCommand}>
-          New Command
+          {t('commands.newCommand')}
         </button>
       </div>
 

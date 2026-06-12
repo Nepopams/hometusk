@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Button, TextLink } from '../components/ui';
+import { useI18n } from '../i18n';
 import './AccessDenied.css';
 
 /**
@@ -13,6 +14,7 @@ import './AccessDenied.css';
  */
 export default function AccessDenied() {
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   const handleSwitchHousehold = () => {
     navigate('/households');
@@ -36,10 +38,10 @@ export default function AccessDenied() {
         {/* Text section */}
         <div className="access-denied-page__text">
           <h1 className="access-denied-page__title">
-            You don&apos;t have access to this household
+            {t('error.accessDeniedTitle')}
           </h1>
           <p className="access-denied-page__subtitle">
-            You may need to switch to a different household or use an invite code to join this one.
+            {t('error.accessDeniedSubtitle')}
           </p>
         </div>
 
@@ -51,7 +53,7 @@ export default function AccessDenied() {
             fullWidth
             onClick={handleSwitchHousehold}
           >
-            Switch household
+            {t('error.switchHousehold')}
           </Button>
           <Button
             variant="secondary"
@@ -59,7 +61,7 @@ export default function AccessDenied() {
             fullWidth
             onClick={handleEnterInvite}
           >
-            Enter invite code
+            {t('error.enterInviteCode')}
           </Button>
         </div>
 
@@ -69,7 +71,7 @@ export default function AccessDenied() {
           variant="muted"
           className="access-denied-page__support"
         >
-          Need help? Contact support
+          {t('error.contactSupport')}
         </TextLink>
       </div>
     </div>

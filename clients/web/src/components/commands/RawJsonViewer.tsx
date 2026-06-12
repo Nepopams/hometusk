@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useI18n } from '../../i18n';
 import { CopyButton } from '../ui/CopyButton';
 
 interface RawJsonViewerProps {
@@ -8,6 +9,8 @@ interface RawJsonViewerProps {
 
 export function RawJsonViewer({ data, label = 'Raw Response' }: RawJsonViewerProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const { t } = useI18n();
+  const resolvedLabel = label === 'Raw Response' ? t('commands.rawResponse') : label;
   const jsonString = JSON.stringify(data, null, 2);
 
   return (
@@ -18,9 +21,9 @@ export function RawJsonViewer({ data, label = 'Raw Response' }: RawJsonViewerPro
           className="raw-json-viewer__toggle"
           onClick={() => setIsOpen(!isOpen)}
         >
-          {isOpen ? 'Hide' : 'Show'} {label}
+          {isOpen ? t('common.hide') : t('common.show')} {resolvedLabel}
         </button>
-        {isOpen && <CopyButton text={jsonString} label="Copy JSON" />}
+        {isOpen && <CopyButton text={jsonString} label={t('common.copyJson')} />}
       </div>
       {isOpen && <pre className="raw-json-viewer__code">{jsonString}</pre>}
     </div>

@@ -4,6 +4,7 @@
  */
 
 .auth-layout {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -11,6 +12,12 @@
   min-height: 100vh;
   padding: var(--spacing-8);
   background-color: var(--color-bg-page);
+}
+
+.auth-layout__language {
+  position: absolute;
+  top: var(--spacing-6);
+  right: var(--spacing-6);
 }
 
 .auth-layout__content {
@@ -39,7 +46,15 @@
   .auth-layout {
     padding: var(--spacing-6);
     justify-content: flex-start;
-    padding-top: var(--spacing-12);
+    padding-top: calc(var(--spacing-12) + 36px);
+  }
+
+  .auth-layout__language {
+    top: var(--spacing-4);
+    right: var(--spacing-4);
+    left: var(--spacing-4);
+    display: flex;
+    justify-content: center;
   }
 
   .auth-layout__content {

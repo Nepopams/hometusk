@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useI18n } from '../i18n';
 import { createInvite, acceptInvite } from '../lib/api';
 import { ApiError } from '../lib/errors';
 import { Button, TextField } from '../components/ui';
@@ -28,6 +29,7 @@ interface InviteEntry {
  * @see Pencil frames: zx8XB, yFgZQ, K2bC1, z8yur, ZWWj9
  */
 export default function Invites() {
+  const { t, formatRelativeTime } = useI18n();
   const { householdId, refetchUser } = useAuth();
   const navigate = useNavigate();
 
@@ -88,16 +90,16 @@ export default function Invites() {
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 403) {
-          setCreateError('You are not authorized to create invites');
+          setCreateError(t('invite.createUnauthorized'));
         } else {
           const msg =
             typeof err.body === 'object' && err.body && 'message' in err.body
               ? (err.body as { message?: string }).message
               : undefined;
-          setCreateError(msg || 'Failed to create invite');
+          setCreateError(msg || t('invite.failedCreate'));
         }
       } else {
-        setCreateError('An unexpected error occurred');
+        setCreateError(t('household.unexpectedError'));
       }
     } finally {
       setIsCreating(false);
@@ -111,7 +113,7 @@ export default function Invites() {
       setCopiedCode(true);
       setTimeout(() => setCopiedCode(false), 2000);
     } catch {
-      setCreateError('Copy not supported');
+      setCreateError(t('invite.copyUnsupportedShort'));
     }
   };
 
@@ -122,7 +124,7 @@ export default function Invites() {
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2000);
     } catch {
-      setCreateError('Copy not supported');
+      setCreateError(t('invite.copyUnsupportedShort'));
     }
   };
 
@@ -148,36 +150,22 @@ export default function Invites() {
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 404 || err.status === 410) {
-          setAcceptError('Invite not found or expired');
+          setAcceptError(t('invite.notFoundOrExpired'));
         } else if (err.status === 409) {
-          setAcceptError('You are already a member of this household');
+          setAcceptError(t('invite.alreadyMemberError'));
         } else {
           const msg =
             typeof err.body === 'object' && err.body && 'message' in err.body
               ? (err.body as { message?: string }).message
               : undefined;
-          setAcceptError(msg || 'Failed to accept invite');
+          setAcceptError(msg || t('invite.failedAccept'));
         }
       } else {
-        setAcceptError('An unexpected error occurred');
+        setAcceptError(t('household.unexpectedError'));
       }
     } finally {
       setIsAccepting(false);
     }
-  };
-
-  const formatRelativeTime = (timestamp: string): string => {
-    const now = Date.now();
-    const then = new Date(timestamp).getTime();
-    const diffMs = now - then;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return 'just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return `${diffDays}d ago`;
   };
 
   const formatExpiry = (expiresAt: string): string => {
@@ -186,20 +174,20 @@ export default function Invites() {
     const diffMs = expiry.getTime() - now.getTime();
     const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
 
-    if (diffHours <= 0) return 'Expired';
-    if (diffHours < 24) return `${diffHours}h left`;
+    if (diffHours <= 0) return t('common.expired');
+    if (diffHours < 24) return t('invite.hoursLeft', { count: diffHours });
     const diffDays = Math.ceil(diffHours / 24);
-    return `${diffDays}d left`;
+    return t('invite.daysLeft', { count: diffDays });
   };
 
   const getStatusDisplay = (entry: InviteEntry): { label: string; variant: 'active' | 'used' | 'expired' } => {
     const now = new Date();
     const expiry = new Date(entry.expiresAt);
 
-    if (entry.status === 'redeemed') return { label: 'Used', variant: 'used' };
-    if (entry.status === 'revoked') return { label: 'Revoked', variant: 'expired' };
-    if (expiry < now) return { label: 'Expired', variant: 'expired' };
-    return { label: 'Active', variant: 'active' };
+    if (entry.status === 'redeemed') return { label: t('invite.used'), variant: 'used' };
+    if (entry.status === 'revoked') return { label: t('invite.revoked'), variant: 'expired' };
+    if (expiry < now) return { label: t('common.expired'), variant: 'expired' };
+    return { label: t('invite.active'), variant: 'active' };
   };
 
   if (!householdId) {
@@ -207,7 +195,7 @@ export default function Invites() {
       <div className="invites">
         <div className="invites__wrapper">
           <div className="invites__empty">
-            <p>Please select a household to manage invites.</p>
+            <p>{t('invite.manageNoHousehold')}</p>
           </div>
         </div>
       </div>
@@ -219,7 +207,7 @@ export default function Invites() {
       <div className="invites__wrapper">
         {/* CREATE INVITE Section */}
         <section className="invites__section">
-          <h2 className="invites__section-title">Create Invite</h2>
+          <h2 className="invites__section-title">{t('invite.createInviteTitle')}</h2>
           <div className="invites__card">
             <Button
               variant="primary"
@@ -227,7 +215,7 @@ export default function Invites() {
               onClick={handleCreateInvite}
               disabled={isCreating}
             >
-              {isCreating ? 'Creating...' : 'Create invite'}
+              {isCreating ? t('invite.creating') : t('invite.createInvite')}
             </Button>
 
             {createError && (
@@ -239,24 +227,24 @@ export default function Invites() {
             {createdInvite && (
               <div className="invites__result">
                 <div className="invites__result-row">
-                  <span className="invites__result-label">Code:</span>
+                  <span className="invites__result-label">{t('invite.codeLabel')}</span>
                   <code className="invites__result-code">{createdInvite.inviteToken}</code>
                   <Button variant="secondary" size="sm" onClick={handleCopyCode}>
-                    {copiedCode ? 'Copied!' : 'Copy'}
+                    {copiedCode ? t('common.copiedBang') : t('common.copy')}
                   </Button>
                 </div>
                 <div className="invites__result-row">
-                  <span className="invites__result-label">Link:</span>
+                  <span className="invites__result-label">{t('invite.linkLabel')}</span>
                   <span className="invites__result-link">{inviteLink}</span>
                   <Button variant="secondary" size="sm" onClick={handleCopyLink}>
-                    {copiedLink ? 'Copied!' : 'Copy'}
+                    {copiedLink ? t('common.copiedBang') : t('common.copy')}
                   </Button>
                 </div>
                 <div className="invites__result-meta">
                   <span className="invites__badge invites__badge--warning">
                     {formatExpiry(createdInvite.expiresAt)}
                   </span>
-                  <span className="invites__badge invites__badge--success">Active</span>
+                  <span className="invites__badge invites__badge--success">{t('invite.active')}</span>
                 </div>
               </div>
             )}
@@ -265,7 +253,7 @@ export default function Invites() {
 
         {/* ACTIVE INVITES Section */}
         <section className="invites__section">
-          <h2 className="invites__section-title">Active Invites</h2>
+          <h2 className="invites__section-title">{t('invite.activeInvites')}</h2>
           <div className="invites__card">
             {invites.length === 0 ? (
               <div className="invites__list-empty">
@@ -275,8 +263,8 @@ export default function Invites() {
                   <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
                   <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                 </svg>
-                <h3 className="invites__list-empty-title">No active invites</h3>
-                <p className="invites__list-empty-desc">Share an invite code to add household members</p>
+                <h3 className="invites__list-empty-title">{t('invite.noActiveInvites')}</h3>
+                <p className="invites__list-empty-desc">{t('invite.shareCodeDesc')}</p>
               </div>
             ) : (
               <div className="invites__list">
@@ -294,7 +282,7 @@ export default function Invites() {
                           </code>
                           <div className="invites__list-meta">
                             <span className="invites__list-created">
-                              Created {formatRelativeTime(entry.createdAt)}
+                              {t('invite.created', { time: formatRelativeTime(entry.createdAt) })}
                             </span>
                             {isActive && (
                               <span className="invites__badge invites__badge--warning">
@@ -313,7 +301,7 @@ export default function Invites() {
                               size="sm"
                               onClick={() => handleCopyInviteCode(entry.token)}
                             >
-                              Copy
+                              {t('common.copy')}
                             </Button>
                           </div>
                         )}
@@ -328,12 +316,12 @@ export default function Invites() {
 
         {/* JOIN HOUSEHOLD Section */}
         <section className="invites__section">
-          <h2 className="invites__section-title">Join Household</h2>
+          <h2 className="invites__section-title">{t('invite.joinHouseholdTitle')}</h2>
           <form className="invites__card" onSubmit={handleAcceptInvite}>
             <TextField
-              label="Paste invite code"
+              label={t('common.pasteCode')}
               type="text"
-              placeholder="Enter invite code"
+              placeholder={t('invite.enterCodePlaceholder')}
               value={inviteCode}
               onChange={(e) => setInviteCode(e.target.value)}
               disabled={isAccepting}
@@ -345,12 +333,12 @@ export default function Invites() {
                 size="md"
                 disabled={isAccepting || !inviteCode.trim()}
               >
-                {isAccepting ? 'Joining...' : 'Join household'}
+                {isAccepting ? t('invite.joining') : t('invite.joinHousehold')}
               </Button>
             </div>
             {acceptError && (
               <div className="invites__error-banner" role="alert">
-                <strong>Error:</strong> {acceptError}
+                <strong>{t('common.error')}:</strong> {acceptError}
               </div>
             )}
           </form>

@@ -1,11 +1,5 @@
 import type { TaskStatus } from '../../types/api';
-
-const statusLabels: Record<TaskStatus, string> = {
-  open: 'Open',
-  in_progress: 'In Progress',
-  done: 'Done',
-  cancelled: 'Cancelled',
-};
+import { useI18n } from '../../i18n';
 
 interface TaskStatusBadgeProps {
   status: TaskStatus;
@@ -21,6 +15,14 @@ interface TaskStatusBadgeProps {
  * - cancelled → Neutral (gray)
  */
 export default function TaskStatusBadge({ status }: TaskStatusBadgeProps) {
+  const { t } = useI18n();
+  const statusLabels: Record<TaskStatus, string> = {
+    open: t('common.open'),
+    in_progress: t('common.inProgress'),
+    done: t('common.done'),
+    cancelled: t('common.cancelled'),
+  };
+
   return (
     <span className={`tasks__badge tasks__badge--${status}`}>
       {statusLabels[status]}

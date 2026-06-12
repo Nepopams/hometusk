@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useI18n } from '../i18n';
 import { createAuthSession } from '../lib/api';
 import { signinCallback } from '../lib/auth/oidc';
 import { STORAGE_KEYS } from '../lib/constants';
@@ -11,6 +12,7 @@ interface LocationState {
 }
 
 export default function Callback() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
   const [status, setStatus] = useState<CallbackStatus>('processing');
@@ -66,7 +68,7 @@ export default function Callback() {
   if (status === 'processing') {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <p>Processing login...</p>
+        <p>{t('auth.processingLogin')}</p>
       </div>
     );
   }

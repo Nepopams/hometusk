@@ -4,15 +4,9 @@ import { useAuth } from '../hooks/useAuth';
 import { useTask } from '../hooks/useTask';
 import { Button } from '../components/ui';
 import { ApiError } from '../lib/errors';
+import { useI18n } from '../i18n';
 import type { TaskStatus } from '../types/api';
 import './TaskDetail.css';
-
-const statusLabels: Record<TaskStatus, string> = {
-  open: 'Open',
-  in_progress: 'In Progress',
-  done: 'Done',
-  cancelled: 'Cancelled',
-};
 
 /**
  * Task Detail page for viewing a single task.
@@ -29,6 +23,7 @@ const statusLabels: Record<TaskStatus, string> = {
  */
 export default function TaskDetail() {
   const { householdId } = useAuth();
+  const { t, formatDateTime, formatRelativeTime } = useI18n();
   const { taskId } = useParams();
   const { task, isLoading, error, refetch } = useTask(householdId, taskId);
 
@@ -41,7 +36,7 @@ export default function TaskDetail() {
       <div className="task-detail">
         <div className="task-detail__wrapper">
           <div className="task-detail__empty-page">
-            <p>Please select a household to view task details.</p>
+            <p>{t('tasks.noHouseholdDetails')}</p>
           </div>
         </div>
       </div>
@@ -57,7 +52,7 @@ export default function TaskDetail() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
-            Back to tasks
+            {t('tasks.backToTasks')}
           </Link>
 
           <div className="task-detail__skeleton-header">
@@ -93,7 +88,7 @@ export default function TaskDetail() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
-            Back to tasks
+            {t('tasks.backToTasks')}
           </Link>
 
           <div className="task-detail__card">
@@ -112,13 +107,13 @@ export default function TaskDetail() {
                 <line x1="9" y1="9" x2="9.01" y2="9" />
                 <line x1="15" y1="9" x2="15.01" y2="9" />
               </svg>
-              <h3 className="task-detail__not-found-title">Task not found</h3>
+              <h3 className="task-detail__not-found-title">{t('tasks.taskNotFound')}</h3>
               <p className="task-detail__not-found-desc">
-                This task may have been deleted or you don&apos;t have access to it.
+                {t('tasks.taskNotFoundDesc')}
               </p>
               <Link to="/tasks">
                 <Button variant="primary" size="md">
-                  Go to tasks
+                  {t('tasks.goToTasks')}
                 </Button>
               </Link>
             </div>
@@ -137,7 +132,7 @@ export default function TaskDetail() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
-            Back to tasks
+            {t('tasks.backToTasks')}
           </Link>
 
           <div className="task-detail__card">
@@ -156,13 +151,13 @@ export default function TaskDetail() {
                 <line x1="12" y1="17" x2="12.01" y2="17" />
               </svg>
               <div className="task-detail__error-content">
-                <h3 className="task-detail__error-title">Unable to load task</h3>
+                <h3 className="task-detail__error-title">{t('tasks.unableLoadTask')}</h3>
                 <p className="task-detail__error-message">
-                  Check your connection and try again.
+                  {t('common.checkConnection')}
                 </p>
               </div>
               <Button variant="primary" size="sm" onClick={handleRetry}>
-                Retry
+                {t('common.retry')}
               </Button>
             </div>
           </div>
@@ -177,7 +172,13 @@ export default function TaskDetail() {
   }
 
   const isDone = task.status === 'done';
-  const deadline = formatDeadline(task.deadline);
+  const deadline = formatDeadline(task.deadline, t);
+  const statusLabels: Record<TaskStatus, string> = {
+    open: t('common.open'),
+    in_progress: t('common.inProgress'),
+    done: t('common.done'),
+    cancelled: t('common.cancelled'),
+  };
 
   return (
     <div className="task-detail">
@@ -186,7 +187,7 @@ export default function TaskDetail() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
-          Back to tasks
+          {t('tasks.backToTasks')}
         </Link>
 
         {/* Header */}
@@ -223,9 +224,9 @@ export default function TaskDetail() {
               </div>
             )}
             <div className="task-detail__row-content">
-              <span className="task-detail__row-label">Assignee</span>
+              <span className="task-detail__row-label">{t('common.assignee')}</span>
               <span className={`task-detail__row-value ${!task.assignee ? 'task-detail__row-value--muted' : ''}`}>
-                {task.assignee?.displayName || 'Unassigned'}
+                {task.assignee?.displayName || t('common.unassigned')}
               </span>
             </div>
           </div>
@@ -243,9 +244,9 @@ export default function TaskDetail() {
               </svg>
             </div>
             <div className="task-detail__row-content">
-              <span className="task-detail__row-label">Zone</span>
+              <span className="task-detail__row-label">{t('common.zone')}</span>
               <span className={`task-detail__row-value ${!task.zone ? 'task-detail__row-value--muted' : ''}`}>
-                {task.zone?.name || 'No zone'}
+                {task.zone?.name || t('common.noZone')}
               </span>
             </div>
           </div>
@@ -263,7 +264,7 @@ export default function TaskDetail() {
               </svg>
             </div>
             <div className="task-detail__row-content">
-              <span className="task-detail__row-label">Deadline</span>
+              <span className="task-detail__row-label">{t('common.deadline')}</span>
               <span className={`task-detail__row-value ${deadline.isOverdue ? 'task-detail__row-value--overdue' : ''} ${!task.deadline ? 'task-detail__row-value--muted' : ''}`}>
                 {deadline.text}
               </span>
@@ -282,7 +283,7 @@ export default function TaskDetail() {
                   </svg>
                 </div>
                 <div className="task-detail__row-content">
-                  <span className="task-detail__row-label">Completed</span>
+                  <span className="task-detail__row-label">{t('tasks.completed')}</span>
                   <span className="task-detail__row-value">
                     {formatDateTime(task.completedAt)}
                   </span>
@@ -299,22 +300,22 @@ export default function TaskDetail() {
                 <circle cx="12" cy="12" r="10" />
                 <polyline points="12 6 12 12 16 14" />
               </svg>
-              <span>Created {formatRelativeTime(task.createdAt)}</span>
-              {task.createdBy && <span>by {task.createdBy.displayName}</span>}
+              <span>{t('common.created')} {formatRelativeTime(task.createdAt)}</span>
+              {task.createdBy && <span>{t('tasks.createdBy', { name: task.createdBy.displayName })}</span>}
             </div>
             <div className="task-detail__meta-row">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 20h9" />
                 <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
               </svg>
-              <span>Updated {formatRelativeTime(task.updatedAt)}</span>
+              <span>{t('common.updated')} {formatRelativeTime(task.updatedAt)}</span>
             </div>
             <div className="task-detail__meta-row">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                 <polyline points="22 4 12 14.01 9 11.01" />
               </svg>
-              <span>Created via {task.createdVia}</span>
+              <span>{t('tasks.createdVia', { value: task.createdVia })}</span>
             </div>
           </div>
         </div>
@@ -328,7 +329,7 @@ export default function TaskDetail() {
                 <circle cx="20" cy="21" r="1" />
                 <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
               </svg>
-              <span>Shopping Items ({task.linkedShoppingItems.length})</span>
+              <span>{t('tasks.shoppingItems', { count: task.linkedShoppingItems.length })}</span>
             </div>
             <div className="task-detail__card">
               {task.linkedShoppingItems.map((item, idx) => (
@@ -382,11 +383,14 @@ function getInitials(name: string): string {
   return name.slice(0, 2).toUpperCase();
 }
 
-function formatDeadline(value?: string): { text: string; isOverdue: boolean } {
-  if (!value) return { text: 'No deadline', isOverdue: false };
+function formatDeadline(
+  value: string | undefined,
+  t: ReturnType<typeof useI18n>['t']
+): { text: string; isOverdue: boolean } {
+  if (!value) return { text: t('common.noDeadline'), isOverdue: false };
 
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return { text: 'No deadline', isOverdue: false };
+  if (Number.isNaN(date.getTime())) return { text: t('common.noDeadline'), isOverdue: false };
 
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -397,47 +401,21 @@ function formatDeadline(value?: string): { text: string; isOverdue: boolean } {
   const isOverdue = taskDate < today;
 
   if (taskDate.getTime() === today.getTime()) {
-    return { text: 'Today', isOverdue: false };
+    return { text: t('common.today'), isOverdue: false };
   }
   if (taskDate.getTime() === tomorrow.getTime()) {
-    return { text: 'Tomorrow', isOverdue: false };
+    return { text: t('common.tomorrow'), isOverdue: false };
   }
 
   const diffDays = Math.ceil((taskDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   if (diffDays > 0 && diffDays <= 7) {
-    return { text: `In ${diffDays} days`, isOverdue: false };
+    return { text: t('tasks.inDays', { count: diffDays }), isOverdue: false };
   }
 
   if (isOverdue) {
     const overdueDays = Math.ceil((today.getTime() - taskDate.getTime()) / (1000 * 60 * 60 * 24));
-    return { text: `${overdueDays}d overdue`, isOverdue: true };
+    return { text: t('tasks.overdueDays', { count: overdueDays }), isOverdue: true };
   }
 
   return { text: date.toLocaleDateString(), isOverdue: false };
-}
-
-function formatRelativeTime(timestamp: string): string {
-  const now = Date.now();
-  const then = new Date(timestamp).getTime();
-  const diffMs = now - then;
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return 'just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  return `${diffDays}d ago`;
-}
-
-function formatDateTime(timestamp: string): string {
-  const date = new Date(timestamp);
-  if (Number.isNaN(date.getTime())) return 'Unknown';
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
 }
