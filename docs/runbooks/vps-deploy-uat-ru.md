@@ -345,6 +345,8 @@ Required client setting: `hometusk-backend.fullScopeAllowed=true`.
 Required default client scope: `roles`.
 Required protocol mapper: `hometusk realm-management client roles` on `hometusk-backend`.
 Required token issuer: `https://$DOMAIN/realms/hometusk`.
+Required Keycloak container env: `KC_HOSTNAME_URL=https://$DOMAIN`.
+Required realm attribute: `frontendUrl=https://$DOMAIN`.
 
 Проверка:
 

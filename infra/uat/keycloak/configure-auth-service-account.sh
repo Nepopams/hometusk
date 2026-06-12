@@ -5,6 +5,7 @@ REALM="${HOMETUSK_AUTH_KEYCLOAK_REALM:-hometusk}"
 BACKEND_CLIENT_ID="${HOMETUSK_AUTH_KEYCLOAK_ADMIN_CLIENT_ID:-hometusk-backend}"
 KC="${KC:-/opt/keycloak/bin/kcadm.sh}"
 SERVER="${KEYCLOAK_ADMIN_SERVER:-http://localhost:8080}"
+FRONTEND_URL="${KEYCLOAK_FRONTEND_URL:-${KC_HOSTNAME_URL:-${KC_HOSTNAME:-}}}"
 
 : "${KEYCLOAK_ADMIN:?KEYCLOAK_ADMIN is required}"
 : "${KEYCLOAK_ADMIN_PASSWORD:?KEYCLOAK_ADMIN_PASSWORD is required}"
@@ -14,6 +15,11 @@ SERVER="${KEYCLOAK_ADMIN_SERVER:-http://localhost:8080}"
   --realm master \
   --user "$KEYCLOAK_ADMIN" \
   --password "$KEYCLOAK_ADMIN_PASSWORD" >/dev/null
+
+if [ -n "$FRONTEND_URL" ]; then
+  "$KC" update "realms/$REALM" \
+    -s "attributes.frontendUrl=$FRONTEND_URL"
+fi
 
 CLIENT_UUID=$("$KC" get clients \
   -r "$REALM" \
@@ -120,6 +126,9 @@ for role in manage-users view-users query-users view-realm; do
   fi
 done
 
+if [ -n "$FRONTEND_URL" ]; then
+  echo "Configured realm $REALM frontendUrl=$FRONTEND_URL"
+fi
 echo "Configured $BACKEND_CLIENT_ID fullScopeAllowed=true"
 echo "Configured $BACKEND_CLIENT_ID default client scope roles"
 echo "Configured $BACKEND_CLIENT_ID protocol mapper $MAPPER_NAME"
