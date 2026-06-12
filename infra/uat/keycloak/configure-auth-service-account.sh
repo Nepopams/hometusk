@@ -27,4 +27,10 @@ SERVER="${KEYCLOAK_ADMIN_SERVER:-http://localhost:8080}"
   --cclientid realm-management \
   --rolename view-users
 
-echo "Granted realm-management manage-users/view-users to service-account-$BACKEND_CLIENT_ID in realm $REALM"
+"$KC" add-roles \
+  -r "$REALM" \
+  --uusername "service-account-$BACKEND_CLIENT_ID" \
+  --cclientid realm-management \
+  --rolename view-realm
+
+echo "Granted realm-management manage-users/view-users/view-realm to service-account-$BACKEND_CLIENT_ID in realm $REALM"
