@@ -1,7 +1,7 @@
 # ST-XXX — <Title>
 
 ## Sources of Truth
-- MVP: `docs/planning/mvp.md`
+- Scope anchor: `docs/planning/releases/<RELEASE>.md` OR `docs/planning/initiatives/INIT-*.md`
 - Epic/Story spec: `<link to docs/planning/epics/...>`
 - DoD: `docs/_governance/dod.md`
 - (if contract_impact) Contracts/OpenAPI: `<link to docs/contracts/...>`
@@ -68,4 +68,5 @@ Verification:
 ## Prompt Pack (to be generated)
 - PLAN: pending
 - APPLY: pending
+- REVIEW: separate read-only Codex review gate; do not create `prompt-review.md`
 - REVIEW: pending

@@ -77,8 +77,9 @@ workpacks/
 ---
 
 **Who Creates Workpacks?**
-- BA/Architect: High-level workpack from epic decomposition
-- `plan-generator` agent: Detailed workpack for Codex consumption
+- Human/Product Owner: owns gates and scope approval
+- Codex with `hometusk-workpack-prompts`: creates implementation-ready workpacks and staged PLAN/APPLY prompts
+- Read-only Codex review gate: reviews delivered changes; do not create new `prompt-review.md` files
 
 See also:
 - `docs/_governance/dor.md` — Ensure story is ready before creating workpack

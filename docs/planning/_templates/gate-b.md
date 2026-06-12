@@ -2,7 +2,7 @@
 
 ## Sources of Truth
 - Sprint: `docs/planning/sprints/sprint-XX.md`
-- MVP: `docs/planning/mvp.md`
+- Scope anchor: `docs/planning/releases/<RELEASE>.md` OR `docs/planning/initiatives/INIT-*.md`
 - DoR/DoD: `docs/_governance/dor.md`, `docs/_governance/dod.md`
 - Workpacks: 
   - `docs/planning/workpacks/ST-XXX/workpack.md`

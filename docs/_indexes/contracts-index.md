@@ -40,4 +40,4 @@ This index tracks all API contracts (OpenAPI, JSON Schema, AsyncAPI) in the proj
 
 ---
 
-**Maintenance**: Update this index when running contract-writer agent or manually adding contracts.
+**Maintenance**: Update this index when using `hometusk-contract-governance` or manually adding contracts.

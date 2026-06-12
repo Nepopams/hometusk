@@ -1,7 +1,7 @@
 # Sprint XX — <Goal>
 
 ## Sources of Truth
-- MVP: `docs/planning/mvp.md`
+- Scope anchor: `docs/planning/releases/<RELEASE>.md` OR `docs/planning/initiatives/INIT-*.md`
 - Epic/Stories: `<link to docs/planning/epics/...>`
 - DoR: `docs/_governance/dor.md`
 - DoD: `docs/_governance/dod.md`

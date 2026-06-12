@@ -1,4 +1,8 @@
-# Claude Pipeline Migration Guide
+# Legacy Claude Pipeline Migration Guide
+
+> Legacy reference. HomeTusk now uses the Codex-only workflow described in
+> `AGENTS.md` and `docs/CODEX-WORKFLOW.md`. Do not copy this file as the active
+> process for new HomeTusk work.
 
 Гайд по переносу Claude-пайплайна (планировщик + архитектор + аналитик + промпт-инженер) в другой проект.
 

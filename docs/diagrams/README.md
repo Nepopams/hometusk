@@ -15,7 +15,7 @@ This directory contains architecture and flow diagrams for HomeTusk project.
 
 ## When to Create/Update
 
-Run `diagram-steward` agent when:
+Use the `hometusk-adr-diagram-governance` skill when:
 - New service or component added
 - Service boundaries change
 - Integration points change
@@ -72,7 +72,7 @@ graph TD
 ---
 
 **Maintenance**:
-- Run `diagram-steward` agent when creating/updating diagrams
+- Use the `hometusk-adr-diagram-governance` skill when creating/updating diagrams
 - Update `docs/_indexes/diagrams-index.md` when adding new diagram
 
 See also:

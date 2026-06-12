@@ -29,7 +29,7 @@ contracts/
 
 ## When to Create/Update
 
-Run `contract-writer` agent when:
+Use the `hometusk-contract-governance` skill when:
 - Adding new endpoint or event type
 - Changing request/response schema (breaking or non-breaking)
 - Integrating with external system

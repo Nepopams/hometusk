@@ -31,11 +31,11 @@ A story/task is **Ready** when it meets ALL criteria below.
 
 ## Flags (Check if Applicable)
 
-- [ ] **contract_impact**: New endpoint, schema, or breaking change → requires contract-writer agent
-- [ ] **adr_needed**: Architectural decision → requires ADR (see adr-designer agent)
-- [ ] **diagrams_needed**: Structural or flow change → requires diagram update (see diagram-steward agent)
-- [ ] **security_sensitive**: Auth/authz change or cross-household data → requires security-reviewer agent
-- [ ] **traceability_critical**: Command pipeline change → requires observability-reviewer agent
+- [ ] **contract_impact**: New endpoint, schema, or breaking change → requires `hometusk-contract-governance`
+- [ ] **adr_needed**: Architectural decision → requires `hometusk-adr-diagram-governance`
+- [ ] **diagrams_needed**: Structural or flow change → requires `hometusk-adr-diagram-governance`
+- [ ] **security_sensitive**: Auth/authz change or cross-household data → requires read-only `security-reviewer`
+- [ ] **traceability_critical**: Command pipeline change → requires read-only `observability-reviewer`
 
 ## Blocked States (Not Ready If...)
 

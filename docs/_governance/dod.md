@@ -27,7 +27,7 @@ A task is **Done** when it meets ALL criteria below.
 - [ ] **ADR** created/updated if architectural decision made (`docs/adr/`)
 - [ ] **Diagrams** updated if structure/flow changed (`docs/diagrams/`)
 - [ ] **Service Catalog** updated if service boundaries changed (`docs/architecture/service-catalog.md`)
-- [ ] **CLAUDE.md** updated if development rules changed
+- [ ] **AGENTS.md** and/or `docs/CODEX-WORKFLOW.md` updated if development workflow rules changed
 - [ ] **Indexes** updated:
   - `docs/_indexes/adr-index.md` if ADR added
   - `docs/_indexes/contracts-index.md` if contract added
@@ -65,4 +65,4 @@ A task is **Done** when it meets ALL criteria below.
 
 ---
 
-**Responsibility**: Engineer ensures DoD before marking task complete. Reviewer blocks merge if DoD not met.
+**Responsibility**: Engineer or Codex APPLY executor ensures DoD before marking task complete. The read-only Codex review gate blocks merge if DoD is not met.

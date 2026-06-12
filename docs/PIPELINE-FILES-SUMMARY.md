@@ -1,4 +1,8 @@
-# Claude Pipeline — Разделение файлов
+# Legacy Claude Pipeline — Разделение файлов
+
+> Legacy reference. Active HomeTusk workflow instructions now live in
+> `AGENTS.md`, `docs/CODEX-WORKFLOW.md`, `.agents/skills/**`, and
+> `.codex/agents/**`.
 
 ## FRAMEWORK (общее, копировать as-is)
 
