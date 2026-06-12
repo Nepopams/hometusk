@@ -96,4 +96,7 @@ expect_status "$status" 204 "login same user"
 status=$(request GET /api/v1/users/me)
 expect_status "$status" 200 "users/me after login"
 
+status=$(request GET "/api/v1/households/$HOUSEHOLD_ID/routines")
+expect_status "$status" 200 "list routines after login"
+
 echo "Smoke auth flow passed"
