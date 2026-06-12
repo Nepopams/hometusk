@@ -5,6 +5,11 @@
 
 ## NOW (текущий фокус: следующая инициатива)
 
+- Initiative (done): **INIT-2026Q1-mobile-nav-collapse** — Mobile Navigation Collapse
+  - Anchor: docs/planning/initiatives/INIT-2026Q1-mobile-nav-collapse.md
+  - Outcome: на мобильной ширине основной household-контент виден сразу после header, а навигация открывается через compact menu/drawer без регрессии desktop layout
+  - Closed: 2026-06-12 (EP-014 / ST-1401)
+
 - Initiative (done): **INIT-2026Q2-shopping-marketplaces** — Shopping List → Marketplace Link-outs / Runs v0
   - Anchor: docs/planning/initiatives/INIT-2026Q2-shopping-marketplaces.md
   - Outcome: исполняемый список покупок: export/share + link-outs в маркетплейсы + "shopping run" (снимок списка) + сохранение связки "задача ↔ покупки"
@@ -65,7 +70,7 @@
   - Purge/TTL housekeeping для idempotency/decision logs (если нужно) + минимальные метрики/алерты
   - Цель: не расширять домен, а снизить риск "всё работает только на демо"
 
-## NEXT (следующие инициативы после Shopping Marketplaces)
+## NEXT (следующие инициативы после Mobile Navigation Collapse)
 
 - Initiative (candidate): **Agreements v0 (read-only)** (consent-first)
   - Anchor: TBD — requires initiative spec

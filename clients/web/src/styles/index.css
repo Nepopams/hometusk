@@ -36,6 +36,7 @@ a {
   min-height: 100vh;
   display: grid;
   grid-template-rows: auto 1fr;
+  overflow-x: hidden;
 }
 
 .app-header {
@@ -45,6 +46,46 @@ a {
   padding: 16px 24px;
   background: #faf7f0;
   border-bottom: 1px solid #e2ddd3;
+}
+
+.app-header__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.app-header__menu-button {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid #d6cec2;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1c2424;
+  cursor: pointer;
+}
+
+.app-header__menu-button:hover {
+  border-color: #0b3d3a;
+}
+
+.app-header__menu-button:focus-visible {
+  outline: 3px solid rgba(11, 61, 58, 0.2);
+  outline-offset: 2px;
+}
+
+.app-header__menu-line {
+  display: block;
+  width: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
 }
 
 .app-header__title {
@@ -66,12 +107,17 @@ a {
   display: grid;
   grid-template-columns: 220px 1fr;
   min-height: 0;
+  position: relative;
 }
 
 .app-sidebar {
   padding: 20px;
   background: #fffdf8;
   border-right: 1px solid #e7e1d7;
+}
+
+.app-sidebar-backdrop {
+  display: none;
 }
 
 .app-sidebar__title {
@@ -185,6 +231,17 @@ a {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+    padding: 12px 16px;
+  }
+
+  .app-header__brand {
+    width: 100%;
+  }
+
+  .app-header__menu-button {
+    display: inline-flex;
+    position: relative;
+    z-index: 320;
   }
 
   .app-shell__body {
@@ -192,8 +249,40 @@ a {
   }
 
   .app-sidebar {
-    border-right: none;
-    border-bottom: 1px solid #e7e1d7;
+    position: fixed;
+    top: var(--app-header-height, 0px);
+    left: 0;
+    z-index: 310;
+    width: min(84vw, 320px);
+    height: calc(100vh - var(--app-header-height, 0px));
+    max-height: calc(100vh - var(--app-header-height, 0px));
+    overflow-y: auto;
+    border-right: 1px solid #e7e1d7;
+    border-bottom: none;
+    box-shadow: 14px 0 32px rgba(18, 18, 18, 0.16);
+    transform: translateX(-104%);
+    visibility: hidden;
+    transition: transform 180ms ease, visibility 180ms ease;
+  }
+
+  .app-shell__body--nav-open .app-sidebar {
+    transform: translateX(0);
+    visibility: visible;
+  }
+
+  .app-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    padding: 0;
+    border: 0;
+    background: rgba(28, 36, 36, 0.28);
+    cursor: default;
+  }
+
+  .app-content {
+    padding: 18px 16px 24px;
   }
 }
 
