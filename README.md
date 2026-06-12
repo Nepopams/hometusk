@@ -130,6 +130,7 @@ Notification sent
 ## Documentation
 
 - [Codex Workflow](docs/CODEX-WORKFLOW.md) — Codex-only delivery pipeline
+- [GitHub Actions Delivery](docs/deployment/github-actions-delivery.md) — dev/UAT/prod delivery model
 - [Architecture Decisions](docs/adr/) — Canonical ADRs for new decisions
 - [Legacy Architecture Decisions](docs/architecture/decisions/) — Older ADRs not yet migrated
 - [Service Catalog](docs/architecture/service-catalog.md) — Registry of all services
