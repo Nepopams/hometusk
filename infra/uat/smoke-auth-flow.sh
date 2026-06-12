@@ -81,6 +81,12 @@ expect_status "$status" 200 "users/me after F5-equivalent"
 status=$(request GET "/api/v1/households/$HOUSEHOLD_ID/members")
 expect_status "$status" 200 "household members"
 
+status=$(request POST "/api/v1/households/$HOUSEHOLD_ID/routines" "{\"title\":\"Smoke Routine $(date +%s)\",\"recurrenceRule\":{\"type\":\"DAILY\"},\"assignmentPolicy\":\"MANUAL\"}")
+expect_status "$status" 201 "create routine"
+
+status=$(request GET "/api/v1/households/$HOUSEHOLD_ID/routines")
+expect_status "$status" 200 "list routines"
+
 status=$(request POST /api/v1/auth/logout)
 expect_status "$status" 204 "logout"
 

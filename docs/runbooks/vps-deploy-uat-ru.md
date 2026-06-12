@@ -571,7 +571,7 @@ docker compose up -d --build nginx       # только nginx (+ SPA)
 
 ### 9.3. Smoke-проверка auth flow
 
-После обновления auth/backend/frontend запустите smoke-тест. Он проверяет регистрацию, сохранение cookie-сессии после F5-эквивалента, загрузку members, logout и повторный login тем же пользователем.
+После обновления auth/backend/frontend запустите smoke-тест. Он проверяет регистрацию, сохранение cookie-сессии после F5-эквивалента, загрузку members, создание/загрузку routines, logout и повторный login тем же пользователем.
 
 ```bash
 cd /opt/hometusk/hometusk/infra/uat
