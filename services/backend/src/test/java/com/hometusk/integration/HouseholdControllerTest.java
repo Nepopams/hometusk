@@ -11,6 +11,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Integration tests for HouseholdController.
@@ -91,6 +93,7 @@ class HouseholdControllerTest extends IntegrationTestBase {
     class ListMembersTests {
 
         @Test
+        @Transactional(propagation = Propagation.NOT_SUPPORTED)
         @DisplayName("Should list household members")
         void listMembersReturnsHouseholdMembers() throws Exception {
             // Add testUser2 to household

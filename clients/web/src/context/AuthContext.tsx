@@ -203,6 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const profile = await getMe();
       setUser(profile);
+      setStatus('authenticated');
       reconcileHouseholdSelection(profile);
       return profile;
     } catch (err) {

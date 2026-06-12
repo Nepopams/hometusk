@@ -14,6 +14,9 @@ public interface MembershipRepository extends JpaRepository<Membership, UUID> {
 
     List<Membership> findByUser_Id(UUID userId);
 
+    @Query("SELECT m FROM Membership m JOIN FETCH m.household WHERE m.user.id = :userId")
+    List<Membership> findByUser_IdWithHousehold(@Param("userId") UUID userId);
+
     List<Membership> findByHousehold_Id(UUID householdId);
 
     @Query("SELECT m FROM Membership m JOIN FETCH m.user WHERE m.household.id = :householdId")
