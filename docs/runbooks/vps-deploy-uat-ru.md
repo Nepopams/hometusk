@@ -569,14 +569,29 @@ docker compose up -d --build backend     # только backend
 docker compose up -d --build nginx       # только nginx (+ SPA)
 ```
 
-### 9.3. Пересборка без кэша (если проблемы)
+### 9.3. Smoke-проверка auth flow
+
+После обновления auth/backend/frontend запустите smoke-тест. Он проверяет регистрацию, сохранение cookie-сессии после F5-эквивалента, загрузку members, logout и повторный login тем же пользователем.
+
+```bash
+cd /opt/hometusk/hometusk/infra/uat
+sh smoke-auth-flow.sh
+```
+
+Ожидаемый финал:
+
+```text
+Smoke auth flow passed
+```
+
+### 9.4. Пересборка без кэша (если проблемы)
 
 ```bash
 docker compose build --no-cache backend
 docker compose up -d backend
 ```
 
-### 9.4. Rolling update (минимальный downtime)
+### 9.5. Rolling update (минимальный downtime)
 
 Для минимизации простоя перестраивайте сервисы по одному:
 
