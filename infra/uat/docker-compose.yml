@@ -100,7 +100,9 @@ services:
       DECISION_PROVIDER: ${DECISION_PROVIDER:-manual}
       DECISION_FALLBACK_ENABLED: ${DECISION_FALLBACK_ENABLED:-true}
       JAVA_OPTS: ${BACKEND_JAVA_OPTS:--XX:+UseContainerSupport -XX:MaxRAMPercentage=60.0 -Xmx1536m -Djava.security.egd=file:/dev/./urandom}
-      APP_CORS_ALLOWED_ORIGINS: http://localhost,https://${DOMAIN:-localhost}
+      HOMETUSK_CORS_ALLOWED_ORIGINS: ${HOMETUSK_CORS_ALLOWED_ORIGINS:-http://localhost,https://${DOMAIN:-localhost}}
+      HOMETUSK_COOKIE_SECURE: ${HOMETUSK_COOKIE_SECURE:-true}
+      HOMETUSK_COOKIE_SAME_SITE: ${HOMETUSK_COOKIE_SAME_SITE:-Lax}
     depends_on:
       postgres:
         condition: service_healthy

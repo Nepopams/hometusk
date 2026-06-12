@@ -756,7 +756,7 @@ docker exec hometusk-uat-nginx nginx -t
 ### CORS ошибки в браузере
 
 Проверьте:
-1. В `.env` → `APP_CORS_ALLOWED_ORIGINS` включает ваш домен
+1. В `.env` → `HOMETUSK_CORS_ALLOWED_ORIGINS` включает ваш домен
 2. В Keycloak → клиент → Web Origins включает ваш домен
 3. Протокол совпадает (http vs https)
 
