@@ -6,36 +6,46 @@ import InviteModal from '../InviteModal';
 const getLinkClass = ({ isActive }: { isActive: boolean }) =>
   isActive ? 'nav-link is-active' : 'nav-link';
 
-export default function Sidebar() {
+type SidebarProps = {
+  isCompactHidden?: boolean;
+  onNavigate?: () => void;
+};
+
+export default function Sidebar({ isCompactHidden = false, onNavigate }: SidebarProps) {
   const { householdId } = useParams();
   const { t } = useI18n();
   const basePath = `/households/${householdId ?? 'demo'}`;
   const [isInviteOpen, setIsInviteOpen] = useState(false);
 
   return (
-    <aside className="app-sidebar">
+    <aside
+      id="app-household-navigation"
+      className="app-sidebar"
+      aria-label={t('nav.navigation')}
+      aria-hidden={isCompactHidden}
+    >
       <div className="app-sidebar__section">
         <div className="app-sidebar__title">{t('nav.navigation')}</div>
         <nav className="app-nav">
-          <NavLink className={getLinkClass} to={`${basePath}/tasks`}>
+          <NavLink className={getLinkClass} to={`${basePath}/tasks`} onClick={onNavigate}>
             {t('nav.tasks')}
           </NavLink>
-          <NavLink className={getLinkClass} to={`${basePath}/routines`}>
+          <NavLink className={getLinkClass} to={`${basePath}/routines`} onClick={onNavigate}>
             {t('nav.routines')}
           </NavLink>
-          <NavLink className={getLinkClass} to={`${basePath}/analytics`}>
+          <NavLink className={getLinkClass} to={`${basePath}/analytics`} onClick={onNavigate}>
             {t('nav.analytics')}
           </NavLink>
-          <NavLink className={getLinkClass} to={`${basePath}/progress`}>
+          <NavLink className={getLinkClass} to={`${basePath}/progress`} onClick={onNavigate}>
             {t('nav.progress')}
           </NavLink>
-          <NavLink className={getLinkClass} to={`${basePath}/zones`}>
+          <NavLink className={getLinkClass} to={`${basePath}/zones`} onClick={onNavigate}>
             {t('nav.zones')}
           </NavLink>
-          <NavLink className={getLinkClass} to={`${basePath}/notifications`}>
+          <NavLink className={getLinkClass} to={`${basePath}/notifications`} onClick={onNavigate}>
             {t('nav.notifications')}
           </NavLink>
-          <NavLink className={getLinkClass} to={`${basePath}/members`}>
+          <NavLink className={getLinkClass} to={`${basePath}/members`} onClick={onNavigate}>
             {t('nav.members')}
           </NavLink>
         </nav>
@@ -47,7 +57,10 @@ export default function Sidebar() {
           <button
             type="button"
             className="ghost-button"
-            onClick={() => setIsInviteOpen(true)}
+            onClick={() => {
+              setIsInviteOpen(true);
+              onNavigate?.();
+            }}
             disabled={!householdId}
           >
             {t('nav.inviteMember')}
