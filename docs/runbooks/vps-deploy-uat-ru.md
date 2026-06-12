@@ -344,6 +344,7 @@ Required `realm-management` client roles: `manage-users`, `view-users`, `view-re
 Required client setting: `hometusk-backend.fullScopeAllowed=true`.
 Required default client scope: `roles`.
 Required protocol mapper: `hometusk realm-management client roles` on `hometusk-backend`.
+Required token issuer: `https://$DOMAIN/realms/hometusk`.
 
 Проверка:
 
