@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,6 +20,7 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     /**
      * Find task by ID scoped to household (IDOR prevention).
      */
+    @EntityGraph(value = "Task.summary")
     Optional<Task> findByIdAndHousehold_Id(UUID id, UUID householdId);
 
     /**
@@ -34,44 +36,52 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     /**
      * List all tasks in a household.
      */
+    @EntityGraph(value = "Task.summary")
     List<Task> findByHousehold_IdOrderByCreatedAtDesc(UUID householdId);
 
     /**
      * List tasks by status in a household.
      */
+    @EntityGraph(value = "Task.summary")
     List<Task> findByHousehold_IdAndStatusOrderByCreatedAtDesc(UUID householdId, TaskStatus status);
 
     /**
      * List tasks assigned to a user in a household.
      */
+    @EntityGraph(value = "Task.summary")
     List<Task> findByHousehold_IdAndAssignee_IdOrderByCreatedAtDesc(UUID householdId, UUID assigneeId);
 
     /**
      * List tasks by status and assignee.
      */
+    @EntityGraph(value = "Task.summary")
     List<Task> findByHousehold_IdAndStatusAndAssignee_IdOrderByCreatedAtDesc(
             UUID householdId, TaskStatus status, UUID assigneeId);
 
     /**
      * List tasks by zone in a household.
      */
+    @EntityGraph(value = "Task.summary")
     List<Task> findByHousehold_IdAndZone_IdOrderByCreatedAtDesc(UUID householdId, UUID zoneId);
 
     /**
      * List tasks by status and zone.
      */
+    @EntityGraph(value = "Task.summary")
     List<Task> findByHousehold_IdAndStatusAndZone_IdOrderByCreatedAtDesc(
             UUID householdId, TaskStatus status, UUID zoneId);
 
     /**
      * List tasks by assignee and zone.
      */
+    @EntityGraph(value = "Task.summary")
     List<Task> findByHousehold_IdAndAssignee_IdAndZone_IdOrderByCreatedAtDesc(
             UUID householdId, UUID assigneeId, UUID zoneId);
 
     /**
      * List tasks by status, assignee and zone.
      */
+    @EntityGraph(value = "Task.summary")
     List<Task> findByHousehold_IdAndStatusAndAssignee_IdAndZone_IdOrderByCreatedAtDesc(
             UUID householdId, TaskStatus status, UUID assigneeId, UUID zoneId);
 

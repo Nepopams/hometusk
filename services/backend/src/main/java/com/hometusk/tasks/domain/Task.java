@@ -10,6 +10,15 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
+@NamedEntityGraph(
+        name = "Task.summary",
+        attributeNodes = {
+            @NamedAttributeNode("household"),
+            @NamedAttributeNode("assignee"),
+            @NamedAttributeNode("zone"),
+            @NamedAttributeNode("createdBy"),
+            @NamedAttributeNode("routine")
+        })
 @Table(name = "tasks")
 public class Task {
 
