@@ -153,6 +153,31 @@ Email от Яндекса не считается автоматически ver
 `trustEmail=false`, а HomeTusk продолжает использовать `emailVerified` из
 Keycloak JWT.
 
+### 5. Smoke-проверка broker-конфигурации
+
+Проверка без реального входа в Яндекс:
+
+```bash
+cd infra/uat
+KEYCLOAK_BASE_URL=http://localhost:8180 \
+KEYCLOAK_ADMIN_PASSWORD=admin \
+VITE_OIDC_REDIRECT_URI=http://localhost:5173/callback \
+./smoke-social-auth-broker.sh
+```
+
+Если Yandex provider уже создан, включите проверку instance и редиректа на
+Yandex OAuth:
+
+```bash
+EXPECT_YANDEX_IDP=true \
+HOMETUSK_IDP_YANDEX_CLIENT_ID=<client_id> \
+./smoke-social-auth-broker.sh
+```
+
+Этот smoke не заменяет ручной happy-path login: он подтверждает, что Keycloak
+имеет provider factory `yandex`, клиент `hometusk-web` настроен как public
+authorization-code + PKCE, а broker redirect ведёт на `oauth.yandex.ru`.
+
 ## Статус VK ID
 
 VK ID пока не включается автоматически в Keycloak 23 stack. Совместимый с

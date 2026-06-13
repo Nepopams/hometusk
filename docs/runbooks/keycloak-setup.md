@@ -154,6 +154,32 @@ Yandex email is not trusted as verified automatically: the provider is
 configured with `trustEmail=false`, and HomeTusk continues to use the
 `emailVerified` claim from the Keycloak JWT.
 
+### 5. Smoke Broker Configuration
+
+Check configuration without completing a real Yandex login:
+
+```bash
+cd infra/uat
+KEYCLOAK_BASE_URL=http://localhost:8180 \
+KEYCLOAK_ADMIN_PASSWORD=admin \
+VITE_OIDC_REDIRECT_URI=http://localhost:5173/callback \
+./smoke-social-auth-broker.sh
+```
+
+If the Yandex provider instance has already been created, enable instance and
+Yandex OAuth redirect checks:
+
+```bash
+EXPECT_YANDEX_IDP=true \
+HOMETUSK_IDP_YANDEX_CLIENT_ID=<client_id> \
+./smoke-social-auth-broker.sh
+```
+
+This smoke does not replace the manual happy-path login. It verifies that
+Keycloak has the `yandex` provider factory, `hometusk-web` is configured as a
+public authorization-code + PKCE client, and brokered auth redirects to
+`oauth.yandex.ru`.
+
 ## VK ID Status
 
 VK ID is not enabled automatically on the Keycloak 23 stack. The compatible
