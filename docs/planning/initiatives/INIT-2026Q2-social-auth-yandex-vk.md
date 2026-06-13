@@ -53,6 +53,22 @@ Owner: Planning/Architecture
 - Tests:
   - smoke/integration сценарии user resolution через social claims.
 
+## Implementation Notes (2026-06-13)
+
+- ADR accepted: `docs/adr/019-social-auth-keycloak-broker.md`.
+- Sequence diagram added:
+  `docs/diagrams/sequence-social-auth-keycloak-broker.md`.
+- Integration mapping added:
+  `docs/integration/identity/social-auth-keycloak-broker.md`.
+- Local/UAT Keycloak now builds from official `quay.io/keycloak/keycloak:23.0.6`
+  with pinned `keycloak-russian-providers:23.0.6.rsp-3` artifacts.
+- Yandex provider is configured by `infra/keycloak/configure-social-idps.sh`
+  when deployment secrets are present.
+- VK ID technical path: provider ID `vkid` exists, but the Keycloak 23-compatible
+  plugin release uses legacy VK endpoints. VK remains disabled until a Keycloak
+  upgrade or provider backport brings the current `id.vk.ru/oauth2/*` path into
+  the deployed image.
+
 ## Exit Criteria
 
 1) Пользователь может войти через Яндекс в dev/stage окружении.

@@ -71,3 +71,8 @@ This index tracks all API contracts (OpenAPI, JSON Schema, AsyncAPI) in the proj
   verification state (`emailVerified`, `emailSource`, `emailUpdatedAt`) and
   computed `emailNotificationEligible` so clients can avoid treating missing or
   unverified emails as deliverable.
+- 2026-06-13 — INIT-2026Q2-social-auth-yandex-vk adds no HomeTusk HTTP API
+  surface. Social provider callbacks and token exchange stay behind Keycloak
+  identity brokering; the HomeTusk backend continues to consume only
+  Keycloak-issued JWTs. Integration mapping is captured in
+  `docs/integration/identity/social-auth-keycloak-broker.md`.
