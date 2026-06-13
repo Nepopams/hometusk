@@ -75,8 +75,8 @@ public class ShoppingRunService {
     public ShoppingRun getRun(UUID householdId, UUID runId) {
         ShoppingRun run = runRepository
                 .findByIdAndHousehold_Id(runId, householdId)
-                .orElseThrow(() -> new NotFoundException(ErrorCode.SHOPPING_RUN_NOT_FOUND,
-                        "Shopping run not found: " + runId));
+                .orElseThrow(() ->
+                        new NotFoundException(ErrorCode.SHOPPING_RUN_NOT_FOUND, "Shopping run not found: " + runId));
         initializeItems(run);
         return run;
     }
@@ -101,11 +101,7 @@ public class ShoppingRunService {
 
     @Transactional
     public ShoppingRunItem updateItem(
-            UUID householdId,
-            UUID runId,
-            UUID itemId,
-            boolean purchased,
-            boolean syncToList) {
+            UUID householdId, UUID runId, UUID itemId, boolean purchased, boolean syncToList) {
         ShoppingRun run = getRun(householdId, runId);
         if (!run.isActive()) {
             throw new BusinessException(
@@ -127,8 +123,8 @@ public class ShoppingRunService {
         }
 
         if (syncToList && item.getOriginalItemId() != null) {
-            Optional<ShoppingItem> original = itemRepository.findByIdAndHousehold_Id(
-                    item.getOriginalItemId(), householdId);
+            Optional<ShoppingItem> original =
+                    itemRepository.findByIdAndHousehold_Id(item.getOriginalItemId(), householdId);
             original.ifPresent(listItem -> {
                 if (purchased) {
                     listItem.markPurchased();

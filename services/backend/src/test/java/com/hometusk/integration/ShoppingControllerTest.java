@@ -389,7 +389,8 @@ class ShoppingControllerTest extends IntegrationTestBase {
             item1.setSource("Perekrestok");
             shoppingItemRepository.saveAndFlush(item1);
 
-            String request = """
+            String request =
+                    """
                     {
                       "category": null,
                       "source": "   "
@@ -402,7 +403,7 @@ class ShoppingControllerTest extends IntegrationTestBase {
                                     item1.getId())
                             .with(jwt())
                             .contentType(MediaType.APPLICATION_JSON)
-                    .content(request))
+                            .content(request))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.category").value(nullValue()))
                     .andExpect(jsonPath("$.source").value(nullValue()));
@@ -428,9 +429,7 @@ class ShoppingControllerTest extends IntegrationTestBase {
         @Test
         @DisplayName("Should reject invalid category without changing purchase state")
         void updateItemRejectsInvalidCategoryWithoutMutation() throws Exception {
-            var request = Map.of(
-                    "purchased", true,
-                    "category", "unknown_bucket");
+            var request = Map.of("purchased", true, "category", "unknown_bucket");
 
             mockMvc.perform(patch(
                                     "/api/v1/households/{id}/shopping-items/{itemId}",

@@ -154,13 +154,13 @@ public class ShoppingService {
      * Applies a partial update atomically. Validation runs before mutation so invalid metadata cannot alter purchase state.
      */
     @Transactional
-    public UpdateItemResult updateItem(UUID itemId, UUID householdId, UpdateItemRequest request, User actor, UUID correlationId) {
+    public UpdateItemResult updateItem(
+            UUID itemId, UUID householdId, UpdateItemRequest request, User actor, UUID correlationId) {
         if (!request.hasAnyMutableField()) {
             throw new ValidationException("$.body", "EMPTY_UPDATE", "At least one mutable field is required");
         }
 
-        String normalizedCategory =
-                request.hasCategory() ? validateCategory(request.category(), "$.category") : null;
+        String normalizedCategory = request.hasCategory() ? validateCategory(request.category(), "$.category") : null;
         String normalizedSource = request.hasSource() ? validateSource(request.source(), "$.source") : null;
 
         ShoppingItem item = getItemByIdAndHousehold(itemId, householdId);

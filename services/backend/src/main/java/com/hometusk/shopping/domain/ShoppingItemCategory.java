@@ -11,8 +11,8 @@ public enum ShoppingItemCategory {
     ELECTRONICS("electronics"),
     OTHER("other");
 
-    private static final Set<String> VALUES = Set.of(
-            GROCERIES.value, CLEANING.value, PERSONAL_CARE.value, DIY.value, ELECTRONICS.value, OTHER.value);
+    private static final Set<String> VALUES =
+            Set.of(GROCERIES.value, CLEANING.value, PERSONAL_CARE.value, DIY.value, ELECTRONICS.value, OTHER.value);
 
     private final String value;
 

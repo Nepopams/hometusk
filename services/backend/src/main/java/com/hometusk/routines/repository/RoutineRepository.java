@@ -72,8 +72,7 @@ public interface RoutineRepository extends JpaRepository<Routine, UUID> {
             where r.id = :id
               and r.household.id = :householdId
             """)
-    Optional<Routine> findByIdAndHouseholdIdWithDetails(
-            @Param("id") UUID id, @Param("householdId") UUID householdId);
+    Optional<Routine> findByIdAndHouseholdIdWithDetails(@Param("id") UUID id, @Param("householdId") UUID householdId);
 
     boolean existsByIdAndHousehold_Id(UUID id, UUID householdId);
 }
