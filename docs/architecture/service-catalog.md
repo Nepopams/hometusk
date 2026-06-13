@@ -65,7 +65,7 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 - `shopping` — Shopping lists and items (Step 1 Web MVP)
 - `routines` — Routine definitions and scheduling
 - `activity` — TaskActivity events
-- `notifications` — In-app notifications (Step 3)
+- `notifications` — In-app notifications (Step 3) and email notification outbox delivery
 - `shared` — Security, logging, exceptions, validation
 
 **Key Endpoints (MVP Iteration 1):**
@@ -147,6 +147,15 @@ Request → JWT Auth → UserResolver → Idempotency-Key Dedupe → MembershipV
 - `hometusk.command-scheduler.enabled=false` - Disabled by default for local/dev safety
 - `hometusk.command-scheduler.fixed-rate-ms=60000` - Poll cadence for due scheduled commands
 - `hometusk.command-scheduler.batch-size=50` - Maximum due scheduled commands per scheduler run
+
+**Email Notification Configuration:**
+- `hometusk.email.enabled=false` - Disabled by default; enqueue remains available while delivery is stopped
+- `hometusk.email.sender=log` - Local/dev sender; use `smtp` for SMTP provider or local sink
+- `hometusk.email.from=noreply@hometusk.local` - SMTP From address
+- `hometusk.email.fixed-rate-ms=60000` - Poll cadence for due email outbox rows
+- `hometusk.email.batch-size=25` - Maximum email outbox rows per delivery run
+- `hometusk.email.max-attempts=3` - Delivery retry limit per email
+- `hometusk.email.retry-delay-ms=60000` - Delay before retrying failed delivery attempts
 
 **Traceability:**
 - `X-Correlation-ID` header propagates through all layers
@@ -272,6 +281,7 @@ Handles all notifications to users.
 - `shopping_items` — Items in shopping lists, with optional `category`, `source`, and `linked_task_id` metadata
 - `shopping_runs` — Shopping run snapshots for active/completed/cancelled trips
 - `shopping_run_items` — Shopping run item snapshots, including category/source copied from original list items
+- `email_notification_outbox` — Async email delivery intents with status, idempotency key, retry state, and correlation/context fields
 
 **Command Pipeline Tables (2):**
 - `commands` — First-class command entities with JSONB payload, nullable explicit create-task attributes (`due_date`, `assignee_id`, `zone_id`), and nullable one-off `schedule_at`
@@ -288,6 +298,7 @@ Handles all notifications to users.
 |------------|---------|----------|--------|
 | Identity Provider | User authentication | Keycloak (local) | **In Development** |
 | AI Platform | Decision-making for commands | External (stub) | **In Development (Stage 2)** |
+| SMTP Provider / Mail Sink | Email notification delivery | Configured SMTP or local log sender | **In Development** |
 | Push Provider | Push notifications | TBD | Planned (Stage 3) |
 
 ### AI Platform (Stage 2 + Enhancement)

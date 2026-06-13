@@ -1,5 +1,5 @@
 # Initiative: INIT-2026Q2-email-notification-platform
-Status: **PROPOSED**
+Status: **DONE** (closed 2026-06-13 via branch codex/email-notification-platform; ADR-018, V030 outbox migration, sender abstraction, retry worker, metrics, runbook, and backend tests)
 Owner: Planning/Architecture
 
 ## Goal

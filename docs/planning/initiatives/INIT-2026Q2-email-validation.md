@@ -1,5 +1,5 @@
 # Initiative: INIT-2026Q2-email-validation
-Status: **IN_PROGRESS** (selected as NOW focus on 2026-06-13)
+Status: **DONE** (closed 2026-06-13 via branch `codex/ui-email-validation`, commit `7c69eee`)
 Owner: Planning/Architecture
 
 ## Goal
