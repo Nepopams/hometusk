@@ -103,7 +103,8 @@ class ShoppingControllerTest extends IntegrationTestBase {
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id").exists())
                     .andExpect(jsonPath("$.name").value("Hardware"))
-                    .andExpect(jsonPath("$.householdId").value(testHousehold.getId().toString()))
+                    .andExpect(jsonPath("$.householdId")
+                            .value(testHousehold.getId().toString()))
                     .andExpect(jsonPath("$.unpurchasedCount").value(0));
 
             assertThat(shoppingListRepository.findByHousehold_IdAndName(testHousehold.getId(), "Hardware"))
@@ -164,7 +165,8 @@ class ShoppingControllerTest extends IntegrationTestBase {
                             .with(jwt()))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.length()").value(2))
-                    .andExpect(jsonPath("$[0].addedBy.id").value(testUser.getId().toString()))
+                    .andExpect(
+                            jsonPath("$[0].addedBy.id").value(testUser.getId().toString()))
                     .andExpect(jsonPath("$[0].addedBy.displayName").value(testUser.getDisplayName()));
         }
 
@@ -339,8 +341,7 @@ class ShoppingControllerTest extends IntegrationTestBase {
             var otherHousehold = householdRepository.save(new com.hometusk.households.domain.Household("Other"));
             Task otherTask = taskRepository.save(new Task(otherHousehold, "Other task", testUser));
             var request = Map.of(
-                    "name", "Private item",
-                    "linkedTaskId", otherTask.getId().toString());
+                    "name", "Private item", "linkedTaskId", otherTask.getId().toString());
 
             mockMvc.perform(post(
                                     "/api/v1/households/{id}/shopping-lists/{listId}/items",
@@ -541,12 +542,13 @@ class ShoppingControllerTest extends IntegrationTestBase {
         @DisplayName("Should link and unlink item to task")
         void updateLinksAndUnlinksItemToTask() throws Exception {
             Task task = taskRepository.save(new Task(testHousehold, "Plan dinner", testUser));
-            String linkRequest = """
+            String linkRequest =
+                    """
                     {
                       "linkedTaskId": "%s"
                     }
                     """
-                    .formatted(task.getId());
+                            .formatted(task.getId());
 
             mockMvc.perform(patch(
                                     "/api/v1/households/{id}/shopping-items/{itemId}",
@@ -561,7 +563,8 @@ class ShoppingControllerTest extends IntegrationTestBase {
             var linked = shoppingItemRepository.findById(item1.getId()).orElseThrow();
             assertThat(linked.getLinkedTaskId()).isEqualTo(task.getId());
 
-            String unlinkRequest = """
+            String unlinkRequest =
+                    """
                     {
                       "linkedTaskId": null
                     }
@@ -586,12 +589,13 @@ class ShoppingControllerTest extends IntegrationTestBase {
         void updateRejectsCrossHouseholdLinkedTask() throws Exception {
             var otherHousehold = householdRepository.save(new com.hometusk.households.domain.Household("Other"));
             Task otherTask = taskRepository.save(new Task(otherHousehold, "Other task", testUser));
-            String request = """
+            String request =
+                    """
                     {
                       "linkedTaskId": "%s"
                     }
                     """
-                    .formatted(otherTask.getId());
+                            .formatted(otherTask.getId());
 
             mockMvc.perform(patch(
                                     "/api/v1/households/{id}/shopping-items/{itemId}",
