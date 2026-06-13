@@ -23,6 +23,7 @@ This index tracks all ADRs in the project. Update this file when creating/supers
 | ADR-013 | Routine Scheduler Design (EP-010) | accepted | 2026-01-28 | [Link](../adr/013-routine-scheduler-design.md) |
 | ADR-014 | ShoppingRun Entity Design (EP-013) | proposed | 2026-02-03 | [Link](../adr/014-shopping-run-entity-design.md) |
 | ADR-015 | Marketplace Link-out Encoding (EP-013) | proposed | 2026-02-03 | [Link](../adr/015-marketplace-linkout-encoding.md) |
+| ADR-016 | Scheduled Command Execution with `scheduleAt` | accepted | 2026-06-13 | [Link](../adr/016-scheduled-command-execution.md) |
 
 ## Template
 

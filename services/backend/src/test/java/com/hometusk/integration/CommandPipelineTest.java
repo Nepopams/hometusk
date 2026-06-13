@@ -6,11 +6,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.hometusk.activity.repository.TaskActivityRepository;
+import com.hometusk.commands.domain.CommandStatus;
 import com.hometusk.commands.repository.CommandRepository;
 import com.hometusk.commands.repository.DecisionLogRepository;
+import com.hometusk.commands.service.CommandSchedulerService;
 import com.hometusk.tasks.repository.TaskRepository;
 import com.hometusk.users.domain.Membership;
 import com.hometusk.users.domain.MembershipRole;
+import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
@@ -20,6 +23,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 @DisplayName("Command Pipeline Integration Tests")
 class CommandPipelineTest extends IntegrationTestBase {
@@ -35,6 +39,15 @@ class CommandPipelineTest extends IntegrationTestBase {
 
     @Autowired
     private TaskActivityRepository taskActivityRepository;
+
+    @Autowired
+    private CommandSchedulerService commandSchedulerService;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @Nested
     @DisplayName("POST /api/v1/commands - create_task")
@@ -133,6 +146,326 @@ class CommandPipelineTest extends IntegrationTestBase {
             assertThat(task.getAssigneeId()).isEqualTo(testUser2.getId());
             assertThat(task.getZoneId()).isEqualTo(testZone.getId());
             assertThat(task.getDeadline()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("Should create task with command-level structured attributes")
+        void createTask_commandLevelAttributes_success() throws Exception {
+            membershipRepository.save(new Membership(testUser2, testHousehold, MembershipRole.member));
+            Instant dueDate = Instant.now().plus(2, ChronoUnit.DAYS).truncatedTo(ChronoUnit.MILLIS);
+
+            var request = Map.of(
+                    "householdId",
+                    testHousehold.getId().toString(),
+                    "type",
+                    "create_task",
+                    "payload",
+                    Map.of("title", "Clean command attributes"),
+                    "dueDate",
+                    dueDate.toString(),
+                    "assigneeId",
+                    testUser2.getId().toString(),
+                    "zoneId",
+                    testZone.getId().toString(),
+                    "source",
+                    "web");
+
+            mockMvc.perform(post("/api/v1/commands")
+                            .with(jwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("executed"))
+                    .andExpect(jsonPath("$.result.assigneeId")
+                            .value(testUser2.getId().toString()));
+
+            var task = taskRepository
+                    .findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId())
+                    .get(0);
+            assertThat(task.getTitle()).isEqualTo("Clean command attributes");
+            assertThat(task.getAssigneeId()).isEqualTo(testUser2.getId());
+            assertThat(task.getZoneId()).isEqualTo(testZone.getId());
+            assertThat(task.getDeadline()).isEqualTo(dueDate);
+
+            var command = commandRepository.findById(task.getCommandId()).orElseThrow();
+            assertThat(command.getDueDate()).isEqualTo(dueDate);
+            assertThat(command.getAssigneeId()).isEqualTo(testUser2.getId());
+            assertThat(command.getZoneId()).isEqualTo(testZone.getId());
+        }
+
+        @Test
+        @DisplayName("Should reject conflicting command-level and payload attributes")
+        void createTask_attributeConflict_rejected() throws Exception {
+            membershipRepository.save(new Membership(testUser2, testHousehold, MembershipRole.member));
+
+            var request = Map.of(
+                    "householdId",
+                    testHousehold.getId().toString(),
+                    "type",
+                    "create_task",
+                    "payload",
+                    Map.of(
+                            "title",
+                            "Conflicting task",
+                            "assigneeId",
+                            testUser.getId().toString()),
+                    "assigneeId",
+                    testUser2.getId().toString(),
+                    "source",
+                    "api");
+
+            mockMvc.perform(post("/api/v1/commands")
+                            .with(jwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("BUSINESS_RULE_VIOLATION"))
+                    .andExpect(jsonPath("$.violations[0].rule").value("COMMAND_ATTRIBUTE_CONFLICT"));
+
+            assertThat(taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId()))
+                    .isEmpty();
+            assertThat(decisionLogRepository.findAll()).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("Should reject when command-level assignee is not household member")
+        void createTask_commandLevelAssigneeNotMember_rejected() throws Exception {
+            var request = Map.of(
+                    "householdId",
+                    testHousehold.getId().toString(),
+                    "type",
+                    "create_task",
+                    "payload",
+                    Map.of("title", "Some task"),
+                    "assigneeId",
+                    testUser2.getId().toString(),
+                    "source",
+                    "api");
+
+            mockMvc.perform(post("/api/v1/commands")
+                            .with(jwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("BUSINESS_RULE_VIOLATION"))
+                    .andExpect(jsonPath("$.violations[0].rule").value("ASSIGNEE_MUST_BE_MEMBER"));
+        }
+
+        @Test
+        @DisplayName("Should reject when command-level zone does not exist in household")
+        void createTask_commandLevelZoneNotInHousehold_rejected() throws Exception {
+            var request = Map.of(
+                    "householdId",
+                    testHousehold.getId().toString(),
+                    "type",
+                    "create_task",
+                    "payload",
+                    Map.of("title", "Some task"),
+                    "zoneId",
+                    UUID.randomUUID().toString(),
+                    "source",
+                    "api");
+
+            mockMvc.perform(post("/api/v1/commands")
+                            .with(jwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.violations[0].rule").value("ZONE_MUST_EXIST"));
+        }
+
+        @Test
+        @DisplayName("Should reject when command-level dueDate is in the past")
+        void createTask_commandLevelPastDueDate_rejected() throws Exception {
+            var request = Map.of(
+                    "householdId",
+                    testHousehold.getId().toString(),
+                    "type",
+                    "create_task",
+                    "payload",
+                    Map.of("title", "Some task"),
+                    "dueDate",
+                    Instant.now().minus(1, ChronoUnit.DAYS).toString(),
+                    "source",
+                    "api");
+
+            mockMvc.perform(post("/api/v1/commands")
+                            .with(jwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.violations[0].rule").value("DEADLINE_MUST_BE_FUTURE"));
+        }
+
+        @Test
+        @DisplayName("Should accept scheduled command without creating task immediately")
+        void createTask_scheduled_success() throws Exception {
+            Instant scheduleAt = Instant.now().plus(1, ChronoUnit.HOURS).truncatedTo(ChronoUnit.MILLIS);
+
+            var request = Map.of(
+                    "householdId",
+                    testHousehold.getId().toString(),
+                    "type",
+                    "create_task",
+                    "payload",
+                    Map.of("title", "Clean later"),
+                    "scheduleAt",
+                    scheduleAt.toString(),
+                    "source",
+                    "web");
+
+            mockMvc.perform(post("/api/v1/commands")
+                            .with(jwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("scheduled"))
+                    .andExpect(jsonPath("$.scheduleAt").value(scheduleAt.toString()))
+                    .andExpect(jsonPath("$.commandId").isNotEmpty());
+
+            assertThat(taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId()))
+                    .isEmpty();
+
+            var command = commandRepository.findAll().get(0);
+            assertThat(command.getStatus()).isEqualTo(CommandStatus.SCHEDULED);
+            assertThat(command.getScheduleAt()).isEqualTo(scheduleAt);
+            assertThat(decisionLogRepository.findAll()).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("Should reject scheduled command when scheduleAt is in the past")
+        void createTask_pastScheduleAt_rejected() throws Exception {
+            var request = Map.of(
+                    "householdId",
+                    testHousehold.getId().toString(),
+                    "type",
+                    "create_task",
+                    "payload",
+                    Map.of("title", "Clean in the past"),
+                    "scheduleAt",
+                    Instant.now().minus(1, ChronoUnit.HOURS).toString(),
+                    "source",
+                    "web");
+
+            mockMvc.perform(post("/api/v1/commands")
+                            .with(jwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("BUSINESS_RULE_VIOLATION"))
+                    .andExpect(jsonPath("$.violations[0].rule").value("SCHEDULE_AT_MUST_BE_FUTURE"));
+
+            assertThat(taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId()))
+                    .isEmpty();
+            assertThat(commandRepository.findAll().get(0).getStatus()).isEqualTo(CommandStatus.REJECTED);
+        }
+
+        @Test
+        @DisplayName("Should execute due scheduled command through scheduler")
+        void createTask_dueScheduledCommand_executes() throws Exception {
+            Instant scheduleAt = Instant.now().plus(1, ChronoUnit.HOURS).truncatedTo(ChronoUnit.MILLIS);
+
+            var request = Map.of(
+                    "householdId",
+                    testHousehold.getId().toString(),
+                    "type",
+                    "create_task",
+                    "payload",
+                    Map.of("title", "Clean when due"),
+                    "scheduleAt",
+                    scheduleAt.toString(),
+                    "source",
+                    "web");
+
+            var response = mockMvc.perform(post("/api/v1/commands")
+                            .with(jwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("scheduled"))
+                    .andReturn();
+
+            UUID commandId = UUID.fromString(objectMapper
+                    .readTree(response.getResponse().getContentAsString())
+                    .get("commandId")
+                    .asText());
+            commandRepository.flush();
+            int updated = jdbcTemplate.update(
+                    "UPDATE commands SET schedule_at = now() - interval '1 minute' WHERE id = ?", commandId);
+            assertThat(updated).isEqualTo(1);
+            entityManager.clear();
+
+            var result = commandSchedulerService.runDueCommands();
+
+            assertThat(result.candidates()).isEqualTo(1);
+            assertThat(result.processed()).isEqualTo(1);
+            assertThat(result.skipped()).isZero();
+            assertThat(result.errors()).isZero();
+
+            var task = taskRepository
+                    .findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId())
+                    .get(0);
+            assertThat(task.getTitle()).isEqualTo("Clean when due");
+            assertThat(task.getCommandId()).isEqualTo(commandId);
+            assertThat(commandRepository.findById(commandId).orElseThrow().getStatus())
+                    .isEqualTo(CommandStatus.EXECUTED);
+            assertThat(decisionLogRepository.findAll()).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("Should revalidate due scheduled command before execution")
+        void createTask_dueScheduledCommandRevalidation_rejectsInvalidState() throws Exception {
+            membershipRepository.save(new Membership(testUser2, testHousehold, MembershipRole.member));
+            Instant scheduleAt = Instant.now().plus(1, ChronoUnit.HOURS).truncatedTo(ChronoUnit.MILLIS);
+
+            var request = Map.of(
+                    "householdId",
+                    testHousehold.getId().toString(),
+                    "type",
+                    "create_task",
+                    "payload",
+                    Map.of("title", "Assign later"),
+                    "assigneeId",
+                    testUser2.getId().toString(),
+                    "scheduleAt",
+                    scheduleAt.toString(),
+                    "source",
+                    "web");
+
+            var response = mockMvc.perform(post("/api/v1/commands")
+                            .with(jwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("scheduled"))
+                    .andReturn();
+
+            UUID commandId = UUID.fromString(objectMapper
+                    .readTree(response.getResponse().getContentAsString())
+                    .get("commandId")
+                    .asText());
+            commandRepository.flush();
+            int deleted = jdbcTemplate.update(
+                    "DELETE FROM memberships WHERE user_id = ? AND household_id = ?",
+                    testUser2.getId(),
+                    testHousehold.getId());
+            assertThat(deleted).isEqualTo(1);
+            int updated = jdbcTemplate.update(
+                    "UPDATE commands SET schedule_at = now() - interval '1 minute' WHERE id = ?", commandId);
+            assertThat(updated).isEqualTo(1);
+            entityManager.clear();
+
+            var result = commandSchedulerService.runDueCommands();
+
+            assertThat(result.processed()).isEqualTo(1);
+            assertThat(result.errors()).isZero();
+            assertThat(taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId()))
+                    .isEmpty();
+
+            var command = commandRepository.findById(commandId).orElseThrow();
+            assertThat(command.getStatus()).isEqualTo(CommandStatus.REJECTED);
+            assertThat(command.getErrorCode()).isEqualTo("BUSINESS_RULE_VIOLATION");
+            assertThat(decisionLogRepository.findAll()).hasSize(2);
         }
 
         @Test

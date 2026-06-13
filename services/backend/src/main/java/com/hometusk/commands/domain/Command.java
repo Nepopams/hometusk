@@ -34,6 +34,18 @@ public class Command {
     @Column(name = "payload", nullable = false, columnDefinition = "jsonb")
     private String payload;
 
+    @Column(name = "due_date")
+    private Instant dueDate;
+
+    @Column(name = "assignee_id")
+    private UUID assigneeId;
+
+    @Column(name = "zone_id")
+    private UUID zoneId;
+
+    @Column(name = "schedule_at")
+    private Instant scheduleAt;
+
     @Column(name = "status", nullable = false)
     private CommandStatus status;
 
@@ -66,6 +78,10 @@ public class Command {
             User requester,
             CommandType type,
             String payload,
+            Instant dueDate,
+            UUID assigneeId,
+            UUID zoneId,
+            Instant scheduleAt,
             String source,
             Instant clientTimestamp) {
         this.correlationId = correlationId;
@@ -73,6 +89,10 @@ public class Command {
         this.requester = requester;
         this.type = type;
         this.payload = payload;
+        this.dueDate = dueDate;
+        this.assigneeId = assigneeId;
+        this.zoneId = zoneId;
+        this.scheduleAt = scheduleAt;
         this.source = source;
         this.clientTimestamp = clientTimestamp;
         this.status = CommandStatus.RECEIVED;
@@ -114,6 +134,22 @@ public class Command {
         return payload;
     }
 
+    public Instant getDueDate() {
+        return dueDate;
+    }
+
+    public UUID getAssigneeId() {
+        return assigneeId;
+    }
+
+    public UUID getZoneId() {
+        return zoneId;
+    }
+
+    public Instant getScheduleAt() {
+        return scheduleAt;
+    }
+
     public CommandStatus getStatus() {
         return status;
     }
@@ -153,6 +189,10 @@ public class Command {
 
     public void markProcessing() {
         this.status = CommandStatus.PROCESSING;
+    }
+
+    public void markScheduled() {
+        this.status = CommandStatus.SCHEDULED;
     }
 
     public void markExecuted(int executionMs) {

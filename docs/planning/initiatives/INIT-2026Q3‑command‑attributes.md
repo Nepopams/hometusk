@@ -1,7 +1,7 @@
 Initiative: INIT-2026Q3‑command‑attributes — Structured Command Attributes & Scheduling
 Status
 
-Active NOW - selected on 2026-06-13 after closing the shopping categories/manual shopping flow sequence. Ready for epic decomposition and Gate C-ready workpack planning for the minimal structured attributes slice.
+Completed NOW - selected on 2026-06-13 and implemented through EP-033 on 2026-06-13. ST-3301, ST-3302, and ST-3303 reached delegated Gate D GO.
 
 Sources of Truth
 Existing command UX: INIT‑2026Q2‑command‑ux sets out the initial web command box and traceability【turn38file0†L20-L24】.
@@ -82,23 +82,21 @@ Backend changes break existing clients → Adopt contract‑first approach; keep
 Assignee/zone lists become stale → Load options dynamically based on current household context via API.
 10. Epic Candidates
 ID	Title	Scope	Status
-EP‑011	Command Attribute API & Storage	NOW	Proposed
-EP‑012	Command Confirmation UI & Scheduling	NOW	Proposed
+EP-033	Structured Command Attributes & Scheduling	NOW	Done
 EP‑013	Command Recurrence & Advanced UX	NEXT	Proposed
 11. Exit Criteria (NOW)
-New optional fields (dueDate, assigneeId, zoneId, scheduleAt) accepted by API and persisted.
-Command confirmation UI displays and allows editing of these fields.
-Created tasks reflect provided attributes.
-Idempotency semantics preserved (same key + same payload returns cached response).
-Documentation (OpenAPI, service catalog) updated.
+[x] New optional fields (dueDate, assigneeId, zoneId, scheduleAt) accepted by API and persisted.
+[x] Command confirmation UI displays and allows editing of these fields.
+[x] Created tasks reflect provided attributes.
+[x] Scheduled commands remain pending until due and execute through the existing command pipeline.
+[x] Idempotency semantics preserved (same key + same request returns cached response; changed attributes conflict).
+[x] Documentation (OpenAPI, contract index, service catalog, ADR/diagram, planning workpacks) updated.
 
 12. Current Gate / Next Workflow
-Current gate: planning intake for NOW scope. No implementation is approved yet.
+Current gate: NOW scope complete. Gate D GO is recorded in `docs/planning/workpacks/ST-3301/gate-d.md`, `docs/planning/workpacks/ST-3302/gate-d.md`, and `docs/planning/workpacks/ST-3303/gate-d.md`.
 
 Next artifact:
-- decompose NOW into implementation-ready epic/story scope;
-- confirm contract/data/security impact flags;
-- prepare workpack and read-only Codex PLAN for the first minimal slice.
+- NEXT planning may evaluate recurrence, reminders, priority, AI suggestions, and bulk commands.
 
 Carry-forward guardrails:
 - keep all new command fields optional and backward-compatible;

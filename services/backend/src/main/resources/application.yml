@@ -62,6 +62,10 @@ hometusk:
   scheduler:
     enabled: false
     fixed-rate-ms: 3600000
+  command-scheduler:
+    enabled: false
+    fixed-rate-ms: 60000
+    batch-size: 50
   marketplaces:
     templates:
       - id: ozon

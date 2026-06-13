@@ -1,7 +1,9 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useCommand } from '../hooks/useCommand';
 import { useCommandHistory } from '../hooks/useCommandHistory';
+import { useMembers } from '../hooks/useMembers';
+import { useZones } from '../hooks/useZones';
 import { Button } from '../components/ui';
 import { useI18n } from '../i18n';
 import type {
@@ -23,25 +25,73 @@ import './Commands.css';
  */
 export default function Commands() {
   const { householdId } = useAuth();
-  const { t, formatRelativeTime } = useI18n();
+  const { t, formatDateTime, formatRelativeTime } = useI18n();
   const { execute, isLoading, response, error, reset } = useCommand();
   const { entries, clearHistory } = useCommandHistory(householdId);
+  const { members, isLoading: membersLoading } = useMembers(householdId);
+  const { zones, isLoading: zonesLoading } = useZones(householdId);
 
   const [commandText, setCommandText] = useState('');
+  const [assigneeId, setAssigneeId] = useState('');
+  const [zoneId, setZoneId] = useState('');
+  const [validationError, setValidationError] = useState('');
   const [showHistory, setShowHistory] = useState(false);
+  const dueDateInputRef = useRef<HTMLInputElement>(null);
+  const scheduleAtInputRef = useRef<HTMLInputElement>(null);
+
+  const resetCommandAttributes = () => {
+    if (dueDateInputRef.current) {
+      dueDateInputRef.current.value = '';
+    }
+    if (scheduleAtInputRef.current) {
+      scheduleAtInputRef.current.value = '';
+    }
+    setAssigneeId('');
+    setZoneId('');
+    setValidationError('');
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!commandText.trim() || !householdId || isLoading) return;
+    setValidationError('');
+
+    const trimmedCommand = commandText.trim();
+    if (!trimmedCommand || !householdId || isLoading) return;
+
+    let dueDateIso: string | undefined;
+    const dueDateValue = dueDateInputRef.current?.value || '';
+    if (dueDateValue) {
+      const selectedDueDate = new Date(dueDateValue);
+      if (Number.isNaN(selectedDueDate.getTime()) || selectedDueDate <= new Date()) {
+        setValidationError(t('tasks.deadlineFuture'));
+        return;
+      }
+      dueDateIso = selectedDueDate.toISOString();
+    }
+
+    let scheduleAtIso: string | undefined;
+    const scheduleAtValue = scheduleAtInputRef.current?.value || '';
+    if (scheduleAtValue) {
+      const selectedScheduleAt = new Date(scheduleAtValue);
+      if (Number.isNaN(selectedScheduleAt.getTime()) || selectedScheduleAt <= new Date()) {
+        setValidationError(t('commands.scheduleFuture'));
+        return;
+      }
+      scheduleAtIso = selectedScheduleAt.toISOString();
+    }
 
     const payload: CreateTaskPayload = {
-      title: commandText.trim(),
+      title: trimmedCommand,
     };
 
     const request: CommandRequest = {
       householdId,
       type: 'create_task',
       payload,
+      ...(dueDateIso && { dueDate: dueDateIso }),
+      ...(assigneeId && { assigneeId }),
+      ...(zoneId && { zoneId }),
+      ...(scheduleAtIso && { scheduleAt: scheduleAtIso }),
       source: 'web',
     };
 
@@ -50,11 +100,13 @@ export default function Commands() {
 
   const handleClear = () => {
     setCommandText('');
+    resetCommandAttributes();
     reset();
   };
 
   const handleNewCommand = () => {
     setCommandText('');
+    resetCommandAttributes();
     reset();
   };
 
@@ -78,6 +130,8 @@ export default function Commands() {
     switch (status) {
       case 'executed':
         return 'commands__history-status--success';
+      case 'scheduled':
+        return 'commands__history-status--info';
       case 'executed_degraded':
         return 'commands__history-status--warning';
       case 'needs_input':
@@ -93,6 +147,8 @@ export default function Commands() {
     switch (status) {
       case 'executed':
         return t('commands.completed');
+      case 'scheduled':
+        return t('commands.scheduled');
       case 'executed_degraded':
         return t('commands.completedLimited');
       case 'needs_input':
@@ -196,6 +252,36 @@ export default function Commands() {
               </div>
             </div>
           )}
+          <div className="commands__details-collapse">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+            <span>{t('commands.showDetails', { id: response.correlationId.slice(0, 12) })}</span>
+          </div>
+          <div className="commands__result-actions">
+            <Button variant="primary" size="sm" onClick={handleNewCommand}>
+              {t('commands.newCommand')}
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    if (response.status === 'scheduled') {
+      return (
+        <div className="commands__result-card">
+          <div className="commands__banner commands__banner--info">
+            <svg className="commands__banner-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <div className="commands__banner-content">
+              <h4 className="commands__banner-title">{t('commands.scheduled')}</h4>
+              <p className="commands__banner-subtitle">
+                {t('commands.scheduledFor', { value: formatDateTime(response.scheduleAt) })}
+              </p>
+            </div>
+          </div>
           <div className="commands__details-collapse">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="9 18 15 12 9 6" />
@@ -376,6 +462,67 @@ export default function Commands() {
                 rows={3}
               />
             </div>
+            <div className="commands__attribute-grid">
+              <div className="commands__field">
+                <label htmlFor="commands-due-date">{t('common.deadline')}</label>
+                <input
+                  id="commands-due-date"
+                  ref={dueDateInputRef}
+                  type="datetime-local"
+                  disabled={isLoading}
+                  aria-invalid={Boolean(validationError)}
+                />
+              </div>
+              <div className="commands__field">
+                <label htmlFor="commands-schedule-at">{t('commands.scheduleAt')}</label>
+                <input
+                  id="commands-schedule-at"
+                  ref={scheduleAtInputRef}
+                  type="datetime-local"
+                  disabled={isLoading}
+                  aria-invalid={Boolean(validationError)}
+                />
+              </div>
+              <div className="commands__field">
+                <label htmlFor="commands-assignee">{t('tasks.assignTo')}</label>
+                <select
+                  id="commands-assignee"
+                  value={assigneeId}
+                  onChange={(e) => setAssigneeId(e.target.value)}
+                  disabled={isLoading || membersLoading}
+                >
+                  <option value="">{membersLoading ? t('tasks.loadingFilters') : t('tasks.autoAssign')}</option>
+                  {members.map((member) => (
+                    <option key={member.userId} value={member.userId}>
+                      {member.displayName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="commands__field">
+                <label htmlFor="commands-zone">{t('common.zone')}</label>
+                <select
+                  id="commands-zone"
+                  value={zoneId}
+                  onChange={(e) => setZoneId(e.target.value)}
+                  disabled={isLoading || zonesLoading}
+                >
+                  <option value="">
+                    {zonesLoading ? t('tasks.loadingFilters') : t('tasks.selectZoneOptional')}
+                  </option>
+                  {zones.map((zone) => (
+                    <option key={zone.id} value={zone.id}>
+                      {zone.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            {validationError && (
+              <div className="commands__field-error" role="alert">
+                {validationError}
+              </div>
+            )}
             <div className="commands__composer-actions">
               <Button type="submit" variant="primary" size="md" disabled={isLoading || !commandText.trim()}>
                 {t('commands.run')}

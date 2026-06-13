@@ -106,6 +106,61 @@
   font-size: var(--font-size-xs);
 }
 
+.commands__attribute-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.commands__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.commands__field label {
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.commands__field input,
+.commands__field select {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-sm);
+}
+
+.commands__field input:focus,
+.commands__field select:focus {
+  outline: none;
+  border-color: var(--color-brand);
+}
+
+.commands__field input:disabled,
+.commands__field select:disabled {
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.commands__field-error {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-error-soft);
+  color: var(--color-error);
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-sm);
+}
+
 .commands__composer-actions {
   display: flex;
   align-items: center;
@@ -641,6 +696,10 @@
   .commands {
     flex-direction: column;
     gap: 16px;
+  }
+
+  .commands__attribute-grid {
+    grid-template-columns: 1fr;
   }
 
   .commands__right-col {

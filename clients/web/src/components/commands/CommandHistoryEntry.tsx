@@ -13,6 +13,7 @@ interface CommandHistoryEntryProps {
 
 const STATUS_VARIANT: Record<CommandStatus, 'success' | 'warning' | 'error' | 'info'> = {
   executed: 'success',
+  scheduled: 'info',
   executed_degraded: 'warning',
   rejected: 'error',
   needs_input: 'info',
@@ -37,6 +38,8 @@ export function CommandHistoryEntry({ entry, expanded, onToggle }: CommandHistor
     switch (entry.status) {
       case 'executed':
         return t('commands.completed');
+      case 'scheduled':
+        return t('commands.scheduled');
       case 'executed_degraded':
         return t('commands.completedLimited');
       case 'needs_input':

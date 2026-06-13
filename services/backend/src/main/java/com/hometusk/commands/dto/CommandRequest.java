@@ -11,6 +11,10 @@ public record CommandRequest(
         @NotNull(message = "householdId is required") UUID householdId,
         @NotBlank(message = "type is required") String type,
         @NotNull(message = "payload is required") @Valid Object payload,
+        Instant dueDate,
+        UUID assigneeId,
+        UUID zoneId,
+        Instant scheduleAt,
         @NotBlank(message = "source is required") String source,
         Instant clientTimestamp) {
 

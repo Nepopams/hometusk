@@ -73,7 +73,7 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 - `POST /api/v1/auth/register` — Create Keycloak user and auto-login
 - `POST /api/v1/auth/refresh` — Refresh HttpOnly auth cookies
 - `POST /api/v1/auth/logout` — Clear cookies and best-effort Keycloak logout
-- `POST /api/v1/commands` — Execute command (create_task, complete_task)
+- `POST /api/v1/commands` — Execute or schedule command (create_task, complete_task) with optional command-level create-task attributes `dueDate`, `assigneeId`, `zoneId`, and one-off `scheduleAt`
 - `GET /api/v1/users/me` — Current user profile with household memberships
 - `POST /api/v1/households` — Create household
 - `POST /api/v1/households/{id}/invites` — Create invite token
@@ -113,6 +113,8 @@ See [API Coverage Matrix](../mvp/api-coverage.md) for full endpoint documentatio
 ```
 Request → JWT Auth → UserResolver → Idempotency-Key Dedupe → MembershipValidator
        → CommandService.execute()
+           ├─ Command attribute normalization (optional dueDate/assigneeId/zoneId → effective create_task payload)
+           ├─ Schedule gate (optional scheduleAt → status=scheduled, no immediate action)
            ├─ SchemaValidator
            ├─ BusinessValidator
            ├─ ContextBuilder (builds HouseholdSnapshot for guardrails, includes shopping_lists)
@@ -129,7 +131,7 @@ Request → JWT Auth → UserResolver → Idempotency-Key Dedupe → MembershipV
            ├─ Task-Shopping Linking (link items to task if both created)
            ├─ DecisionLogWriter (includes guardrails info)
            └─ ActivityRecorder
-       → CommandResponse | NeedsInputResponse | RejectedResponse | DegradedResponse
+       → CommandResponse | ScheduledResponse | NeedsInputResponse | RejectedResponse | DegradedResponse
 ```
 
 **Decision Provider Configuration:**
@@ -140,6 +142,11 @@ Request → JWT Auth → UserResolver → Idempotency-Key Dedupe → MembershipV
 **Guardrails Configuration:**
 - `guardrails.enabled=true` - Enable/disable guardrails pipeline
 - `guardrails.max-open-tasks-per-assignee=10` - Max open tasks before clarification
+
+**Command Scheduler Configuration:**
+- `hometusk.command-scheduler.enabled=false` - Disabled by default for local/dev safety
+- `hometusk.command-scheduler.fixed-rate-ms=60000` - Poll cadence for due scheduled commands
+- `hometusk.command-scheduler.batch-size=50` - Maximum due scheduled commands per scheduler run
 
 **Traceability:**
 - `X-Correlation-ID` header propagates through all layers
@@ -205,6 +212,7 @@ Core business logic for processing natural language commands.
 - Coordinate AI pipeline (intent → context → decision)
 - Schema validation of AI output
 - Business rule validation
+- One-off scheduled command execution with due-time revalidation
 - Action execution
 - Decision logging
 
@@ -266,7 +274,7 @@ Handles all notifications to users.
 - `shopping_run_items` — Shopping run item snapshots, including category/source copied from original list items
 
 **Command Pipeline Tables (2):**
-- `commands` — First-class command entities with JSONB payload
+- `commands` — First-class command entities with JSONB payload, nullable explicit create-task attributes (`due_date`, `assignee_id`, `zone_id`), and nullable one-off `schedule_at`
 - `decision_logs` — Audit trail for every command decision
 
 **Activity Table (1):**

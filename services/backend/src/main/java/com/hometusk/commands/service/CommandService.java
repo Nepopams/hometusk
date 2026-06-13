@@ -25,6 +25,7 @@ import com.hometusk.shared.exception.NotFoundException;
 import com.hometusk.shared.exception.ValidationException;
 import com.hometusk.shopping.service.ShoppingService;
 import com.hometusk.users.domain.User;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -128,6 +129,10 @@ public class CommandService {
                 requester,
                 commandType,
                 payloadJson,
+                request.dueDate(),
+                request.assigneeId(),
+                request.zoneId(),
+                request.scheduleAt(),
                 request.source(),
                 request.clientTimestamp());
 
@@ -135,62 +140,24 @@ public class CommandService {
         log.debug("Command created: id={}, correlationId={}", command.getId(), correlationId);
 
         try {
-            // 4. Mark validating
-            command.markValidating();
+            Map<String, Object> effectivePayload = buildEffectivePayload(commandType, request);
 
-            // 5. Schema validation
-            schemaValidator.validate(commandType, request.payload());
-
-            // 6. Business validation
-            switch (commandType) {
-                case CREATE_TASK -> {
-                    CreateTaskPayload payload = objectMapper.convertValue(request.payload(), CreateTaskPayload.class);
-                    businessValidator.validateCreateTask(payload, request.householdId());
-                }
-                case COMPLETE_TASK -> {
-                    CompleteTaskPayload payload =
-                            objectMapper.convertValue(request.payload(), CompleteTaskPayload.class);
-                    businessValidator.validateCompleteTask(payload, request.householdId());
-                }
+            if (request.scheduleAt() != null) {
+                return scheduleCommand(command, effectivePayload, correlationId, requester, startTime);
             }
 
-            command.markProcessing();
-
-            // 7. Build decision context and get decision
-            DecisionContext context = buildDecisionContext(command, request, requester.getId(), correlationId);
-            DecisionResult result = decisionProviderSelector.decide(context);
-
-            // 8. Handle result based on type (pass context for guardrails)
-            return handleDecisionResult(result, command, context, correlationId, requester, startTime);
+            return processCommand(command, effectivePayload, requester, correlationId, startTime);
 
         } catch (ValidationException e) {
-            int executionMs = (int) (System.currentTimeMillis() - startTime);
-            command.markRejected(ErrorCode.SCHEMA_INVALID.name(), e.getMessage(), executionMs);
-            commandRepository.save(command);
-
-            // Log the validation failure
-            decisionLogWriter.writeValidationFailure(
-                    command, correlationId, Map.of("type", commandType.name()), e.getErrors(), true);
-
+            rejectSchemaValidation(command, correlationId, commandType, e, startTime);
             throw e;
 
         } catch (BusinessException e) {
-            int executionMs = (int) (System.currentTimeMillis() - startTime);
-            command.markRejected(e.getErrorCode().name(), e.getMessage(), executionMs);
-            commandRepository.save(command);
-
-            // Log the business validation failure
-            decisionLogWriter.writeValidationFailure(
-                    command, correlationId, Map.of("type", commandType.name()), e.getViolations(), false);
-
+            rejectBusinessValidation(command, correlationId, commandType, e, startTime);
             throw e;
 
         } catch (Exception e) {
-            int executionMs = (int) (System.currentTimeMillis() - startTime);
-            command.markFailed(ErrorCode.INTERNAL_ERROR.name(), e.getMessage(), executionMs);
-            commandRepository.save(command);
-
-            log.error("Command failed: id={}, correlationId={}", command.getId(), correlationId, e);
+            failCommand(command, correlationId, e, startTime);
             throw e;
         }
     }
@@ -218,30 +185,214 @@ public class CommandService {
         Map<String, Object> mergedPayload = new HashMap<>(originalPayload);
         mergedPayload.putAll(request.additionalInput());
 
-        DecisionContext context = buildDecisionContext(command, mergedPayload, requester.getId(), correlationId);
+        Map<String, Object> effectivePayload = buildEffectivePayload(
+                command.getType(), mergedPayload, command.getDueDate(), command.getAssigneeId(), command.getZoneId());
+
+        DecisionContext context = buildDecisionContext(command, effectivePayload, requester.getId(), correlationId);
         DecisionResult result = decisionProviderSelector.decide(context);
 
         return handleDecisionResult(result, command, context, correlationId, requester, startTime);
     }
 
-    private DecisionContext buildDecisionContext(
-            Command command, CommandRequest request, UUID requesterId, UUID correlationId) {
-        // Build household context for AI Platform (no internal data like task counts)
-        Map<String, Object> householdContext =
-                contextBuilder.buildHouseholdContextForAi(request.householdId(), correlationId);
+    @Transactional
+    public boolean executeScheduledCommand(UUID commandId, UUID correlationId) {
+        long startTime = System.currentTimeMillis();
 
-        Map<String, Object> payload =
-                objectMapper.convertValue(request.payload(), new TypeReference<Map<String, Object>>() {});
+        Command command = commandRepository.findByIdForUpdate(commandId).orElse(null);
+        if (command == null) {
+            log.warn("Scheduled command not found: commandId={}", commandId);
+            return false;
+        }
 
-        return DecisionContext.builder()
-                .commandId(command.getId())
+        if (command.getStatus() != CommandStatus.SCHEDULED) {
+            log.debug(
+                    "Scheduled command skipped because status changed: commandId={}, status={}",
+                    commandId,
+                    command.getStatus());
+            return false;
+        }
+
+        if (command.getScheduleAt() == null || command.getScheduleAt().isAfter(Instant.now())) {
+            log.debug(
+                    "Scheduled command skipped because it is not due: commandId={}, scheduleAt={}",
+                    commandId,
+                    command.getScheduleAt());
+            return false;
+        }
+
+        try {
+            Map<String, Object> originalPayload = readPayload(command.getPayload());
+            Map<String, Object> effectivePayload = buildEffectivePayload(
+                    command.getType(),
+                    originalPayload,
+                    command.getDueDate(),
+                    command.getAssigneeId(),
+                    command.getZoneId());
+
+            processCommand(command, effectivePayload, command.getRequester(), correlationId, startTime);
+            return true;
+        } catch (ValidationException e) {
+            rejectSchemaValidation(command, correlationId, command.getType(), e, startTime);
+            return true;
+        } catch (BusinessException e) {
+            rejectBusinessValidation(command, correlationId, command.getType(), e, startTime);
+            return true;
+        } catch (Exception e) {
+            failCommand(command, correlationId, e, startTime);
+            return true;
+        }
+    }
+
+    private CommandResponseBase scheduleCommand(
+            Command command, Map<String, Object> effectivePayload, UUID correlationId, User requester, long startTime) {
+        if (!command.getScheduleAt().isAfter(Instant.now())) {
+            throw new BusinessException(
+                    ErrorCode.BUSINESS_RULE_VIOLATION,
+                    "Schedule time must be in the future",
+                    List.of(new BusinessException.Violation(
+                            "SCHEDULE_AT_MUST_BE_FUTURE", "Schedule time must be in the future")));
+        }
+
+        command.markValidating();
+        validateCommandPayload(command, effectivePayload);
+        command.markScheduled();
+        commandRepository.save(command);
+
+        decisionLogWriter.write(DecisionLogWriter.DecisionLogEntry.builder()
+                .command(command)
                 .correlationId(correlationId)
-                .commandType(command.getType())
-                .payload(payload)
-                .requesterId(requesterId)
-                .householdId(request.householdId())
-                .householdContext(householdContext)
-                .build();
+                .intent(Map.of("type", command.getType().name().toLowerCase()))
+                .contextSnapshot(Map.of(
+                        "householdId", command.getHouseholdId(),
+                        "scheduleAt", command.getScheduleAt().toString()))
+                .decision(Map.of(
+                        "type",
+                        "scheduled",
+                        "scheduleAt",
+                        command.getScheduleAt().toString()))
+                .source(DecisionSource.USER_OVERRIDE)
+                .build());
+
+        int executionMs = (int) (System.currentTimeMillis() - startTime);
+        return CommandResponse.scheduled(
+                command.getId(), correlationId, command.getScheduleAt(), executionMs, requester.getId());
+    }
+
+    private CommandResponseBase processCommand(
+            Command command, Map<String, Object> effectivePayload, User requester, UUID correlationId, long startTime) {
+        command.markValidating();
+        validateCommandPayload(command, effectivePayload);
+        command.markProcessing();
+
+        DecisionContext context = buildDecisionContext(command, effectivePayload, requester.getId(), correlationId);
+        DecisionResult result = decisionProviderSelector.decide(context);
+
+        return handleDecisionResult(result, command, context, correlationId, requester, startTime);
+    }
+
+    private void validateCommandPayload(Command command, Map<String, Object> effectivePayload) {
+        schemaValidator.validate(command.getType(), effectivePayload);
+
+        switch (command.getType()) {
+            case CREATE_TASK -> {
+                CreateTaskPayload payload = objectMapper.convertValue(effectivePayload, CreateTaskPayload.class);
+                businessValidator.validateCreateTask(payload, command.getHouseholdId());
+            }
+            case COMPLETE_TASK -> {
+                CompleteTaskPayload payload = objectMapper.convertValue(effectivePayload, CompleteTaskPayload.class);
+                businessValidator.validateCompleteTask(payload, command.getHouseholdId());
+            }
+        }
+    }
+
+    private void rejectSchemaValidation(
+            Command command, UUID correlationId, CommandType commandType, ValidationException e, long startTime) {
+        int executionMs = (int) (System.currentTimeMillis() - startTime);
+        command.markRejected(ErrorCode.SCHEMA_INVALID.name(), e.getMessage(), executionMs);
+        commandRepository.save(command);
+
+        decisionLogWriter.writeValidationFailure(
+                command, correlationId, Map.of("type", commandType.name()), e.getErrors(), true);
+    }
+
+    private void rejectBusinessValidation(
+            Command command, UUID correlationId, CommandType commandType, BusinessException e, long startTime) {
+        int executionMs = (int) (System.currentTimeMillis() - startTime);
+        command.markRejected(e.getErrorCode().name(), e.getMessage(), executionMs);
+        commandRepository.save(command);
+
+        decisionLogWriter.writeValidationFailure(
+                command, correlationId, Map.of("type", commandType.name()), e.getViolations(), false);
+    }
+
+    private void failCommand(Command command, UUID correlationId, Exception e, long startTime) {
+        int executionMs = (int) (System.currentTimeMillis() - startTime);
+        command.markFailed(ErrorCode.INTERNAL_ERROR.name(), e.getMessage(), executionMs);
+        commandRepository.save(command);
+
+        log.error("Command failed: id={}, correlationId={}", command.getId(), correlationId, e);
+    }
+
+    private Map<String, Object> buildEffectivePayload(CommandType commandType, CommandRequest request) {
+        return buildEffectivePayload(
+                commandType, request.payload(), request.dueDate(), request.assigneeId(), request.zoneId());
+    }
+
+    private Map<String, Object> buildEffectivePayload(
+            CommandType commandType, Object rawPayload, Instant dueDate, UUID assigneeId, UUID zoneId) {
+        Map<String, Object> payload =
+                new HashMap<>(objectMapper.convertValue(rawPayload, new TypeReference<Map<String, Object>>() {}));
+
+        if (commandType == CommandType.CREATE_TASK) {
+            mergeUuidAttribute(payload, "assigneeId", assigneeId);
+            mergeUuidAttribute(payload, "zoneId", zoneId);
+            mergeDueDate(payload, dueDate);
+        }
+
+        return payload;
+    }
+
+    private void mergeUuidAttribute(Map<String, Object> payload, String field, UUID topLevelValue) {
+        if (topLevelValue == null) {
+            return;
+        }
+
+        Object payloadValue = payload.get(field);
+        if (payloadValue != null && !topLevelValue.toString().equals(payloadValue.toString())) {
+            throw attributeConflict(field, field);
+        }
+
+        payload.put(field, topLevelValue.toString());
+    }
+
+    private void mergeDueDate(Map<String, Object> payload, Instant dueDate) {
+        if (dueDate == null) {
+            return;
+        }
+
+        Object payloadValue = payload.get("deadline");
+        if (payloadValue != null && !sameInstant(payloadValue, dueDate)) {
+            throw attributeConflict("dueDate", "deadline");
+        }
+
+        payload.put("deadline", dueDate.toString());
+    }
+
+    private boolean sameInstant(Object payloadValue, Instant topLevelValue) {
+        try {
+            return Instant.parse(payloadValue.toString()).equals(topLevelValue);
+        } catch (RuntimeException e) {
+            return topLevelValue.toString().equals(payloadValue.toString());
+        }
+    }
+
+    private BusinessException attributeConflict(String topLevelField, String payloadField) {
+        return new BusinessException(
+                ErrorCode.BUSINESS_RULE_VIOLATION,
+                "Command attribute conflicts with payload",
+                List.of(new BusinessException.Violation(
+                        "COMMAND_ATTRIBUTE_CONFLICT",
+                        "Command field " + topLevelField + " conflicts with payload field " + payloadField)));
     }
 
     private DecisionContext buildDecisionContext(
