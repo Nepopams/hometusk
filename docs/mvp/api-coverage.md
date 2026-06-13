@@ -1,7 +1,7 @@
 # MVP API Coverage Matrix
 
 **Last Updated:** 2026-06-13
-**Scope:** MVP Closure / Manual Shopping Flow
+**Scope:** MVP Closure / Email Validation
 **Source of truth:** `docs/contracts/http/commands.openapi.yaml`
 
 ## User Journey Mapping
@@ -34,7 +34,7 @@
 
 | Endpoint | Method | Request | Response | Errors |
 |----------|--------|---------|----------|--------|
-| `/api/v1/users/me` | GET | - | `UserProfile` | 401 |
+| `/api/v1/users/me` | GET | - | `UserProfile` with email verification state and `emailNotificationEligible` | 401 |
 
 ### Household Endpoints
 

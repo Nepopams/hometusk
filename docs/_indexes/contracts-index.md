@@ -66,3 +66,8 @@ This index tracks all API contracts (OpenAPI, JSON Schema, AsyncAPI) in the proj
   commands validate at submission and are revalidated at due-time execution.
   Runtime implementation is tracked by
   `docs/planning/workpacks/ST-3303/workpack.md`.
+- 2026-06-13 — `commands.openapi.yaml` includes the non-breaking
+  INIT-2026Q2-email-validation delta: `UserProfile` exposes durable email
+  verification state (`emailVerified`, `emailSource`, `emailUpdatedAt`) and
+  computed `emailNotificationEligible` so clients can avoid treating missing or
+  unverified emails as deliverable.
