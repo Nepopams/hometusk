@@ -1,7 +1,7 @@
 Initiative: INIT-2026Q3‑command‑attributes — Structured Command Attributes & Scheduling
 Status
 
-Proposed — Ready for epic decomposition (2026‑Q3)
+Active NOW - selected on 2026-06-13 after closing the shopping categories/manual shopping flow sequence. Ready for epic decomposition and Gate C-ready workpack planning for the minimal structured attributes slice.
 
 Sources of Truth
 Existing command UX: INIT‑2026Q2‑command‑ux sets out the initial web command box and traceability【turn38file0†L20-L24】.
@@ -91,3 +91,16 @@ Command confirmation UI displays and allows editing of these fields.
 Created tasks reflect provided attributes.
 Idempotency semantics preserved (same key + same payload returns cached response).
 Documentation (OpenAPI, service catalog) updated.
+
+12. Current Gate / Next Workflow
+Current gate: planning intake for NOW scope. No implementation is approved yet.
+
+Next artifact:
+- decompose NOW into implementation-ready epic/story scope;
+- confirm contract/data/security impact flags;
+- prepare workpack and read-only Codex PLAN for the first minimal slice.
+
+Carry-forward guardrails:
+- keep all new command fields optional and backward-compatible;
+- preserve DecisionLog traceability and idempotency semantics;
+- do not edit upstream AI Platform snapshots.

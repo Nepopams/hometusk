@@ -3,7 +3,13 @@
 > Формат Now/Next/Later фиксирует направление и приоритеты без преждевременных дат.
 > У каждого пункта должен быть "якорь" — initiative/release документ.
 
-## NOW (текущий фокус: закрытый ручной shopping flow без AI)
+## NOW (текущий фокус: structured command attributes)
+
+- Initiative (active): **INIT-2026Q3‑command‑attributes** — Structured Command Attributes & Scheduling
+  - Anchor: docs/planning/initiatives/INIT-2026Q3‑command‑attributes.md
+  - Outcome: команды получают явные optional-атрибуты dueDate/assigneeId/zoneId/scheduleAt, confirmation UI и безопасное выполнение позже при сохранении schema validation, idempotency и DecisionLog traceability
+  - Why now: shopping NOW-scope закрыт и проверен на UAT; следующий максимальный продуктовый рычаг — усилить intent-driven ядро HomeTusk, чтобы AI/command path меньше угадывал и больше показывал пользователю управляемые параметры
+  - Current gate: planning intake; next artifact is epic/story decomposition and Gate C-ready workpack for the minimal structured attributes slice
 
 - Initiative (done): **INIT-2026Q3-shopping-manual-flow** — Manual Shopping Flow without AI
   - Anchor: docs/planning/initiatives/INIT-2026Q3-shopping-manual-flow.md
@@ -15,7 +21,7 @@
   - Anchor: docs/planning/initiatives/INIT‑2026Q3‑shopping‑categories.md
   - Outcome: список покупок становится структурированным: category/source у item, фильтрация и группировка по категории или магазину, бейджи в UI, обратная совместимость для существующих списков
   - Closure note: закрыла metadata layer, но не включала ручное создание shopping lists или task-shopping linkage UI; этот gap вынесен в INIT-2026Q3-shopping-manual-flow
-  - Readiness: Completed through Human Gate D on 2026-06-13; live browser verification accepted as deferred debt TD-ST-3201-001.
+  - Readiness: Closed through Human Gate D and UAT verification on 2026-06-13; no open closure debt.
 
 - Initiative (done): **INIT-2026Q1-mobile-nav-collapse** — Mobile Navigation Collapse
   - Anchor: docs/planning/initiatives/INIT-2026Q1-mobile-nav-collapse.md
@@ -82,12 +88,7 @@
   - Purge/TTL housekeeping для idempotency/decision logs (если нужно) + минимальные метрики/алерты
   - Цель: не расширять домен, а снизить риск "всё работает только на демо"
 
-## NEXT (следующие инициативы после manual shopping flow / параллельные кандидаты)
-
-- Initiative (candidate): **INIT-2026Q3‑command‑attributes** — Structured Command Attributes & Scheduling
-  - Anchor: docs/planning/initiatives/INIT-2026Q3‑command‑attributes.md
-  - Outcome: команды получают явные атрибуты dueDate/assignee/zone/scheduleAt, confirmation UI и безопасное выполнение later; сохраняются schema validation, idempotency и DecisionLog traceability
-  - Planning note: высокий contract + traceability impact; не смешивать с manual shopping flow, чтобы не раздувать NOW-инкремент
+## NEXT (следующие инициативы после command attributes / параллельные кандидаты)
 
 - Initiative (candidate): **INIT-2026Q3‑household‑dashboard** — Unified Household Home & Navigation
   - Anchor: docs/planning/initiatives/INIT-2026Q3‑household‑dashboard.md

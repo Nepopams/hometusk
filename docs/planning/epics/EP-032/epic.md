@@ -14,7 +14,7 @@
 ---
 
 ## Status
-**COMPLETED - HUMAN GATE D APPROVED**. The UI slice is implemented, ST-3101 Gate D is approved, ST-3201 Human Gate C is approved, review gate is GO, Human Gate D is approved, and automated frontend verification is recorded. Live browser verification is accepted as deferred debt TD-ST-3201-001 because the local backend health check timed out.
+**COMPLETED - HUMAN GATE D APPROVED - UAT VERIFIED**. The UI slice is implemented, ST-3101 Gate D is approved, ST-3201 Human Gate C is approved, review gate is GO, Human Gate D is approved, automated frontend verification is recorded, and UAT verification was accepted on 2026-06-13.
 
 ## Initiative Alignment
 This epic implements the NOW UI outcome for `INIT-2026Q3-shopping-categories`:
@@ -77,7 +77,7 @@ Dependency-driven:
 3. Category/source badges render only when metadata exists.
 4. Users can group or filter list items by category/source without losing purchased/unpurchased separation.
 5. Legacy items with null metadata remain clean and usable.
-6. Mobile layout CSS is implemented for no overlapping controls or text overflow; live mobile browser verification is deferred to TD-ST-3201-001.
+6. Mobile layout CSS is implemented for no overlapping controls or text overflow; category/source shopping flow is verified on UAT.
 7. Frontend types, API client, hook, route, i18n, CSS, and tests match the implemented backend contract.
 
 ## Implementation Evidence
@@ -88,9 +88,11 @@ Dependency-driven:
 - `cd clients/web && npm run test` passed on 2026-06-13: 2 files, 27 tests.
 - Review gate is GO and recorded at `docs/planning/workpacks/ST-3201/review-gate.md`.
 - Human Gate D is approved and recorded at `docs/planning/workpacks/ST-3201/gate-d.md`.
+- UAT verification accepted by human on 2026-06-13 for initiative closure.
 
 ## Tech Debt / Deferred Verification
-- TD-ST-3201-001: Local stack bring-up for browser verification needs a reliable one-command path with Postgres, Keycloak, backend, web env, dev-token login, and seeded shopping list data.
+- None blocking EP-032 closure.
+- TD-ST-3201-001 is resolved for EP-032 verification by UAT acceptance on 2026-06-13. A reliable one-command local stack remains optional local-dev hygiene outside this epic's closure.
 
 ## Flags Summary
 

@@ -39,7 +39,7 @@
 
 ## Responsive Styling
 - [x] Desktop layout remains dense and scannable in CSS implementation.
-- [ ] Mobile browser overlap check deferred to local-stack tech debt.
+- [x] Mobile browser overlap check accepted through UAT verification on 2026-06-13.
 - [x] Long item names wrap or clamp safely.
 - [x] Long source values wrap or clamp safely.
 - [x] Buttons keep stable dimensions.
@@ -55,14 +55,15 @@
 - [x] `cd clients/web && npm run build` passes.
 - [x] `cd clients/web && npm run lint` passes.
 - [x] `cd clients/web && npm run test` passes.
-- [ ] Browser verification completed on desktop viewport (deferred: backend health timed out locally).
-- [ ] Browser verification completed on mobile viewport (deferred: backend health timed out locally).
+- [x] Browser verification accepted on UAT desktop path on 2026-06-13.
+- [x] Browser verification accepted on UAT mobile/responsive path on 2026-06-13.
 
 ## Tech Debt / Deferred Verification
-- [ ] TD-ST-3201-001: Provide a reliable one-command local stack for browser verification, including Postgres, Keycloak, backend, web env, token/dev-login flow, and seeded shopping list data. On 2026-06-13 Postgres/Keycloak were healthy, but backend health on `http://localhost:8080/actuator/health` timed out; per human direction, live browser verification was deferred instead of blocking the initiative path.
+- [x] TD-ST-3201-001 resolved for story/initiative verification by UAT acceptance on 2026-06-13. A reliable one-command local stack remains optional local-dev hygiene, not an open ST-3201 closure item.
 
 ## Accepted Gate D Exceptions
 - [x] Human Gate D accepted TD-ST-3201-001 as deferred verification-enablement debt.
+- [x] Post-Gate D update: human accepted UAT verification on 2026-06-13, closing the deferred verification item for this story.
 
 ## Final
 - [x] Codex APPLY stayed within approved files.

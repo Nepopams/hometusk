@@ -15,7 +15,7 @@
 - DoD: `docs/_governance/dod.md`
 
 ## Status
-**COMPLETED - HUMAN GATE D APPROVED**. Backend category/source implementation, ST-3101 Human Gate D, ST-3201 PLAN findings, Human Gate C, frontend implementation, review GO, Human Gate D, and automated frontend verification are recorded. Live browser verification is accepted as deferred debt TD-ST-3201-001 because the local backend health check timed out.
+**COMPLETED - HUMAN GATE D APPROVED - UAT VERIFIED**. Backend category/source implementation, ST-3101 Human Gate D, ST-3201 PLAN findings, Human Gate C, frontend implementation, review GO, Human Gate D, automated frontend verification, and UAT verification are recorded.
 
 ## Outcome
 Shopping list users can add, edit, view, group, and filter optional category/source metadata in the web UI while simple uncategorised lists remain fast and uncluttered.
@@ -28,7 +28,7 @@ Shopping list users can add, edit, view, group, and filter optional category/sou
 - [x] AC-5: Group by source renders source groups plus a No source bucket.
 - [x] AC-6: Grouping/filtering preserves unpurchased and purchased sections.
 - [x] AC-7: Add/edit optimistic updates roll back on API failure.
-- [ ] AC-8: Desktop/mobile layout has no overlapping controls or text overflow. CSS implementation is complete; live browser verification is deferred as TD-ST-3201-001.
+- [x] AC-8: Desktop/mobile layout has no overlapping controls or text overflow. CSS implementation is complete and UAT verification was accepted on 2026-06-13.
 
 ## Non-goals
 - Backend API, migration, or contract implementation.
@@ -77,10 +77,11 @@ Shopping list users can add, edit, view, group, and filter optional category/sou
 - Local live-stack verification on 2026-06-13:
   - `hometusk-postgres` and `hometusk-keycloak` were healthy.
   - Backend health check `http://localhost:8080/actuator/health` timed out.
-  - Per human direction, local stack bring-up is tracked as TD-ST-3201-001 and live browser verification is deferred.
+  - This local-stack limitation is superseded for story closure by human-accepted UAT verification on 2026-06-13.
 - Review/Gate evidence on 2026-06-13:
   - Review gate result: GO, recorded at `docs/planning/workpacks/ST-3201/review-gate.md`.
   - Human Gate D approved ST-3201, recorded at `docs/planning/workpacks/ST-3201/gate-d.md`.
+  - Human accepted UAT verification for category/source shopping flow closure.
 
 ## Implementation Completed
 
@@ -106,7 +107,7 @@ Verification:
 - `cd clients/web && npm run build`
 - `cd clients/web && npm run lint`
 - `cd clients/web && npm run test`
-- Browser screenshots/checks for desktop and mobile are deferred to TD-ST-3201-001.
+- Browser verification for desktop/mobile category-source flow accepted on UAT on 2026-06-13.
 
 ## Contract impact
 - No new contract edits expected.
@@ -114,8 +115,8 @@ Verification:
 - If implementation discovers contract drift, stop and return to artifact gate before editing code.
 
 ## Docs updates
-- [ ] No ADR expected.
-- [ ] No diagram expected.
+- [x] No ADR expected.
+- [x] No diagram expected.
 - [x] Update this workpack with ST-3101 evidence before PLAN.
 - [x] Record ST-3201 PLAN and Gate C packet.
 - [x] Add implementation evidence after APPLY.
@@ -125,7 +126,7 @@ Verification:
 - `cd clients/web && npm run build`
 - `cd clients/web && npm run lint`
 - `cd clients/web && npm run test`
-- Browser verification of the shopping detail page at desktop and mobile widths is deferred to TD-ST-3201-001.
+- Browser verification of the shopping detail page at desktop/mobile widths accepted on UAT on 2026-06-13.
 
 ## DoD checklist
 - [x] ST-3101 completed and reviewed.
@@ -136,11 +137,12 @@ Verification:
 - [x] Metadata edit cannot change purchase status accidentally.
 - [x] User-generated source text is rendered as text only.
 - [x] Grouping/filtering preserves existing purchase sections.
-- [ ] Desktop/mobile UI verified live (deferred to TD-ST-3201-001).
+- [x] Desktop/mobile UI verified live through UAT acceptance on 2026-06-13.
 - [x] Build, lint, and tests pass.
 
 ## Tech Debt / Deferred Verification
-- TD-ST-3201-001: Provide a reliable one-command local stack for live browser verification, including Postgres, Keycloak, backend, web env, dev-token login, and seeded household/shopping-list data. This is a verification-enablement debt item, not a product behavior dependency for the implemented frontend slice.
+- None blocking workpack closure.
+- TD-ST-3201-001 is resolved for ST-3201 verification by UAT acceptance on 2026-06-13. A reliable one-command local stack remains optional local-dev hygiene outside this workpack closure.
 
 ## Risks
 - UI may make quick add feel slower - keep metadata optional and collapsible/secondary.
