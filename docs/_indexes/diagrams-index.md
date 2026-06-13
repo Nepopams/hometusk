@@ -17,6 +17,7 @@ This index tracks all architecture and flow diagrams in the project.
 | Container Diagram (MVP) | C4 Level 2 | Services and data stores | [Link](../architecture/decisions/mvp/02-container.md) |
 | Component Diagram (Backend) | C4 Level 3 | Backend internal structure | [Link](../architecture/decisions/mvp/03-component-backend.md) |
 | Scheduled Command Execution | Sequence | `scheduleAt` command submission and due-time execution | [Link](../diagrams/sequence-scheduled-command-execution.md) |
+| Email Notification Outbox | Sequence | Email enqueue, async delivery, retry, and degraded provider behavior | [Link](../diagrams/sequence-email-notification-outbox.md) |
 | Command Processing Flow | Sequence | NL command → task creation | [Link](../architecture/diagrams/command-processing-flow.md) |
 
 ## Diagram Lifecycle
