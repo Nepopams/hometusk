@@ -17,8 +17,11 @@ GO for Human Gate D.
 None.
 
 ## Should-fix / Accepted Debt
-- TD-ST-3201-001: live desktop/mobile browser verification is deferred because the local backend health check timed out while Postgres and Keycloak were healthy.
+- TD-ST-3201-001: initially accepted at review time because the local backend health check timed out while Postgres and Keycloak were healthy.
 - Optional hardening follow-up: narrow the internal metadata edit type so `updateMetadata` cannot accept `purchased` at compile time. The current caller already sends metadata-only payloads through `buildShoppingItemMetadataUpdate`.
+
+## Post-Gate Update
+- 2026-06-13: Human accepted UAT verification for the category/source shopping flow. TD-ST-3201-001 is no longer open for ST-3201 or initiative closure; reliable local stack bring-up remains optional local-dev hygiene outside this review gate.
 
 ## Evidence Reviewed
 - Frontend types include shopping category/source fields, filters, add request, update request, and shopping run snapshot metadata.

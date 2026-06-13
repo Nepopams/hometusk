@@ -1,8 +1,8 @@
 # Story: ST-3201 - Shopping Category/Source Controls + Grouping
 
-## Status: COMPLETED - HUMAN GATE D APPROVED
+## Status: COMPLETED - HUMAN GATE D APPROVED - UAT VERIFIED
 **Epic:** EP-032 | **Priority:** P0 | **Points:** 5
-**Readiness:** ST-3101 is implemented, verified, reviewed, and approved through Human Gate D. ST-3201 read-only Codex PLAN findings, Human Gate C approval, frontend APPLY, review GO, Human Gate D, and automated frontend verification are recorded.
+**Readiness:** ST-3101 is implemented, verified, reviewed, and approved through Human Gate D. ST-3201 read-only Codex PLAN findings, Human Gate C approval, frontend APPLY, review GO, Human Gate D, automated frontend verification, and UAT verification are recorded.
 
 ## Description
 Expose optional category and source metadata in the shopping list UI. Users can add metadata while creating an item, edit metadata later, see badges on list rows, and group/filter items by category or source.
@@ -146,9 +146,10 @@ And text does not overlap or escape its container
 - Frontend types, API client, shopping hook, shopping detail route, responsive CSS, i18n, and helper tests were updated for category/source metadata.
 - `npm run build`, `npm run lint`, and `npm run test` passed in `clients/web` on 2026-06-13.
 - Vitest result: 2 files, 27 tests.
-- Live browser verification is deferred as TD-ST-3201-001 because local backend health timed out while Postgres and Keycloak were healthy.
+- UAT verification accepted by human on 2026-06-13; category/source shopping flow is considered closed and verified on UAT.
 - Review gate is recorded at `docs/planning/workpacks/ST-3201/review-gate.md`.
 - Human Gate D is recorded at `docs/planning/workpacks/ST-3201/gate-d.md`.
 
 ## Tech Debt / Deferred Verification
-- TD-ST-3201-001: Add a reliable one-command local stack and seed path for live browser verification of shopping metadata flows.
+- None blocking story closure.
+- TD-ST-3201-001 is resolved for story verification by UAT acceptance on 2026-06-13. A reliable one-command local stack and seed path remains optional local-dev hygiene outside ST-3201 closure.

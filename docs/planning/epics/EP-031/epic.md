@@ -13,7 +13,7 @@
 ---
 
 ## Status
-**COMPLETED — HUMAN GATE D APPROVED** — ST-3101 backend foundation is implemented, verified, reviewed, and accepted. EP-032/ST-3201 is now unblocked for Codex PLAN.
+**COMPLETED — HUMAN GATE D APPROVED** — ST-3101 backend foundation is implemented, verified, reviewed, and accepted. EP-032/ST-3201 is also complete through Human Gate D and UAT verification; the NOW scope of the shopping categories initiative is closed.
 
 ## Initiative Alignment
 This epic implements the NOW foundation for `INIT‑2026Q3‑shopping‑categories`:
@@ -68,7 +68,7 @@ Dependency-driven:
 | ID | Title | Priority | Status |
 |----|-------|----------|--------|
 | [ST-3101](./stories/ST-3101-shopping-category-source-foundation.md) | Shopping category/source backend + contract foundation | P0 | COMPLETED - HUMAN GATE D APPROVED |
-| [ST-3201](../EP-032/stories/ST-3201-shopping-category-source-ui.md) | Shopping UI category/source controls + grouping | P0 | TRACKED IN EP-032 - READY FOR PLAN |
+| [ST-3201](../EP-032/stories/ST-3201-shopping-category-source-ui.md) | Shopping UI category/source controls + grouping | P0 | COMPLETED IN EP-032 - HUMAN GATE D + UAT VERIFIED |
 | ST-3301 | Source presets and category/source analytics | P2 | DEFERRED |
 
 ---

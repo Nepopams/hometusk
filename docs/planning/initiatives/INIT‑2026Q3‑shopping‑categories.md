@@ -1,7 +1,7 @@
 Initiative: INIT-2026Q3-shopping-categories - Categorised & Sourced Shopping Lists
 
 ## Status
-Completed - NOW scope accepted through Human Gate D on 2026-06-13. EP-031/ST-3101 and EP-032/ST-3201 are complete; live browser verification is accepted as deferred debt TD-ST-3201-001 because the local backend health check timed out.
+Closed - NOW scope fully accepted and verified on UAT on 2026-06-13. EP-031/ST-3101 and EP-032/ST-3201 are complete through Human Gate D; the previous live-browser deferred verification item TD-ST-3201-001 is resolved for initiative closure by UAT evidence.
 
 ## Sources of Truth
 - Roadmap: `docs/planning/strategy/roadmap.md`
@@ -80,11 +80,11 @@ Users can add optional category and source metadata to shopping items, see compa
 - OpenAPI and service catalog reflect implemented behavior.
 - Web UI lets users add/edit category/source and displays badges only when metadata exists.
 - Lists can be grouped and filtered by category/source while preserving unpurchased/purchased sections.
-- Desktop and mobile CSS is implemented for no overlapping controls or text overflow; live browser verification is deferred to TD-ST-3201-001.
+- Desktop and mobile CSS is implemented for no overlapping controls or text overflow; category/source shopping flow is verified on UAT.
 - Backend and frontend verification evidence is recorded.
 
 ## Current Gate
-No open gate for the NOW scope. NEXT/LATER candidates remain proposed and are not part of this closure.
+No open gate and no open closure debt for the NOW scope. NEXT/LATER candidates remain proposed and are not part of this closure.
 
 ## Implementation Evidence
 - ST-3101 backend/model/contract/export work is complete through Human Gate D.
@@ -93,6 +93,8 @@ No open gate for the NOW scope. NEXT/LATER candidates remain proposed and are no
 - Vitest result after ST-3201 APPLY: 2 files, 27 tests.
 - ST-3201 review gate is GO and recorded at `docs/planning/workpacks/ST-3201/review-gate.md`.
 - ST-3201 Human Gate D is approved and recorded at `docs/planning/workpacks/ST-3201/gate-d.md`.
+- UAT verification accepted by human on 2026-06-13: category/source shopping flow is considered closed and verified on UAT.
 
 ## Tech Debt / Deferred Verification
-- TD-ST-3201-001: Add reliable one-command local stack bring-up and seed data for live browser verification. Required coverage: Postgres, Keycloak, backend, web env, dev-token login, seeded household/list/items, and desktop/mobile shopping detail checks.
+- None blocking initiative closure.
+- TD-ST-3201-001 is resolved for initiative verification by UAT acceptance on 2026-06-13. A reliable one-command local stack and seed path may still be useful as general local-dev hygiene, but it is no longer a deferred verification item for this initiative.
