@@ -41,3 +41,11 @@ This index tracks all API contracts (OpenAPI, JSON Schema, AsyncAPI) in the proj
 ---
 
 **Maintenance**: Update this index when using `hometusk-contract-governance` or manually adding contracts.
+
+## Material Contract Notes
+
+- 2026-06-13 — `commands.openapi.yaml` and `shopping-marketplaces.openapi.yaml`
+  include the non-breaking INIT-2026Q3-shopping-categories contract delta:
+  optional `category`/`source` metadata on shopping items, list filters,
+  partial item update semantics, and shopping run/export propagation. Runtime
+  implementation is tracked by `docs/planning/workpacks/ST-3101/workpack.md`.

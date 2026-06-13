@@ -29,6 +29,24 @@ public interface ShoppingItemRepository extends JpaRepository<ShoppingItem, UUID
     List<ShoppingItem> findByShoppingList_IdOrderByCreatedAtDesc(UUID listId);
 
     /**
+     * Find items in a shopping list with optional purchased/category/source filters.
+     */
+    @Query(
+            """
+            SELECT i FROM ShoppingItem i
+            WHERE i.shoppingList.id = :listId
+              AND (:purchased IS NULL OR i.purchased = :purchased)
+              AND (:category IS NULL OR i.category = :category)
+              AND (:source IS NULL OR i.source = :source)
+            ORDER BY i.createdAt DESC
+            """)
+    List<ShoppingItem> findByShoppingList_IdWithFiltersOrderByCreatedAtDesc(
+            @Param("listId") UUID listId,
+            @Param("purchased") Boolean purchased,
+            @Param("category") String category,
+            @Param("source") String source);
+
+    /**
      * Find items linked to a specific task.
      */
     List<ShoppingItem> findByLinkedTask_Id(UUID taskId);

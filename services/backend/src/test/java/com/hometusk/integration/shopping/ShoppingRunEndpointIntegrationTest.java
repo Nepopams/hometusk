@@ -43,6 +43,8 @@ class ShoppingRunEndpointIntegrationTest extends IntegrationTestBase {
     void setUpList() {
         shoppingList = new ShoppingList(testHousehold, "Groceries");
         ShoppingItem unpurchased = new ShoppingItem(shoppingList, "Milk", testUser);
+        unpurchased.setCategory("groceries");
+        unpurchased.setSource("Perekrestok");
         ShoppingItem purchased = new ShoppingItem(shoppingList, "Bread", testUser);
         purchased.markPurchased();
         shoppingList.addItem(unpurchased);
@@ -60,11 +62,15 @@ class ShoppingRunEndpointIntegrationTest extends IntegrationTestBase {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].category").value("groceries"))
+                .andExpect(jsonPath("$.items[0].source").value("Perekrestok"))
                 .andExpect(jsonPath("$.listName").value("Groceries"));
 
         List<ShoppingRun> runs = shoppingRunRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
         assertThat(runs).hasSize(1);
         assertThat(runs.get(0).getItems()).hasSize(1);
+        assertThat(runs.get(0).getItems().get(0).getCategory()).isEqualTo("groceries");
+        assertThat(runs.get(0).getItems().get(0).getSource()).isEqualTo("Perekrestok");
     }
 
     @Test

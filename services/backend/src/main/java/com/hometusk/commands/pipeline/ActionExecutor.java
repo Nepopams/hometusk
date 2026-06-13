@@ -224,6 +224,8 @@ public class ActionExecutor {
         String name = (String) params.get("name");
         Integer quantity = parseInteger(params.get("quantity"));
         String unit = (String) params.get("unit");
+        String category = parseString(params.get("category"));
+        String source = parseString(params.get("source"));
         UUID listId = parseUuid(params.get("listId"));
         UUID linkedTaskId = parseUuid(params.get("linkedTaskId"));
 
@@ -235,6 +237,8 @@ public class ActionExecutor {
                 .name(name)
                 .quantity(quantity)
                 .unit(unit)
+                .category(category)
+                .source(source)
                 .addedBy(addedBy)
                 .commandId(command.getId())
                 .linkedTaskId(linkedTaskId)
@@ -259,6 +263,11 @@ public class ActionExecutor {
         if (value instanceof UUID uuid) return uuid;
         if (value instanceof String s) return UUID.fromString(s);
         return null;
+    }
+
+    private String parseString(Object value) {
+        if (value == null) return null;
+        return value.toString();
     }
 
     private Instant parseInstant(Object value) {

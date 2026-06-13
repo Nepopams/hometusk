@@ -8,6 +8,10 @@ info:
 
     **Stage 1:** Structured commands (no NL processing yet).
 
+    **INIT-2026Q3-shopping-categories compatibility delta:** shopping item
+    category/source fields are optional and backward-compatible. Existing
+    clients may omit them; existing items may return `null`.
+
     See also:
     - [CLAUDE.md](../../../CLAUDE.md) — Development rules
     - [ADR-003](../../architecture/decisions/003-stage1-commands-api.md) — Stage 1 decisions
@@ -948,6 +952,10 @@ paths:
     get:
       operationId: listShoppingItems
       summary: List items in a shopping list
+      description: |
+        Returns items in the shopping list. Filters are optional and
+        composable; omitted category/source fields match all items, including
+        uncategorised legacy items.
       tags:
         - Shopping
       parameters:
@@ -969,6 +977,20 @@ paths:
           description: Filter by purchase status
           schema:
             type: boolean
+        - name: category
+          in: query
+          required: false
+          description: Filter by shopping category
+          schema:
+            $ref: '#/components/schemas/ShoppingItemCategory'
+        - name: source
+          in: query
+          required: false
+          description: Filter by source/store name, exact match after server-side trim
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 120
       responses:
         '200':
           description: List of shopping items
@@ -978,6 +1000,19 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ShoppingItem'
+              examples:
+                categorisedItems:
+                  summary: Items with category and source
+                  value:
+                    - id: "8e2dcf88-c0d0-41a2-8a4a-5db45f3b34d2"
+                      name: "Milk"
+                      quantity: 2
+                      unit: "liters"
+                      category: "groceries"
+                      source: "Perekrestok"
+                      purchased: false
+                      linkedTaskId: null
+                      createdAt: "2026-06-13T10:00:00Z"
         '401':
           description: Authentication required
           content:
@@ -1016,6 +1051,15 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AddShoppingItemRequest'
+            examples:
+              categorisedItem:
+                summary: Add an item with category and source
+                value:
+                  name: "Milk"
+                  quantity: 2
+                  unit: "liters"
+                  category: "groceries"
+                  source: "Perekrestok"
       responses:
         '201':
           description: Item created
@@ -1043,7 +1087,12 @@ paths:
   /households/{householdId}/shopping-items/{itemId}:
     patch:
       operationId: updateShoppingItem
-      summary: Update a shopping item (mark purchased)
+      summary: Update a shopping item
+      description: |
+        Partially updates a shopping item. At least one mutable field must be
+        present. `purchased` remains supported for mark purchased/unpurchased;
+        category/source can be changed independently without altering purchase
+        state.
       tags:
         - Shopping
       parameters:
@@ -1065,6 +1114,16 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateShoppingItemRequest'
+            examples:
+              markPurchased:
+                summary: Mark an item purchased
+                value:
+                  purchased: true
+              updateCategoryAndSource:
+                summary: Move an item to another category/source
+                value:
+                  category: "cleaning"
+                  source: "Ozon"
       responses:
         '200':
           description: Item updated
@@ -2064,6 +2123,17 @@ components:
           type: string
           format: date-time
 
+    ShoppingItemCategory:
+      type: string
+      description: Optional coarse shopping category for grouping and filtering.
+      enum:
+        - groceries
+        - cleaning
+        - personal_care
+        - diy
+        - electronics
+        - other
+
     ShoppingItem:
       type: object
       properties:
@@ -2076,6 +2146,16 @@ components:
           type: integer
         unit:
           type: string
+        category:
+          allOf:
+            - $ref: '#/components/schemas/ShoppingItemCategory'
+          nullable: true
+          description: Optional category for grouping/filtering. Null for uncategorised legacy items.
+        source:
+          type: string
+          nullable: true
+          maxLength: 120
+          description: Optional source/store name. User-provided, household-scoped display text.
         purchased:
           type: boolean
         linkedTaskId:
@@ -2107,14 +2187,34 @@ components:
         unit:
           type: string
           maxLength: 50
+        category:
+          allOf:
+            - $ref: '#/components/schemas/ShoppingItemCategory'
+          nullable: true
+          description: Optional category. Omit or null to leave uncategorised.
+        source:
+          type: string
+          maxLength: 120
+          nullable: true
+          description: Optional source/store name. Server trims blank values to null.
 
     UpdateShoppingItemRequest:
       type: object
-      required:
-        - purchased
+      description: Partial shopping item update; at least one field is required.
       properties:
         purchased:
           type: boolean
+          description: Optional purchase status change.
+        category:
+          allOf:
+            - $ref: '#/components/schemas/ShoppingItemCategory'
+          nullable: true
+          description: Optional category update. Null clears the category.
+        source:
+          type: string
+          maxLength: 120
+          nullable: true
+          description: Optional source/store update. Null or blank clears the source.
 
     # Task detail with linked shopping items
     TaskDetail:

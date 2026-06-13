@@ -4,7 +4,9 @@ import com.hometusk.households.domain.Household;
 import com.hometusk.notifications.service.NotificationService;
 import com.hometusk.shared.exception.ErrorCode;
 import com.hometusk.shared.exception.NotFoundException;
+import com.hometusk.shared.exception.ValidationException;
 import com.hometusk.shopping.domain.ShoppingItem;
+import com.hometusk.shopping.domain.ShoppingItemCategory;
 import com.hometusk.shopping.domain.ShoppingList;
 import com.hometusk.shopping.repository.ShoppingItemRepository;
 import com.hometusk.shopping.repository.ShoppingListRepository;
@@ -81,6 +83,8 @@ public class ShoppingService {
         ShoppingItem item = new ShoppingItem(list, request.name(), request.addedBy());
         item.setQuantity(request.quantity() != null ? request.quantity() : 1);
         item.setUnit(request.unit());
+        item.setCategory(validateCategory(request.category(), "$.category"));
+        item.setSource(validateSource(request.source(), "$.source"));
         item.setCommandId(request.commandId());
         item.setLinkedTask(linkedTask);
         item.setIdempotencyKey(idempotencyKey);
@@ -147,6 +151,55 @@ public class ShoppingService {
     }
 
     /**
+     * Applies a partial update atomically. Validation runs before mutation so invalid metadata cannot alter purchase state.
+     */
+    @Transactional
+    public UpdateItemResult updateItem(UUID itemId, UUID householdId, UpdateItemRequest request, User actor, UUID correlationId) {
+        if (!request.hasAnyMutableField()) {
+            throw new ValidationException("$.body", "EMPTY_UPDATE", "At least one mutable field is required");
+        }
+
+        String normalizedCategory =
+                request.hasCategory() ? validateCategory(request.category(), "$.category") : null;
+        String normalizedSource = request.hasSource() ? validateSource(request.source(), "$.source") : null;
+
+        ShoppingItem item = getItemByIdAndHousehold(itemId, householdId);
+        boolean purchaseActivityRecorded = false;
+
+        if (request.hasPurchased()) {
+            if (request.purchased() == null) {
+                throw new ValidationException("$.purchased", "PURCHASED_REQUIRED", "Purchased status cannot be null");
+            }
+            if (request.purchased()) {
+                boolean wasPurchased = item.isPurchased();
+                item.markPurchased();
+                if (!wasPurchased) {
+                    notificationService.notifyShoppingItemPurchased(item, actor, correlationId);
+                    purchaseActivityRecorded = true;
+                }
+            } else {
+                item.unmarkPurchased();
+            }
+        }
+
+        if (request.hasCategory()) {
+            item.setCategory(normalizedCategory);
+        }
+        if (request.hasSource()) {
+            item.setSource(normalizedSource);
+        }
+
+        ShoppingItem saved = itemRepository.save(item);
+        log.info(
+                "Shopping item updated: id={}, purchasedUpdated={}, categoryUpdated={}, sourceUpdated={}",
+                saved.getId(),
+                request.hasPurchased(),
+                request.hasCategory(),
+                request.hasSource());
+        return new UpdateItemResult(saved, purchaseActivityRecorded);
+    }
+
+    /**
      * Deletes a shopping item.
      */
     @Transactional
@@ -177,6 +230,21 @@ public class ShoppingService {
             throw new NotFoundException(ErrorCode.SHOPPING_LIST_NOT_FOUND, "Shopping list not found: " + listId);
         }
         return itemRepository.findByShoppingList_IdOrderByCreatedAtDesc(listId);
+    }
+
+    /**
+     * Gets items in a shopping list with optional filters.
+     */
+    @Transactional(readOnly = true)
+    public List<ShoppingItem> getItemsInList(
+            UUID listId, UUID householdId, Boolean purchased, String category, String source) {
+        if (!listRepository.existsByIdAndHousehold_Id(listId, householdId)) {
+            throw new NotFoundException(ErrorCode.SHOPPING_LIST_NOT_FOUND, "Shopping list not found: " + listId);
+        }
+        String normalizedCategory = validateCategory(category, "$.category");
+        String normalizedSource = validateSource(source, "$.source");
+        return itemRepository.findByShoppingList_IdWithFiltersOrderByCreatedAtDesc(
+                listId, purchased, normalizedCategory, normalizedSource);
     }
 
     /**
@@ -239,6 +307,34 @@ public class ShoppingService {
         ShoppingItem item = new ShoppingItem(list, name, addedBy);
         item.setQuantity(quantity != null ? quantity : 1);
         item.setUnit(unit);
+
+        ShoppingItem saved = itemRepository.save(item);
+        notificationService.notifyShoppingItemAdded(saved, addedBy, correlationId);
+        log.info("Shopping item added directly: id={}, name={}, listId={}", saved.getId(), name, listId);
+
+        return saved;
+    }
+
+    @Transactional
+    public ShoppingItem addItemDirect(
+            UUID householdId,
+            UUID listId,
+            String name,
+            Integer quantity,
+            String unit,
+            String category,
+            String source,
+            User addedBy,
+            UUID correlationId) {
+        log.debug("Adding shopping item directly: name={}, householdId={}, listId={}", name, householdId, listId);
+
+        ShoppingList list = getListByIdAndHousehold(listId, householdId);
+
+        ShoppingItem item = new ShoppingItem(list, name, addedBy);
+        item.setQuantity(quantity != null ? quantity : 1);
+        item.setUnit(unit);
+        item.setCategory(validateCategory(category, "$.category"));
+        item.setSource(validateSource(source, "$.source"));
 
         ShoppingItem saved = itemRepository.save(item);
         notificationService.notifyShoppingItemAdded(saved, addedBy, correlationId);
@@ -314,6 +410,40 @@ public class ShoppingService {
         return task.get();
     }
 
+    private String validateCategory(String category, String path) {
+        if (category == null) {
+            return null;
+        }
+        String normalized = ShoppingItemCategory.normalize(category);
+        if (!ShoppingItemCategory.isAllowed(normalized)) {
+            throw new ValidationException(path, "INVALID_CATEGORY", "Category must be one of the supported values");
+        }
+        return normalized;
+    }
+
+    private String validateSource(String source, String path) {
+        String normalized = ShoppingItem.normalizeSource(source);
+        if (normalized != null && normalized.length() > 120) {
+            throw new ValidationException(path, "SOURCE_TOO_LONG", "Source must be at most 120 characters");
+        }
+        return normalized;
+    }
+
+    public record UpdateItemRequest(
+            Boolean purchased,
+            boolean hasPurchased,
+            String category,
+            boolean hasCategory,
+            String source,
+            boolean hasSource) {
+
+        public boolean hasAnyMutableField() {
+            return hasPurchased || hasCategory || hasSource;
+        }
+    }
+
+    public record UpdateItemResult(ShoppingItem item, boolean purchaseActivityRecorded) {}
+
     /**
      * Request object for adding shopping items.
      */
@@ -324,6 +454,8 @@ public class ShoppingService {
             String name,
             Integer quantity,
             String unit,
+            String category,
+            String source,
             User addedBy,
             UUID commandId,
             UUID linkedTaskId,
@@ -340,6 +472,8 @@ public class ShoppingService {
             private String name;
             private Integer quantity;
             private String unit;
+            private String category;
+            private String source;
             private User addedBy;
             private UUID commandId;
             private UUID linkedTaskId;
@@ -375,6 +509,16 @@ public class ShoppingService {
                 return this;
             }
 
+            public Builder category(String category) {
+                this.category = category;
+                return this;
+            }
+
+            public Builder source(String source) {
+                this.source = source;
+                return this;
+            }
+
             public Builder addedBy(User addedBy) {
                 this.addedBy = addedBy;
                 return this;
@@ -403,6 +547,8 @@ public class ShoppingService {
                         name,
                         quantity,
                         unit,
+                        category,
+                        source,
                         addedBy,
                         commandId,
                         linkedTaskId,

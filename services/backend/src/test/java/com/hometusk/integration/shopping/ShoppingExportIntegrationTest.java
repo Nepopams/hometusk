@@ -56,7 +56,10 @@ class ShoppingExportIntegrationTest extends IntegrationTestBase {
 
     @Test
     void export_csvFormat_returnsCsvWithHeaders() throws Exception {
-        addItem("Milk", 2, "liters");
+        ShoppingItem milk = addItem("Milk", 2, "liters");
+        milk.setCategory("groceries");
+        milk.setSource("Perekrestok");
+        shoppingItemRepository.saveAndFlush(milk);
 
         mockMvc.perform(get(
                                 "/api/v1/households/{householdId}/shopping-lists/{listId}/export",
@@ -67,8 +70,8 @@ class ShoppingExportIntegrationTest extends IntegrationTestBase {
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith("text/csv"))
                 .andExpect(header().exists("Content-Disposition"))
-                .andExpect(content().string(containsString("name,quantity,unit,purchased")))
-                .andExpect(content().string(containsString("Milk,2,liters,false")));
+                .andExpect(content().string(containsString("name,quantity,unit,category,source,purchased")))
+                .andExpect(content().string(containsString("Milk,2,liters,groceries,Perekrestok,false")));
     }
 
     @Test

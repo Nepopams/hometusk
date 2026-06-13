@@ -3,7 +3,13 @@
 > Формат Now/Next/Later фиксирует направление и приоритеты без преждевременных дат.
 > У каждого пункта должен быть "якорь" — initiative/release документ.
 
-## NOW (текущий фокус: следующая инициатива)
+## NOW (текущий фокус: закрытая Q3-инициатива)
+
+- Initiative (done): **INIT‑2026Q3‑shopping‑categories** — Categorised & Sourced Shopping Lists
+  - Anchor: docs/planning/initiatives/INIT‑2026Q3‑shopping‑categories.md
+  - Outcome: список покупок становится структурированным: category/source у item, фильтрация и группировка по категории или магазину, бейджи в UI, обратная совместимость для существующих списков
+  - Why now: это самый узкий demonstrable increment из Q3-кандидатов; он усиливает уже закрытый shopping marketplace/run слой без захода в command pipeline или новый household dashboard aggregator
+  - Readiness: Completed through Human Gate D on 2026-06-13; live browser verification accepted as deferred debt TD-ST-3201-001.
 
 - Initiative (done): **INIT-2026Q1-mobile-nav-collapse** — Mobile Navigation Collapse
   - Anchor: docs/planning/initiatives/INIT-2026Q1-mobile-nav-collapse.md
@@ -70,15 +76,29 @@
   - Purge/TTL housekeeping для idempotency/decision logs (если нужно) + минимальные метрики/алерты
   - Цель: не расширять домен, а снизить риск "всё работает только на демо"
 
-## NEXT (следующие инициативы после Mobile Navigation Collapse)
+## NEXT (следующие инициативы после shopping categories)
+
+- Initiative (candidate): **INIT-2026Q3‑command‑attributes** — Structured Command Attributes & Scheduling
+  - Anchor: docs/planning/initiatives/INIT-2026Q3‑command‑attributes.md
+  - Outcome: команды получают явные атрибуты dueDate/assignee/zone/scheduleAt, confirmation UI и безопасное выполнение later; сохраняются schema validation, idempotency и DecisionLog traceability
+  - Planning note: высокий contract + traceability impact; не смешивать с shopping categories, чтобы не раздувать NOW-инкремент
+
+- Initiative (candidate): **INIT-2026Q3‑household‑dashboard** — Unified Household Home & Navigation
+  - Anchor: docs/planning/initiatives/INIT-2026Q3‑household‑dashboard.md
+  - Outcome: единая household home страница с обзором tasks, shopping, routines и members, явной навигацией и пустыми состояниями для нового household
+  - Planning note: вероятен новый dashboard endpoint или client-side aggregation; перед commitment нужен contract/performance/security slice
 
 - Initiative (candidate): **Agreements v0 (read-only)** (consent-first)
   - Anchor: TBD — requires initiative spec
   - Outcome: отображение договорённостей/правил без конструктора и без токсичных лидербордов
+  - Planning note: остаётся кандидатом, но уступает Q3-инициативам с готовыми anchors
 
 ## LATER (длинный хвост)
 
 - Agreements v1 (rule packs + конфиг + consent)
+- Shopping source presets, budgets, multi-store runs and delegation
+- Dashboard personalisation, analytics widgets and notification feed
+- Advanced command recurrence, priority, reminders and explainable AI suggestions
 - Mobile/PWA (после доказанного value на web)
 - Calendar integrations / внешние интеграции
 - Task dependencies (task A блокирует task B)

@@ -269,6 +269,14 @@ export interface AnalyticsSummary {
 // Shopping Types (per commands.openapi.yaml)
 // ============================================
 
+export type ShoppingItemCategory =
+  | 'groceries'
+  | 'cleaning'
+  | 'personal_care'
+  | 'diy'
+  | 'electronics'
+  | 'other';
+
 export interface ShoppingList {
   id: string;
   name: string;
@@ -283,6 +291,8 @@ export interface ShoppingItem {
   name: string;
   quantity?: number;
   unit?: string;
+  category?: ShoppingItemCategory | null;
+  source?: string | null;
   purchased: boolean;
   linkedTaskId?: string;
   addedBy?: UserSummary;
@@ -298,6 +308,9 @@ export interface ShoppingRunItem {
   name: string;
   quantity?: number;
   unit?: string;
+  originalItemId?: string;
+  category?: ShoppingItemCategory | null;
+  source?: string | null;
   purchased: boolean;
   purchasedAt?: string;
 }
@@ -316,12 +329,22 @@ export interface ShoppingRun {
 
 export interface ShoppingItemFilters {
   purchased?: boolean;
+  category?: ShoppingItemCategory;
+  source?: string;
 }
 
 export interface AddShoppingItemRequest {
   name: string;
   quantity?: number;
   unit?: string;
+  category?: ShoppingItemCategory | null;
+  source?: string | null;
+}
+
+export interface UpdateShoppingItemRequest {
+  purchased?: boolean;
+  category?: ShoppingItemCategory | null;
+  source?: string | null;
 }
 
 // ============================================

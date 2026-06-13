@@ -2,7 +2,7 @@
 
 Living registry of all services and applications in the HomeTusk monorepo.
 
-**Last updated:** 2026-01-29
+**Last updated:** 2026-06-13
 
 ---
 
@@ -80,6 +80,7 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 - `POST /api/v1/invites/accept` — Accept invite token
 - `GET /api/v1/households/{id}/tasks` — List tasks
 - `GET /api/v1/households/{id}/shopping-lists` — List shopping lists
+- `GET /api/v1/households/{id}/shopping-lists/{listId}/items` — List shopping items with optional `purchased`, `category`, and `source` filters
 - `GET /api/v1/households/{id}/notifications` — List notifications
 - `POST /api/v1/notifications/{id}/read` — Mark notification read
 
@@ -93,7 +94,7 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 | HouseholdController | `POST /api/v1/households`, `GET/POST /*/zones`, `GET /*/members`, `POST /*/invites` | Household administration |
 | HouseholdInviteController | `POST /api/v1/invites/accept` | Invite acceptance |
 | TaskController | `GET /api/v1/households/{id}/tasks`, `GET /*/tasks/{taskId}` | Task reads (writes via commands) |
-| ShoppingController | `GET/POST /*/shopping-lists/*`, `PATCH/DELETE /*/shopping-items/*` | Shopping management (see ADR-009) |
+| ShoppingController | `GET/POST /*/shopping-lists/*`, `PATCH/DELETE /*/shopping-items/*` | Shopping management, including optional category/source metadata (see ADR-009) |
 | NotificationController | `GET /api/v1/households/{id}/notifications`, `POST /api/v1/notifications/{id}/read` | In-app notifications |
 
 **Invites:** Active (MVP Iteration 1 / Step 2)
@@ -117,7 +118,7 @@ Request → JWT Auth → UserResolver → Idempotency-Key Dedupe → MembershipV
            │   └─ AiPlatformDecisionProvider (external AI, optional)
            │       └─ AiResponseSchemaValidator (JSON Schema validation)
            ├─ GuardrailsOrchestrator (policy chain before execution)
-           │   ├─ ShoppingItemValidationPolicy (validate item names)
+           │   ├─ ShoppingItemValidationPolicy (validate item names and optional category/source metadata)
            │   ├─ ZoneOwnerFirstPolicy (assign zone owner if no assignee)
            │   └─ MaxOpenTasksPerAssigneePolicy (limit open tasks)
            ├─ ActionExecutor (supports create_task, complete_task, add_shopping_item)
@@ -250,14 +251,16 @@ Handles all notifications to users.
 
 ### Database Schema (Stage 1)
 
-**Domain Tables (7):**
+**Domain Tables:**
 - `households` — Container for all data
 - `zones` — Locations within household
 - `users` — User profiles (linked to Keycloak sub)
 - `memberships` — User ↔ Household relationship
 - `tasks` — Work items
 - `shopping_lists` — Shopping list containers
-- `shopping_items` — Items in shopping lists
+- `shopping_items` — Items in shopping lists, with optional `category` and `source` metadata
+- `shopping_runs` — Shopping run snapshots for active/completed/cancelled trips
+- `shopping_run_items` — Shopping run item snapshots, including category/source copied from original list items
 
 **Command Pipeline Tables (2):**
 - `commands` — First-class command entities with JSONB payload
@@ -305,7 +308,7 @@ HomeTusk is a **consumer** of an external AI Platform for intelligent decision-m
 **Supported Action types:**
 - `create_task` - Create a new task
 - `complete_task` - Complete an existing task
-- `add_shopping_item` - Add item to shopping list
+- `add_shopping_item` - Add item to shopping list; HomeTusk preserves null category/source when upstream omits optional metadata
 
 **Configuration:**
 ```yaml

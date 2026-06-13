@@ -9,7 +9,7 @@ public class ShoppingExportService {
 
     /**
      * Export items as plain text.
-     * Format: "name" or "name - quantity unit"
+     * Format: "name" or "name - quantity unit", with category/source labels when present.
      */
     public String exportAsText(List<ShoppingItem> items) {
         if (items.isEmpty()) {
@@ -24,15 +24,17 @@ public class ShoppingExportService {
 
     /**
      * Export items as CSV (RFC 4180 compliant).
-     * Headers: name,quantity,unit,purchased
+     * Headers: name,quantity,unit,category,source,purchased
      */
     public String exportAsCsv(List<ShoppingItem> items) {
         StringBuilder sb = new StringBuilder();
-        sb.append("name,quantity,unit,purchased\n");
+        sb.append("name,quantity,unit,category,source,purchased\n");
         for (ShoppingItem item : items) {
             sb.append(escapeCsvField(item.getName())).append(",");
             sb.append(item.getQuantity() != null ? item.getQuantity() : 1).append(",");
             sb.append(escapeCsvField(item.getUnit())).append(",");
+            sb.append(escapeCsvField(item.getCategory())).append(",");
+            sb.append(escapeCsvField(item.getSource())).append(",");
             sb.append(item.isPurchased()).append("\n");
         }
         return sb.toString();
@@ -44,11 +46,12 @@ public class ShoppingExportService {
         String unit = item.getUnit();
 
         boolean hasUnit = unit != null && !unit.isBlank();
+        StringBuilder line = new StringBuilder(name);
         if ((qty == null || qty == 1) && !hasUnit) {
-            return name;
+            appendMetadata(line, item);
+            return line.toString();
         }
 
-        StringBuilder line = new StringBuilder(name);
         line.append(" - ");
         if (qty != null) {
             line.append(qty);
@@ -59,7 +62,28 @@ public class ShoppingExportService {
             }
             line.append(unit);
         }
+        appendMetadata(line, item);
         return line.toString();
+    }
+
+    private void appendMetadata(StringBuilder line, ShoppingItem item) {
+        boolean hasCategory = item.getCategory() != null && !item.getCategory().isBlank();
+        boolean hasSource = item.getSource() != null && !item.getSource().isBlank();
+        if (!hasCategory && !hasSource) {
+            return;
+        }
+
+        line.append(" [");
+        if (hasCategory) {
+            line.append("category: ").append(item.getCategory());
+        }
+        if (hasCategory && hasSource) {
+            line.append(", ");
+        }
+        if (hasSource) {
+            line.append("source: ").append(item.getSource());
+        }
+        line.append("]");
     }
 
     /**
