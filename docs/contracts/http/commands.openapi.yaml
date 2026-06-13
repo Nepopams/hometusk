@@ -17,6 +17,10 @@ info:
     `zoneId`. These fields are backward-compatible; existing clients may keep
     sending task attributes only inside `payload`.
 
+    **INIT-2026Q2-email-validation compatibility delta:** user profiles expose
+    durable email verification state and notification eligibility. The new
+    fields are additive and backward-compatible.
+
     See also:
     - [CLAUDE.md](../../../CLAUDE.md) — Development rules
     - [ADR-003](../../architecture/decisions/003-stage1-commands-api.md) — Stage 1 decisions
@@ -401,6 +405,9 @@ paths:
       description: |
         Returns the current user's profile.
         If the user does not exist, creates a new profile from JWT claims.
+        Email state is synchronized from normalized JWT email/email_verified
+        claims when present; missing email claims do not clear existing profile
+        email state.
       tags:
         - Users
       responses:
@@ -1741,6 +1748,26 @@ components:
         email:
           type: string
           format: email
+          nullable: true
+          description: Normalized email address when known.
+        emailVerified:
+          type: boolean
+          description: Whether HomeTusk may treat the stored email as verified.
+        emailSource:
+          type: string
+          enum:
+            - idp_claim
+            - manual
+            - unknown
+          description: Source of the current email value.
+        emailUpdatedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp when the email value last changed.
+        emailNotificationEligible:
+          type: boolean
+          description: True only when email is present and verified.
         displayName:
           type: string
         avatarUrl:

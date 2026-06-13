@@ -61,7 +61,7 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 - `commands` — Command pipeline (POST /api/v1/commands)
 - `tasks` — Task domain
 - `households` — Household, Zone, and Invite management
-- `users` — User profiles and Memberships
+- `users` — User profiles, email verification state, and Memberships
 - `shopping` — Shopping lists and items (Step 1 Web MVP)
 - `routines` — Routine definitions and scheduling
 - `activity` — TaskActivity events
@@ -74,7 +74,7 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 - `POST /api/v1/auth/refresh` — Refresh HttpOnly auth cookies
 - `POST /api/v1/auth/logout` — Clear cookies and best-effort Keycloak logout
 - `POST /api/v1/commands` — Execute or schedule command (create_task, complete_task) with optional command-level create-task attributes `dueDate`, `assigneeId`, `zoneId`, and one-off `scheduleAt`
-- `GET /api/v1/users/me` — Current user profile with household memberships
+- `GET /api/v1/users/me` — Current user profile with household memberships and email verification state
 - `POST /api/v1/households` — Create household
 - `POST /api/v1/households/{id}/invites` — Create invite token
 - `POST /api/v1/invites/accept` — Accept invite token
@@ -93,7 +93,7 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 |------------|-----------|-------|
 | AuthController | `POST /api/v1/auth/login`, `POST /api/v1/auth/register`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout`, `POST /api/v1/auth/session` | Keycloak-backed browser auth and legacy session cookie bridge |
 | CommandController | `POST /api/v1/commands` | Intent-driven command execution |
-| UserController | `GET /api/v1/users/me` | User profile with household memberships |
+| UserController | `GET /api/v1/users/me` | User profile with household memberships and email verification state |
 | HouseholdController | `POST /api/v1/households`, `GET/POST /*/zones`, `GET /*/members`, `POST /*/invites` | Household administration |
 | HouseholdInviteController | `POST /api/v1/invites/accept` | Invite acceptance |
 | TaskController | `GET /api/v1/households/{id}/tasks`, `GET /*/tasks/{taskId}` | Task reads (writes via commands) |
@@ -265,7 +265,7 @@ Handles all notifications to users.
 **Domain Tables:**
 - `households` — Container for all data
 - `zones` — Locations within household
-- `users` — User profiles (linked to Keycloak sub)
+- `users` — User profiles linked to Keycloak sub, including normalized email, verification state, source, and email update timestamp
 - `memberships` — User ↔ Household relationship
 - `tasks` — Work items
 - `shopping_lists` — Shopping list containers

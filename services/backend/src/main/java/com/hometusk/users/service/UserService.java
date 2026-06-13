@@ -42,6 +42,13 @@ public class UserService {
     }
 
     @Transactional
+    public User createFromIdentityClaims(String externalId, String email, Boolean emailVerified, String displayName) {
+        User user = new User(externalId, null, displayName);
+        user.syncEmailFromIdentityProvider(email, emailVerified);
+        return userRepository.save(user);
+    }
+
+    @Transactional
     public User update(User user) {
         return userRepository.save(user);
     }

@@ -4,11 +4,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.hometusk.households.domain.Household;
+import com.hometusk.users.domain.EmailSource;
 import com.hometusk.users.domain.Membership;
 import com.hometusk.users.domain.MembershipRole;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +33,10 @@ class UserControllerTest extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(testUser.getId().toString()))
                     .andExpect(jsonPath("$.email").value(testUser.getEmail()))
+                    .andExpect(jsonPath("$.emailVerified").value(true))
+                    .andExpect(jsonPath("$.emailSource").value("idp_claim"))
+                    .andExpect(jsonPath("$.emailUpdatedAt").exists())
+                    .andExpect(jsonPath("$.emailNotificationEligible").value(true))
                     .andExpect(jsonPath("$.displayName").value(testUser.getDisplayName()))
                     .andExpect(jsonPath("$.households").isArray())
                     .andExpect(jsonPath("$.households[0].id")
@@ -65,9 +72,88 @@ class UserControllerTest extends IntegrationTestBase {
         }
 
         @Test
+        @DisplayName("Should preserve verified email state when JWT email claim is missing")
+        void missingEmailClaimDoesNotClearExistingVerifiedEmail() throws Exception {
+            testUser.setEmailVerified(true);
+            testUser.setEmailSource(EmailSource.IDP_CLAIM);
+            testUser = userRepository.saveAndFlush(testUser);
+
+            mockMvc.perform(get("/api/v1/users/me")
+                            .with(jwtWithoutEmail(testUser.getExternalId(), testUser.getDisplayName())))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.email").value(testUser.getEmail()))
+                    .andExpect(jsonPath("$.emailVerified").value(true))
+                    .andExpect(jsonPath("$.emailSource").value("idp_claim"))
+                    .andExpect(jsonPath("$.emailNotificationEligible").value(true));
+        }
+
+        @Test
+        @DisplayName("Should mark unverified email claim as not eligible for email notifications")
+        void unverifiedEmailClaimIsNotNotificationEligible() throws Exception {
+            mockMvc.perform(get("/api/v1/users/me")
+                            .with(jwtWithEmail(testUser.getExternalId(), testUser.getEmail(), false)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.email").value(testUser.getEmail()))
+                    .andExpect(jsonPath("$.emailVerified").value(false))
+                    .andExpect(jsonPath("$.emailSource").value("idp_claim"))
+                    .andExpect(jsonPath("$.emailNotificationEligible").value(false));
+        }
+
+        @Test
+        @DisplayName("Should normalize email claim before storing profile email")
+        void emailClaimIsNormalized() throws Exception {
+            String mixedCaseEmail = "  Alice." + testUser.getId() + "@Example.COM  ";
+            String expectedEmail = ("alice." + testUser.getId() + "@example.com").toLowerCase();
+
+            mockMvc.perform(get("/api/v1/users/me").with(jwtWithEmail(testUser.getExternalId(), mixedCaseEmail, true)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.email").value(expectedEmail))
+                    .andExpect(jsonPath("$.emailVerified").value(true))
+                    .andExpect(jsonPath("$.emailSource").value("idp_claim"))
+                    .andExpect(jsonPath("$.emailNotificationEligible").value(true));
+        }
+
+        @Test
+        @DisplayName("Should treat changed email without verification claim as unverified")
+        void changedEmailWithoutVerificationClaimIsUnverified() throws Exception {
+            testUser.setEmailVerified(true);
+            testUser.setEmailSource(EmailSource.IDP_CLAIM);
+            testUser = userRepository.saveAndFlush(testUser);
+
+            String changedEmail = "changed-" + testUser.getId() + "@test.local";
+
+            mockMvc.perform(get("/api/v1/users/me")
+                            .with(jwtWithEmailWithoutVerification(
+                                    testUser.getExternalId(), changedEmail, testUser.getDisplayName())))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.email").value(changedEmail))
+                    .andExpect(jsonPath("$.emailVerified").value(false))
+                    .andExpect(jsonPath("$.emailSource").value("idp_claim"))
+                    .andExpect(jsonPath("$.emailNotificationEligible").value(false));
+        }
+
+        @Test
         @DisplayName("Should reject unauthenticated request")
         void unauthenticatedRequestRejected() throws Exception {
             mockMvc.perform(get("/api/v1/users/me")).andExpect(status().isUnauthorized());
+        }
+
+        private RequestPostProcessor jwtWithEmail(String externalId, String email, boolean emailVerified) {
+            return SecurityMockMvcRequestPostProcessors.jwt().jwt(jwt -> jwt.subject(externalId)
+                    .claim("email", email)
+                    .claim("email_verified", emailVerified)
+                    .claim("name", "Test User"));
+        }
+
+        private RequestPostProcessor jwtWithEmailWithoutVerification(
+                String externalId, String email, String displayName) {
+            return SecurityMockMvcRequestPostProcessors.jwt()
+                    .jwt(jwt -> jwt.subject(externalId).claim("email", email).claim("name", displayName));
+        }
+
+        private RequestPostProcessor jwtWithoutEmail(String externalId, String displayName) {
+            return SecurityMockMvcRequestPostProcessors.jwt()
+                    .jwt(jwt -> jwt.subject(externalId).claim("name", displayName));
         }
     }
 }

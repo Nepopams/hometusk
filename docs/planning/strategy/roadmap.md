@@ -3,7 +3,13 @@
 > Формат Now/Next/Later фиксирует направление и приоритеты без преждевременных дат.
 > У каждого пункта должен быть "якорь" — initiative/release документ.
 
-## NOW (текущий фокус: next initiative selection)
+## NOW (текущий фокус: email foundation)
+
+- Initiative (current): **INIT-2026Q2-email-validation** — Email Validation & Verified Profile State
+  - Anchor: docs/planning/initiatives/INIT-2026Q2-email-validation.md
+  - Outcome: `UserProfile` хранит нормализованный email и явное состояние `email_verified`/`email_source`, `/api/v1/users/me` показывает email eligibility, а notification logic не отправляет письма на missing/unverified email
+  - Why now: это минимальная foundation-инициатива, которая разблокирует social auth, email notification platform и assignment emails без неявной зависимости от JWT claims
+  - Readiness: PROPOSED; перед APPLY нужен ADR по source-of-truth для email и verified-state sync, contract review для `/api/v1/users/me`, тесты на verified/unverified/missing/changed email
 
 - Initiative (done): **INIT-2026Q3‑household‑dashboard** — Unified Household Home & Navigation
   - Anchor: docs/planning/initiatives/INIT-2026Q3‑household‑dashboard.md
@@ -93,7 +99,25 @@
   - Purge/TTL housekeeping для idempotency/decision logs (если нужно) + минимальные метрики/алерты
   - Цель: не расширять домен, а снизить риск "всё работает только на демо"
 
-## NEXT (следующие инициативы после household dashboard / параллельные кандидаты)
+## NEXT (будущие инициативы / ranked candidates)
+
+- Initiative (future #2): **INIT-2026Q2-email-notification-platform** — Email Notification Platform
+  - Anchor: docs/planning/initiatives/INIT-2026Q2-email-notification-platform.md
+  - Outcome: безопасная email platform с outbox, sender abstraction, retry/idempotency, delivery status и degraded behavior без падения доменных операций при сбое SMTP/provider
+  - Why next: зависит от email validation и должна идти до любых продуктовых email use-cases, чтобы не размазать `sendEmail()` по task/shopping/command flows
+  - Readiness: PROPOSED; data impact (outbox/migration), adr_needed (outbox over direct send), observability needed (pending/sent/failed/retry metrics)
+
+- Initiative (future #3): **INIT-2026Q2-task-assignment-email-notifications** — Task Assignment Email Notifications
+  - Anchor: docs/planning/initiatives/INIT-2026Q2-task-assignment-email-notifications.md
+  - Outcome: назначение задачи создаёт idempotent pending email notification для verified assignee через единое `TASK_ASSIGNED` событие, одинаково для manual, command pipeline, AI decision и guardrails fallback
+  - Why next: закрывает пользовательский контур `intent → task assignment → assignee узнаёт о назначении`, но готова только после email validation и email notification platform
+  - Readiness: BLOCKED by INIT-2026Q2-email-validation and INIT-2026Q2-email-notification-platform; traceability_critical для command/action path, нужны negative tests на self/missing/unverified email и duplicate assignment event
+
+- Initiative (future #4): **INIT-2026Q2-social-auth-yandex-vk** — Social Auth via Yandex/VK
+  - Anchor: docs/planning/initiatives/INIT-2026Q2-social-auth-yandex-vk.md
+  - Outcome: вход через Яндекс и подтверждённый technical path для VK через Keycloak identity brokering, без OAuth token exchange логики в HomeTusk backend
+  - Why future: снижает onboarding friction, но несёт security-sensitive auth/config работу, внешний provider spike по VK и риск account duplication; можно поднять выше, если acquisition/onboarding friction станет главным продуктовым ограничением
+  - Readiness: PROPOSED; depends on INIT-2026Q2-email-validation, security_sensitive, adr_needed, requires provider runbook/secrets handling and VK spike result
 
 - Initiative (candidate): **Agreements v0 (read-only)** (consent-first)
   - Anchor: TBD — requires initiative spec
@@ -117,6 +141,13 @@
   - Любая работа маппится на один из Pillars Product Goal: Fairness/Agreements/Analytics-first Web/Reliability.
   - Сначала "E2E пользовательский путь", потом улучшение точности/оптимизации.
   - Contract-first: внешнее поведение фиксируем в docs/contracts до реализации.
+  - Email/channel work сортируем по цепочке безопасности: verified profile state → delivery platform → конкретный notification use case.
+
+- Текущий рейтинг новых инициатив:
+  - #1 INIT-2026Q2-email-validation — foundation для доверенного email-state и eligibility.
+  - #2 INIT-2026Q2-email-notification-platform — безопасная delivery foundation перед use-case логикой.
+  - #3 INIT-2026Q2-task-assignment-email-notifications — прямой user value после готовой платформы.
+  - #4 INIT-2026Q2-social-auth-yandex-vk — activation lever, но с внешним provider/security spike.
 
 - Риски:
   - Scope creep в web (слишком много экранов/фич за раз) → режем до NOW-инкремента инициативы.

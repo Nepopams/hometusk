@@ -91,6 +91,18 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
+    @DisplayName("Login rejects invalid email format")
+    void login_withInvalidEmail_returns400() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new LoginRequest("not-an-email", "password123"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("SCHEMA_INVALID"))
+                .andExpect(jsonPath("$.validationErrors[0].path").value("$.email"))
+                .andExpect(jsonPath("$.validationErrors[0].message").value("Email must be valid"));
+    }
+
+    @Test
     @DisplayName("Register sets cookies after creating Keycloak user")
     void register_withValidPayload_setsSessionCookies() throws Exception {
         when(keycloakAuthService.register(anyString(), anyString(), anyString()))
@@ -121,6 +133,19 @@ class AuthControllerIntegrationTest {
                                 new RegisterRequest("Alice Test", "alice@test.local", "password123"))))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.errorCode").value("AUTH_EMAIL_EXISTS"));
+    }
+
+    @Test
+    @DisplayName("Register rejects invalid email format")
+    void register_withInvalidEmail_returns400() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new RegisterRequest("Alice Test", "not-an-email", "password123"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("SCHEMA_INVALID"))
+                .andExpect(jsonPath("$.validationErrors[0].path").value("$.email"))
+                .andExpect(jsonPath("$.validationErrors[0].message").value("Email must be valid"));
     }
 
     @Test

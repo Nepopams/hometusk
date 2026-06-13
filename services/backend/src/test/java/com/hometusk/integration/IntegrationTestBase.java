@@ -104,6 +104,7 @@ public abstract class IntegrationTestBase {
     protected RequestPostProcessor jwtForUser(User user) {
         return SecurityMockMvcRequestPostProcessors.jwt().jwt(jwt -> jwt.subject(user.getExternalId())
                 .claim("email", user.getEmail())
+                .claim("email_verified", true)
                 .claim("name", user.getDisplayName()));
     }
 
