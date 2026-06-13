@@ -1,5 +1,5 @@
 # Initiative: INIT-2026Q2-social-auth-yandex-vk
-Status: **PROPOSED**
+Status: **IN_PROGRESS** (selected as NOW focus on 2026-06-13 after INIT-2026Q2-task-assignment-email-notifications)
 Owner: Planning/Architecture
 
 ## Goal

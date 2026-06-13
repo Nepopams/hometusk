@@ -156,6 +156,16 @@ Request → JWT Auth → UserResolver → Idempotency-Key Dedupe → MembershipV
 - `hometusk.email.batch-size=25` - Maximum email outbox rows per delivery run
 - `hometusk.email.max-attempts=3` - Delivery retry limit per email
 - `hometusk.email.retry-delay-ms=60000` - Delay before retrying failed delivery attempts
+- `hometusk.email.task-assignment.enabled=true` - Enable task-assignment email enqueue
+- `hometusk.email.task-assignment.skip-self-notifications=true` - Skip emails when the actor assigns a task to self
+- `hometusk.email.task-assignment.app-base-url=http://localhost:5173` - Base URL used for task links in email templates
+- `hometusk.email.task-assignment.task-path-template=/households/{householdId}/tasks/{taskId}` - Task link path template
+
+**Task Assignment Email Rule:**
+- `TaskAssignedEvent` is emitted after the final task assignee is known.
+- Email is enqueued only for household members with verified email.
+- Missing/unverified email, non-member assignee, and self-assignment are skipped.
+- Enqueue failures are logged after task assignment commit and do not fail command execution.
 
 **Traceability:**
 - `X-Correlation-ID` header propagates through all layers
