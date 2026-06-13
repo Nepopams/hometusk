@@ -89,7 +89,8 @@ public class ShoppingRunController {
         int safeLimit = Math.min(Math.max(limit, 1), 100);
 
         List<ShoppingRun> runs = runService.listRuns(householdId, statusEnum, safeLimit);
-        List<ShoppingRunSummaryDto> dtos = runs.stream().map(ShoppingRunSummaryDto::from).toList();
+        List<ShoppingRunSummaryDto> dtos =
+                runs.stream().map(ShoppingRunSummaryDto::from).toList();
         return ResponseEntity.ok(dtos);
     }
 
@@ -160,8 +161,8 @@ public class ShoppingRunController {
         CurrentUser user = userResolver.resolveCurrentUser();
         membershipService.requireMembership(user.id(), householdId);
 
-        ShoppingRunItem item = runService.updateItem(
-                householdId, runId, itemId, request.purchased(), request.shouldSyncToList());
+        ShoppingRunItem item =
+                runService.updateItem(householdId, runId, itemId, request.purchased(), request.shouldSyncToList());
         return ResponseEntity.ok(ShoppingRunItemDto.from(item));
     }
 

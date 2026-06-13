@@ -51,7 +51,13 @@ public class ShoppingRunItem {
     protected ShoppingRunItem() {}
 
     private ShoppingRunItem(
-            ShoppingRun run, UUID originalItemId, String name, Integer quantity, String unit, String category, String source) {
+            ShoppingRun run,
+            UUID originalItemId,
+            String name,
+            Integer quantity,
+            String unit,
+            String category,
+            String source) {
         this.run = run;
         this.originalItemId = originalItemId;
         this.name = name;

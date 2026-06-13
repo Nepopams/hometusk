@@ -21,7 +21,8 @@ public record ShoppingRunDto(
         @Schema(description = "Item counts") ItemCountsDto itemCounts) {
 
     public static ShoppingRunDto from(ShoppingRun run) {
-        List<ShoppingRunItemDto> items = run.getItems().stream().map(ShoppingRunItemDto::from).toList();
+        List<ShoppingRunItemDto> items =
+                run.getItems().stream().map(ShoppingRunItemDto::from).toList();
         return new ShoppingRunDto(
                 run.getId(),
                 run.getHouseholdId(),

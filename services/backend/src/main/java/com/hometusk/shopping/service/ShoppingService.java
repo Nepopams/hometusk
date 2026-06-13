@@ -179,8 +179,7 @@ public class ShoppingService {
             throw new ValidationException("$.body", "EMPTY_UPDATE", "At least one mutable field is required");
         }
 
-        String normalizedCategory =
-                request.hasCategory() ? validateCategory(request.category(), "$.category") : null;
+        String normalizedCategory = request.hasCategory() ? validateCategory(request.category(), "$.category") : null;
         String normalizedSource = request.hasSource() ? validateSource(request.source(), "$.source") : null;
 
         ShoppingItem item = getItemByIdAndHousehold(itemId, householdId);

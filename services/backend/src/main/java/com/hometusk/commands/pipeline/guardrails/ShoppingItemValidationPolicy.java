@@ -64,8 +64,7 @@ public class ShoppingItemValidationPolicy implements GuardrailPolicy {
             if (categoryObj != null && !ShoppingItemCategory.isAllowed(categoryObj.toString())) {
                 log.warn("ShoppingItemValidationPolicy: invalid category, correlationId={}", context.correlationId());
                 return GuardrailOutcome.reject(
-                        "Категория покупки не поддерживается.",
-                        "SHOPPING_ITEM_CATEGORY_INVALID");
+                        "Категория покупки не поддерживается.", "SHOPPING_ITEM_CATEGORY_INVALID");
             }
 
             Object sourceObj = action.parameters().get("source");

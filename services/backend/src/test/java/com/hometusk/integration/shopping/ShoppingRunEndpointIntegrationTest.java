@@ -92,8 +92,10 @@ class ShoppingRunEndpointIntegrationTest extends IntegrationTestBase {
 
     @Test
     void listRuns_filterByStatus() throws Exception {
-        ShoppingRun activeRun = shoppingRunService.createRun(testHousehold.getId(), shoppingList.getId(), testUser.getId());
-        ShoppingRun completedRun = shoppingRunService.createRun(testHousehold.getId(), shoppingList.getId(), testUser.getId());
+        ShoppingRun activeRun =
+                shoppingRunService.createRun(testHousehold.getId(), shoppingList.getId(), testUser.getId());
+        ShoppingRun completedRun =
+                shoppingRunService.createRun(testHousehold.getId(), shoppingList.getId(), testUser.getId());
         completedRun.close(ShoppingRunStatus.COMPLETED);
         shoppingRunRepository.save(completedRun);
 
@@ -115,9 +117,9 @@ class ShoppingRunEndpointIntegrationTest extends IntegrationTestBase {
         ShoppingRun run = shoppingRunService.createRun(testHousehold.getId(), shoppingList.getId(), testUser.getId());
 
         mockMvc.perform(get(
-                        "/api/v1/households/{householdId}/shopping-runs/{runId}",
-                        testHousehold.getId(),
-                        run.getId())
+                                "/api/v1/households/{householdId}/shopping-runs/{runId}",
+                                testHousehold.getId(),
+                                run.getId())
                         .with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items.length()").value(1))
@@ -130,9 +132,9 @@ class ShoppingRunEndpointIntegrationTest extends IntegrationTestBase {
         var request = new com.hometusk.shopping.dto.CloseShoppingRunRequest(ShoppingRunStatus.COMPLETED);
 
         mockMvc.perform(post(
-                        "/api/v1/households/{householdId}/shopping-runs/{runId}/close",
-                        testHousehold.getId(),
-                        run.getId())
+                                "/api/v1/households/{householdId}/shopping-runs/{runId}/close",
+                                testHousehold.getId(),
+                                run.getId())
                         .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -149,9 +151,9 @@ class ShoppingRunEndpointIntegrationTest extends IntegrationTestBase {
 
         var request = new com.hometusk.shopping.dto.CloseShoppingRunRequest(ShoppingRunStatus.CANCELLED);
         mockMvc.perform(post(
-                        "/api/v1/households/{householdId}/shopping-runs/{runId}/close",
-                        testHousehold.getId(),
-                        run.getId())
+                                "/api/v1/households/{householdId}/shopping-runs/{runId}/close",
+                                testHousehold.getId(),
+                                run.getId())
                         .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -167,9 +169,9 @@ class ShoppingRunEndpointIntegrationTest extends IntegrationTestBase {
 
         var request = new com.hometusk.shopping.dto.CloseShoppingRunRequest(ShoppingRunStatus.CANCELLED);
         mockMvc.perform(post(
-                        "/api/v1/households/{householdId}/shopping-runs/{runId}/close",
-                        testHousehold.getId(),
-                        run.getId())
+                                "/api/v1/households/{householdId}/shopping-runs/{runId}/close",
+                                testHousehold.getId(),
+                                run.getId())
                         .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -185,10 +187,10 @@ class ShoppingRunEndpointIntegrationTest extends IntegrationTestBase {
         var request = new com.hometusk.shopping.dto.UpdateRunItemRequest(true, true);
 
         mockMvc.perform(patch(
-                        "/api/v1/households/{householdId}/shopping-runs/{runId}/items/{itemId}",
-                        testHousehold.getId(),
-                        run.getId(),
-                        runItemId)
+                                "/api/v1/households/{householdId}/shopping-runs/{runId}/items/{itemId}",
+                                testHousehold.getId(),
+                                run.getId(),
+                                runItemId)
                         .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -209,10 +211,10 @@ class ShoppingRunEndpointIntegrationTest extends IntegrationTestBase {
         var request = new com.hometusk.shopping.dto.UpdateRunItemRequest(true, true);
 
         mockMvc.perform(patch(
-                        "/api/v1/households/{householdId}/shopping-runs/{runId}/items/{itemId}",
-                        testHousehold.getId(),
-                        run.getId(),
-                        runItemId)
+                                "/api/v1/households/{householdId}/shopping-runs/{runId}/items/{itemId}",
+                                testHousehold.getId(),
+                                run.getId(),
+                                runItemId)
                         .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -222,7 +224,9 @@ class ShoppingRunEndpointIntegrationTest extends IntegrationTestBase {
     @Test
     void householdBoundary_returns403() throws Exception {
         var request = new com.hometusk.shopping.dto.CreateShoppingRunRequest(shoppingList.getId());
-        UUID otherHouseholdId = householdRepository.save(new com.hometusk.households.domain.Household("Other")).getId();
+        UUID otherHouseholdId = householdRepository
+                .save(new com.hometusk.households.domain.Household("Other"))
+                .getId();
 
         mockMvc.perform(post("/api/v1/households/{householdId}/shopping-runs", otherHouseholdId)
                         .with(jwt())
