@@ -50,9 +50,24 @@ class ShoppingRunTest {
         assertThat(runItem.getName()).isEqualTo("Milk");
         assertThat(runItem.getQuantity()).isEqualTo(2);
         assertThat(runItem.getUnit()).isEqualTo("liters");
+        assertThat(runItem.getCategory()).isNull();
+        assertThat(runItem.getSource()).isNull();
         assertThat(runItem.getOriginalItemId()).isEqualTo(item.getId());
         assertThat(runItem.isPurchased()).isFalse();
         assertThat(runItem.getPurchasedAt()).isNull();
+    }
+
+    @Test
+    void snapshotItem_copiesCategoryAndSourceFromShoppingItem() throws Exception {
+        ShoppingRun run = new ShoppingRun(household, shoppingList, user);
+        ShoppingItem item = newItem("Milk", 2, "liters");
+        item.setCategory("groceries");
+        item.setSource("Perekrestok");
+
+        ShoppingRunItem runItem = ShoppingRunItem.fromShoppingItem(run, item);
+
+        assertThat(runItem.getCategory()).isEqualTo("groceries");
+        assertThat(runItem.getSource()).isEqualTo("Perekrestok");
     }
 
     @Test

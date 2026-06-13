@@ -36,6 +36,12 @@ public class ShoppingItem {
     @Column(name = "unit", length = 50)
     private String unit;
 
+    @Column(name = "category", length = 50)
+    private String category;
+
+    @Column(name = "source", length = 120)
+    private String source;
+
     @Column(name = "is_purchased", nullable = false)
     private boolean purchased;
 
@@ -105,6 +111,30 @@ public class ShoppingItem {
 
     public void setUnit(String unit) {
         this.unit = unit;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        String normalized = ShoppingItemCategory.normalize(category);
+        if (normalized != null && !ShoppingItemCategory.isAllowed(normalized)) {
+            throw new IllegalArgumentException("Unsupported shopping item category: " + category);
+        }
+        this.category = normalized;
+    }
+
+    public String getSource() {
+        return source;
+    }
+
+    public void setSource(String source) {
+        String normalized = normalizeSource(source);
+        if (normalized != null && normalized.length() > 120) {
+            throw new IllegalArgumentException("Shopping item source must be at most 120 characters");
+        }
+        this.source = normalized;
     }
 
     public boolean isPurchased() {
@@ -205,5 +235,13 @@ public class ShoppingItem {
             return "";
         }
         return name.trim().toLowerCase(Locale.ROOT);
+    }
+
+    public static String normalizeSource(String source) {
+        if (source == null) {
+            return null;
+        }
+        String trimmed = source.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

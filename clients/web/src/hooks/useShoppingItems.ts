@@ -5,7 +5,12 @@ import {
   updateShoppingItem,
   deleteShoppingItem,
 } from '../lib/api';
-import type { AddShoppingItemRequest, ShoppingItem, ShoppingItemFilters } from '../types/api';
+import type {
+  AddShoppingItemRequest,
+  ShoppingItem,
+  ShoppingItemFilters,
+  UpdateShoppingItemRequest,
+} from '../types/api';
 
 interface UseShoppingItemsOptions {
   householdId: string | null | undefined;
@@ -20,6 +25,7 @@ interface UseShoppingItemsReturn {
   refetch: () => void;
   addItem: (data: AddShoppingItemRequest) => Promise<ShoppingItem | null>;
   togglePurchased: (itemId: string) => Promise<boolean>;
+  updateMetadata: (itemId: string, data: UpdateShoppingItemRequest) => Promise<boolean>;
   removeItem: (itemId: string) => Promise<boolean>;
   isSaving: boolean;
   savingItemIds: Set<string>;
@@ -38,6 +44,9 @@ export function useShoppingItems({
 
   // Track ongoing operations to prevent double-clicks
   const operationsInProgress = useRef<Set<string>>(new Set());
+  const filterPurchased = filters.purchased;
+  const filterCategory = filters.category;
+  const filterSource = filters.source;
 
   const fetchItems = useCallback(async () => {
     if (!householdId || !listId) {
@@ -50,16 +59,18 @@ export function useShoppingItems({
     setIsLoading(true);
     setError(null);
     try {
-      const data = await getShoppingItems(householdId, listId, filters);
+      const data = await getShoppingItems(householdId, listId, {
+        purchased: filterPurchased,
+        category: filterCategory,
+        source: filterSource,
+      });
       setItems(data);
     } catch (e) {
       setError(e instanceof Error ? e : new Error('Failed to load shopping items'));
     } finally {
       setIsLoading(false);
     }
-    // Intentionally using filters.purchased to avoid unnecessary re-fetches
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [householdId, listId, filters.purchased]);
+  }, [householdId, listId, filterPurchased, filterCategory, filterSource]);
 
   useEffect(() => {
     fetchItems();
@@ -89,6 +100,8 @@ export function useShoppingItems({
         name: data.name,
         quantity: data.quantity,
         unit: data.unit,
+        category: data.category,
+        source: data.source,
         purchased: false,
         createdAt: new Date().toISOString(),
       };
@@ -116,7 +129,7 @@ export function useShoppingItems({
     async (itemId: string): Promise<boolean> => {
       if (!householdId) return false;
 
-      const operationKey = `toggle-${itemId}`;
+      const operationKey = `item-${itemId}`;
       if (operationsInProgress.current.has(operationKey)) {
         return false; // Prevent double-click
       }
@@ -143,7 +156,7 @@ export function useShoppingItems({
       );
 
       try {
-        await updateShoppingItem(householdId, itemId, newPurchased);
+        await updateShoppingItem(householdId, itemId, { purchased: newPurchased });
         return true;
       } catch (e) {
         // Rollback
@@ -167,11 +180,61 @@ export function useShoppingItems({
     [householdId, items]
   );
 
+  const updateMetadata = useCallback(
+    async (itemId: string, data: UpdateShoppingItemRequest): Promise<boolean> => {
+      if (!householdId) return false;
+
+      const operationKey = `item-${itemId}`;
+      if (operationsInProgress.current.has(operationKey)) {
+        return false;
+      }
+
+      const item = items.find((i) => i.id === itemId);
+      if (!item) return false;
+
+      operationsInProgress.current.add(operationKey);
+      setSavingItemIds((prev) => new Set(prev).add(itemId));
+
+      setItems((prev) =>
+        prev.map((i) =>
+          i.id === itemId
+            ? {
+                ...i,
+                category: Object.prototype.hasOwnProperty.call(data, 'category')
+                  ? data.category
+                  : i.category,
+                source: Object.prototype.hasOwnProperty.call(data, 'source')
+                  ? data.source
+                  : i.source,
+              }
+            : i
+        )
+      );
+
+      try {
+        const updated = await updateShoppingItem(householdId, itemId, data);
+        setItems((prev) => prev.map((i) => (i.id === itemId ? updated : i)));
+        return true;
+      } catch (e) {
+        setItems((prev) => prev.map((i) => (i.id === itemId ? item : i)));
+        throw e;
+      } finally {
+        operationsInProgress.current.delete(operationKey);
+        setSavingItemIds((prev) => {
+          const next = new Set(prev);
+          next.delete(itemId);
+          return next;
+        });
+      }
+    },
+    [householdId, items]
+  );
+
   const removeItem = useCallback(
     async (itemId: string): Promise<boolean> => {
       if (!householdId) return false;
 
-      const operationKey = `delete-${itemId}`;
+      const operationKey = `item-${itemId}`;
       if (operationsInProgress.current.has(operationKey)) {
         return false; // Prevent double-click
       }
@@ -216,6 +279,7 @@ export function useShoppingItems({
     refetch,
     addItem,
     togglePurchased,
+    updateMetadata,
     removeItem,
     isSaving,
     savingItemIds,

@@ -15,7 +15,11 @@ public record AddShoppingItemRequest(
                 Integer quantity,
         @Schema(description = "Unit of measurement", example = "liters")
                 @Size(max = 50, message = "Unit must be at most 50 characters")
-                String unit) {
+                String unit,
+        @Schema(description = "Optional shopping category", example = "groceries") String category,
+        @Schema(description = "Optional source/store name", example = "Perekrestok")
+                @Size(max = 120, message = "Source must be at most 120 characters")
+                String source) {
 
     /**
      * Returns the quantity, defaulting to 1 if not specified.

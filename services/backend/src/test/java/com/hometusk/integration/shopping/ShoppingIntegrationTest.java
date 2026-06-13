@@ -158,6 +158,8 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
             assertThat(items.get(0).getName()).isEqualTo("Молоко");
             assertThat(items.get(0).getQuantity()).isEqualTo(2);
             assertThat(items.get(0).getUnit()).isEqualTo("л");
+            assertThat(items.get(0).getCategory()).isNull();
+            assertThat(items.get(0).getSource()).isNull();
             assertThat(items.get(0).getLinkedTask()).isNull();
         }
     }
@@ -191,7 +193,8 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
                     .andExpect(status().isOk());
 
             // Verify first item created
-            var itemsAfterFirst = shoppingItemRepository.findAll();
+            var itemsAfterFirst =
+                    shoppingItemRepository.findByShoppingList_IdOrderByCreatedAtDesc(testShoppingList.getId());
             assertThat(itemsAfterFirst).hasSize(1);
 
             // Reset WireMock and stub again for second call
@@ -209,7 +212,8 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
 
             // Then: Items should have different idempotency keys (different command IDs)
             // so we get 2 items (each command creates its own item)
-            var itemsAfterSecond = shoppingItemRepository.findAll();
+            var itemsAfterSecond =
+                    shoppingItemRepository.findByShoppingList_IdOrderByCreatedAtDesc(testShoppingList.getId());
             assertThat(itemsAfterSecond).hasSize(2);
         }
     }
@@ -247,7 +251,7 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
                     .andExpect(jsonPath("$.errorCode").value("SHOPPING_ITEM_NAME_EMPTY"));
 
             // Then: No items created
-            var items = shoppingItemRepository.findAll();
+            var items = shoppingItemRepository.findByShoppingList_IdOrderByCreatedAtDesc(testShoppingList.getId());
             assertThat(items).isEmpty();
         }
     }
@@ -286,7 +290,7 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
                     .andExpect(jsonPath("$.errorCode").value("ACCESS_DENIED"));
 
             // Then: No items created
-            var items = shoppingItemRepository.findAll();
+            var items = shoppingItemRepository.findByShoppingList_IdOrderByCreatedAtDesc(testShoppingList.getId());
             assertThat(items).isEmpty();
         }
     }

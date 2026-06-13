@@ -29,6 +29,7 @@ import type {
   CreateRoutineRequest,
   RegisterRequest,
   UpdateRoutineRequest,
+  UpdateShoppingItemRequest,
   Zone,
 } from '../types/api';
 
@@ -205,6 +206,12 @@ export async function getShoppingItems(
   if (filters.purchased !== undefined) {
     params.set('purchased', String(filters.purchased));
   }
+  if (filters.category) {
+    params.set('category', filters.category);
+  }
+  if (filters.source?.trim()) {
+    params.set('source', filters.source.trim());
+  }
   const query = params.toString();
   return apiFetch<ShoppingItem[]>(
     `/households/${householdId}/shopping-lists/${listId}/items${query ? `?${query}` : ''}`
@@ -225,11 +232,11 @@ export async function addShoppingItem(
 export async function updateShoppingItem(
   householdId: string,
   itemId: string,
-  purchased: boolean
+  data: UpdateShoppingItemRequest
 ): Promise<ShoppingItem> {
   return apiFetch<ShoppingItem>(`/households/${householdId}/shopping-items/${itemId}`, {
     method: 'PATCH',
-    body: { purchased },
+    body: data,
   });
 }
 

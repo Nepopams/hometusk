@@ -12,6 +12,8 @@ public record ShoppingRunItemDto(
         @Schema(description = "Item name") String name,
         @Schema(description = "Quantity") Integer quantity,
         @Schema(description = "Unit") String unit,
+        @Schema(description = "Optional shopping category snapshot") String category,
+        @Schema(description = "Optional source/store snapshot") String source,
         @Schema(description = "Purchased in this run") boolean purchased,
         @Schema(description = "When purchased") Instant purchasedAt) {
 
@@ -22,6 +24,8 @@ public record ShoppingRunItemDto(
                 item.getName(),
                 item.getQuantity(),
                 item.getUnit(),
+                item.getCategory(),
+                item.getSource(),
                 item.isPurchased(),
                 item.getPurchasedAt());
     }

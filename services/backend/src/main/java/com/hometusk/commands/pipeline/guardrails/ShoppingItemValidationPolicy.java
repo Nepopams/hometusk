@@ -1,5 +1,6 @@
 package com.hometusk.commands.pipeline.guardrails;
 
+import com.hometusk.shopping.domain.ShoppingItemCategory;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Component;
  * <ul>
  *   <li>Item name is non-empty</li>
  *   <li>Item name is not too long (max 255 chars)</li>
+ *   <li>Category, when present, is from the supported taxonomy</li>
  * </ul>
  *
  * <p>Behavior:
@@ -27,6 +29,7 @@ public class ShoppingItemValidationPolicy implements GuardrailPolicy {
     private static final Logger log = LoggerFactory.getLogger(ShoppingItemValidationPolicy.class);
     private static final String NAME = "ShoppingItemValidation";
     private static final int MAX_ITEM_NAME_LENGTH = 255;
+    private static final int MAX_SOURCE_LENGTH = 120;
 
     @Override
     public GuardrailOutcome evaluate(GuardrailContext context) {
@@ -55,6 +58,28 @@ public class ShoppingItemValidationPolicy implements GuardrailPolicy {
                                 "Название товара слишком длинное (максимум %d символов). Пожалуйста, сократите.",
                                 MAX_ITEM_NAME_LENGTH),
                         List.of("name"));
+            }
+
+            Object categoryObj = action.parameters().get("category");
+            if (categoryObj != null && !ShoppingItemCategory.isAllowed(categoryObj.toString())) {
+                log.warn("ShoppingItemValidationPolicy: invalid category, correlationId={}", context.correlationId());
+                return GuardrailOutcome.reject(
+                        "Категория покупки не поддерживается.",
+                        "SHOPPING_ITEM_CATEGORY_INVALID");
+            }
+
+            Object sourceObj = action.parameters().get("source");
+            String source = sourceObj != null ? sourceObj.toString() : null;
+            if (source != null && source.trim().length() > MAX_SOURCE_LENGTH) {
+                log.warn(
+                        "ShoppingItemValidationPolicy: source too long ({}), correlationId={}",
+                        source.trim().length(),
+                        context.correlationId());
+                return GuardrailOutcome.clarify(
+                        String.format(
+                                "Источник покупки слишком длинный (максимум %d символов). Пожалуйста, сократите.",
+                                MAX_SOURCE_LENGTH),
+                        List.of("source"));
             }
 
             log.debug(

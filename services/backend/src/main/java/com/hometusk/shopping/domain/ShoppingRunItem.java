@@ -36,6 +36,12 @@ public class ShoppingRunItem {
     @Column(name = "unit", length = 50)
     private String unit;
 
+    @Column(name = "category", length = 50)
+    private String category;
+
+    @Column(name = "source", length = 120)
+    private String source;
+
     @Column(name = "purchased", nullable = false)
     private boolean purchased;
 
@@ -44,18 +50,28 @@ public class ShoppingRunItem {
 
     protected ShoppingRunItem() {}
 
-    private ShoppingRunItem(ShoppingRun run, UUID originalItemId, String name, Integer quantity, String unit) {
+    private ShoppingRunItem(
+            ShoppingRun run, UUID originalItemId, String name, Integer quantity, String unit, String category, String source) {
         this.run = run;
         this.originalItemId = originalItemId;
         this.name = name;
         this.quantity = quantity != null ? quantity : 1;
         this.unit = unit;
+        this.category = category;
+        this.source = source;
         this.purchased = false;
         this.purchasedAt = null;
     }
 
     public static ShoppingRunItem fromShoppingItem(ShoppingRun run, ShoppingItem item) {
-        return new ShoppingRunItem(run, item.getId(), item.getName(), item.getQuantity(), item.getUnit());
+        return new ShoppingRunItem(
+                run,
+                item.getId(),
+                item.getName(),
+                item.getQuantity(),
+                item.getUnit(),
+                item.getCategory(),
+                item.getSource());
     }
 
     public void markPurchased() {
@@ -96,6 +112,14 @@ public class ShoppingRunItem {
 
     public String getUnit() {
         return unit;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public String getSource() {
+        return source;
     }
 
     public boolean isPurchased() {

@@ -1,6 +1,7 @@
 package com.hometusk.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -112,6 +113,43 @@ class ShoppingControllerTest extends IntegrationTestBase {
         }
 
         @Test
+        @DisplayName("Should filter items by category and source")
+        void listItemsFiltersByCategoryAndSource() throws Exception {
+            item1.setCategory("groceries");
+            item1.setSource("Perekrestok");
+            shoppingItemRepository.saveAndFlush(item1);
+
+            item2Purchased.setCategory("cleaning");
+            item2Purchased.setSource("Ozon");
+            shoppingItemRepository.saveAndFlush(item2Purchased);
+
+            mockMvc.perform(get(
+                                    "/api/v1/households/{id}/shopping-lists/{listId}/items",
+                                    testHousehold.getId(),
+                                    shoppingList.getId())
+                            .with(jwt())
+                            .param("category", "groceries")
+                            .param("source", " Perekrestok "))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(1))
+                    .andExpect(jsonPath("$[0].name").value("Milk"))
+                    .andExpect(jsonPath("$[0].category").value("groceries"))
+                    .andExpect(jsonPath("$[0].source").value("Perekrestok"));
+        }
+
+        @Test
+        @DisplayName("Should reject invalid category filter")
+        void listItemsRejectsInvalidCategory() throws Exception {
+            mockMvc.perform(get(
+                                    "/api/v1/households/{id}/shopping-lists/{listId}/items",
+                                    testHousehold.getId(),
+                                    shoppingList.getId())
+                            .with(jwt())
+                            .param("category", "unknown_bucket"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
         @DisplayName("Should return 404 for non-existent list")
         void listItemsReturnsNotFoundForMissingList() throws Exception {
             mockMvc.perform(get(
@@ -150,6 +188,8 @@ class ShoppingControllerTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$.name").value("Eggs"))
                     .andExpect(jsonPath("$.quantity").value(12))
                     .andExpect(jsonPath("$.unit").value("pcs"))
+                    .andExpect(jsonPath("$.category").value(nullValue()))
+                    .andExpect(jsonPath("$.source").value(nullValue()))
                     .andExpect(jsonPath("$.purchased").value(false));
 
             // Verify item was created
@@ -161,6 +201,57 @@ class ShoppingControllerTest extends IntegrationTestBase {
             var activities =
                     taskActivityRepository.findByCorrelationIdOrderByCreatedAtDesc(UUID.fromString(correlationId));
             assertThat(activities).anyMatch(a -> a.getActivityType() == ActivityType.SHOPPING_ITEM_ADDED);
+        }
+
+        @Test
+        @DisplayName("Should add item with category and source")
+        void addItemCreatesNewItemWithCategoryAndSource() throws Exception {
+            var request = Map.of(
+                    "name", "Soap",
+                    "quantity", 2,
+                    "unit", "pcs",
+                    "category", "cleaning",
+                    "source", " Ozon ");
+
+            mockMvc.perform(post(
+                                    "/api/v1/households/{id}/shopping-lists/{listId}/items",
+                                    testHousehold.getId(),
+                                    shoppingList.getId())
+                            .with(jwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.name").value("Soap"))
+                    .andExpect(jsonPath("$.category").value("cleaning"))
+                    .andExpect(jsonPath("$.source").value("Ozon"));
+
+            var saved = shoppingItemRepository.findByShoppingList_IdOrderByCreatedAtDesc(shoppingList.getId()).stream()
+                    .filter(i -> i.getName().equals("Soap"))
+                    .findFirst()
+                    .orElseThrow();
+            assertThat(saved.getCategory()).isEqualTo("cleaning");
+            assertThat(saved.getSource()).isEqualTo("Ozon");
+        }
+
+        @Test
+        @DisplayName("Should reject invalid category without creating item")
+        void addItemRejectsInvalidCategory() throws Exception {
+            var request = Map.of(
+                    "name", "Mystery",
+                    "category", "unknown_bucket");
+
+            mockMvc.perform(post(
+                                    "/api/v1/households/{id}/shopping-lists/{listId}/items",
+                                    testHousehold.getId(),
+                                    shoppingList.getId())
+                            .with(jwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest());
+
+            assertThat(shoppingItemRepository.findByShoppingList_IdOrderByCreatedAtDesc(shoppingList.getId()))
+                    .extracting(ShoppingItem::getName)
+                    .doesNotContain("Mystery");
         }
 
         @Test
@@ -264,6 +355,95 @@ class ShoppingControllerTest extends IntegrationTestBase {
             var activities =
                     taskActivityRepository.findByCorrelationIdOrderByCreatedAtDesc(UUID.fromString(correlationId));
             assertThat(activities).anyMatch(a -> a.getActivityType() == ActivityType.SHOPPING_ITEM_PURCHASED);
+        }
+
+        @Test
+        @DisplayName("Should update category and source without changing purchase state")
+        void updateCategoryAndSourcePreservesPurchaseState() throws Exception {
+            var request = Map.of(
+                    "category", "groceries",
+                    "source", " Perekrestok ");
+
+            mockMvc.perform(patch(
+                                    "/api/v1/households/{id}/shopping-items/{itemId}",
+                                    testHousehold.getId(),
+                                    item1.getId())
+                            .with(jwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.purchased").value(false))
+                    .andExpect(jsonPath("$.category").value("groceries"))
+                    .andExpect(jsonPath("$.source").value("Perekrestok"));
+
+            var updated = shoppingItemRepository.findById(item1.getId()).orElseThrow();
+            assertThat(updated.isPurchased()).isFalse();
+            assertThat(updated.getCategory()).isEqualTo("groceries");
+            assertThat(updated.getSource()).isEqualTo("Perekrestok");
+        }
+
+        @Test
+        @DisplayName("Should clear category and source with explicit null or blank")
+        void updateClearsCategoryAndSource() throws Exception {
+            item1.setCategory("groceries");
+            item1.setSource("Perekrestok");
+            shoppingItemRepository.saveAndFlush(item1);
+
+            String request = """
+                    {
+                      "category": null,
+                      "source": "   "
+                    }
+                    """;
+
+            mockMvc.perform(patch(
+                                    "/api/v1/households/{id}/shopping-items/{itemId}",
+                                    testHousehold.getId(),
+                                    item1.getId())
+                            .with(jwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                    .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.category").value(nullValue()))
+                    .andExpect(jsonPath("$.source").value(nullValue()));
+
+            var updated = shoppingItemRepository.findById(item1.getId()).orElseThrow();
+            assertThat(updated.getCategory()).isNull();
+            assertThat(updated.getSource()).isNull();
+        }
+
+        @Test
+        @DisplayName("Should reject empty patch")
+        void updateItemRejectsEmptyPatch() throws Exception {
+            mockMvc.perform(patch(
+                                    "/api/v1/households/{id}/shopping-items/{itemId}",
+                                    testHousehold.getId(),
+                                    item1.getId())
+                            .with(jwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Should reject invalid category without changing purchase state")
+        void updateItemRejectsInvalidCategoryWithoutMutation() throws Exception {
+            var request = Map.of(
+                    "purchased", true,
+                    "category", "unknown_bucket");
+
+            mockMvc.perform(patch(
+                                    "/api/v1/households/{id}/shopping-items/{itemId}",
+                                    testHousehold.getId(),
+                                    item1.getId())
+                            .with(jwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest());
+
+            var updated = shoppingItemRepository.findById(item1.getId()).orElseThrow();
+            assertThat(updated.isPurchased()).isFalse();
+            assertThat(updated.getCategory()).isNull();
         }
 
         @Test

@@ -57,9 +57,31 @@ class ShoppingExportServiceTest {
 
         String result = exportService.exportAsCsv(List.of(item1, item2));
 
-        assertThat(result).startsWith("name,quantity,unit,purchased\n");
-        assertThat(result).contains("Milk,2,liters,false");
-        assertThat(result).contains("Bread,1,,false");
+        assertThat(result).startsWith("name,quantity,unit,category,source,purchased\n");
+        assertThat(result).contains("Milk,2,liters,,,false");
+        assertThat(result).contains("Bread,1,,,,false");
+    }
+
+    @Test
+    void exportAsText_withCategoryAndSource_includesReadableLabels() {
+        ShoppingItem item = createItem("Milk", 1, null);
+        item.setCategory("groceries");
+        item.setSource("Perekrestok");
+
+        String result = exportService.exportAsText(List.of(item));
+
+        assertThat(result).isEqualTo("Milk [category: groceries, source: Perekrestok]");
+    }
+
+    @Test
+    void exportAsCsv_withCategoryAndSource_returnsMetadataColumns() {
+        ShoppingItem item = createItem("Milk", 2, "liters");
+        item.setCategory("groceries");
+        item.setSource("Perekrestok");
+
+        String result = exportService.exportAsCsv(List.of(item));
+
+        assertThat(result).contains("Milk,2,liters,groceries,Perekrestok,false");
     }
 
     @Test
@@ -83,7 +105,7 @@ class ShoppingExportServiceTest {
     @Test
     void exportAsCsv_emptyList_returnsHeadersOnly() {
         String result = exportService.exportAsCsv(List.of());
-        assertThat(result).isEqualTo("name,quantity,unit,purchased\n");
+        assertThat(result).isEqualTo("name,quantity,unit,category,source,purchased\n");
     }
 
     @Test

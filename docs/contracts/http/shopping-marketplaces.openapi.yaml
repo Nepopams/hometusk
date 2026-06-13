@@ -7,6 +7,10 @@ info:
 
     **EP-013:** Shopping Marketplaces
 
+    **INIT-2026Q3-shopping-categories compatibility delta:** shopping run
+    item snapshots and exports include optional category/source metadata when
+    available. Existing runs/items may return `null`.
+
     Features:
     - Shopping Runs: Snapshot shopping list for a store trip
     - Export: Download/share shopping list in text/CSV
@@ -261,6 +265,10 @@ paths:
 
         **Text format:** Simple human-readable list
         **CSV format:** Structured data with headers, RFC 4180 compliant
+
+        When category/source metadata exists, text export includes readable
+        labels and CSV export includes `category` and `source` columns. Null
+        metadata is exported as an empty value.
       tags:
         - ShoppingExport
       parameters:
@@ -540,6 +548,22 @@ components:
           type: string
           nullable: true
           description: Unit of measurement
+        category:
+          type: string
+          nullable: true
+          enum:
+            - groceries
+            - cleaning
+            - personal_care
+            - diy
+            - electronics
+            - other
+          description: Category snapshot from the original shopping item
+        source:
+          type: string
+          nullable: true
+          maxLength: 120
+          description: Source/store snapshot from the original shopping item
         purchased:
           type: boolean
           description: Whether item was purchased in this run

@@ -107,20 +107,23 @@ public class ShoppingController {
     public ResponseEntity<List<ShoppingItemDto>> listItems(
             @PathVariable UUID householdId,
             @PathVariable UUID listId,
-            @RequestParam(required = false) @Parameter(description = "Filter by purchase status") Boolean purchased) {
-        log.debug("Listing items for list: {}, household: {}, purchased: {}", listId, householdId, purchased);
+            @RequestParam(required = false) @Parameter(description = "Filter by purchase status") Boolean purchased,
+            @RequestParam(required = false) @Parameter(description = "Filter by shopping category") String category,
+            @RequestParam(required = false) @Parameter(description = "Filter by source/store name") String source) {
+        log.debug(
+                "Listing items for list: {}, household: {}, purchased: {}, category: {}, sourcePresent: {}",
+                listId,
+                householdId,
+                purchased,
+                category,
+                source != null);
 
         // Verify membership (IDOR prevention)
         CurrentUser currentUser = userResolver.resolveCurrentUser();
         membershipService.requireMembership(currentUser.id(), householdId);
 
         // Get items (service validates list belongs to household)
-        List<ShoppingItem> items;
-        if (Boolean.FALSE.equals(purchased)) {
-            items = shoppingService.getUnpurchasedItemsInList(listId, householdId);
-        } else {
-            items = shoppingService.getItemsInList(listId, householdId);
-        }
+        List<ShoppingItem> items = shoppingService.getItemsInList(listId, householdId, purchased, category, source);
 
         List<ShoppingItemDto> dtos = items.stream().map(ShoppingItemDto::from).toList();
         return ResponseEntity.ok(dtos);
@@ -159,7 +162,15 @@ public class ShoppingController {
 
         // Add item directly
         ShoppingItem item = shoppingService.addItemDirect(
-                householdId, listId, request.name(), request.resolvedQuantity(), request.unit(), user, correlationId);
+                householdId,
+                listId,
+                request.name(),
+                request.resolvedQuantity(),
+                request.unit(),
+                request.category(),
+                request.source(),
+                user,
+                correlationId);
 
         // Record activity (no commandId for direct REST)
         activityRecorder.recordShoppingItemAdded(item, user, null, correlationId);
@@ -182,7 +193,13 @@ public class ShoppingController {
             @PathVariable UUID householdId,
             @PathVariable UUID itemId,
             @RequestBody @Valid UpdateShoppingItemRequest request) {
-        log.info("Updating item: {}, household: {}, purchased: {}", itemId, householdId, request.purchased());
+        log.info(
+                "Updating item: {}, household: {}, purchasedPresent: {}, categoryPresent: {}, sourcePresent: {}",
+                itemId,
+                householdId,
+                request.hasPurchased(),
+                request.hasCategory(),
+                request.hasSource());
 
         // Verify membership (IDOR prevention)
         CurrentUser currentUser = userResolver.resolveCurrentUser();
@@ -191,15 +208,23 @@ public class ShoppingController {
         // Get user entity
         User user = userService.getById(currentUser.id());
 
-        // Update item
-        ShoppingItem item;
-        if (Boolean.TRUE.equals(request.purchased())) {
-            UUID correlationId = getCorrelationId();
-            item = shoppingService.markPurchased(itemId, householdId, user, correlationId);
-            // Record activity
+        UUID correlationId = getCorrelationId();
+        ShoppingService.UpdateItemResult result = shoppingService.updateItem(
+                itemId,
+                householdId,
+                new ShoppingService.UpdateItemRequest(
+                        request.purchased(),
+                        request.hasPurchased(),
+                        request.category(),
+                        request.hasCategory(),
+                        request.source(),
+                        request.hasSource()),
+                user,
+                correlationId);
+
+        ShoppingItem item = result.item();
+        if (result.purchaseActivityRecorded()) {
             activityRecorder.recordShoppingItemPurchased(item, user, null, correlationId);
-        } else {
-            item = shoppingService.unmarkPurchased(itemId, householdId);
         }
 
         return ResponseEntity.ok(ShoppingItemDto.from(item));
