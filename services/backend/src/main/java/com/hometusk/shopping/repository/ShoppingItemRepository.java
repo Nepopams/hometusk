@@ -4,6 +4,7 @@ import com.hometusk.shopping.domain.ShoppingItem;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,22 +16,26 @@ public interface ShoppingItemRepository extends JpaRepository<ShoppingItem, UUID
     /**
      * Find item by ID scoped to household (IDOR prevention via list relationship).
      */
+    @EntityGraph(attributePaths = {"shoppingList", "addedBy", "linkedTask"})
     @Query("SELECT i FROM ShoppingItem i WHERE i.id = :id AND i.shoppingList.household.id = :householdId")
     Optional<ShoppingItem> findByIdAndHousehold_Id(@Param("id") UUID id, @Param("householdId") UUID householdId);
 
     /**
      * Find items in a shopping list that are not yet purchased.
      */
+    @EntityGraph(attributePaths = {"shoppingList", "addedBy", "linkedTask"})
     List<ShoppingItem> findByShoppingList_IdAndPurchasedFalseOrderByCreatedAtDesc(UUID listId);
 
     /**
      * Find all items in a shopping list.
      */
+    @EntityGraph(attributePaths = {"shoppingList", "addedBy", "linkedTask"})
     List<ShoppingItem> findByShoppingList_IdOrderByCreatedAtDesc(UUID listId);
 
     /**
      * Find items in a shopping list with optional purchased/category/source filters.
      */
+    @EntityGraph(attributePaths = {"shoppingList", "addedBy", "linkedTask"})
     @Query(
             """
             SELECT i FROM ShoppingItem i
@@ -49,6 +54,7 @@ public interface ShoppingItemRepository extends JpaRepository<ShoppingItem, UUID
     /**
      * Find items linked to a specific task.
      */
+    @EntityGraph(attributePaths = {"shoppingList", "addedBy", "linkedTask"})
     List<ShoppingItem> findByLinkedTask_Id(UUID taskId);
 
     /**
@@ -66,6 +72,7 @@ public interface ShoppingItemRepository extends JpaRepository<ShoppingItem, UUID
     /**
      * Find items for a household by linked task.
      */
+    @EntityGraph(attributePaths = {"shoppingList", "addedBy", "linkedTask"})
     @Query(
             "SELECT i FROM ShoppingItem i WHERE i.linkedTask.id = :taskId AND i.shoppingList.household.id = :householdId")
     List<ShoppingItem> findByLinkedTask_IdAndHouseholdId(

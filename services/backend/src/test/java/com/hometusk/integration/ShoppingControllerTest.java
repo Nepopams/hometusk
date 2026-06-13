@@ -21,6 +21,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Integration tests for ShoppingController.
@@ -149,6 +151,21 @@ class ShoppingControllerTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$.length()").value(2))
                     .andExpect(jsonPath("$[0].name").exists())
                     .andExpect(jsonPath("$[0].quantity").exists());
+        }
+
+        @Test
+        @Transactional(propagation = Propagation.NOT_SUPPORTED)
+        @DisplayName("Should list items with addedBy after service transaction is closed")
+        void listItemsReturnsAddedByWithoutOpenSession() throws Exception {
+            mockMvc.perform(get(
+                                    "/api/v1/households/{id}/shopping-lists/{listId}/items",
+                                    testHousehold.getId(),
+                                    shoppingList.getId())
+                            .with(jwt()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(2))
+                    .andExpect(jsonPath("$[0].addedBy.id").value(testUser.getId().toString()))
+                    .andExpect(jsonPath("$[0].addedBy.displayName").value(testUser.getDisplayName()));
         }
 
         @Test
