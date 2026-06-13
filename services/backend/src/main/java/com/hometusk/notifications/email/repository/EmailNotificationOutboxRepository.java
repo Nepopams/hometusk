@@ -20,6 +20,8 @@ public interface EmailNotificationOutboxRepository extends JpaRepository<EmailNo
 
     Optional<EmailNotificationOutbox> findByIdempotencyKey(String idempotencyKey);
 
+    List<EmailNotificationOutbox> findByContextTypeAndContextId(String contextType, UUID contextId);
+
     long countByStatus(EmailNotificationStatus status);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

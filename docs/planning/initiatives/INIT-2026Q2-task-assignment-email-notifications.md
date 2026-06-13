@@ -1,5 +1,5 @@
 # Initiative: INIT-2026Q2-task-assignment-email-notifications
-Status: **IN_PROGRESS** (selected as NOW focus on 2026-06-13 after INIT-2026Q2-email-notification-platform)
+Status: **DONE** (closed on 2026-06-13 via branch `codex/task-assignment-email-notifications`)
 Owner: Planning/Architecture
 
 ## Goal
@@ -63,6 +63,33 @@ Owner: Planning/Architecture
 - Tests:
   - integration tests across manual command and AI decision path;
   - negative tests for missing/unverified email and self-assignment.
+
+## Implementation Notes
+
+- `ActionExecutor` calls `TaskAssignmentNotificationService` after task creation
+  so manual command, AI Platform, fallback, and guardrails-modified paths use one
+  notification boundary.
+- `TaskAssignmentNotificationService` keeps the existing in-app notification and
+  publishes `TaskAssignedEvent` for email.
+- `TaskAssignmentEmailNotificationHandler` listens after commit, verifies
+  household membership and email eligibility, applies the MVP self-assignment
+  skip rule, and enqueues through `EmailNotificationService`.
+- Idempotency key format:
+  `TASK_ASSIGNED:{task_id}:{assignee_id}:{assignment_timestamp_ms}`.
+- Email enqueue runs in a separate `REQUIRES_NEW` transaction and catches runtime
+  failures, so task assignment remains successful if email enqueue fails.
+- No HTTP contract change is required for this initiative.
+
+## Closure Evidence
+
+- Backend implementation delivered `TaskAssignedEvent`,
+  `TaskAssignmentNotificationService`, and
+  `TaskAssignmentEmailNotificationHandler`.
+- Manual command path, duplicate/idempotency behavior, missing/unverified email,
+  self-assignment skip, degraded enqueue behavior, and AI Platform path are
+  covered by integration tests.
+- Sequence documentation added:
+  `docs/diagrams/sequence-task-assignment-email-notification.md`.
 
 ## Exit Criteria
 

@@ -3,13 +3,18 @@
 > Формат Now/Next/Later фиксирует направление и приоритеты без преждевременных дат.
 > У каждого пункта должен быть "якорь" — initiative/release документ.
 
-## NOW (текущий фокус: task assignment email notifications)
+## NOW (текущий фокус: social auth via Yandex/VK)
 
-- Initiative (current): **INIT-2026Q2-task-assignment-email-notifications** — Task Assignment Email Notifications
+- Initiative (current): **INIT-2026Q2-social-auth-yandex-vk** — Social Auth via Yandex/VK
+  - Anchor: docs/planning/initiatives/INIT-2026Q2-social-auth-yandex-vk.md
+  - Outcome: вход через Яндекс и подтверждённый technical path для VK через Keycloak identity brokering, без OAuth token exchange логики в HomeTusk backend
+  - Why now: email validation, email notification platform и task assignment email notifications закрыты; следующий рычаг — снизить onboarding friction без переноса OAuth-сложности в HomeTusk backend
+  - Readiness: IN_PROGRESS as NOW focus; security_sensitive, adr_needed, requires provider runbook/secrets handling and VK spike result
+
+- Initiative (done): **INIT-2026Q2-task-assignment-email-notifications** — Task Assignment Email Notifications
   - Anchor: docs/planning/initiatives/INIT-2026Q2-task-assignment-email-notifications.md
   - Outcome: назначение задачи создаёт idempotent pending email notification для verified assignee через единое `TASK_ASSIGNED` событие, одинаково для manual, command pipeline, AI decision и guardrails fallback
-  - Why now: email validation и email notification platform закрыты; следующий шаг даёт прямой user value в контуре `intent → task assignment → assignee узнаёт о назначении`
-  - Readiness: IN_PROGRESS as NOW focus; traceability_critical для command/action path, нужны negative tests на self/missing/unverified email и duplicate assignment event
+  - Closed: 2026-06-13 (branch `codex/task-assignment-email-notifications`; `TaskAssignedEvent`, assignment email handler, idempotent outbox enqueue, degraded behavior, sequence diagram, backend tests passed)
 
 - Initiative (done): **INIT-2026Q2-email-notification-platform** — Email Notification Platform
   - Anchor: docs/planning/initiatives/INIT-2026Q2-email-notification-platform.md
@@ -111,12 +116,6 @@
 
 ## NEXT (будущие инициативы / ranked candidates)
 
-- Initiative (future #2): **INIT-2026Q2-social-auth-yandex-vk** — Social Auth via Yandex/VK
-  - Anchor: docs/planning/initiatives/INIT-2026Q2-social-auth-yandex-vk.md
-  - Outcome: вход через Яндекс и подтверждённый technical path для VK через Keycloak identity brokering, без OAuth token exchange логики в HomeTusk backend
-  - Why future: снижает onboarding friction, но несёт security-sensitive auth/config работу, внешний provider spike по VK и риск account duplication; можно поднять выше, если acquisition/onboarding friction станет главным продуктовым ограничением
-  - Readiness: PROPOSED; INIT-2026Q2-email-validation closed; security_sensitive, adr_needed, requires provider runbook/secrets handling and VK spike result
-
 - Initiative (candidate): **Agreements v0 (read-only)** (consent-first)
   - Anchor: TBD — requires initiative spec
   - Outcome: отображение договорённостей/правил без конструктора и без токсичных лидербордов
@@ -144,8 +143,8 @@
 - Текущий рейтинг новых инициатив:
   - #1 INIT-2026Q2-email-validation — DONE; foundation для доверенного email-state и eligibility.
   - #2 INIT-2026Q2-email-notification-platform — DONE; безопасная delivery foundation перед use-case логикой.
-  - #3 INIT-2026Q2-task-assignment-email-notifications — CURRENT; прямой user value после готовой платформы.
-  - #4 INIT-2026Q2-social-auth-yandex-vk — FUTURE; activation lever, но с внешним provider/security spike.
+  - #3 INIT-2026Q2-task-assignment-email-notifications — DONE; прямой user value после готовой платформы.
+  - #4 INIT-2026Q2-social-auth-yandex-vk — CURRENT; activation lever, но с внешним provider/security spike.
 
 - Риски:
   - Scope creep в web (слишком много экранов/фич за раз) → режем до NOW-инкремента инициативы.

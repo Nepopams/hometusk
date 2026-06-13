@@ -11,6 +11,7 @@ import com.hometusk.households.domain.Zone;
 import com.hometusk.households.service.HouseholdService;
 import com.hometusk.households.service.ZoneService;
 import com.hometusk.notifications.service.NotificationService;
+import com.hometusk.notifications.service.TaskAssignmentNotificationService;
 import com.hometusk.shopping.domain.ShoppingItem;
 import com.hometusk.shopping.service.ShoppingService;
 import com.hometusk.tasks.domain.Task;
@@ -41,6 +42,7 @@ public class ActionExecutor {
     private final ZoneService zoneService;
     private final UserService userService;
     private final ActivityRecorder activityRecorder;
+    private final TaskAssignmentNotificationService taskAssignmentNotificationService;
     private final NotificationService notificationService;
     private final PointsService pointsService;
     private final BadgeService badgeService;
@@ -53,6 +55,7 @@ public class ActionExecutor {
             ZoneService zoneService,
             UserService userService,
             ActivityRecorder activityRecorder,
+            TaskAssignmentNotificationService taskAssignmentNotificationService,
             NotificationService notificationService,
             PointsService pointsService,
             BadgeService badgeService,
@@ -63,6 +66,7 @@ public class ActionExecutor {
         this.zoneService = zoneService;
         this.userService = userService;
         this.activityRecorder = activityRecorder;
+        this.taskAssignmentNotificationService = taskAssignmentNotificationService;
         this.notificationService = notificationService;
         this.pointsService = pointsService;
         this.badgeService = badgeService;
@@ -106,7 +110,7 @@ public class ActionExecutor {
 
         // Record activity
         activityRecorder.recordTaskCreated(task, createdBy, command.getId(), correlationId);
-        notificationService.notifyTaskAssigned(task, createdBy, correlationId);
+        taskAssignmentNotificationService.notifyTaskAssigned(task, createdBy, correlationId);
 
         log.info("Task created via command: taskId={}, commandId={}", task.getId(), command.getId());
 
@@ -186,7 +190,7 @@ public class ActionExecutor {
 
         // Record activity
         activityRecorder.recordTaskCreated(task, createdBy, command.getId(), correlationId);
-        notificationService.notifyTaskAssigned(task, createdBy, correlationId);
+        taskAssignmentNotificationService.notifyTaskAssigned(task, createdBy, correlationId);
 
         log.info("Task created via command: taskId={}, commandId={}", task.getId(), command.getId());
 

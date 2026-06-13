@@ -86,6 +86,11 @@ hometusk:
     batch-size: ${HOMETUSK_EMAIL_BATCH_SIZE:25}
     max-attempts: ${HOMETUSK_EMAIL_MAX_ATTEMPTS:3}
     retry-delay-ms: ${HOMETUSK_EMAIL_RETRY_DELAY_MS:60000}
+    task-assignment:
+      enabled: ${HOMETUSK_EMAIL_TASK_ASSIGNMENT_ENABLED:true}
+      skip-self-notifications: ${HOMETUSK_EMAIL_TASK_ASSIGNMENT_SKIP_SELF:true}
+      app-base-url: ${HOMETUSK_WEB_BASE_URL:http://localhost:5173}
+      task-path-template: /households/{householdId}/tasks/{taskId}
   marketplaces:
     templates:
       - id: ozon
