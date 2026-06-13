@@ -82,6 +82,89 @@ Realm `hometusk` должен быть предварительно настро
 2. Включите: **User registration** → ON
 3. Сохраните
 
+## Включение входа через Яндекс
+
+Локальный и UAT stack собирают Keycloak из `infra/keycloak/Dockerfile`: базовый
+образ остаётся официальным `quay.io/keycloak/keycloak:23.0.6`, а провайдеры
+Яндекс/VK поставляются через pinned `keycloak-russian-providers` jar.
+
+### 1. Зарегистрируйте приложение в Яндекс OAuth
+
+Укажите redirect URI:
+
+```text
+http://localhost:8180/realms/hometusk/broker/yandex/endpoint
+```
+
+Для UAT/stage используйте публичный домен:
+
+```text
+https://<domain>/realms/hometusk/broker/yandex/endpoint
+```
+
+Запрашиваемые права:
+
+```text
+login:info login:email login:avatar
+```
+
+### 2. Передайте секреты в окружение
+
+Для local `infra/compose`:
+
+```bash
+HOMETUSK_IDP_YANDEX_CLIENT_ID=<client_id>
+HOMETUSK_IDP_YANDEX_CLIENT_SECRET=<client_secret>
+HOMETUSK_IDP_YANDEX_DEFAULT_SCOPE="login:info login:email login:avatar"
+```
+
+Для UAT добавьте эти переменные в `infra/uat/.env`.
+
+### 3. Запустите stack
+
+```bash
+cd infra/compose
+docker compose up -d --build
+```
+
+Сервис `keycloak-social-idps` после старта Keycloak создаст или обновит
+identity provider `yandex`. Если client ID/secret не заданы, он ничего не
+изменит и завершится успешно.
+
+### 4. Проверка провайдера
+
+```bash
+docker compose logs keycloak-social-idps
+```
+
+Ожидается сообщение:
+
+```text
+Yandex identity provider 'yandex' created.
+```
+
+или:
+
+```text
+Yandex identity provider 'yandex' updated.
+```
+
+Email от Яндекса не считается автоматически verified: провайдер настроен с
+`trustEmail=false`, а HomeTusk продолжает использовать `emailVerified` из
+Keycloak JWT.
+
+## Статус VK ID
+
+VK ID пока не включается автоматически в Keycloak 23 stack. Совместимый с
+Keycloak 23 релиз `keycloak-russian-providers:23.0.6.rsp-3` содержит provider
+ID `vkid`, но использует устаревшие VK endpoints. Перед включением VK нужен
+один из вариантов:
+
+- обновить Keycloak и provider plugin до версии, где `vkid` использует текущие
+  `id.vk.ru/oauth2/*` endpoints;
+- backport текущего `vkid` provider implementation в совместимый с Keycloak 23
+  jar и отдельный security review.
+
 ## Тестовые пользователи
 
 Предварительно настроенные тестовые пользователи (при использовании seed data):

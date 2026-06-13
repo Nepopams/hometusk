@@ -19,6 +19,7 @@ This index tracks all architecture and flow diagrams in the project.
 | Scheduled Command Execution | Sequence | `scheduleAt` command submission and due-time execution | [Link](../diagrams/sequence-scheduled-command-execution.md) |
 | Email Notification Outbox | Sequence | Email enqueue, async delivery, retry, and degraded provider behavior | [Link](../diagrams/sequence-email-notification-outbox.md) |
 | Task Assignment Email Notification | Sequence | Task assignment event, email eligibility, idempotent outbox enqueue, and degraded behavior | [Link](../diagrams/sequence-task-assignment-email-notification.md) |
+| Social Auth Keycloak Broker | Sequence | Yandex social login through Keycloak broker and backend JWT-only user resolution | [Link](../diagrams/sequence-social-auth-keycloak-broker.md) |
 | Command Processing Flow | Sequence | NL command → task creation | [Link](../architecture/diagrams/command-processing-flow.md) |
 
 ## Diagram Lifecycle

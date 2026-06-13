@@ -26,6 +26,7 @@ This index tracks all ADRs in the project. Update this file when creating/supers
 | ADR-016 | Scheduled Command Execution with `scheduleAt` | accepted | 2026-06-13 | [Link](../adr/016-scheduled-command-execution.md) |
 | ADR-017 | User Email State Source of Truth | accepted | 2026-06-13 | [Link](../adr/017-user-email-state-source-of-truth.md) |
 | ADR-018 | Email Notification Outbox Platform | accepted | 2026-06-13 | [Link](../adr/018-email-notification-outbox-platform.md) |
+| ADR-019 | Social Auth Through Keycloak Identity Broker | accepted | 2026-06-13 | [Link](../adr/019-social-auth-keycloak-broker.md) |
 
 ## Template
 

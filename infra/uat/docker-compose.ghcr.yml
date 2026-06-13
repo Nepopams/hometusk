@@ -8,6 +8,8 @@
 #   BACKEND_IMAGE=ghcr.io/<owner>/hometusk-backend
 #   WEB_IMAGE=ghcr.io/<owner>/hometusk-web
 #   IMAGE_TAG=sha-<commit_sha> or release tag
+# Optional social-auth image:
+#   KEYCLOAK_IMAGE=<image with keycloak-russian-providers installed>
 
 services:
   postgres:
@@ -30,7 +32,7 @@ services:
       - internal
 
   keycloak:
-    image: quay.io/keycloak/keycloak:23.0
+    image: ${KEYCLOAK_IMAGE:-quay.io/keycloak/keycloak:23.0.6}
     container_name: hometusk-${DEPLOY_ENV:-uat}-keycloak
     restart: unless-stopped
     command: start-dev --import-realm --proxy=edge
@@ -59,6 +61,33 @@ services:
       timeout: 5s
       retries: 10
       start_period: 60s
+    networks:
+      - internal
+
+  keycloak-social-idps:
+    image: ${KEYCLOAK_IMAGE:-quay.io/keycloak/keycloak:23.0.6}
+    container_name: hometusk-${DEPLOY_ENV:-uat}-keycloak-social-idps
+    restart: "no"
+    entrypoint: ["/bin/sh", "/opt/hometusk/configure-social-idps.sh"]
+    environment:
+      KEYCLOAK_BASE_URL: http://keycloak:8080
+      KEYCLOAK_REALM: hometusk
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env}
+      VITE_OIDC_REDIRECT_URI: ${VITE_OIDC_REDIRECT_URI:-http://localhost/callback}
+      HOMETUSK_WEB_BASE_URL: ${HOMETUSK_WEB_BASE_URL:-http://localhost}
+      HOMETUSK_IDP_YANDEX_CLIENT_ID: ${HOMETUSK_IDP_YANDEX_CLIENT_ID:-}
+      HOMETUSK_IDP_YANDEX_CLIENT_SECRET: ${HOMETUSK_IDP_YANDEX_CLIENT_SECRET:-}
+      HOMETUSK_IDP_YANDEX_DEFAULT_SCOPE: ${HOMETUSK_IDP_YANDEX_DEFAULT_SCOPE:-login:info login:email login:avatar}
+      HOMETUSK_IDP_YANDEX_FORCE_CONFIRM: ${HOMETUSK_IDP_YANDEX_FORCE_CONFIRM:-false}
+      HOMETUSK_IDP_YANDEX_HOSTED_DOMAIN: ${HOMETUSK_IDP_YANDEX_HOSTED_DOMAIN:-}
+      HOMETUSK_IDP_VKID_CLIENT_ID: ${HOMETUSK_IDP_VKID_CLIENT_ID:-}
+      HOMETUSK_IDP_VKID_CLIENT_SECRET: ${HOMETUSK_IDP_VKID_CLIENT_SECRET:-}
+    volumes:
+      - ../keycloak/configure-social-idps.sh:/opt/hometusk/configure-social-idps.sh:ro
+    depends_on:
+      keycloak:
+        condition: service_healthy
     networks:
       - internal
 

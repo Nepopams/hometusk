@@ -123,6 +123,44 @@
       "optionalClientScopes": []
     },
     {
+      "clientId": "hometusk-web",
+      "name": "HomeTusk Web Client",
+      "description": "Public browser OIDC client for the HomeTusk web app",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "publicClient": true,
+      "directAccessGrantsEnabled": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "redirectUris": [
+        "http://localhost:5173/callback",
+        "http://127.0.0.1:5173/callback",
+        "http://localhost/callback",
+        "https://localhost/callback"
+      ],
+      "webOrigins": [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost",
+        "https://localhost"
+      ],
+      "protocol": "openid-connect",
+      "attributes": {
+        "access.token.lifespan": "3600",
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:5173/login##http://127.0.0.1:5173/login##http://localhost/login##https://localhost/login"
+      },
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "offline_access"
+      ],
+      "optionalClientScopes": []
+    },
+    {
       "clientId": "hometusk-backend",
       "name": "HomeTusk Backend Service",
       "description": "Confidential client for backend service",
