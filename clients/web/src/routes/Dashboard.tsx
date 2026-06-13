@@ -1,353 +1,538 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ApiError } from '../lib/errors';
+import InviteModal from '../components/InviteModal';
 import { useAuth } from '../hooks/useAuth';
+import { useMembers } from '../hooks/useMembers';
+import { useRoutines } from '../hooks/useRoutines';
+import { useShoppingLists } from '../hooks/useShoppingLists';
 import { useTasks } from '../hooks/useTasks';
-import { useZones } from '../hooks/useZones';
-import { Button } from '../components/ui';
 import { useI18n } from '../i18n';
-import type { Task } from '../types/api';
+import { ApiError } from '../lib/errors';
+import type { HouseholdMember, Routine, ShoppingList, Task } from '../types/api';
 import './Dashboard.css';
 
-interface ShoppingItem {
-  id: string;
-  text: string;
-  purchased: boolean;
+type TFunction = ReturnType<typeof useI18n>['t'];
+
+interface SummaryCardProps {
+  title: string;
+  eyebrow: string;
+  badge: string;
+  linkTo: string;
+  linkLabel: string;
+  isLoading: boolean;
+  error: Error | null;
+  onRetry: () => void;
+  children: ReactNode;
 }
 
-const STORAGE_KEY = 'hometusk_shopping';
-
-function getZoneBadgeClass(zoneName?: string): string {
-  if (!zoneName) return 'dashboard__badge--zone-default';
-  const lower = zoneName.toLowerCase();
-  if (lower.includes('kitchen')) return 'dashboard__badge--zone-kitchen';
-  if (lower.includes('bathroom')) return 'dashboard__badge--zone-bathroom';
-  if (lower.includes('living')) return 'dashboard__badge--zone-living';
-  if (lower.includes('bedroom')) return 'dashboard__badge--zone-bedroom';
-  return 'dashboard__badge--zone-default';
+interface StatItem {
+  label: string;
+  value: number | string;
+  tone?: 'warning' | 'success' | 'muted';
 }
 
-/**
- * Dashboard page combining Tasks and Shopping lists.
- *
- * Layout:
- * - Desktop/Tablet: Two columns (tasks flex, shopping 360px fixed)
- * - Mobile: Vertical stack
- *
- * States: loading, empty, error, normal
- *
- * @see Pencil frames: PARvt, UxFDL, lCp6u, eTaes, phvdl, PydL5, ZgDKd
- */
 export default function Dashboard() {
-  const { householdId } = useAuth();
-  const { t } = useI18n();
+  const { householdId, user } = useAuth();
   const { householdId: householdIdParam } = useParams();
-  const activeHouseholdId = householdIdParam ?? householdId ?? undefined;
+  const { t } = useI18n();
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
 
-  const { tasks, isLoading: tasksLoading, error: tasksError, refetch } = useTasks(activeHouseholdId, {});
-  const { zones, isLoading: zonesLoading } = useZones(activeHouseholdId);
+  const activeHouseholdId = householdIdParam ?? householdId ?? null;
+  const currentHousehold = user?.households.find((h) => h.id === activeHouseholdId);
 
-  // Shopping list (localStorage for MVP)
-  const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
-  const [newItemText, setNewItemText] = useState('');
+  const {
+    tasks,
+    isLoading: tasksLoading,
+    error: tasksError,
+    refetch: refetchTasks,
+  } = useTasks(activeHouseholdId, {});
+  const {
+    lists,
+    isLoading: listsLoading,
+    error: listsError,
+    refetch: refetchLists,
+  } = useShoppingLists(activeHouseholdId);
+  const {
+    routines,
+    isLoading: routinesLoading,
+    error: routinesError,
+    refetch: refetchRoutines,
+  } = useRoutines(activeHouseholdId);
+  const {
+    members,
+    isLoading: membersLoading,
+    error: membersError,
+    refetch: refetchMembers,
+  } = useMembers(activeHouseholdId);
 
-  // Load shopping items from localStorage
-  useEffect(() => {
-    if (!activeHouseholdId) return;
-    const key = `${STORAGE_KEY}_${activeHouseholdId}`;
-    const stored = localStorage.getItem(key);
-    if (stored) {
-      try {
-        setShoppingItems(JSON.parse(stored));
-      } catch {
-        setShoppingItems([]);
-      }
-    } else {
-      setShoppingItems([]);
-    }
-  }, [activeHouseholdId]);
+  const dashboardPath = activeHouseholdId ? `/households/${activeHouseholdId}` : '/households';
+  const tasksPath = `${dashboardPath}/tasks`;
+  const commandsPath = `${dashboardPath}/commands`;
+  const shoppingPath = `${dashboardPath}/shopping`;
+  const routinesPath = `${dashboardPath}/routines`;
+  const membersPath = `${dashboardPath}/members`;
 
-  // Save shopping items to localStorage
-  useEffect(() => {
-    if (!activeHouseholdId) return;
-    const key = `${STORAGE_KEY}_${activeHouseholdId}`;
-    localStorage.setItem(key, JSON.stringify(shoppingItems));
-  }, [shoppingItems, activeHouseholdId]);
-
-  const handleAddShoppingItem = (e: FormEvent) => {
-    e.preventDefault();
-    const trimmed = newItemText.trim();
-    if (!trimmed) return;
-
-    setShoppingItems((prev) => [
-      ...prev,
-      { id: crypto.randomUUID(), text: trimmed, purchased: false },
-    ]);
-    setNewItemText('');
-  };
-
-  const handleToggleShoppingItem = useCallback((id: string) => {
-    setShoppingItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, purchased: !item.purchased } : item
-      )
-    );
-  }, []);
-
-  const getZoneName = useCallback(
-    (zoneId?: string) => {
-      if (!zoneId) return undefined;
-      return zones.find((z) => z.id === zoneId)?.name;
-    },
-    [zones]
+  const accessDenied = [tasksError, listsError, routinesError, membersError].some(
+    (error) => error instanceof ApiError && error.status === 403
   );
 
-  const doneTasksCount = tasks.filter((t) => t.status === 'done').length;
-  const activeTasksCount = tasks.length - doneTasksCount;
+  const taskSummary = useMemo(() => buildTaskSummary(tasks), [tasks]);
+  const shoppingSummary = useMemo(() => buildShoppingSummary(lists), [lists]);
+  const routineSummary = useMemo(() => buildRoutineSummary(routines), [routines]);
+  const memberSummary = useMemo(() => buildMemberSummary(members), [members]);
 
-  // Access denied
-  if (tasksError instanceof ApiError && tasksError.status === 403) {
+  if (!activeHouseholdId) {
     return (
-      <div className="page">
-        <h1>{t('common.accessDenied')}</h1>
-        <p>{t('tasks.noAccess')}</p>
-        <Link className="button" to="/households">
-          {t('common.backToHouseholdSelector')}
-        </Link>
-      </div>
-    );
-  }
-
-  // Loading state
-  if ((tasksLoading || zonesLoading) && tasks.length === 0) {
-    return (
-      <div className="dashboard">
-        <div className="dashboard__tasks-col">
-          <div className="dashboard__header">
-            <h2 className="dashboard__title">{t('tasks.title')}</h2>
-          </div>
-          <div className="dashboard__card">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="dashboard__skeleton-row">
-                <div className="dashboard__skeleton-checkbox" />
-                <div className="dashboard__skeleton-content">
-                  <div className="dashboard__skeleton-title" style={{ width: i === 1 ? '70%' : i === 2 ? '50%' : '60%' }} />
-                  <div className="dashboard__skeleton-badges">
-                    <div className="dashboard__skeleton-badge" />
-                    <div className="dashboard__skeleton-badge" style={{ width: 50 }} />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="dashboard__shopping-col">
-          <div className="dashboard__header">
-            <h2 className="dashboard__title">{t('dashboard.shopping')}</h2>
-          </div>
-          <div className="dashboard__card">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="dashboard__skeleton-row">
-                <div className="dashboard__skeleton-checkbox" />
-                <div className="dashboard__skeleton-content">
-                  <div className="dashboard__skeleton-title" style={{ width: i === 1 ? '40%' : i === 2 ? '30%' : '50%' }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state for tasks
-  const renderTasksError = () => (
-    <div className="dashboard__card">
-      <div className="dashboard__error">
-        <div className="dashboard__error-content">
-          <svg className="dashboard__error-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-            <line x1="12" y1="9" x2="12" y2="13" />
-            <line x1="12" y1="17" x2="12.01" y2="17" />
-          </svg>
-          <div className="dashboard__error-text">
-            <h3 className="dashboard__error-title">{t('tasks.couldntLoad')}</h3>
-            <p className="dashboard__error-desc">{t('common.checkConnection')}</p>
-          </div>
-        </div>
-        <button type="button" className="dashboard__retry-btn" onClick={() => void refetch()}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="23 4 23 10 17 10" />
-            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-          </svg>
-          {t('common.tryAgain')}
-        </button>
-      </div>
-    </div>
-  );
-
-  // Empty tasks state
-  const renderTasksEmpty = () => (
-    <div className="dashboard__card">
-      <div className="dashboard__empty">
-        <svg className="dashboard__empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M9 11l3 3L22 4" />
-          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-        </svg>
-        <h3 className="dashboard__empty-title">{t('tasks.noTasksYet')}</h3>
-        <p className="dashboard__empty-desc">{t('tasks.emptyDashboardDesc')}</p>
-        <div className="dashboard__empty-actions">
-          <Button variant="primary" size="md" fullWidth>
-            {t('tasks.addTask')}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Render task row
-  const renderTaskRow = (task: Task) => {
-    const isDone = task.status === 'done';
-    const zoneName = task.zone?.name ?? getZoneName(task.zone?.id);
-
-    return (
-      <div key={task.id} className="dashboard__task-row">
-        <div className={`dashboard__task-checkbox ${isDone ? 'dashboard__task-checkbox--done' : ''}`}>
-          {isDone && (
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          )}
-        </div>
-        <div className="dashboard__task-content">
-          <Link to={`tasks/${task.id}`}>
-            <h4 className={`dashboard__task-title ${isDone ? 'dashboard__task-title--done' : ''}`}>
-              {task.title}
-            </h4>
+      <div className="dashboard-page">
+        <section className="dashboard-empty-page">
+          <h1>{t('dashboard.title')}</h1>
+          <p>{t('tasks.noHousehold')}</p>
+          <Link className="dashboard__quick-link dashboard__quick-link--primary" to="/households">
+            {t('common.backToHouseholdSelector')}
           </Link>
-          <div className="dashboard__task-meta">
-            {zoneName && (
-              <span className={`dashboard__badge ${getZoneBadgeClass(zoneName)}`}>
-                {zoneName}
-              </span>
-            )}
-            {task.assignee && (
-              <span className="dashboard__badge dashboard__badge--assignee">
-                {task.assignee.displayName}
-              </span>
-            )}
-            {task.deadline && (
-              <span className="dashboard__badge dashboard__badge--due">
-                {formatDeadline(task.deadline, t)}
-              </span>
-            )}
-          </div>
-        </div>
+        </section>
       </div>
     );
-  };
+  }
 
-  // Empty shopping state
-  const renderShoppingEmpty = () => (
-    <div className="dashboard__empty" style={{ padding: 20 }}>
-      <svg className="dashboard__empty-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <circle cx="9" cy="21" r="1" />
-        <circle cx="20" cy="21" r="1" />
-        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-      </svg>
-      <h3 className="dashboard__empty-title">{t('dashboard.emptyShopping')}</h3>
-      <p className="dashboard__empty-desc">{t('dashboard.emptyShoppingDesc')}</p>
-    </div>
-  );
-
-  // Render shopping item
-  const renderShoppingItem = (item: ShoppingItem) => (
-    <div key={item.id} className="dashboard__shop-row">
-      <div
-        className={`dashboard__shop-checkbox ${item.purchased ? 'dashboard__shop-checkbox--done' : ''}`}
-        onClick={() => handleToggleShoppingItem(item.id)}
-        role="checkbox"
-        aria-checked={item.purchased}
-        tabIndex={0}
-        onKeyDown={(e) => e.key === 'Enter' && handleToggleShoppingItem(item.id)}
-      >
-        {item.purchased && (
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        )}
+  if (accessDenied) {
+    return (
+      <div className="dashboard-page">
+        <section className="dashboard-empty-page">
+          <h1>{t('common.accessDenied')}</h1>
+          <p>{t('tasks.noAccess')}</p>
+          <Link className="dashboard__quick-link dashboard__quick-link--primary" to="/households">
+            {t('common.backToHouseholdSelector')}
+          </Link>
+        </section>
       </div>
-      <span className={`dashboard__shop-text ${item.purchased ? 'dashboard__shop-text--done' : ''}`}>
-        {item.text}
-      </span>
-    </div>
-  );
+    );
+  }
 
   return (
-    <div className="dashboard">
-      {/* Tasks Column */}
-      <div className="dashboard__tasks-col">
-        <div className="dashboard__header">
-          <h2 className="dashboard__title">{t('tasks.title')}</h2>
-          <span className="dashboard__count">
-            {activeTasksCount > 0
-              ? t('tasks.countActive', { count: activeTasksCount })
-              : doneTasksCount > 0
-                ? t('tasks.countDone', { count: doneTasksCount })
-                : t('tasks.countZero')}
-          </span>
+    <div className="dashboard-page">
+      <header className="dashboard-hero">
+        <div className="dashboard-hero__copy">
+          <p className="dashboard-hero__eyebrow">{t('dashboard.homeEyebrow')}</p>
+          <h1 className="dashboard-hero__title">
+            {currentHousehold
+              ? t('dashboard.titleForHousehold', { name: currentHousehold.name })
+              : t('dashboard.title')}
+          </h1>
+          <p className="dashboard-hero__subtitle">{t('dashboard.subtitle')}</p>
         </div>
-        {tasksError ? (
-          renderTasksError()
-        ) : tasks.length === 0 ? (
-          renderTasksEmpty()
-        ) : (
-          <div className="dashboard__card">
-            {tasks.map(renderTaskRow)}
-          </div>
-        )}
+        <div className="dashboard-hero__actions" aria-label={t('dashboard.quickActions')}>
+          <Link className="dashboard__quick-link dashboard__quick-link--primary" to={commandsPath}>
+            <span aria-hidden="true">+</span>
+            {t('dashboard.addTaskAction')}
+          </Link>
+          <Link className="dashboard__quick-link dashboard__quick-link--secondary" to={shoppingPath}>
+            {t('dashboard.openShoppingAction')}
+          </Link>
+          <button
+            type="button"
+            className="dashboard__quick-link dashboard__quick-link--ghost"
+            onClick={() => setIsInviteOpen(true)}
+          >
+            {t('dashboard.inviteAction')}
+          </button>
+        </div>
+      </header>
+
+      <div className="dashboard-grid">
+        <SummaryCard
+          title={t('dashboard.tasksCardTitle')}
+          eyebrow={t('tasks.title')}
+          badge={t('dashboard.activeCount', { count: taskSummary.activeCount })}
+          linkTo={tasksPath}
+          linkLabel={t('dashboard.viewTasks')}
+          isLoading={tasksLoading && tasks.length === 0}
+          error={tasksError}
+          onRetry={() => void refetchTasks()}
+        >
+          <StatsGrid
+            items={[
+              { label: t('dashboard.overdue'), value: taskSummary.overdueCount, tone: 'warning' },
+              { label: t('dashboard.dueToday'), value: taskSummary.dueTodayCount },
+              { label: t('dashboard.upcoming'), value: taskSummary.upcomingCount },
+              { label: t('common.done'), value: taskSummary.doneCount, tone: 'success' },
+            ]}
+          />
+          {taskSummary.previewTasks.length === 0 ? (
+            <EmptyState
+              title={t('dashboard.noTasksTitle')}
+              description={t('dashboard.noTasksDesc')}
+              linkTo={commandsPath}
+              linkLabel={t('tasks.addViaCommand')}
+            />
+          ) : (
+            <div className="dashboard-list">
+              {taskSummary.previewTasks.map((task) => (
+                <Link key={task.id} to={`${tasksPath}/${task.id}`} className="dashboard-list__item">
+                  <span className="dashboard-list__title">{task.title}</span>
+                  <span className="dashboard-list__meta">
+                    {task.deadline ? formatDeadline(task.deadline, t) : t('common.noDeadline')}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </SummaryCard>
+
+        <SummaryCard
+          title={t('dashboard.shoppingCardTitle')}
+          eyebrow={t('shopping.lists')}
+          badge={t('dashboard.listCount', { count: shoppingSummary.listCount })}
+          linkTo={shoppingPath}
+          linkLabel={t('dashboard.viewShopping')}
+          isLoading={listsLoading && lists.length === 0}
+          error={listsError}
+          onRetry={() => void refetchLists()}
+        >
+          <StatsGrid
+            items={[
+              { label: t('dashboard.shoppingLists'), value: shoppingSummary.listCount },
+              { label: t('dashboard.itemsToBuy'), value: shoppingSummary.unpurchasedCount },
+            ]}
+          />
+          {shoppingSummary.previewLists.length === 0 ? (
+            <EmptyState
+              title={t('dashboard.noShoppingTitle')}
+              description={t('dashboard.noShoppingDesc')}
+              linkTo={shoppingPath}
+              linkLabel={t('shopping.createList')}
+            />
+          ) : (
+            <div className="dashboard-list">
+              {shoppingSummary.previewLists.map((list) => (
+                <Link key={list.id} to={`${shoppingPath}/${list.id}`} className="dashboard-list__item">
+                  <span className="dashboard-list__title">{list.name}</span>
+                  <span className="dashboard-list__meta">
+                    {getItemsToBuyLabel(list.unpurchasedCount, t)}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </SummaryCard>
+
+        <SummaryCard
+          title={t('dashboard.routinesCardTitle')}
+          eyebrow={t('routines.title')}
+          badge={t('dashboard.activeCount', { count: routineSummary.activeCount })}
+          linkTo={routinesPath}
+          linkLabel={t('dashboard.viewRoutines')}
+          isLoading={routinesLoading && routines.length === 0}
+          error={routinesError}
+          onRetry={() => void refetchRoutines()}
+        >
+          <StatsGrid
+            items={[
+              { label: t('routines.active'), value: routineSummary.activeCount, tone: 'success' },
+              { label: t('routines.paused'), value: routineSummary.pausedCount, tone: 'muted' },
+            ]}
+          />
+          {routineSummary.previewRoutines.length === 0 ? (
+            <EmptyState
+              title={t('dashboard.noRoutinesTitle')}
+              description={t('dashboard.noRoutinesDesc')}
+              linkTo={routinesPath}
+              linkLabel={t('routines.create')}
+            />
+          ) : (
+            <div className="dashboard-list">
+              {routineSummary.previewRoutines.map((routine) => (
+                <Link key={routine.id} to={routinesPath} className="dashboard-list__item">
+                  <span className="dashboard-list__title">{routine.title}</span>
+                  <span className="dashboard-list__meta">
+                    {routine.status === 'ACTIVE' ? t('routines.active') : t('routines.paused')}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </SummaryCard>
+
+        <SummaryCard
+          title={t('dashboard.membersCardTitle')}
+          eyebrow={t('members.title')}
+          badge={t('dashboard.memberCount', { count: memberSummary.memberCount })}
+          linkTo={membersPath}
+          linkLabel={t('dashboard.viewMembers')}
+          isLoading={membersLoading && members.length === 0}
+          error={membersError}
+          onRetry={() => void refetchMembers()}
+        >
+          <StatsGrid
+            items={[
+              { label: t('members.roleAdmin'), value: memberSummary.adminCount },
+              { label: t('members.roleMember'), value: memberSummary.regularCount },
+            ]}
+          />
+          {memberSummary.previewMembers.length === 0 ? (
+            <EmptyState
+              title={t('dashboard.noMembersTitle')}
+              description={t('dashboard.noMembersDesc')}
+              linkTo={membersPath}
+              linkLabel={t('members.invite')}
+            />
+          ) : (
+            <div className="dashboard-list">
+              {memberSummary.previewMembers.map((member) => (
+                <Link key={member.userId} to={membersPath} className="dashboard-list__item">
+                  <span className="dashboard-list__title">{member.displayName}</span>
+                  <span className="dashboard-list__meta">
+                    {member.role === 'admin' ? t('members.roleAdmin') : t('members.roleMember')}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </SummaryCard>
       </div>
 
-      {/* Shopping Column */}
-      <div className="dashboard__shopping-col">
-        <div className="dashboard__header">
-          <h2 className="dashboard__title">{t('dashboard.shopping')}</h2>
-        </div>
-        <div className="dashboard__card">
-          <form className="dashboard__add-input-row" onSubmit={handleAddShoppingItem}>
-            <input
-              type="text"
-              className="dashboard__add-input"
-              placeholder={t('dashboard.addItemPlaceholder')}
-              value={newItemText}
-              onChange={(e) => setNewItemText(e.target.value)}
-            />
-            <button type="submit" className="dashboard__add-btn" aria-label={t('common.addItem')}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-            </button>
-          </form>
-          {shoppingItems.length === 0 ? (
-            renderShoppingEmpty()
-          ) : (
-            shoppingItems.map(renderShoppingItem)
-          )}
-        </div>
-      </div>
+      <InviteModal
+        householdId={activeHouseholdId}
+        isOpen={isInviteOpen}
+        onClose={() => setIsInviteOpen(false)}
+      />
     </div>
   );
 }
 
-function formatDeadline(deadline: string, t: ReturnType<typeof useI18n>['t']): string {
-  const date = new Date(deadline);
-  const now = new Date();
-  const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+function SummaryCard({
+  title,
+  eyebrow,
+  badge,
+  linkTo,
+  linkLabel,
+  isLoading,
+  error,
+  onRetry,
+  children,
+}: SummaryCardProps) {
+  return (
+    <section className="dashboard-card">
+      <div className="dashboard-card__header">
+        <div>
+          <p className="dashboard-card__eyebrow">{eyebrow}</p>
+          <h2 className="dashboard-card__title">{title}</h2>
+        </div>
+        <span className="dashboard-card__badge">{badge}</span>
+      </div>
+      <div className="dashboard-card__body">
+        {isLoading ? (
+          <DashboardSkeleton />
+        ) : error ? (
+          <SectionError onRetry={onRetry} />
+        ) : (
+          children
+        )}
+      </div>
+      {!isLoading && !error && (
+        <Link className="dashboard-card__footer-link" to={linkTo}>
+          {linkLabel}
+        </Link>
+      )}
+    </section>
+  );
+}
 
-  if (diffDays === 0) return t('common.today');
-  if (diffDays === 1) return t('common.tomorrow');
-  if (diffDays < 0) return t('tasks.overdueDays', { count: Math.abs(diffDays) });
+function StatsGrid({ items }: { items: StatItem[] }) {
+  return (
+    <div className="dashboard-stats">
+      {items.map((item) => (
+        <div
+          key={item.label}
+          className={`dashboard-stat${item.tone ? ` dashboard-stat--${item.tone}` : ''}`}
+        >
+          <span className="dashboard-stat__value">{item.value}</span>
+          <span className="dashboard-stat__label">{item.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function EmptyState({
+  title,
+  description,
+  linkTo,
+  linkLabel,
+}: {
+  title: string;
+  description: string;
+  linkTo: string;
+  linkLabel: string;
+}) {
+  return (
+    <div className="dashboard-empty">
+      <h3 className="dashboard-empty__title">{title}</h3>
+      <p className="dashboard-empty__desc">{description}</p>
+      <Link className="dashboard-empty__link" to={linkTo}>
+        {linkLabel}
+      </Link>
+    </div>
+  );
+}
+
+function SectionError({ onRetry }: { onRetry: () => void }) {
+  const { t } = useI18n();
+
+  return (
+    <div className="dashboard-section-error">
+      <p>{t('dashboard.sectionError')}</p>
+      <button type="button" className="dashboard-section-error__button" onClick={onRetry}>
+        {t('common.retry')}
+      </button>
+    </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="dashboard-skeleton" aria-hidden="true">
+      <div className="dashboard-skeleton__stats">
+        <span />
+        <span />
+        <span />
+      </div>
+      <span className="dashboard-skeleton__line" />
+      <span className="dashboard-skeleton__line dashboard-skeleton__line--short" />
+      <span className="dashboard-skeleton__line" />
+    </div>
+  );
+}
+
+function buildTaskSummary(tasks: Task[]) {
+  const now = new Date();
+  const tomorrow = startOfTomorrow(now);
+  const activeTasks = tasks.filter((task) => task.status !== 'done' && task.status !== 'cancelled');
+  const doneCount = tasks.filter((task) => task.status === 'done').length;
+
+  const overdueCount = activeTasks.filter((task) => {
+    const deadline = parseDate(task.deadline);
+    return deadline ? deadline < now : false;
+  }).length;
+
+  const dueTodayCount = activeTasks.filter((task) => {
+    const deadline = parseDate(task.deadline);
+    return deadline ? deadline >= now && deadline < tomorrow : false;
+  }).length;
+
+  const upcomingCount = activeTasks.filter((task) => {
+    const deadline = parseDate(task.deadline);
+    return deadline ? deadline >= tomorrow : false;
+  }).length;
+
+  const previewTasks = [...activeTasks]
+    .sort((left, right) => compareTasksByUrgency(left, right))
+    .slice(0, 3);
+
+  return {
+    activeCount: activeTasks.length,
+    doneCount,
+    overdueCount,
+    dueTodayCount,
+    upcomingCount,
+    previewTasks,
+  };
+}
+
+function buildShoppingSummary(lists: ShoppingList[]) {
+  const sortedLists = [...lists].sort(
+    (left, right) =>
+      (parseDate(right.createdAt)?.getTime() ?? 0) - (parseDate(left.createdAt)?.getTime() ?? 0)
+  );
+
+  return {
+    listCount: lists.length,
+    unpurchasedCount: lists.reduce((total, list) => total + list.unpurchasedCount, 0),
+    previewLists: sortedLists.slice(0, 3),
+  };
+}
+
+function buildRoutineSummary(routines: Routine[]) {
+  const visibleRoutines = routines.filter((routine) => routine.status !== 'DELETED');
+  const activeCount = visibleRoutines.filter((routine) => routine.status === 'ACTIVE').length;
+  const pausedCount = visibleRoutines.filter((routine) => routine.status === 'PAUSED').length;
+
+  return {
+    activeCount,
+    pausedCount,
+    previewRoutines: visibleRoutines.slice(0, 3),
+  };
+}
+
+function buildMemberSummary(members: HouseholdMember[]) {
+  const adminCount = members.filter((member) => member.role === 'admin').length;
+
+  return {
+    memberCount: members.length,
+    adminCount,
+    regularCount: members.length - adminCount,
+    previewMembers: members.slice(0, 4),
+  };
+}
+
+function compareTasksByUrgency(left: Task, right: Task): number {
+  const leftDeadline = parseDate(left.deadline)?.getTime() ?? Number.POSITIVE_INFINITY;
+  const rightDeadline = parseDate(right.deadline)?.getTime() ?? Number.POSITIVE_INFINITY;
+
+  if (leftDeadline !== rightDeadline) {
+    return leftDeadline - rightDeadline;
+  }
+
+  return (parseDate(right.createdAt)?.getTime() ?? 0) - (parseDate(left.createdAt)?.getTime() ?? 0);
+}
+
+function formatDeadline(deadline: string, t: TFunction): string {
+  const date = parseDate(deadline);
+  if (!date) return t('common.noDeadline');
+
+  const now = new Date();
+  const today = startOfDay(now);
+  const tomorrow = startOfTomorrow(now);
+  const nextDay = startOfTomorrow(tomorrow);
+
+  if (date < now) {
+    const overdueDays = Math.ceil((today.getTime() - startOfDay(date).getTime()) / dayMs);
+    if (overdueDays <= 0) return t('dashboard.overdue');
+    const diffDays = Math.max(1, overdueDays);
+    return t('tasks.overdueDays', { count: diffDays });
+  }
+
+  if (date >= today && date < tomorrow) return t('common.today');
+  if (date >= tomorrow && date < nextDay) return t('common.tomorrow');
+
+  const diffDays = Math.ceil((startOfDay(date).getTime() - today.getTime()) / dayMs);
   if (diffDays <= 7) return t('tasks.inDays', { count: diffDays });
+
   return date.toLocaleDateString();
+}
+
+function getItemsToBuyLabel(count: number, t: TFunction): string {
+  if (count === 0) return t('shopping.allPurchased');
+  if (count === 1) return t('shopping.oneToBuy');
+  return t('shopping.manyToBuy', { count });
+}
+
+const dayMs = 1000 * 60 * 60 * 24;
+
+function startOfDay(date: Date): Date {
+  const result = new Date(date);
+  result.setHours(0, 0, 0, 0);
+  return result;
+}
+
+function startOfTomorrow(date: Date): Date {
+  const result = startOfDay(date);
+  result.setDate(result.getDate() + 1);
+  return result;
+}
+
+function parseDate(value?: string): Date | null {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
 }

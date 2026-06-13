@@ -3,13 +3,13 @@
 > Формат Now/Next/Later фиксирует направление и приоритеты без преждевременных дат.
 > У каждого пункта должен быть "якорь" — initiative/release документ.
 
-## NOW (текущий фокус: household dashboard)
+## NOW (текущий фокус: next initiative selection)
 
-- Initiative (active): **INIT-2026Q3‑household‑dashboard** — Unified Household Home & Navigation
+- Initiative (done): **INIT-2026Q3‑household‑dashboard** — Unified Household Home & Navigation
   - Anchor: docs/planning/initiatives/INIT-2026Q3‑household‑dashboard.md
   - Outcome: единая household home страница с обзором tasks, shopping, routines и members, явной навигацией и пустыми состояниями для нового household
   - Why now: structured command attributes закрыты, PR влит в main и проверен на UAT 2026-06-13; следующий продуктовый рычаг — собрать уже реализованные household, tasks, shopping, routines и members в понятный операционный центр дома
-  - Current gate: planning intake; next artifact is epic/story decomposition and Gate C-ready workpack for the minimal dashboard slice
+  - Closed: 2026-06-13 (EP-034 / ST-3401; delegated Gate D GO; NOW minimal dashboard delivered without a new backend dashboard endpoint)
 
 - Initiative (done): **INIT-2026Q3‑command‑attributes** — Structured Command Attributes & Scheduling
   - Anchor: docs/planning/initiatives/INIT-2026Q3‑command‑attributes.md

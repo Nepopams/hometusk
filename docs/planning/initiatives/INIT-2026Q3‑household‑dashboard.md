@@ -1,7 +1,7 @@
 Initiative: INIT-2026Q3‑household‑dashboard — Unified Household Home & Navigation
 Status
 
-Active NOW — selected on 2026-06-13 after closing INIT-2026Q3‑command‑attributes. Ready for epic decomposition.
+DONE (NOW) — selected on 2026-06-13 after closing INIT-2026Q3‑command‑attributes and closed on 2026-06-13 through EP-034 / ST-3401 Gate D GO.
 
 Sources of Truth
 Household lifecycle initiative delivered the ability to create, join and invite households【turn42file0†L20-L34】.
@@ -90,14 +90,17 @@ Aggregated data retrieved efficiently and respects household boundaries.
 Empty states and error handling implemented.
 Documentation updated; DoR/DoD satisfied.
 
-12. Current Gate / Next Workflow
-Current gate: planning intake for the NOW dashboard slice. The initiative is selected as active roadmap focus because it has a ready anchor, fits the Product Goal "операционный центр дома", and connects delivered household, tasks, shopping, routines and members capabilities into one user-facing hub.
+12. Closure / Next Workflow
+Current gate: CLOSED for the NOW minimal dashboard slice. EP-034 / ST-3401 delivered the dedicated household home at `/households/{householdId}` with summary cards for tasks, shopping lists, routines and members, explicit Home navigation, empty/error/loading states, and desktop/mobile verification.
 
-Next artifact:
-- Epic/story decomposition for EP‑021 and EP‑022.
-- Gate C-ready workpack for the minimal dashboard slice.
+Closure evidence:
+- Epic: `docs/planning/epics/EP-034/epic.md`
+- Story: `docs/planning/epics/EP-034/stories/ST-3401-household-dashboard-minimal.md`
+- Workpack: `docs/planning/workpacks/ST-3401/workpack.md`
+- Review gate: `docs/planning/workpacks/ST-3401/review-gate.md`
+- Gate D: `docs/planning/workpacks/ST-3401/gate-d.md`
 
-Planning guardrails:
-- decide contract-first whether NOW uses a dedicated `GET /api/v1/households/{id}/dashboard` endpoint or client-side aggregation;
-- keep dashboard NOW focused on summary, navigation, empty states and household-boundary safety;
-- defer analytics widgets, personalisation and notification feed to NEXT.
+Decision notes:
+- NOW uses client-side aggregation through existing household-scoped endpoints.
+- No new `GET /api/v1/households/{id}/dashboard` endpoint was introduced.
+- Dedicated backend aggregation, personalization, analytics widgets and notification feed remain deferred to NEXT/LATER.
