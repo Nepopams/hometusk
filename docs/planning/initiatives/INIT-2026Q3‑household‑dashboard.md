@@ -1,7 +1,7 @@
 Initiative: INIT-2026Q3‑household‑dashboard — Unified Household Home & Navigation
 Status
 
-Proposed — Ready for epic decomposition (2026‑Q3)
+Active NOW — selected on 2026-06-13 after closing INIT-2026Q3‑command‑attributes. Ready for epic decomposition.
 
 Sources of Truth
 Household lifecycle initiative delivered the ability to create, join and invite households【turn42file0†L20-L34】.
@@ -89,3 +89,15 @@ Dashboard displays cards summarising tasks, shopping lists, routines and members
 Aggregated data retrieved efficiently and respects household boundaries.
 Empty states and error handling implemented.
 Documentation updated; DoR/DoD satisfied.
+
+12. Current Gate / Next Workflow
+Current gate: planning intake for the NOW dashboard slice. The initiative is selected as active roadmap focus because it has a ready anchor, fits the Product Goal "операционный центр дома", and connects delivered household, tasks, shopping, routines and members capabilities into one user-facing hub.
+
+Next artifact:
+- Epic/story decomposition for EP‑021 and EP‑022.
+- Gate C-ready workpack for the minimal dashboard slice.
+
+Planning guardrails:
+- decide contract-first whether NOW uses a dedicated `GET /api/v1/households/{id}/dashboard` endpoint or client-side aggregation;
+- keep dashboard NOW focused on summary, navigation, empty states and household-boundary safety;
+- defer analytics widgets, personalisation and notification feed to NEXT.

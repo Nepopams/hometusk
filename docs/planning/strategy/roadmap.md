@@ -3,13 +3,18 @@
 > Формат Now/Next/Later фиксирует направление и приоритеты без преждевременных дат.
 > У каждого пункта должен быть "якорь" — initiative/release документ.
 
-## NOW (текущий фокус: structured command attributes)
+## NOW (текущий фокус: household dashboard)
 
-- Initiative (active): **INIT-2026Q3‑command‑attributes** — Structured Command Attributes & Scheduling
+- Initiative (active): **INIT-2026Q3‑household‑dashboard** — Unified Household Home & Navigation
+  - Anchor: docs/planning/initiatives/INIT-2026Q3‑household‑dashboard.md
+  - Outcome: единая household home страница с обзором tasks, shopping, routines и members, явной навигацией и пустыми состояниями для нового household
+  - Why now: structured command attributes закрыты, PR влит в main и проверен на UAT 2026-06-13; следующий продуктовый рычаг — собрать уже реализованные household, tasks, shopping, routines и members в понятный операционный центр дома
+  - Current gate: planning intake; next artifact is epic/story decomposition and Gate C-ready workpack for the minimal dashboard slice
+
+- Initiative (done): **INIT-2026Q3‑command‑attributes** — Structured Command Attributes & Scheduling
   - Anchor: docs/planning/initiatives/INIT-2026Q3‑command‑attributes.md
   - Outcome: команды получают явные optional-атрибуты dueDate/assigneeId/zoneId/scheduleAt, confirmation UI и безопасное выполнение позже при сохранении schema validation, idempotency и DecisionLog traceability
-  - Why now: shopping NOW-scope закрыт и проверен на UAT; следующий максимальный продуктовый рычаг — усилить intent-driven ядро HomeTusk, чтобы AI/command path меньше угадывал и больше показывал пользователю управляемые параметры
-  - Current gate: planning intake; next artifact is epic/story decomposition and Gate C-ready workpack for the minimal structured attributes slice
+  - Closed: 2026-06-13 (EP-033 / ST-3301-ST-3303; PR merged to main and UAT verified)
 
 - Initiative (done): **INIT-2026Q3-shopping-manual-flow** — Manual Shopping Flow without AI
   - Anchor: docs/planning/initiatives/INIT-2026Q3-shopping-manual-flow.md
@@ -88,12 +93,7 @@
   - Purge/TTL housekeeping для idempotency/decision logs (если нужно) + минимальные метрики/алерты
   - Цель: не расширять домен, а снизить риск "всё работает только на демо"
 
-## NEXT (следующие инициативы после command attributes / параллельные кандидаты)
-
-- Initiative (candidate): **INIT-2026Q3‑household‑dashboard** — Unified Household Home & Navigation
-  - Anchor: docs/planning/initiatives/INIT-2026Q3‑household‑dashboard.md
-  - Outcome: единая household home страница с обзором tasks, shopping, routines и members, явной навигацией и пустыми состояниями для нового household
-  - Planning note: вероятен новый dashboard endpoint или client-side aggregation; перед commitment нужен contract/performance/security slice
+## NEXT (следующие инициативы после household dashboard / параллельные кандидаты)
 
 - Initiative (candidate): **Agreements v0 (read-only)** (consent-first)
   - Anchor: TBD — requires initiative spec
