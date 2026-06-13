@@ -150,7 +150,7 @@
       "attributes": {
         "access.token.lifespan": "3600",
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:5173/login##http://127.0.0.1:5173/login##http://localhost/login##https://localhost/login"
+        "post.logout.redirect.uris": "+"
       },
       "defaultClientScopes": [
         "openid",

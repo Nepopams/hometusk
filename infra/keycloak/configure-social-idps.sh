@@ -39,17 +39,24 @@ configure_web_client_redirects() {
     -q "clientId=$web_client_id" \
     --fields id \
     --format csv \
-    --noquotes | tail -n +2 | head -n 1)
+    --noquotes | head -n 1)
 
   if [ -z "$client_uuid" ]; then
     echo "OIDC client '$web_client_id' not found; redirect URI update skipped."
     return
   fi
 
-  "$KCADM" update "clients/$client_uuid" -r "$KEYCLOAK_REALM" \
-    -s "redirectUris=[\"$redirect_uri\"]" \
-    -s "webOrigins=[\"$web_base_url\"]" \
-    -s "attributes.post.logout.redirect.uris=$web_base_url/login"
+  client_json=$("$KCADM" get "clients/$client_uuid" -r "$KEYCLOAK_REALM" --fields redirectUris,webOrigins)
+
+  if ! echo "$client_json" | grep -F "\"$redirect_uri\"" >/dev/null 2>&1; then
+    "$KCADM" update "clients/$client_uuid" -r "$KEYCLOAK_REALM" \
+      -s "redirectUris+=$redirect_uri"
+  fi
+
+  if ! echo "$client_json" | grep -F "\"$web_base_url\"" >/dev/null 2>&1; then
+    "$KCADM" update "clients/$client_uuid" -r "$KEYCLOAK_REALM" \
+      -s "webOrigins+=$web_base_url"
+  fi
 
   echo "OIDC client '$web_client_id' redirect URI set to '$redirect_uri'."
 }
@@ -77,8 +84,6 @@ upsert_yandex() {
       -s "addReadTokenRoleOnCreate=false" \
       -s "authenticateByDefault=false" \
       -s "linkOnly=false" \
-      -s "hideOnLogin=false" \
-      -s "syncMode=IMPORT" \
       -s "firstBrokerLoginFlowAlias=first broker login" \
       -s "config.clientId=$client_id" \
       -s "config.clientSecret=$client_secret" \
@@ -99,8 +104,6 @@ upsert_yandex() {
       -s "addReadTokenRoleOnCreate=false" \
       -s "authenticateByDefault=false" \
       -s "linkOnly=false" \
-      -s "hideOnLogin=false" \
-      -s "syncMode=IMPORT" \
       -s "firstBrokerLoginFlowAlias=first broker login" \
       -s "config.clientId=$client_id" \
       -s "config.clientSecret=$client_secret" \
