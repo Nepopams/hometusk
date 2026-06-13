@@ -1,7 +1,7 @@
 Initiative: INIT-2026Q3‑command‑attributes — Structured Command Attributes & Scheduling
 Status
 
-Completed NOW - selected on 2026-06-13 and implemented through EP-033 on 2026-06-13. ST-3301, ST-3302, and ST-3303 reached delegated Gate D GO.
+Closed - selected on 2026-06-13, implemented through EP-033 on 2026-06-13, merged to main and verified on UAT on 2026-06-13. ST-3301, ST-3302, and ST-3303 reached delegated Gate D GO.
 
 Sources of Truth
 Existing command UX: INIT‑2026Q2‑command‑ux sets out the initial web command box and traceability【turn38file0†L20-L24】.
@@ -93,7 +93,10 @@ EP‑013	Command Recurrence & Advanced UX	NEXT	Proposed
 [x] Documentation (OpenAPI, contract index, service catalog, ADR/diagram, planning workpacks) updated.
 
 12. Current Gate / Next Workflow
-Current gate: NOW scope complete. Gate D GO is recorded in `docs/planning/workpacks/ST-3301/gate-d.md`, `docs/planning/workpacks/ST-3302/gate-d.md`, and `docs/planning/workpacks/ST-3303/gate-d.md`.
+Current gate: closed. NOW scope is implemented, merged to main and verified on UAT. Gate D GO is recorded in `docs/planning/workpacks/ST-3301/gate-d.md`, `docs/planning/workpacks/ST-3302/gate-d.md`, and `docs/planning/workpacks/ST-3303/gate-d.md`.
+
+Roadmap follow-up:
+- active NOW focus moved to `docs/planning/initiatives/INIT-2026Q3‑household‑dashboard.md` on 2026-06-13.
 
 Next artifact:
 - NEXT planning may evaluate recurrence, reminders, priority, AI suggestions, and bulk commands.
