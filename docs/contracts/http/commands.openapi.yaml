@@ -12,6 +12,11 @@ info:
     category/source fields are optional and backward-compatible. Existing
     clients may omit them; existing items may return `null`.
 
+    **INIT-2026Q3-command-attributes compatibility delta:** create_task
+    commands may include optional command-level `dueDate`, `assigneeId`, and
+    `zoneId`. These fields are backward-compatible; existing clients may keep
+    sending task attributes only inside `payload`.
+
     See also:
     - [CLAUDE.md](../../../CLAUDE.md) — Development rules
     - [ADR-003](../../architecture/decisions/003-stage1-commands-api.md) — Stage 1 decisions
@@ -96,7 +101,30 @@ paths:
                   payload:
                     title: "Clean the kitchen"
                     zoneId: "123e4567-e89b-12d3-a456-426614174001"
-                    deadline: "2026-01-13T18:00:00Z"
+                    deadline: "2027-01-13T18:00:00Z"
+                  source: "web"
+              createTaskWithCommandAttributes:
+                summary: Create a task with command-level attributes
+                value:
+                  householdId: "123e4567-e89b-12d3-a456-426614174000"
+                  type: "create_task"
+                  payload:
+                    title: "Clean the kitchen"
+                  dueDate: "2027-01-13T18:00:00Z"
+                  assigneeId: "123e4567-e89b-12d3-a456-426614174002"
+                  zoneId: "123e4567-e89b-12d3-a456-426614174001"
+                  source: "web"
+              scheduleTask:
+                summary: Schedule a task command for later execution
+                value:
+                  householdId: "123e4567-e89b-12d3-a456-426614174000"
+                  type: "create_task"
+                  payload:
+                    title: "Clean the kitchen"
+                  scheduleAt: "2027-01-13T16:00:00Z"
+                  dueDate: "2027-01-13T18:00:00Z"
+                  assigneeId: "123e4567-e89b-12d3-a456-426614174002"
+                  zoneId: "123e4567-e89b-12d3-a456-426614174001"
                   source: "web"
               completeTask:
                 summary: Complete a task
@@ -1292,6 +1320,37 @@ components:
             - $ref: '#/components/schemas/CreateTaskPayload'
             - $ref: '#/components/schemas/CompleteTaskPayload'
           description: Command-specific payload
+        dueDate:
+          type: string
+          format: date-time
+          description: |
+            Optional command-level due date for `create_task`; maps to task
+            `deadline`. If both `dueDate` and `payload.deadline` are present,
+            they must represent the same instant or the request is rejected with
+            `BUSINESS_RULE_VIOLATION` / `COMMAND_ATTRIBUTE_CONFLICT`.
+        assigneeId:
+          type: string
+          format: uuid
+          description: |
+            Optional command-level assignee for `create_task`; must be a member
+            of the target household. If both this field and
+            `payload.assigneeId` are present, they must match.
+        zoneId:
+          type: string
+          format: uuid
+          description: |
+            Optional command-level zone for `create_task`; must exist in the
+            target household. If both this field and `payload.zoneId` are
+            present, they must match.
+        scheduleAt:
+          type: string
+          format: date-time
+          description: |
+            Optional one-off command execution time. When present, HomeTusk
+            validates the effective command payload at submission time, stores
+            the command with status `scheduled`, creates no task immediately,
+            and revalidates domain invariants before executing at due time.
+            Must be in the future.
         source:
           type: string
           enum:
@@ -1354,6 +1413,7 @@ components:
     CommandResponse:
       oneOf:
         - $ref: '#/components/schemas/CommandExecutedResponse'
+        - $ref: '#/components/schemas/CommandScheduledResponse'
         - $ref: '#/components/schemas/CommandNeedsInputResponse'
         - $ref: '#/components/schemas/CommandRejectedResponse'
         - $ref: '#/components/schemas/CommandDegradedResponse'
@@ -1361,6 +1421,7 @@ components:
         propertyName: status
         mapping:
           executed: '#/components/schemas/CommandExecutedResponse'
+          scheduled: '#/components/schemas/CommandScheduledResponse'
           needs_input: '#/components/schemas/CommandNeedsInputResponse'
           rejected: '#/components/schemas/CommandRejectedResponse'
           executed_degraded: '#/components/schemas/CommandDegradedResponse'
@@ -1394,6 +1455,42 @@ components:
           type: integer
           minimum: 0
           description: Server-side execution time in milliseconds
+        initiatorId:
+          type: string
+          format: uuid
+          description: User who initiated this command (from JWT)
+
+    CommandScheduledResponse:
+      type: object
+      required:
+        - commandId
+        - correlationId
+        - status
+        - scheduleAt
+        - executionMs
+        - initiatorId
+      properties:
+        commandId:
+          type: string
+          format: uuid
+          description: Unique ID of the scheduled command
+        correlationId:
+          type: string
+          format: uuid
+          description: Correlation ID for tracing the scheduling request
+        status:
+          type: string
+          enum:
+            - scheduled
+          description: Command accepted for later execution
+        scheduleAt:
+          type: string
+          format: date-time
+          description: Time when the scheduler may execute this command
+        executionMs:
+          type: integer
+          minimum: 0
+          description: Server-side scheduling time in milliseconds
         initiatorId:
           type: string
           format: uuid
@@ -1592,6 +1689,8 @@ components:
             - DEADLINE_MUST_BE_FUTURE
             - INITIATOR_MUST_HAVE_PERMISSION
             - TASK_ALREADY_COMPLETED
+            - COMMAND_ATTRIBUTE_CONFLICT
+            - SCHEDULE_AT_MUST_BE_FUTURE
           description: Business rule that was violated
         message:
           type: string

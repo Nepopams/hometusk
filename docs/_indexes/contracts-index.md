@@ -54,3 +54,15 @@ This index tracks all API contracts (OpenAPI, JSON Schema, AsyncAPI) in the proj
   optional `linkedTaskId` on manual add/update item, and explicit null unlink
   semantics. Runtime implementation is tracked by
   `docs/planning/workpacks/ST-SHOP-001-005/workpack.md`.
+- 2026-06-13 — `commands.openapi.yaml` includes the non-breaking
+  INIT-2026Q3-command-attributes ST-3301 delta: optional command-level
+  `dueDate`, `assigneeId`, and `zoneId` for immediate `create_task` commands.
+  Existing payload-only clients remain compatible; conflicting top-level and
+  payload attributes reject with `COMMAND_ATTRIBUTE_CONFLICT`. Runtime
+  implementation is tracked by `docs/planning/workpacks/ST-3301/workpack.md`.
+- 2026-06-13 — `commands.openapi.yaml` includes the non-breaking
+  INIT-2026Q3-command-attributes ST-3303 delta: optional one-off `scheduleAt`
+  for command submission and a `scheduled` response variant. Scheduled
+  commands validate at submission and are revalidated at due-time execution.
+  Runtime implementation is tracked by
+  `docs/planning/workpacks/ST-3303/workpack.md`.

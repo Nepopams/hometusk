@@ -1,5 +1,6 @@
 package com.hometusk.commands.dto;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -50,6 +51,12 @@ public record CommandResponse(
             UUID commandId, UUID correlationId, String errorCode, String reason, int executionMs, UUID initiatorId) {
         return new CommandRejectedResponse(
                 commandId, correlationId, "rejected", errorCode, reason, executionMs, initiatorId);
+    }
+
+    public static CommandResponseBase scheduled(
+            UUID commandId, UUID correlationId, Instant scheduleAt, int executionMs, UUID initiatorId) {
+        return new CommandScheduledResponse(
+                commandId, correlationId, "scheduled", scheduleAt, executionMs, initiatorId);
     }
 
     public record CommandResult(UUID taskId, UUID assigneeId, Double decisionConfidence) {

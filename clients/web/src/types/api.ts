@@ -121,7 +121,7 @@ export interface TaskFilters {
 // ============================================
 
 export type CommandType = 'create_task' | 'complete_task';
-export type CommandStatus = 'executed' | 'needs_input' | 'rejected' | 'executed_degraded';
+export type CommandStatus = 'executed' | 'scheduled' | 'needs_input' | 'rejected' | 'executed_degraded';
 export type CommandSource = 'api' | 'web' | 'mobile';
 
 export interface CreateTaskPayload {
@@ -140,6 +140,10 @@ export interface CommandRequest {
   householdId: string;
   type: CommandType;
   payload: CreateTaskPayload | CompleteTaskPayload;
+  dueDate?: string;
+  assigneeId?: string;
+  zoneId?: string;
+  scheduleAt?: string;
   source: CommandSource;
   clientTimestamp?: string;
 }
@@ -171,6 +175,15 @@ export interface CommandNeedsInputResponse {
   initiatorId: string;
 }
 
+export interface CommandScheduledResponse {
+  commandId: string;
+  correlationId: string;
+  status: 'scheduled';
+  scheduleAt: string;
+  executionMs: number;
+  initiatorId: string;
+}
+
 export interface CommandRejectedResponse {
   commandId: string;
   correlationId: string;
@@ -196,6 +209,7 @@ export interface CommandDegradedResponse {
 
 export type CommandResponse =
   | CommandExecutedResponse
+  | CommandScheduledResponse
   | CommandNeedsInputResponse
   | CommandRejectedResponse
   | CommandDegradedResponse;
