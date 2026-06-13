@@ -33,6 +33,9 @@ export default function Sidebar({ isCompactHidden = false, onNavigate }: Sidebar
           <NavLink className={getLinkClass} to={`${basePath}/routines`} onClick={onNavigate}>
             {t('nav.routines')}
           </NavLink>
+          <NavLink className={getLinkClass} to={`${basePath}/shopping`} onClick={onNavigate}>
+            {t('nav.shopping')}
+          </NavLink>
           <NavLink className={getLinkClass} to={`${basePath}/analytics`} onClick={onNavigate}>
             {t('nav.analytics')}
           </NavLink>
