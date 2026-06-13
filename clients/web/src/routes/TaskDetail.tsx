@@ -1,11 +1,14 @@
-import { useCallback } from 'react';
+import { FormEvent, useCallback, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useShoppingLists } from '../hooks/useShoppingLists';
 import { useTask } from '../hooks/useTask';
-import { Button } from '../components/ui';
+import { Button, Modal, Snackbar } from '../components/ui';
+import { addShoppingItem, updateShoppingItem } from '../lib/api';
 import { ApiError } from '../lib/errors';
+import { SHOPPING_ITEM_CATEGORIES, buildAddShoppingItemPayload } from '../lib/shoppingMetadata';
 import { useI18n } from '../i18n';
-import type { TaskStatus } from '../types/api';
+import type { ShoppingItemCategory, TaskStatus } from '../types/api';
 import './TaskDetail.css';
 
 /**
@@ -26,11 +29,127 @@ export default function TaskDetail() {
   const { t, formatDateTime, formatRelativeTime } = useI18n();
   const { taskId } = useParams();
   const { task, isLoading, error, refetch } = useTask(householdId, taskId);
+  const {
+    lists: shoppingLists,
+    isCreating: isCreatingList,
+    createList,
+  } = useShoppingLists(householdId);
   const tasksPath = householdId ? `/households/${householdId}/tasks` : '/households';
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [selectedListId, setSelectedListId] = useState('');
+  const [newListName, setNewListName] = useState('');
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemQuantity, setNewItemQuantity] = useState('');
+  const [newItemUnit, setNewItemUnit] = useState('');
+  const [newItemCategory, setNewItemCategory] = useState<ShoppingItemCategory | ''>('');
+  const [newItemSource, setNewItemSource] = useState('');
+  const [addError, setAddError] = useState<string | null>(null);
+  const [isAddingItem, setIsAddingItem] = useState(false);
+  const [savingItemIds, setSavingItemIds] = useState<Set<string>>(new Set());
+  const [snackbar, setSnackbar] = useState<{ message: string; variant: 'success' | 'error' } | null>(
+    null
+  );
 
   const handleRetry = useCallback(() => {
     refetch();
   }, [refetch]);
+
+  const handleOpenAddItem = useCallback(() => {
+    setSelectedListId(shoppingLists[0]?.id ?? 'new');
+    setNewListName(shoppingLists.length === 0 ? t('shopping.defaultListName') : '');
+    setNewItemName('');
+    setNewItemQuantity('');
+    setNewItemUnit('');
+    setNewItemCategory('');
+    setNewItemSource('');
+    setAddError(null);
+    setAddModalOpen(true);
+  }, [shoppingLists, t]);
+
+  const handleCloseAddItem = useCallback(() => {
+    if (!isAddingItem && !isCreatingList) {
+      setAddModalOpen(false);
+      setAddError(null);
+    }
+  }, [isAddingItem, isCreatingList]);
+
+  const handleAddLinkedItem = useCallback(
+    async (e: FormEvent) => {
+      e.preventDefault();
+      if (!householdId || !task) return;
+
+      const itemName = newItemName.trim();
+      if (!itemName) return;
+
+      setIsAddingItem(true);
+      setAddError(null);
+
+      try {
+        let listId = selectedListId;
+        if (listId === 'new' || shoppingLists.length === 0) {
+          const created = await createList(newListName.trim() || t('shopping.defaultListName'));
+          if (!created) return;
+          listId = created.id;
+        }
+
+        await addShoppingItem(
+          householdId,
+          listId,
+          buildAddShoppingItemPayload(
+            itemName,
+            parseQuantity(newItemQuantity),
+            newItemUnit,
+            newItemCategory,
+            newItemSource,
+            task.id
+          )
+        );
+
+        setAddModalOpen(false);
+        setSnackbar({ message: t('shopping.itemAddedToTask'), variant: 'success' });
+        refetch();
+      } catch (err) {
+        setAddError(err instanceof Error ? err.message : t('shopping.failedAddItem'));
+      } finally {
+        setIsAddingItem(false);
+      }
+    },
+    [
+      createList,
+      householdId,
+      newItemCategory,
+      newItemName,
+      newItemQuantity,
+      newItemSource,
+      newItemUnit,
+      newListName,
+      refetch,
+      selectedListId,
+      shoppingLists.length,
+      t,
+      task,
+    ]
+  );
+
+  const handleMarkShoppingPurchased = useCallback(
+    async (itemId: string) => {
+      if (!householdId) return;
+      setSavingItemIds((prev) => new Set(prev).add(itemId));
+      try {
+        await updateShoppingItem(householdId, itemId, { purchased: true });
+        refetch();
+      } catch {
+        setSnackbar({ message: t('shopping.failedUpdateItem'), variant: 'error' });
+      } finally {
+        setSavingItemIds((prev) => {
+          const next = new Set(prev);
+          next.delete(itemId);
+          return next;
+        });
+      }
+    },
+    [householdId, refetch, t]
+  );
 
   if (!householdId) {
     return (
@@ -180,6 +299,8 @@ export default function TaskDetail() {
     done: t('common.done'),
     cancelled: t('common.cancelled'),
   };
+  const linkedShoppingItems = task.linkedShoppingItems ?? [];
+  const isSavingAdd = isAddingItem || isCreatingList;
 
   return (
     <div className="task-detail">
@@ -322,54 +443,199 @@ export default function TaskDetail() {
         </div>
 
         {/* Shopping Items Section */}
-        {task.linkedShoppingItems && task.linkedShoppingItems.length > 0 && (
-          <>
-            <div className="task-detail__section-header">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="9" cy="21" r="1" />
-                <circle cx="20" cy="21" r="1" />
-                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-              </svg>
-              <span>{t('tasks.shoppingItems', { count: task.linkedShoppingItems.length })}</span>
+        <div className="task-detail__section-header">
+          <div className="task-detail__section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="9" cy="21" r="1" />
+              <circle cx="20" cy="21" r="1" />
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+            </svg>
+            <span>{t('tasks.shoppingItems', { count: linkedShoppingItems.length })}</span>
+          </div>
+          <Button variant="secondary" size="sm" onClick={handleOpenAddItem}>
+            {t('shopping.addLinkedItem')}
+          </Button>
+        </div>
+        <div className="task-detail__card">
+          {linkedShoppingItems.length === 0 ? (
+            <div className="task-detail__shopping-empty">
+              <p>{t('shopping.noLinkedItems')}</p>
+              <Button variant="primary" size="sm" onClick={handleOpenAddItem}>
+                {t('shopping.addLinkedItem')}
+              </Button>
             </div>
-            <div className="task-detail__card">
-              {task.linkedShoppingItems.map((item, idx) => (
+          ) : (
+            linkedShoppingItems.map((item, idx) => (
                 <div key={item.id}>
                   {idx > 0 && <div className="task-detail__divider" />}
-                  <Link
-                    to={`/households/${householdId}/shopping/${item.listId}`}
-                    className="task-detail__shopping-item"
-                  >
-                    <span
-                      className={`task-detail__shopping-name ${item.purchased ? 'task-detail__shopping-name--purchased' : ''}`}
+                  <div className="task-detail__shopping-item">
+                    <Link
+                      to={`/households/${householdId}/shopping/${item.listId}`}
+                      className="task-detail__shopping-link"
                     >
-                      {item.name}
-                    </span>
-                    {(item.quantity || item.unit) && (
-                      <span className="task-detail__shopping-meta">
-                        {item.quantity && item.quantity > 1 ? `${item.quantity}` : ''}
-                        {item.quantity && item.quantity > 1 && item.unit ? ' ' : ''}
-                        {item.unit || ''}
-                      </span>
-                    )}
-                    {item.purchased && (
-                      <svg
-                        className="task-detail__shopping-check"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
+                      <span
+                        className={`task-detail__shopping-name ${item.purchased ? 'task-detail__shopping-name--purchased' : ''}`}
                       >
+                        {item.name}
+                      </span>
+                      {(item.quantity || item.unit) && (
+                        <span className="task-detail__shopping-meta">
+                          {getQuantityMeta(item)}
+                        </span>
+                      )}
+                      {(item.category || item.source) && (
+                        <span className="task-detail__shopping-badges">
+                          {item.category && (
+                            <span className="task-detail__shopping-badge">
+                              {getCategoryLabel(item.category, t)}
+                            </span>
+                          )}
+                          {item.source && (
+                            <span className="task-detail__shopping-badge task-detail__shopping-badge--source">
+                              {item.source}
+                            </span>
+                          )}
+                        </span>
+                      )}
+                    </Link>
+                    {item.purchased ? (
+                      <svg className="task-detail__shopping-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleMarkShoppingPurchased(item.id)}
+                        loading={savingItemIds.has(item.id)}
+                      >
+                        {t('shopping.markPurchased')}
+                      </Button>
                     )}
-                  </Link>
+                  </div>
                 </div>
-              ))}
+            ))
+          )}
+        </div>
+
+        <Modal
+          open={addModalOpen}
+          onClose={handleCloseAddItem}
+          title={t('shopping.addLinkedItem')}
+          size="md"
+          closeOnBackdrop={!isSavingAdd}
+        >
+          <form className="task-detail__shopping-form" onSubmit={handleAddLinkedItem}>
+            <label className="task-detail__field">
+              <span className="task-detail__field-label">{t('shopping.targetList')}</span>
+              <select
+                className="task-detail__select"
+                value={selectedListId || 'new'}
+                onChange={(e) => setSelectedListId(e.target.value)}
+                disabled={isSavingAdd}
+              >
+                {shoppingLists.map((list) => (
+                  <option key={list.id} value={list.id}>
+                    {list.name}
+                  </option>
+                ))}
+                <option value="new">{t('shopping.createNewList')}</option>
+              </select>
+            </label>
+            {(selectedListId === 'new' || shoppingLists.length === 0) && (
+              <label className="task-detail__field">
+                <span className="task-detail__field-label">{t('shopping.listName')}</span>
+                <input
+                  className="task-detail__text-input"
+                  value={newListName}
+                  maxLength={80}
+                  onChange={(e) => setNewListName(e.target.value)}
+                  placeholder={t('shopping.defaultListName')}
+                  disabled={isSavingAdd}
+                />
+              </label>
+            )}
+            <label className="task-detail__field">
+              <span className="task-detail__field-label">{t('common.name')}</span>
+              <input
+                className="task-detail__text-input"
+                value={newItemName}
+                maxLength={255}
+                onChange={(e) => setNewItemName(e.target.value)}
+                placeholder={t('shopping.addPlaceholder')}
+                disabled={isSavingAdd}
+                autoFocus
+              />
+            </label>
+            <div className="task-detail__field-row">
+              <label className="task-detail__field">
+                <span className="task-detail__field-label">{t('shopping.quantity')}</span>
+                <input
+                  className="task-detail__text-input"
+                  type="number"
+                  min={1}
+                  max={999}
+                  inputMode="numeric"
+                  value={newItemQuantity}
+                  onChange={(e) => setNewItemQuantity(e.target.value)}
+                  disabled={isSavingAdd}
+                />
+              </label>
+              <label className="task-detail__field">
+                <span className="task-detail__field-label">{t('shopping.unit')}</span>
+                <input
+                  className="task-detail__text-input"
+                  value={newItemUnit}
+                  maxLength={50}
+                  onChange={(e) => setNewItemUnit(e.target.value)}
+                  disabled={isSavingAdd}
+                />
+              </label>
             </div>
-          </>
+            <div className="task-detail__field-row">
+              <label className="task-detail__field">
+                <span className="task-detail__field-label">{t('shopping.category')}</span>
+                <select
+                  className="task-detail__select"
+                  value={newItemCategory}
+                  onChange={(e) => setNewItemCategory(e.target.value as ShoppingItemCategory | '')}
+                  disabled={isSavingAdd}
+                >
+                  <option value="">{t('shopping.noCategory')}</option>
+                  {SHOPPING_ITEM_CATEGORIES.map((category) => (
+                    <option key={category} value={category}>
+                      {getCategoryLabel(category, t)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="task-detail__field">
+                <span className="task-detail__field-label">{t('shopping.source')}</span>
+                <input
+                  className="task-detail__text-input"
+                  value={newItemSource}
+                  maxLength={120}
+                  onChange={(e) => setNewItemSource(e.target.value)}
+                  placeholder={t('shopping.sourcePlaceholder')}
+                  disabled={isSavingAdd}
+                />
+              </label>
+            </div>
+            {addError && <p className="task-detail__form-error">{addError}</p>}
+            <div className="task-detail__modal-actions">
+              <Button type="button" variant="secondary" size="md" onClick={handleCloseAddItem} disabled={isSavingAdd}>
+                {t('common.cancel')}
+              </Button>
+              <Button type="submit" variant="primary" size="md" loading={isSavingAdd} disabled={!newItemName.trim()}>
+                {t('common.add')}
+              </Button>
+            </div>
+          </form>
+        </Modal>
+        {snackbar && (
+          <Snackbar open onClose={() => setSnackbar(null)} variant={snackbar.variant}>
+            {snackbar.message}
+          </Snackbar>
         )}
       </div>
     </div>
@@ -419,4 +685,35 @@ function formatDeadline(
   }
 
   return { text: date.toLocaleDateString(), isOverdue: false };
+}
+
+function getQuantityMeta(item: { quantity?: number; unit?: string }): string {
+  const quantity = item.quantity && item.quantity > 1 ? `${item.quantity}` : '';
+  const unit = item.unit ?? '';
+  return [quantity, unit].filter(Boolean).join(' ');
+}
+
+function parseQuantity(value: string): number | null {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function getCategoryLabel(
+  category: ShoppingItemCategory,
+  t: ReturnType<typeof useI18n>['t']
+): string {
+  switch (category) {
+    case 'groceries':
+      return t('shopping.category.groceries');
+    case 'cleaning':
+      return t('shopping.category.cleaning');
+    case 'personal_care':
+      return t('shopping.category.personalCare');
+    case 'diy':
+      return t('shopping.category.diy');
+    case 'electronics':
+      return t('shopping.category.electronics');
+    case 'other':
+      return t('shopping.category.other');
+  }
 }

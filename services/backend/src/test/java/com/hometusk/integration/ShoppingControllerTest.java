@@ -11,6 +11,8 @@ import com.hometusk.shopping.domain.ShoppingItem;
 import com.hometusk.shopping.domain.ShoppingList;
 import com.hometusk.shopping.repository.ShoppingItemRepository;
 import com.hometusk.shopping.repository.ShoppingListRepository;
+import com.hometusk.tasks.domain.Task;
+import com.hometusk.tasks.repository.TaskRepository;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +36,9 @@ class ShoppingControllerTest extends IntegrationTestBase {
 
     @Autowired
     private TaskActivityRepository taskActivityRepository;
+
+    @Autowired
+    private TaskRepository taskRepository;
 
     private ShoppingList shoppingList;
     private ShoppingItem item1;
@@ -76,6 +81,54 @@ class ShoppingControllerTest extends IntegrationTestBase {
         void listShoppingListsRejectsNonMember() throws Exception {
             mockMvc.perform(get("/api/v1/households/{id}/shopping-lists", testHousehold.getId())
                             .with(jwtForUser(testUser2)))
+                    .andExpect(status().isForbidden());
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/v1/households/{id}/shopping-lists")
+    class CreateShoppingListTests {
+
+        @Test
+        @DisplayName("Should create a shopping list")
+        void createShoppingListCreatesList() throws Exception {
+            var request = Map.of("name", "  Hardware  ");
+
+            mockMvc.perform(post("/api/v1/households/{id}/shopping-lists", testHousehold.getId())
+                            .with(jwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.id").exists())
+                    .andExpect(jsonPath("$.name").value("Hardware"))
+                    .andExpect(jsonPath("$.householdId").value(testHousehold.getId().toString()))
+                    .andExpect(jsonPath("$.unpurchasedCount").value(0));
+
+            assertThat(shoppingListRepository.findByHousehold_IdAndName(testHousehold.getId(), "Hardware"))
+                    .isPresent();
+        }
+
+        @Test
+        @DisplayName("Should reject blank shopping list name")
+        void createShoppingListRejectsBlankName() throws Exception {
+            var request = Map.of("name", "   ");
+
+            mockMvc.perform(post("/api/v1/households/{id}/shopping-lists", testHousehold.getId())
+                            .with(jwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Should reject create list for non-member")
+        void createShoppingListRejectsNonMember() throws Exception {
+            var request = Map.of("name", "Hardware");
+
+            mockMvc.perform(post("/api/v1/households/{id}/shopping-lists", testHousehold.getId())
+                            .with(jwtForUser(testUser2))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isForbidden());
         }
     }
@@ -231,6 +284,60 @@ class ShoppingControllerTest extends IntegrationTestBase {
                     .orElseThrow();
             assertThat(saved.getCategory()).isEqualTo("cleaning");
             assertThat(saved.getSource()).isEqualTo("Ozon");
+        }
+
+        @Test
+        @DisplayName("Should add item linked to same-household task")
+        void addItemCreatesNewItemLinkedToTask() throws Exception {
+            Task task = taskRepository.save(new Task(testHousehold, "Buy dinner supplies", testUser));
+            var request = Map.of(
+                    "name", "Chicken",
+                    "quantity", 1,
+                    "unit", "kg",
+                    "category", "groceries",
+                    "source", "Market",
+                    "linkedTaskId", task.getId().toString());
+
+            mockMvc.perform(post(
+                                    "/api/v1/households/{id}/shopping-lists/{listId}/items",
+                                    testHousehold.getId(),
+                                    shoppingList.getId())
+                            .with(jwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.name").value("Chicken"))
+                    .andExpect(jsonPath("$.linkedTaskId").value(task.getId().toString()));
+
+            var saved = shoppingItemRepository.findByShoppingList_IdOrderByCreatedAtDesc(shoppingList.getId()).stream()
+                    .filter(i -> i.getName().equals("Chicken"))
+                    .findFirst()
+                    .orElseThrow();
+            assertThat(saved.getLinkedTaskId()).isEqualTo(task.getId());
+        }
+
+        @Test
+        @DisplayName("Should reject cross-household linked task without creating item")
+        void addItemRejectsCrossHouseholdLinkedTask() throws Exception {
+            var otherHousehold = householdRepository.save(new com.hometusk.households.domain.Household("Other"));
+            Task otherTask = taskRepository.save(new Task(otherHousehold, "Other task", testUser));
+            var request = Map.of(
+                    "name", "Private item",
+                    "linkedTaskId", otherTask.getId().toString());
+
+            mockMvc.perform(post(
+                                    "/api/v1/households/{id}/shopping-lists/{listId}/items",
+                                    testHousehold.getId(),
+                                    shoppingList.getId())
+                            .with(jwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.errorCode").value("TASK_NOT_FOUND"));
+
+            assertThat(shoppingItemRepository.findByShoppingList_IdOrderByCreatedAtDesc(shoppingList.getId()))
+                    .extracting(ShoppingItem::getName)
+                    .doesNotContain("Private item");
         }
 
         @Test
@@ -410,6 +517,76 @@ class ShoppingControllerTest extends IntegrationTestBase {
             var updated = shoppingItemRepository.findById(item1.getId()).orElseThrow();
             assertThat(updated.getCategory()).isNull();
             assertThat(updated.getSource()).isNull();
+        }
+
+        @Test
+        @DisplayName("Should link and unlink item to task")
+        void updateLinksAndUnlinksItemToTask() throws Exception {
+            Task task = taskRepository.save(new Task(testHousehold, "Plan dinner", testUser));
+            String linkRequest = """
+                    {
+                      "linkedTaskId": "%s"
+                    }
+                    """
+                    .formatted(task.getId());
+
+            mockMvc.perform(patch(
+                                    "/api/v1/households/{id}/shopping-items/{itemId}",
+                                    testHousehold.getId(),
+                                    item1.getId())
+                            .with(jwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(linkRequest))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.linkedTaskId").value(task.getId().toString()));
+
+            var linked = shoppingItemRepository.findById(item1.getId()).orElseThrow();
+            assertThat(linked.getLinkedTaskId()).isEqualTo(task.getId());
+
+            String unlinkRequest = """
+                    {
+                      "linkedTaskId": null
+                    }
+                    """;
+
+            mockMvc.perform(patch(
+                                    "/api/v1/households/{id}/shopping-items/{itemId}",
+                                    testHousehold.getId(),
+                                    item1.getId())
+                            .with(jwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(unlinkRequest))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.linkedTaskId").value(nullValue()));
+
+            var unlinked = shoppingItemRepository.findById(item1.getId()).orElseThrow();
+            assertThat(unlinked.getLinkedTaskId()).isNull();
+        }
+
+        @Test
+        @DisplayName("Should reject cross-household linked task update")
+        void updateRejectsCrossHouseholdLinkedTask() throws Exception {
+            var otherHousehold = householdRepository.save(new com.hometusk.households.domain.Household("Other"));
+            Task otherTask = taskRepository.save(new Task(otherHousehold, "Other task", testUser));
+            String request = """
+                    {
+                      "linkedTaskId": "%s"
+                    }
+                    """
+                    .formatted(otherTask.getId());
+
+            mockMvc.perform(patch(
+                                    "/api/v1/households/{id}/shopping-items/{itemId}",
+                                    testHousehold.getId(),
+                                    item1.getId())
+                            .with(jwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.errorCode").value("TASK_NOT_FOUND"));
+
+            var unchanged = shoppingItemRepository.findById(item1.getId()).orElseThrow();
+            assertThat(unchanged.getLinkedTaskId()).isNull();
         }
 
         @Test

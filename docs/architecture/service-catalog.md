@@ -80,7 +80,10 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 - `POST /api/v1/invites/accept` — Accept invite token
 - `GET /api/v1/households/{id}/tasks` — List tasks
 - `GET /api/v1/households/{id}/shopping-lists` — List shopping lists
+- `POST /api/v1/households/{id}/shopping-lists` — Create a user-visible shopping list
 - `GET /api/v1/households/{id}/shopping-lists/{listId}/items` — List shopping items with optional `purchased`, `category`, and `source` filters
+- `POST /api/v1/households/{id}/shopping-lists/{listId}/items` — Add manual shopping items with optional category/source/task link
+- `PATCH /api/v1/households/{id}/shopping-items/{itemId}` — Update purchase state, category/source, or linked task
 - `GET /api/v1/households/{id}/notifications` — List notifications
 - `POST /api/v1/notifications/{id}/read` — Mark notification read
 
@@ -94,7 +97,7 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 | HouseholdController | `POST /api/v1/households`, `GET/POST /*/zones`, `GET /*/members`, `POST /*/invites` | Household administration |
 | HouseholdInviteController | `POST /api/v1/invites/accept` | Invite acceptance |
 | TaskController | `GET /api/v1/households/{id}/tasks`, `GET /*/tasks/{taskId}` | Task reads (writes via commands) |
-| ShoppingController | `GET/POST /*/shopping-lists/*`, `PATCH/DELETE /*/shopping-items/*` | Shopping management, including optional category/source metadata (see ADR-009) |
+| ShoppingController | `GET/POST /*/shopping-lists`, `GET/POST /*/shopping-lists/*/items`, `PATCH/DELETE /*/shopping-items/*` | Manual shopping management, including list creation, optional category/source metadata, and task link/unlink validation (see ADR-009) |
 | NotificationController | `GET /api/v1/households/{id}/notifications`, `POST /api/v1/notifications/{id}/read` | In-app notifications |
 
 **Invites:** Active (MVP Iteration 1 / Step 2)
@@ -258,7 +261,7 @@ Handles all notifications to users.
 - `memberships` — User ↔ Household relationship
 - `tasks` — Work items
 - `shopping_lists` — Shopping list containers
-- `shopping_items` — Items in shopping lists, with optional `category` and `source` metadata
+- `shopping_items` — Items in shopping lists, with optional `category`, `source`, and `linked_task_id` metadata
 - `shopping_runs` — Shopping run snapshots for active/completed/cancelled trips
 - `shopping_run_items` — Shopping run item snapshots, including category/source copied from original list items
 

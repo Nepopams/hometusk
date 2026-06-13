@@ -49,3 +49,8 @@ This index tracks all API contracts (OpenAPI, JSON Schema, AsyncAPI) in the proj
   optional `category`/`source` metadata on shopping items, list filters,
   partial item update semantics, and shopping run/export propagation. Runtime
   implementation is tracked by `docs/planning/workpacks/ST-3101/workpack.md`.
+- 2026-06-13 — `commands.openapi.yaml` includes the non-breaking
+  INIT-2026Q3-shopping-manual-flow delta: manual shopping list creation,
+  optional `linkedTaskId` on manual add/update item, and explicit null unlink
+  semantics. Runtime implementation is tracked by
+  `docs/planning/workpacks/ST-SHOP-001-005/workpack.md`.

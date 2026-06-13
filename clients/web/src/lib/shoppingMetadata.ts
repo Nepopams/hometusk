@@ -30,24 +30,48 @@ export function normalizeShoppingSource(source: string | null | undefined): stri
 
 export function buildAddShoppingItemPayload(
   name: string,
+  quantity: number | null,
+  unit: string,
   category: ShoppingItemCategory | '',
-  source: string
+  source: string,
+  linkedTaskId?: string | null
 ): AddShoppingItemRequest {
   const normalizedSource = normalizeShoppingSource(source);
+  const normalizedUnit = normalizeShoppingSource(unit);
   return {
     name: name.trim(),
+    ...(quantity && quantity > 1 ? { quantity } : {}),
+    ...(normalizedUnit ? { unit: normalizedUnit } : {}),
     ...(category ? { category } : {}),
     ...(normalizedSource ? { source: normalizedSource } : {}),
+    ...(linkedTaskId ? { linkedTaskId } : {}),
   };
 }
 
 export function buildShoppingItemMetadataUpdate(
   category: ShoppingItemCategory | '',
-  source: string
+  source: string,
+  linkedTaskId?: string | null
+): UpdateShoppingItemRequest {
+  const payload: UpdateShoppingItemRequest = {
+    category: category || null,
+    source: normalizeShoppingSource(source),
+  };
+  if (linkedTaskId !== undefined) {
+    payload.linkedTaskId = linkedTaskId;
+  }
+  return payload;
+}
+
+export function buildShoppingItemDetailsUpdate(
+  category: ShoppingItemCategory | '',
+  source: string,
+  linkedTaskId: string | null
 ): UpdateShoppingItemRequest {
   return {
     category: category || null,
     source: normalizeShoppingSource(source),
+    linkedTaskId,
   };
 }
 

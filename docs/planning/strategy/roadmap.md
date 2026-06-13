@@ -3,12 +3,18 @@
 > Формат Now/Next/Later фиксирует направление и приоритеты без преждевременных дат.
 > У каждого пункта должен быть "якорь" — initiative/release документ.
 
-## NOW (текущий фокус: закрытая Q3-инициатива)
+## NOW (текущий фокус: закрытый ручной shopping flow без AI)
+
+- Initiative (done): **INIT-2026Q3-shopping-manual-flow** — Manual Shopping Flow without AI
+  - Anchor: docs/planning/initiatives/INIT-2026Q3-shopping-manual-flow.md
+  - Outcome: пользователь может пройти shopping E2E без AI: создать первый список из пустого состояния, добавить item вручную, указать category/source, связать покупку с задачей, увидеть linked shopping items в task detail и отметить/удалить покупку
+  - Why now: закрытая categories-инициатива сделала item metadata полезной, но выявила UX-разрыв: без ручного создания shopping list функциональность доступна только через сиды, БД или AI-driven path
+  - Closed: 2026-06-13 (ST-SHOP-001-005)
 
 - Initiative (done): **INIT‑2026Q3‑shopping‑categories** — Categorised & Sourced Shopping Lists
   - Anchor: docs/planning/initiatives/INIT‑2026Q3‑shopping‑categories.md
   - Outcome: список покупок становится структурированным: category/source у item, фильтрация и группировка по категории или магазину, бейджи в UI, обратная совместимость для существующих списков
-  - Why now: это самый узкий demonstrable increment из Q3-кандидатов; он усиливает уже закрытый shopping marketplace/run слой без захода в command pipeline или новый household dashboard aggregator
+  - Closure note: закрыла metadata layer, но не включала ручное создание shopping lists или task-shopping linkage UI; этот gap вынесен в INIT-2026Q3-shopping-manual-flow
   - Readiness: Completed through Human Gate D on 2026-06-13; live browser verification accepted as deferred debt TD-ST-3201-001.
 
 - Initiative (done): **INIT-2026Q1-mobile-nav-collapse** — Mobile Navigation Collapse
@@ -76,12 +82,12 @@
   - Purge/TTL housekeeping для idempotency/decision logs (если нужно) + минимальные метрики/алерты
   - Цель: не расширять домен, а снизить риск "всё работает только на демо"
 
-## NEXT (следующие инициативы после shopping categories)
+## NEXT (следующие инициативы после manual shopping flow / параллельные кандидаты)
 
 - Initiative (candidate): **INIT-2026Q3‑command‑attributes** — Structured Command Attributes & Scheduling
   - Anchor: docs/planning/initiatives/INIT-2026Q3‑command‑attributes.md
   - Outcome: команды получают явные атрибуты dueDate/assignee/zone/scheduleAt, confirmation UI и безопасное выполнение later; сохраняются schema validation, idempotency и DecisionLog traceability
-  - Planning note: высокий contract + traceability impact; не смешивать с shopping categories, чтобы не раздувать NOW-инкремент
+  - Planning note: высокий contract + traceability impact; не смешивать с manual shopping flow, чтобы не раздувать NOW-инкремент
 
 - Initiative (candidate): **INIT-2026Q3‑household‑dashboard** — Unified Household Home & Navigation
   - Anchor: docs/planning/initiatives/INIT-2026Q3‑household‑dashboard.md

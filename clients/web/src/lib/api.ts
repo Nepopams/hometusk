@@ -9,6 +9,7 @@ import type {
   BadgeCatalogResponse,
   CommandRequest,
   CommandResponse,
+  CreateShoppingListRequest,
   CreateInviteResponse,
   LoginRequest,
   GamificationProgress,
@@ -139,6 +140,16 @@ export async function getTask(householdId: string, taskId: string): Promise<Task
 
 export async function getShoppingLists(householdId: string): Promise<ShoppingList[]> {
   return apiFetch<ShoppingList[]>(`/households/${householdId}/shopping-lists`);
+}
+
+export async function createShoppingList(
+  householdId: string,
+  data: CreateShoppingListRequest
+): Promise<ShoppingList> {
+  return apiFetch<ShoppingList>(`/households/${householdId}/shopping-lists`, {
+    method: 'POST',
+    body: data,
+  });
 }
 
 export async function getShoppingList(householdId: string, listId: string): Promise<ShoppingList> {

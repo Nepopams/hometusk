@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import java.util.UUID;
 
 @Schema(description = "Request to add a shopping item")
 public record AddShoppingItemRequest(
@@ -19,7 +20,8 @@ public record AddShoppingItemRequest(
         @Schema(description = "Optional shopping category", example = "groceries") String category,
         @Schema(description = "Optional source/store name", example = "Perekrestok")
                 @Size(max = 120, message = "Source must be at most 120 characters")
-                String source) {
+                String source,
+        @Schema(description = "Optional same-household task link") UUID linkedTaskId) {
 
     /**
      * Returns the quantity, defaulting to 1 if not specified.

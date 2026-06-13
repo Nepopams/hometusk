@@ -37,15 +37,17 @@ describe('shoppingMetadata', () => {
   ];
 
   it('builds add payload with category/source metadata', () => {
-    expect(buildAddShoppingItemPayload(' Milk ', 'groceries', ' Perekrestok ')).toEqual({
+    expect(buildAddShoppingItemPayload(' Milk ', 2, ' l ', 'groceries', ' Perekrestok ')).toEqual({
       name: 'Milk',
+      quantity: 2,
+      unit: 'l',
       category: 'groceries',
       source: 'Perekrestok',
     });
   });
 
   it('keeps name-only add payload uncluttered', () => {
-    expect(buildAddShoppingItemPayload(' Milk ', '', '   ')).toEqual({ name: 'Milk' });
+    expect(buildAddShoppingItemPayload(' Milk ', null, ' ', '', '   ')).toEqual({ name: 'Milk' });
   });
 
   it('builds metadata-only patch without purchased', () => {

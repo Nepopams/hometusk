@@ -3,11 +3,12 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useMarketplaceTemplates } from '../hooks/useMarketplaceTemplates';
 import { useShoppingItems } from '../hooks/useShoppingItems';
+import { useTasks } from '../hooks/useTasks';
 import { useI18n } from '../i18n';
 import {
   SHOPPING_ITEM_CATEGORIES,
   buildAddShoppingItemPayload,
-  buildShoppingItemMetadataUpdate,
+  buildShoppingItemDetailsUpdate,
   groupShoppingItems,
   normalizeShoppingSource,
   type ShoppingGroupMode,
@@ -48,8 +49,11 @@ export default function ShoppingDetail() {
   const [listError, setListError] = useState<Error | null>(null);
 
   const [newItemName, setNewItemName] = useState('');
+  const [newItemQuantity, setNewItemQuantity] = useState('');
+  const [newItemUnit, setNewItemUnit] = useState('');
   const [newItemCategory, setNewItemCategory] = useState<ShoppingItemCategory | ''>('');
   const [newItemSource, setNewItemSource] = useState('');
+  const [newItemLinkedTaskId, setNewItemLinkedTaskId] = useState('');
   const [showAddDetails, setShowAddDetails] = useState(false);
   const [groupMode, setGroupMode] = useState<ShoppingGroupMode>('none');
   const [filterCategory, setFilterCategory] = useState<ShoppingItemCategory | ''>('');
@@ -57,6 +61,7 @@ export default function ShoppingDetail() {
   const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
   const [editCategory, setEditCategory] = useState<ShoppingItemCategory | ''>('');
   const [editSource, setEditSource] = useState('');
+  const [editLinkedTaskId, setEditLinkedTaskId] = useState('');
   const [editError, setEditError] = useState<string | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
   const [snackbar, setSnackbar] = useState<{ message: string; variant: 'success' | 'error' } | null>(
@@ -89,6 +94,7 @@ export default function ShoppingDetail() {
   });
 
   const { templates: marketplaceTemplates } = useMarketplaceTemplates();
+  const { tasks } = useTasks(householdId, {});
 
   // Fetch list info
   useEffect(() => {
@@ -115,15 +121,36 @@ export default function ShoppingDetail() {
 
       setAddError(null);
       try {
-        await addItem(buildAddShoppingItemPayload(name, newItemCategory, newItemSource));
+        await addItem(
+          buildAddShoppingItemPayload(
+            name,
+            parseQuantity(newItemQuantity),
+            newItemUnit,
+            newItemCategory,
+            newItemSource,
+            newItemLinkedTaskId || null
+          )
+        );
         setNewItemName('');
+        setNewItemQuantity('');
+        setNewItemUnit('');
         setNewItemCategory('');
         setNewItemSource('');
+        setNewItemLinkedTaskId('');
       } catch (err) {
         setAddError(err instanceof Error ? err.message : t('shopping.failedAddItem'));
       }
     },
-    [newItemName, newItemCategory, newItemSource, addItem, t]
+    [
+      newItemName,
+      newItemQuantity,
+      newItemUnit,
+      newItemCategory,
+      newItemSource,
+      newItemLinkedTaskId,
+      addItem,
+      t,
+    ]
   );
 
   const handleToggle = useCallback(
@@ -152,6 +179,7 @@ export default function ShoppingDetail() {
     setEditingItem(item);
     setEditCategory(item.category ?? '');
     setEditSource(item.source ?? '');
+    setEditLinkedTaskId(item.linkedTaskId ?? '');
     setEditError(null);
   }, []);
 
@@ -173,7 +201,7 @@ export default function ShoppingDetail() {
       try {
         const updated = await updateMetadata(
           editingItem.id,
-          buildShoppingItemMetadataUpdate(editCategory, editSource)
+          buildShoppingItemDetailsUpdate(editCategory, editSource, editLinkedTaskId || null)
         );
         if (!updated) {
           setEditError(t('shopping.failedUpdateItem'));
@@ -186,7 +214,7 @@ export default function ShoppingDetail() {
         setSnackbar({ message: t('shopping.failedUpdateItem'), variant: 'error' });
       }
     },
-    [editCategory, editSource, editingItem, t, updateMetadata]
+    [editCategory, editSource, editLinkedTaskId, editingItem, t, updateMetadata]
   );
 
   const handleRetry = useCallback(() => {
@@ -401,7 +429,9 @@ export default function ShoppingDetail() {
   const unpurchasedCount = hasActiveFilters
     ? Math.max(list?.unpurchasedCount ?? 0, unpurchasedItems.length)
     : unpurchasedItems.length;
-  const addDetailsActive = showAddDetails || Boolean(newItemCategory || newItemSource.trim());
+  const addDetailsActive =
+    showAddDetails || Boolean(newItemCategory || newItemSource.trim() || newItemLinkedTaskId);
+  const taskTitleById = new Map(tasks.map((task) => [task.id, task.title]));
 
   const renderItem = (item: ShoppingItem) => {
     const isItemSaving = savingItemIds.has(item.id);
@@ -449,11 +479,11 @@ export default function ShoppingDetail() {
           <div className="shopping-detail__item-links">
             {item.linkedTaskId && (
               <Link
-                to={`/tasks/${item.linkedTaskId}`}
+                to={`/households/${householdId}/tasks/${item.linkedTaskId}`}
                 className="shopping-detail__task-link"
                 onClick={(e) => e.stopPropagation()}
               >
-                {t('shopping.forTask')}
+                {taskTitleById.get(item.linkedTaskId) ?? t('shopping.forTask')}
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
@@ -614,6 +644,28 @@ export default function ShoppingDetail() {
                 onChange={(e) => setNewItemName(e.target.value)}
                 disabled={isSaving}
               />
+              <input
+                type="number"
+                className="shopping-detail__add-quantity"
+                min={1}
+                max={999}
+                inputMode="numeric"
+                placeholder={t('shopping.quantityShort')}
+                value={newItemQuantity}
+                onChange={(e) => setNewItemQuantity(e.target.value)}
+                disabled={isSaving}
+                aria-label={t('shopping.quantity')}
+              />
+              <input
+                type="text"
+                className="shopping-detail__add-unit"
+                maxLength={50}
+                placeholder={t('shopping.unitShort')}
+                value={newItemUnit}
+                onChange={(e) => setNewItemUnit(e.target.value)}
+                disabled={isSaving}
+                aria-label={t('shopping.unit')}
+              />
               <button
                 type="button"
                 className={`shopping-detail__details-btn ${addDetailsActive ? 'shopping-detail__details-btn--active' : ''}`}
@@ -668,6 +720,22 @@ export default function ShoppingDetail() {
                     placeholder={t('shopping.sourcePlaceholder')}
                     disabled={isSaving}
                   />
+                </label>
+                <label className="shopping-detail__field shopping-detail__field--task">
+                  <span className="shopping-detail__field-label">{t('shopping.linkedTask')}</span>
+                  <select
+                    className="shopping-detail__select"
+                    value={newItemLinkedTaskId}
+                    onChange={(e) => setNewItemLinkedTaskId(e.target.value)}
+                    disabled={isSaving}
+                  >
+                    <option value="">{t('shopping.noTask')}</option>
+                    {tasks.map((task) => (
+                      <option key={task.id} value={task.id}>
+                        {task.title}
+                      </option>
+                    ))}
+                  </select>
                 </label>
               </div>
             )}
@@ -811,6 +879,22 @@ export default function ShoppingDetail() {
                 disabled={isEditingSaving}
               />
             </label>
+            <label className="shopping-detail__field">
+              <span className="shopping-detail__field-label">{t('shopping.linkedTask')}</span>
+              <select
+                className="shopping-detail__select"
+                value={editLinkedTaskId}
+                onChange={(e) => setEditLinkedTaskId(e.target.value)}
+                disabled={isEditingSaving}
+              >
+                <option value="">{t('shopping.noTask')}</option>
+                {tasks.map((task) => (
+                  <option key={task.id} value={task.id}>
+                    {task.title}
+                  </option>
+                ))}
+              </select>
+            </label>
             {editError && (
               <p className="shopping-detail__start-modal-error">{editError}</p>
             )}
@@ -893,6 +977,11 @@ function getQuantityMeta(item: ShoppingItem): string {
   const quantity = item.quantity && item.quantity > 1 ? `${item.quantity}` : '';
   const unit = item.unit ?? '';
   return [quantity, unit].filter(Boolean).join(' ');
+}
+
+function parseQuantity(value: string): number | null {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
 function getCategoryLabel(

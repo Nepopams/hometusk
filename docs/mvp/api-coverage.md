@@ -1,7 +1,7 @@
 # MVP API Coverage Matrix
 
-**Last Updated:** 2026-01-17
-**Scope:** MVP Closure / Iteration 2 / Step 1
+**Last Updated:** 2026-06-13
+**Scope:** MVP Closure / Manual Shopping Flow
 **Source of truth:** `docs/contracts/http/commands.openapi.yaml`
 
 ## User Journey Mapping
@@ -18,10 +18,12 @@
 | 6 | Complete task | `/api/v1/commands` | POST | JWT | In payload | **Implemented** |
 | 7 | Run command (AI) | `/api/v1/commands` | POST | JWT | In payload | **Implemented** |
 | 8 | View tasks list | `/api/v1/households/{id}/tasks` | GET | JWT | requireMembership | **Implemented** |
-| 9a | List shopping items | `/api/v1/households/{id}/shopping-lists/{listId}/items` | GET | JWT | requireMembership | **Implemented** |
-| 9b | Add shopping item | `/api/v1/households/{id}/shopping-lists/{listId}/items` | POST | JWT | requireMembership | **Implemented** |
-| 9c | Mark purchased | `/api/v1/households/{id}/shopping-items/{itemId}` | PATCH | JWT | requireMembership + household-scope | **Implemented** |
-| 9d | Delete item | `/api/v1/households/{id}/shopping-items/{itemId}` | DELETE | JWT | requireMembership + household-scope | **Implemented** |
+| 9a | List shopping lists | `/api/v1/households/{id}/shopping-lists` | GET | JWT | requireMembership | **Implemented** |
+| 9b | Create shopping list | `/api/v1/households/{id}/shopping-lists` | POST | JWT | requireMembership | **Implemented** |
+| 9c | List shopping items | `/api/v1/households/{id}/shopping-lists/{listId}/items` | GET | JWT | requireMembership + household-scope | **Implemented** |
+| 9d | Add shopping item | `/api/v1/households/{id}/shopping-lists/{listId}/items` | POST | JWT | requireMembership + household-scope + linked task household-scope | **Implemented** |
+| 9e | Update item / mark purchased / link-unlink task | `/api/v1/households/{id}/shopping-items/{itemId}` | PATCH | JWT | requireMembership + household-scope + linked task household-scope | **Implemented** |
+| 9f | Delete item | `/api/v1/households/{id}/shopping-items/{itemId}` | DELETE | JWT | requireMembership + household-scope | **Implemented** |
 | 10 | Task details | `/api/v1/households/{id}/tasks/{taskId}` | GET | JWT | requireMembership + household-scope | **Implemented** |
 | 11 | View notifications | `/api/v1/households/{id}/notifications` | GET | JWT | requireMembership | **Implemented** |
 | 12 | Mark notification read | `/api/v1/notifications/{id}/read` | POST | JWT | ownership enforced | **Implemented** |
@@ -62,9 +64,10 @@
 | Endpoint | Method | Request | Response | Errors |
 |----------|--------|---------|----------|--------|
 | `/api/v1/households/{id}/shopping-lists` | GET | - | `ShoppingList[]` | 401, 403 |
-| `/api/v1/households/{id}/shopping-lists/{listId}/items` | GET | `purchased` | `ShoppingItem[]` | 401, 403, 404 |
+| `/api/v1/households/{id}/shopping-lists` | POST | `CreateShoppingListRequest` | `ShoppingList` (201) | 400, 401, 403 |
+| `/api/v1/households/{id}/shopping-lists/{listId}/items` | GET | `purchased`, `category`, `source` | `ShoppingItem[]` | 400, 401, 403, 404 |
 | `/api/v1/households/{id}/shopping-lists/{listId}/items` | POST | `AddShoppingItemRequest` | `ShoppingItem` (201) | 400, 401, 403, 404 |
-| `/api/v1/households/{id}/shopping-items/{itemId}` | PATCH | `UpdateShoppingItemRequest` | `ShoppingItem` | 401, 403, 404 |
+| `/api/v1/households/{id}/shopping-items/{itemId}` | PATCH | `UpdateShoppingItemRequest` | `ShoppingItem` | 400, 401, 403, 404 |
 | `/api/v1/households/{id}/shopping-items/{itemId}` | DELETE | - | 204 No Content | 401, 403, 404 |
 
 ### Notification Endpoints
@@ -95,6 +98,8 @@
 | Param | Type | Description | Example |
 |-------|------|-------------|---------|
 | `purchased` | boolean | Filter by purchase status | `?purchased=false` |
+| `category` | enum | Filter by shopping category | `?category=groceries` |
+| `source` | string | Exact source/store match after trim | `?source=Ozon` |
 
 ### Notification List Filters
 
@@ -117,6 +122,12 @@
 |-------|------|------------|
 | `name` | string | Required, trimmed, 1-255 chars, non-blank |
 
+### CreateShoppingListRequest
+
+| Field | Type | Validation |
+|-------|------|------------|
+| `name` | string | Required, trimmed, 1-80 chars |
+
 ### AddShoppingItemRequest
 
 | Field | Type | Validation |
@@ -124,12 +135,18 @@
 | `name` | string | Required, 1-255 chars |
 | `quantity` | integer | Optional, default 1, min 1 |
 | `unit` | string | Optional, max 50 chars |
+| `category` | enum | Optional, one of `groceries`, `cleaning`, `personal_care`, `diy`, `electronics`, `other` |
+| `source` | string | Optional, trimmed, blank -> null, max 120 chars |
+| `linkedTaskId` | UUID | Optional, task must belong to same household |
 
 ### UpdateShoppingItemRequest
 
 | Field | Type | Validation |
 |-------|------|------------|
-| `purchased` | boolean | Required |
+| `purchased` | boolean | Optional; if present cannot be null |
+| `category` | enum/null | Optional, null clears category |
+| `source` | string/null | Optional, null/blank clears source, max 120 chars |
+| `linkedTaskId` | UUID/null | Optional; omitted keeps link, null unlinks, UUID must belong to same household |
 
 ### AcceptInviteRequest
 

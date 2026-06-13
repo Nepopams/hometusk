@@ -102,6 +102,7 @@ export function useShoppingItems({
         unit: data.unit,
         category: data.category,
         source: data.source,
+        linkedTaskId: data.linkedTaskId,
         purchased: false,
         createdAt: new Date().toISOString(),
       };
@@ -206,6 +207,9 @@ export function useShoppingItems({
                 source: Object.prototype.hasOwnProperty.call(data, 'source')
                   ? data.source
                   : i.source,
+                linkedTaskId: Object.prototype.hasOwnProperty.call(data, 'linkedTaskId')
+                  ? data.linkedTaskId
+                  : i.linkedTaskId,
               }
             : i
         )

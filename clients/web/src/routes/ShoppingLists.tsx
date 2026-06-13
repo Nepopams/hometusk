@@ -1,9 +1,9 @@
-import { useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { FormEvent, useCallback, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useShoppingLists } from '../hooks/useShoppingLists';
 import { useI18n } from '../i18n';
-import { Button } from '../components/ui';
+import { Button, Modal, Snackbar } from '../components/ui';
 import type { ShoppingList } from '../types/api';
 import './ShoppingLists.css';
 
@@ -22,11 +22,87 @@ import './ShoppingLists.css';
 export default function ShoppingLists() {
   const { t } = useI18n();
   const { householdId } = useAuth();
-  const { lists, isLoading, error, refetch } = useShoppingLists(householdId);
+  const navigate = useNavigate();
+  const { lists, isLoading, isCreating, error, refetch, createList } = useShoppingLists(householdId);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [newListName, setNewListName] = useState('');
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [snackbar, setSnackbar] = useState<{ message: string; variant: 'success' | 'error' } | null>(
+    null
+  );
 
   const handleRetry = useCallback(() => {
     refetch();
   }, [refetch]);
+
+  const handleOpenCreate = useCallback(() => {
+    setNewListName('');
+    setCreateError(null);
+    setCreateModalOpen(true);
+  }, []);
+
+  const handleCloseCreate = useCallback(() => {
+    if (!isCreating) {
+      setCreateModalOpen(false);
+      setCreateError(null);
+    }
+  }, [isCreating]);
+
+  const handleCreateList = useCallback(
+    async (e: FormEvent) => {
+      e.preventDefault();
+      const name = newListName.trim();
+      if (!name) return;
+
+      setCreateError(null);
+      try {
+        const created = await createList(name);
+        if (!created || !householdId) return;
+        setCreateModalOpen(false);
+        setNewListName('');
+        setSnackbar({ message: t('shopping.listCreated'), variant: 'success' });
+        navigate(`/households/${householdId}/shopping/${created.id}`);
+      } catch (err) {
+        setCreateError(err instanceof Error ? err.message : t('shopping.failedCreateList'));
+      }
+    },
+    [createList, householdId, navigate, newListName, t]
+  );
+
+  const renderCreateModal = () => (
+    <Modal
+      open={createModalOpen}
+      onClose={handleCloseCreate}
+      title={t('shopping.createList')}
+      size="sm"
+      closeOnBackdrop={!isCreating}
+    >
+      <form className="shopping-lists__create-form" onSubmit={handleCreateList}>
+        <label className="shopping-lists__field">
+          <span className="shopping-lists__field-label">{t('shopping.listName')}</span>
+          <input
+            className="shopping-lists__text-input"
+            value={newListName}
+            maxLength={80}
+            onChange={(e) => setNewListName(e.target.value)}
+            placeholder={t('shopping.listNamePlaceholder')}
+            disabled={isCreating}
+            autoFocus
+          />
+        </label>
+        <p className="shopping-lists__field-hint">{t('shopping.listNameHint')}</p>
+        {createError && <p className="shopping-lists__form-error">{createError}</p>}
+        <div className="shopping-lists__modal-actions">
+          <Button type="button" variant="secondary" size="md" onClick={handleCloseCreate} disabled={isCreating}>
+            {t('common.cancel')}
+          </Button>
+          <Button type="submit" variant="primary" size="md" loading={isCreating} disabled={!newListName.trim()}>
+            {t('common.create')}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
 
   if (!householdId) {
     return (
@@ -116,6 +192,9 @@ export default function ShoppingLists() {
           <section className="shopping-lists__section">
             <div className="shopping-lists__section-header">
               <h2 className="shopping-lists__section-title">{t('shopping.lists')}</h2>
+              <Button variant="primary" size="sm" onClick={handleOpenCreate}>
+                {t('shopping.createList')}
+              </Button>
             </div>
             <div className="shopping-lists__card">
               <div className="shopping-lists__empty">
@@ -136,9 +215,18 @@ export default function ShoppingLists() {
                 <p className="shopping-lists__empty-desc">
                   {t('shopping.noListsDesc')}
                 </p>
+                <Button variant="primary" size="md" onClick={handleOpenCreate}>
+                  {t('shopping.createList')}
+                </Button>
               </div>
             </div>
           </section>
+          {renderCreateModal()}
+          {snackbar && (
+            <Snackbar open onClose={() => setSnackbar(null)} variant={snackbar.variant}>
+              {snackbar.message}
+            </Snackbar>
+          )}
         </div>
       </div>
     );
@@ -151,6 +239,9 @@ export default function ShoppingLists() {
         <section className="shopping-lists__section">
           <div className="shopping-lists__section-header">
             <h2 className="shopping-lists__section-title">{t('shopping.lists')}</h2>
+            <Button variant="primary" size="sm" onClick={handleOpenCreate}>
+              {t('shopping.createList')}
+            </Button>
           </div>
           <div className="shopping-lists__card">
             {lists.map((list: ShoppingList, idx: number) => (
@@ -206,6 +297,12 @@ export default function ShoppingLists() {
             <p className="shopping-lists__hint">
               {t('shopping.listsCountHint', { count: lists.length })}
             </p>
+          )}
+          {renderCreateModal()}
+          {snackbar && (
+            <Snackbar open onClose={() => setSnackbar(null)} variant={snackbar.variant}>
+              {snackbar.message}
+            </Snackbar>
           )}
         </section>
       </div>
