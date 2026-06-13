@@ -47,6 +47,25 @@ public class ShoppingService {
     }
 
     /**
+     * Creates a user-visible shopping list container.
+     */
+    @Transactional
+    public ShoppingList createList(Household household, String name) {
+        String trimmedName = name != null ? name.trim() : null;
+        if (trimmedName == null || trimmedName.isBlank()) {
+            throw new ValidationException("$.name", "NAME_REQUIRED", "Name is required");
+        }
+        if (trimmedName.length() > 80) {
+            throw new ValidationException("$.name", "NAME_TOO_LONG", "Name must be at most 80 characters");
+        }
+
+        ShoppingList list = new ShoppingList(household, trimmedName);
+        ShoppingList saved = listRepository.save(list);
+        log.info("Shopping list created: id={}, householdId={}", saved.getId(), household.getId());
+        return saved;
+    }
+
+    /**
      * Adds a shopping item with idempotency check.
      * If item with same idempotency key exists, returns existing item.
      * Safe behavior: if linkedTaskId not found, adds item without link.
@@ -154,7 +173,8 @@ public class ShoppingService {
      * Applies a partial update atomically. Validation runs before mutation so invalid metadata cannot alter purchase state.
      */
     @Transactional
-    public UpdateItemResult updateItem(UUID itemId, UUID householdId, UpdateItemRequest request, User actor, UUID correlationId) {
+    public UpdateItemResult updateItem(
+            UUID itemId, UUID householdId, UpdateItemRequest request, User actor, UUID correlationId) {
         if (!request.hasAnyMutableField()) {
             throw new ValidationException("$.body", "EMPTY_UPDATE", "At least one mutable field is required");
         }
@@ -164,6 +184,7 @@ public class ShoppingService {
         String normalizedSource = request.hasSource() ? validateSource(request.source(), "$.source") : null;
 
         ShoppingItem item = getItemByIdAndHousehold(itemId, householdId);
+        Task linkedTask = request.hasLinkedTask() ? resolveLinkedTaskStrict(request.linkedTaskId(), householdId) : null;
         boolean purchaseActivityRecorded = false;
 
         if (request.hasPurchased()) {
@@ -188,14 +209,18 @@ public class ShoppingService {
         if (request.hasSource()) {
             item.setSource(normalizedSource);
         }
+        if (request.hasLinkedTask()) {
+            item.setLinkedTask(linkedTask);
+        }
 
         ShoppingItem saved = itemRepository.save(item);
         log.info(
-                "Shopping item updated: id={}, purchasedUpdated={}, categoryUpdated={}, sourceUpdated={}",
+                "Shopping item updated: id={}, purchasedUpdated={}, categoryUpdated={}, sourceUpdated={}, linkedTaskUpdated={}",
                 saved.getId(),
                 request.hasPurchased(),
                 request.hasCategory(),
-                request.hasSource());
+                request.hasSource(),
+                request.hasLinkedTask());
         return new UpdateItemResult(saved, purchaseActivityRecorded);
     }
 
@@ -324,17 +349,22 @@ public class ShoppingService {
             String unit,
             String category,
             String source,
+            UUID linkedTaskId,
             User addedBy,
             UUID correlationId) {
         log.debug("Adding shopping item directly: name={}, householdId={}, listId={}", name, householdId, listId);
 
         ShoppingList list = getListByIdAndHousehold(listId, householdId);
+        String normalizedCategory = validateCategory(category, "$.category");
+        String normalizedSource = validateSource(source, "$.source");
+        Task linkedTask = resolveLinkedTaskStrict(linkedTaskId, householdId);
 
         ShoppingItem item = new ShoppingItem(list, name, addedBy);
         item.setQuantity(quantity != null ? quantity : 1);
         item.setUnit(unit);
-        item.setCategory(validateCategory(category, "$.category"));
-        item.setSource(validateSource(source, "$.source"));
+        item.setCategory(normalizedCategory);
+        item.setSource(normalizedSource);
+        item.setLinkedTask(linkedTask);
 
         ShoppingItem saved = itemRepository.save(item);
         notificationService.notifyShoppingItemAdded(saved, addedBy, correlationId);
@@ -410,6 +440,18 @@ public class ShoppingService {
         return task.get();
     }
 
+    /**
+     * Resolves linked task for manual REST flows. Invalid links reject the request instead of silently unlinking.
+     */
+    private Task resolveLinkedTaskStrict(UUID linkedTaskId, UUID householdId) {
+        if (linkedTaskId == null) {
+            return null;
+        }
+        return taskRepository
+                .findByIdAndHousehold_Id(linkedTaskId, householdId)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.TASK_NOT_FOUND, "Task not found: " + linkedTaskId));
+    }
+
     private String validateCategory(String category, String path) {
         if (category == null) {
             return null;
@@ -435,10 +477,12 @@ public class ShoppingService {
             String category,
             boolean hasCategory,
             String source,
-            boolean hasSource) {
+            boolean hasSource,
+            UUID linkedTaskId,
+            boolean hasLinkedTask) {
 
         public boolean hasAnyMutableField() {
-            return hasPurchased || hasCategory || hasSource;
+            return hasPurchased || hasCategory || hasSource || hasLinkedTask;
         }
     }
 

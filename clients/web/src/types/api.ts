@@ -285,6 +285,10 @@ export interface ShoppingList {
   createdAt: string;
 }
 
+export interface CreateShoppingListRequest {
+  name: string;
+}
+
 export interface ShoppingItem {
   id: string;
   listId: string;
@@ -294,7 +298,7 @@ export interface ShoppingItem {
   category?: ShoppingItemCategory | null;
   source?: string | null;
   purchased: boolean;
-  linkedTaskId?: string;
+  linkedTaskId?: string | null;
   addedBy?: UserSummary;
   createdAt: string;
   purchasedAt?: string;
@@ -339,12 +343,14 @@ export interface AddShoppingItemRequest {
   unit?: string;
   category?: ShoppingItemCategory | null;
   source?: string | null;
+  linkedTaskId?: string | null;
 }
 
 export interface UpdateShoppingItemRequest {
   purchased?: boolean;
   category?: ShoppingItemCategory | null;
   source?: string | null;
+  linkedTaskId?: string | null;
 }
 
 // ============================================

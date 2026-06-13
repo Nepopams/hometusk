@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Size;
+import java.util.UUID;
 
 @Schema(description = "Partial shopping item update")
 public class UpdateShoppingItemRequest {
@@ -11,9 +12,11 @@ public class UpdateShoppingItemRequest {
     private Boolean purchased;
     private String category;
     private String source;
+    private UUID linkedTaskId;
     private boolean purchasedPresent;
     private boolean categoryPresent;
     private boolean sourcePresent;
+    private boolean linkedTaskPresent;
 
     @Schema(description = "Whether the item has been purchased", example = "true")
     public Boolean purchased() {
@@ -49,6 +52,17 @@ public class UpdateShoppingItemRequest {
         this.sourcePresent = true;
     }
 
+    @Schema(description = "Optional linked task update. Null explicitly unlinks the item.")
+    public UUID linkedTaskId() {
+        return linkedTaskId;
+    }
+
+    @JsonSetter("linkedTaskId")
+    public void setLinkedTaskId(UUID linkedTaskId) {
+        this.linkedTaskId = linkedTaskId;
+        this.linkedTaskPresent = true;
+    }
+
     @JsonIgnore
     public boolean hasPurchased() {
         return purchasedPresent;
@@ -65,7 +79,12 @@ public class UpdateShoppingItemRequest {
     }
 
     @JsonIgnore
+    public boolean hasLinkedTask() {
+        return linkedTaskPresent;
+    }
+
+    @JsonIgnore
     public boolean hasAnyMutableField() {
-        return purchasedPresent || categoryPresent || sourcePresent;
+        return purchasedPresent || categoryPresent || sourcePresent || linkedTaskPresent;
     }
 }

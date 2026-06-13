@@ -8,6 +8,7 @@ import com.hometusk.shared.security.CurrentUser;
 import com.hometusk.shopping.domain.ShoppingItem;
 import com.hometusk.shopping.domain.ShoppingList;
 import com.hometusk.shopping.dto.AddShoppingItemRequest;
+import com.hometusk.shopping.dto.CreateShoppingListRequest;
 import com.hometusk.shopping.dto.ShoppingItemDto;
 import com.hometusk.shopping.dto.ShoppingListDto;
 import com.hometusk.shopping.dto.UpdateShoppingItemRequest;
@@ -94,6 +95,27 @@ public class ShoppingController {
         return ResponseEntity.ok(dtos);
     }
 
+    @PostMapping("/shopping-lists")
+    @Operation(summary = "Create a shopping list", description = "Creates a user-visible shopping list container.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Shopping list created"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "401", description = "Authentication required"),
+        @ApiResponse(responseCode = "403", description = "Not a member of this household")
+    })
+    public ResponseEntity<ShoppingListDto> createShoppingList(
+            @PathVariable UUID householdId, @RequestBody @Valid CreateShoppingListRequest request) {
+        log.info("Creating shopping list for household: {}", householdId);
+
+        CurrentUser currentUser = userResolver.resolveCurrentUser();
+        membershipService.requireMembership(currentUser.id(), householdId);
+
+        ShoppingList list = shoppingService.createList(householdService.getById(householdId), request.trimmedName());
+
+        log.info("Shopping list created: id={}, householdId={}", list.getId(), householdId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ShoppingListDto.from(list, 0));
+    }
+
     @GetMapping("/shopping-lists/{listId}/items")
     @Operation(
             summary = "List items in a shopping list",
@@ -169,6 +191,7 @@ public class ShoppingController {
                 request.unit(),
                 request.category(),
                 request.source(),
+                request.linkedTaskId(),
                 user,
                 correlationId);
 
@@ -218,7 +241,9 @@ public class ShoppingController {
                         request.category(),
                         request.hasCategory(),
                         request.source(),
-                        request.hasSource()),
+                        request.hasSource(),
+                        request.linkedTaskId(),
+                        request.hasLinkedTask()),
                 user,
                 correlationId);
 

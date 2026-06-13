@@ -947,6 +947,53 @@ paths:
                 $ref: '#/components/schemas/AuthErrorResponse'
         '403':
           description: Not a member of this household
+    post:
+      operationId: createShoppingList
+      summary: Create a shopping list
+      description: |
+        Creates a user-visible shopping list container. Duplicate names are
+        allowed for MVP; the server trims leading/trailing whitespace.
+      tags:
+        - Shopping
+      parameters:
+        - name: householdId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateShoppingListRequest'
+            examples:
+              createGroceries:
+                summary: Create groceries list
+                value:
+                  name: "Groceries"
+      responses:
+        '201':
+          description: Shopping list created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingList'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '403':
+          description: Not a member of this household
 
   /households/{householdId}/shopping-lists/{listId}/items:
     get:
@@ -1060,6 +1107,7 @@ paths:
                   unit: "liters"
                   category: "groceries"
                   source: "Perekrestok"
+                  linkedTaskId: "78dfc7d5-4a67-4579-8648-97e2f5dcb18f"
       responses:
         '201':
           description: Item created
@@ -1082,7 +1130,7 @@ paths:
         '403':
           description: Not a member of this household
         '404':
-          description: Shopping list not found
+          description: Shopping list or linked task not found
 
   /households/{householdId}/shopping-items/{itemId}:
     patch:
@@ -1092,7 +1140,8 @@ paths:
         Partially updates a shopping item. At least one mutable field must be
         present. `purchased` remains supported for mark purchased/unpurchased;
         category/source can be changed independently without altering purchase
-        state.
+        state. Omitted `linkedTaskId` keeps the current task link, while
+        explicit `linkedTaskId: null` unlinks the item.
       tags:
         - Shopping
       parameters:
@@ -1124,6 +1173,14 @@ paths:
                 value:
                   category: "cleaning"
                   source: "Ozon"
+              linkToTask:
+                summary: Link an item to a task
+                value:
+                  linkedTaskId: "78dfc7d5-4a67-4579-8648-97e2f5dcb18f"
+              unlinkTask:
+                summary: Unlink an item from any task
+                value:
+                  linkedTaskId: null
       responses:
         '200':
           description: Item updated
@@ -1140,7 +1197,7 @@ paths:
         '403':
           description: Not a member of this household
         '404':
-          description: Item not found
+          description: Item or linked task not found
     delete:
       operationId: deleteShoppingItem
       summary: Delete a shopping item
@@ -2123,6 +2180,17 @@ components:
           type: string
           format: date-time
 
+    CreateShoppingListRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: User-visible shopping list name. Server trims surrounding whitespace.
+
     ShoppingItemCategory:
       type: string
       description: Optional coarse shopping category for grouping and filtering.
@@ -2161,6 +2229,7 @@ components:
         linkedTaskId:
           type: string
           format: uuid
+          nullable: true
           description: Associated task (if any)
         addedBy:
           $ref: '#/components/schemas/UserSummary'
@@ -2197,6 +2266,11 @@ components:
           maxLength: 120
           nullable: true
           description: Optional source/store name. Server trims blank values to null.
+        linkedTaskId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Optional same-household task link. Invalid cross-household links return 404.
 
     UpdateShoppingItemRequest:
       type: object
@@ -2215,6 +2289,11 @@ components:
           maxLength: 120
           nullable: true
           description: Optional source/store update. Null or blank clears the source.
+        linkedTaskId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Optional task-link update. Omit to keep current link; null unlinks.
 
     # Task detail with linked shopping items
     TaskDetail:

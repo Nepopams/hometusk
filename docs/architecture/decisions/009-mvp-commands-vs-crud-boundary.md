@@ -49,14 +49,23 @@ Shopping item mutations use direct REST for better UX:
 
 | Operation | Endpoint | Rationale |
 |-----------|----------|-----------|
+| Create shopping list manually | `POST /api/v1/households/{id}/shopping-lists` | User-visible container creation from empty state |
 | Add item manually | `POST .../items` | Simple form submit |
 | Mark purchased | `PATCH .../items/{id}` | Toggle, no NL needed |
+| Link/unlink shopping item to task manually | `PATCH .../items/{id}` | Direct UX correction; backend still validates same-household task |
 | Delete item | `DELETE .../items/{id}` | Simple action |
 
 **Trade-off accepted:** These writes bypass the commands pipeline but:
 - Still record Activity for audit trail
 - Are household-scoped with boundary checks
+- Reject invalid manual task links with `404 TASK_NOT_FOUND` rather than silently unlinking
 - Can be migrated to commands in future if needed
+
+**Manual vs command task-link semantics:** command/AI `add_shopping_item`
+keeps ADR-008 safe degradation and adds an item unlinked when a referenced task
+cannot be validated. Manual REST create/update is stricter because the user is
+choosing an explicit task link in UI; invalid or cross-household `linkedTaskId`
+returns 404 and does not mutate the item.
 
 ### Read Operations (Direct REST)
 
@@ -67,6 +76,7 @@ All read operations use direct REST:
 | List tasks | `GET /api/v1/households/{id}/tasks` |
 | Get task detail | `GET /api/v1/households/{id}/tasks/{taskId}` |
 | List shopping lists | `GET /api/v1/households/{id}/shopping-lists` |
+| Create shopping list | `POST /api/v1/households/{id}/shopping-lists` |
 | List shopping items | `GET .../shopping-lists/{listId}/items` |
 
 ## Consequences
