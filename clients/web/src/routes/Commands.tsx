@@ -52,6 +52,7 @@ export default function Commands() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dueDateInputRef = useRef<HTMLInputElement>(null);
   const scheduleAtInputRef = useRef<HTMLInputElement>(null);
+  const voiceRunIdRef = useRef(0);
   const {
     start: startRecording,
     stop: stopRecording,
@@ -69,6 +70,7 @@ export default function Commands() {
 
   const resetVoiceFlow = useCallback(
     ({ clearDraft = false } = {}) => {
+      voiceRunIdRef.current += 1;
       resetRecording();
       resetTranscription();
       setVoiceMode('idle');
@@ -85,11 +87,12 @@ export default function Commands() {
   useEffect(() => {
     if (voiceMode !== 'uploading' || !audioBlob) return;
 
-    let active = true;
+    const runId = voiceRunIdRef.current + 1;
+    voiceRunIdRef.current = runId;
     const run = async () => {
       setVoiceMode('transcribing');
       const result = await transcribe(audioBlob, voiceCorrelationId || undefined);
-      if (!active) return;
+      if (voiceRunIdRef.current !== runId) return;
       if (result) {
         setCommandText(result.transcript);
         setVoiceAsrTraceId(result.traceId);
@@ -100,11 +103,7 @@ export default function Commands() {
       resetRecording();
     };
 
-    run();
-
-    return () => {
-      active = false;
-    };
+    void run();
   }, [voiceMode, audioBlob, transcribe, resetRecording, voiceCorrelationId]);
 
   useEffect(() => {

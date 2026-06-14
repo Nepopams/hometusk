@@ -34,6 +34,7 @@ export function CommandInput() {
   const [voiceWasUsed, setVoiceWasUsed] = useState(false);
   const [transcriptWasEdited, setTranscriptWasEdited] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const voiceRunIdRef = useRef(0);
   const {
     start: startRecording,
     stop: stopRecording,
@@ -51,6 +52,7 @@ export function CommandInput() {
     reset: resetTranscription,
   } = useAsrTranscription();
   const resetVoiceFlow = useCallback(() => {
+    voiceRunIdRef.current += 1;
     resetRecording();
     resetTranscription();
     setVoiceMode('idle');
@@ -79,20 +81,17 @@ export function CommandInput() {
     if (voiceMode !== 'uploading') return;
     if (!audioBlob) return;
 
-    let active = true;
+    const runId = voiceRunIdRef.current + 1;
+    voiceRunIdRef.current = runId;
     const run = async () => {
       setVoiceMode('transcribing');
       await transcribe(audioBlob, voiceCorrelationId || undefined);
-      if (!active) return;
+      if (voiceRunIdRef.current !== runId) return;
       setVoiceMode('idle');
       resetRecording();
     };
 
-    run();
-
-    return () => {
-      active = false;
-    };
+    void run();
   }, [voiceMode, audioBlob, transcribe, resetRecording, voiceCorrelationId]);
 
   // Sync ASR transcript to local state and focus input
