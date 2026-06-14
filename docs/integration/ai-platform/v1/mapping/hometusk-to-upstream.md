@@ -12,9 +12,9 @@
 
 | Аспект | Upstream | HomeTusk | Решение |
 |--------|----------|----------|---------|
-| Endpoint | `POST /decide` | `POST /decision` | Configurable (default: `/decision`) |
+| Endpoint | `POST /decide` | `POST /v1/decide` | Configurable (default: `/v1/decide`) |
 | Decision types | 5 типов | 3 типа | Adapter с safe degradation |
-| Action types | 3 типа | 2 типа | Unsupported → Clarify |
+| Action types | 3 типа | 3 типа | Adapter maps upstream proposed actions |
 | Schema $id | `ai-platform.example.com` | `hometusk.app` | HomeTusk-specific wrapper |
 
 ---
@@ -26,7 +26,7 @@
 | Source | Endpoint |
 |--------|----------|
 | **Upstream (canonical)** | `POST /decide` |
-| **HomeTusk (current)** | `POST /decision` |
+| **HomeTusk (current UAT/default path)** | `POST /v1/decide` |
 
 ### Решение
 
@@ -35,8 +35,7 @@ Endpoint настраивается через конфигурацию:
 ```yaml
 aiplatform:
   base-url: ${AI_PLATFORM_URL:http://localhost:8090}
-  decision-path: ${AI_PLATFORM_DECISION_PATH:/decision}  # default: HomeTusk legacy
-  # Для upstream: /decide
+  decision-path: ${AI_PLATFORM_DECISION_PATH:/v1/decide}
 ```
 
 ### Код
@@ -53,7 +52,7 @@ aiplatform:
 |---------------|------------------|---------|
 | `start_job` | Полная | → `DecisionResult.StartJob` |
 | `propose_create_task` | Partial | → `DecisionResult.StartJob` (execute immediately) |
-| `propose_add_shopping_item` | **Не поддерживается** | → `DecisionResult.Clarify` (safe degradation) |
+| `propose_add_shopping_item` | Полная | → `DecisionResult.StartJob` with `add_shopping_item` |
 | `clarify` | Полная | → `DecisionResult.Clarify` |
 | `reject` | Полная | → `DecisionResult.Reject` |
 
@@ -64,7 +63,7 @@ aiplatform:
 switch (upstream.type()) {
     case "start_job" -> mapStartJob(upstream);
     case "propose_create_task" -> mapProposeCreateTask(upstream);  // → StartJob
-    case "propose_add_shopping_item" -> unsupportedActionClarify(upstream);
+    case "propose_add_shopping_item" -> mapProposeAddShoppingItem(upstream);
     case "clarify" -> mapClarify(upstream);
     case "reject" -> mapReject(upstream);
     default -> unknownTypeReject(upstream);
@@ -85,21 +84,13 @@ switch (upstream.type()) {
 |-----------------|------------------|---------|
 | `create_task` | Полная | → `ActionExecutor.createTask()` |
 | `complete_task` | Полная | → `ActionExecutor.completeTask()` |
-| `add_shopping_item` | **Не поддерживается** | → `Clarify` (safe degradation) |
+| `add_shopping_item` | Полная | → `ActionExecutor.addShoppingItem()` |
 
-### Обработка неподдерживаемых action types
+### Proposed action mapping
 
 ```java
-// Если actions содержит add_shopping_item
-return new DecisionResult.Clarify(
-    source,
-    confidence,
-    decisionId,
-    rawPayload,
-    "Добавление в список покупок пока не поддерживается. Попробуйте создать задачу.",
-    List.of(),
-    Map.of("unsupported_action", "add_shopping_item")
-);
+propose_create_task -> create_task
+propose_add_shopping_item -> add_shopping_item
 ```
 
 ---
@@ -107,6 +98,11 @@ return new DecisionResult.Clarify(
 ## 4. Field Mapping
 
 ### Command Request
+
+> Runtime note (2026-06-14): HomeTusk now sends the upstream snake_case
+> envelope directly: `command_id`, `user_id`, `timestamp`, `text`,
+> `capabilities`, and `context.household`. The legacy camelCase table below is
+> retained as migration context only.
 
 | HomeTusk Field | Upstream Field | Notes |
 |----------------|----------------|-------|
@@ -128,6 +124,11 @@ return new DecisionResult.Clarify(
 | — | `add_shopping_item` (not supported) |
 
 ### Decision Response
+
+> Runtime note (2026-06-14): HomeTusk validates and maps the upstream response
+> envelope: `decision_id`, `status`, `action`, `payload`, `explanation`, and
+> trace/version fields. Nested `payload.proposed_actions[]` is converted into
+> internal `create_task` / `add_shopping_item` actions.
 
 | Upstream Field | HomeTusk Field | Notes |
 |----------------|----------------|-------|
@@ -184,7 +185,7 @@ Upstream schema (`docs/integration/ai-platform/v1/upstream/contracts/schemas/`) 
 ### From /decision to /decide
 
 1. Получить подтверждение от AI Platform team
-2. Изменить конфиг: `aiplatform.decision-path=/decide`
+2. Изменить конфиг: `aiplatform.decision-path=/v1/decide`
 3. Обновить мониторинг (новый endpoint в dashboards)
 4. Удалить legacy path после переходного периода
 

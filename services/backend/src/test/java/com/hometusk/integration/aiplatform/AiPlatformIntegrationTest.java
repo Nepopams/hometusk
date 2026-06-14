@@ -32,7 +32,7 @@ import org.springframework.http.MediaType;
  *   <li>Timeout/unavailable → Fallback</li>
  *   <li>Guardrails CLARIFY → NEEDS_INPUT</li>
  *   <li>propose_create_task → Task created (mapped to start_job)</li>
- *   <li>propose_add_shopping_item → NEEDS_INPUT (unsupported, safe degradation)</li>
+ *   <li>propose_add_shopping_item → EXECUTED (mapped to add_shopping_item)</li>
  *   <li>Unknown type → REJECTED (safe degradation)</li>
  *   <li>Adapter → Guardrails flow (critical path test)</li>
  * </ol>

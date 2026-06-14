@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hometusk.commands.domain.DecisionSource;
 import com.hometusk.commands.pipeline.decision.DecisionResult;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -12,36 +14,18 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
- * Maps AI Platform (upstream) response to HomeTusk DecisionResult.
- *
- * <p>Handles all upstream decision types with safe degradation:
- * <ul>
- *   <li>start_job → StartJob (full support)</li>
- *   <li>propose_create_task → StartJob (mapped, execute immediately)</li>
- *   <li>propose_add_shopping_item → Clarify (unsupported action)</li>
- *   <li>clarify → Clarify (full support)</li>
- *   <li>reject → Reject (full support)</li>
- *   <li>unknown → Reject (safe degradation)</li>
- * </ul>
- *
- * <p>See: docs/integration/ai-platform/v1/mapping/hometusk-to-upstream.md
+ * Maps upstream AI Platform decisions to internal HomeTusk DecisionResult values.
  */
 @Component
 public class AiDecisionResponseMapper {
 
     private static final Logger log = LoggerFactory.getLogger(AiDecisionResponseMapper.class);
 
-    // Supported upstream decision types
-    private static final String TYPE_START_JOB = "start_job";
-    private static final String TYPE_PROPOSE_CREATE_TASK = "propose_create_task";
-    private static final String TYPE_PROPOSE_ADD_SHOPPING_ITEM = "propose_add_shopping_item";
-    private static final String TYPE_CLARIFY = "clarify";
-    private static final String TYPE_REJECT = "reject";
-
-    // Supported action types
-    private static final String ACTION_CREATE_TASK = "create_task";
-    private static final String ACTION_COMPLETE_TASK = "complete_task";
-    private static final String ACTION_ADD_SHOPPING_ITEM = "add_shopping_item";
+    private static final String STATUS_ERROR = "error";
+    private static final String ACTION_START_JOB = "start_job";
+    private static final String ACTION_PROPOSE_CREATE_TASK = "propose_create_task";
+    private static final String ACTION_PROPOSE_ADD_SHOPPING_ITEM = "propose_add_shopping_item";
+    private static final String ACTION_CLARIFY = "clarify";
 
     private final ObjectMapper objectMapper;
 
@@ -49,132 +33,200 @@ public class AiDecisionResponseMapper {
         this.objectMapper = objectMapper;
     }
 
-    /**
-     * Maps upstream AI Platform response to HomeTusk DecisionResult.
-     *
-     * <p>Safe degradation: unknown/unsupported types return Clarify or Reject,
-     * never throw exceptions.
-     *
-     * @param response AI Platform response (upstream format)
-     * @return Corresponding DecisionResult
-     */
     public DecisionResult toDecisionResult(AiDecisionResponse response) {
         String rawPayload = toJson(response);
 
-        return switch (response.type()) {
-            case TYPE_START_JOB -> mapToStartJob(response, rawPayload);
-            case TYPE_PROPOSE_CREATE_TASK -> mapProposeCreateTask(response, rawPayload);
-            case TYPE_PROPOSE_ADD_SHOPPING_ITEM -> mapProposeAddShoppingItem(response, rawPayload);
-            case TYPE_CLARIFY -> mapToClarify(response, rawPayload);
-            case TYPE_REJECT -> mapToReject(response, rawPayload);
-            default -> unknownDecisionType(response, rawPayload);
+        if (STATUS_ERROR.equals(response.status())) {
+            return mapToReject(response, rawPayload, "AI_PLATFORM_ERROR");
+        }
+
+        return switch (response.action()) {
+            case ACTION_START_JOB -> mapStartJob(response, rawPayload);
+            case ACTION_PROPOSE_CREATE_TASK -> mapSingleAction(
+                    response, rawPayload, response.action(), response.payload());
+            case ACTION_PROPOSE_ADD_SHOPPING_ITEM -> mapSingleAction(
+                    response, rawPayload, response.action(), response.payload());
+            case ACTION_CLARIFY -> mapClarify(response, rawPayload);
+            default -> unknownDecisionAction(response, rawPayload);
         };
     }
 
-    private DecisionResult mapToStartJob(AiDecisionResponse response, String rawPayload) {
-        // Filter to only supported action types, return Clarify if any unsupported
-        if (response.actions() != null && hasUnsupportedActions(response.actions())) {
-            log.warn("start_job contains unsupported action types, filtering: decisionId={}", response.decisionId());
+    private DecisionResult mapStartJob(AiDecisionResponse response, String rawPayload) {
+        List<DecisionResult.StartJob.ProposedAction> actions = new ArrayList<>();
+        Object rawActions = payload(response).get("proposed_actions");
+
+        if (rawActions instanceof List<?> proposedActions) {
+            for (Object rawAction : proposedActions) {
+                DecisionResult.StartJob.ProposedAction mapped = mapProposedAction(rawAction);
+                if (mapped != null) {
+                    actions.add(mapped);
+                }
+            }
         }
 
-        List<DecisionResult.StartJob.ProposedAction> actions = response.actions() == null
-                ? List.of()
-                : response.actions().stream()
-                        .filter(this::isSupportedAction)
-                        .map(dto -> new DecisionResult.StartJob.ProposedAction(dto.actionType(), dto.parameters()))
-                        .toList();
-
-        // If all actions were filtered out, return Clarify
-        if (actions.isEmpty()
-                && response.actions() != null
-                && !response.actions().isEmpty()) {
-            log.warn("All actions filtered as unsupported, returning Clarify: decisionId={}", response.decisionId());
+        if (actions.isEmpty()) {
+            log.warn(
+                    "AI Platform start_job did not include executable proposed actions: decisionId={}",
+                    response.decisionId());
             return new DecisionResult.Clarify(
                     DecisionSource.AI_PLATFORM,
-                    BigDecimal.ZERO,
-                    response.decisionId(),
+                    confidenceOrZero(response),
+                    response.decisionUuidOrNull(),
                     rawPayload,
-                    "Запрошенное действие пока не поддерживается. Попробуйте переформулировать команду.",
+                    "AI Platform did not return an executable action. Please rephrase the command.",
                     List.of(),
-                    Map.of("reason", "all_actions_unsupported"));
+                    Map.of("reason", "missing_proposed_actions"));
         }
 
         return new DecisionResult.StartJob(
-                DecisionSource.AI_PLATFORM, response.confidence(), response.decisionId(), rawPayload, actions);
+                DecisionSource.AI_PLATFORM,
+                confidenceOrZero(response),
+                response.decisionUuidOrNull(),
+                rawPayload,
+                actions);
     }
 
-    /**
-     * Maps propose_create_task to StartJob (execute immediately).
-     * HomeTusk doesn't distinguish proposal from execution for tasks.
-     */
-    private DecisionResult mapProposeCreateTask(AiDecisionResponse response, String rawPayload) {
-        log.debug("Mapping propose_create_task to StartJob: decisionId={}", response.decisionId());
-        return mapToStartJob(response, rawPayload);
+    private DecisionResult mapSingleAction(
+            AiDecisionResponse response, String rawPayload, String upstreamAction, Map<String, Object> payload) {
+        DecisionResult.StartJob.ProposedAction action =
+                mapProposedAction(Map.of("action", upstreamAction, "payload", payload != null ? payload : Map.of()));
+        if (action == null) {
+            return unknownDecisionAction(response, rawPayload);
+        }
+
+        return new DecisionResult.StartJob(
+                DecisionSource.AI_PLATFORM,
+                confidenceOrZero(response),
+                response.decisionUuidOrNull(),
+                rawPayload,
+                List.of(action));
     }
 
-    /**
-     * Maps propose_add_shopping_item to StartJob (execute immediately, Stage 5).
-     * HomeTusk doesn't distinguish proposal from execution for shopping items.
-     */
-    private DecisionResult mapProposeAddShoppingItem(AiDecisionResponse response, String rawPayload) {
-        log.debug("Mapping propose_add_shopping_item to StartJob: decisionId={}", response.decisionId());
-        return mapToStartJob(response, rawPayload);
+    private DecisionResult.StartJob.ProposedAction mapProposedAction(Object rawAction) {
+        if (!(rawAction instanceof Map<?, ?> actionMap)) {
+            return null;
+        }
+
+        String upstreamAction = stringValue(actionMap.get("action"));
+        Map<String, Object> payload = mapValue(actionMap.get("payload"));
+
+        return switch (upstreamAction) {
+            case ACTION_PROPOSE_CREATE_TASK -> new DecisionResult.StartJob.ProposedAction(
+                    "create_task", mapTaskPayload(payload));
+            case ACTION_PROPOSE_ADD_SHOPPING_ITEM -> new DecisionResult.StartJob.ProposedAction(
+                    "add_shopping_item", mapShoppingItemPayload(payload));
+            default -> null;
+        };
     }
 
-    /**
-     * Safe degradation for unknown decision types.
-     * Returns Reject with error code.
-     */
-    private DecisionResult unknownDecisionType(AiDecisionResponse response, String rawPayload) {
+    private Map<String, Object> mapTaskPayload(Map<String, Object> payload) {
+        Map<String, Object> task = mapValue(payload.get("task"));
+        Map<String, Object> params = new LinkedHashMap<>();
+
+        copyIfPresent(task, params, "title", "title");
+        copyIfPresent(task, params, "description", "description");
+        copyIfPresent(task, params, "assignee_id", "assigneeId");
+        copyIfPresent(task, params, "zone_id", "zoneId");
+        copyIfPresent(task, params, "due", "deadline");
+
+        return params;
+    }
+
+    private Map<String, Object> mapShoppingItemPayload(Map<String, Object> payload) {
+        Map<String, Object> item = mapValue(payload.get("item"));
+        Map<String, Object> params = new LinkedHashMap<>();
+
+        copyIfPresent(item, params, "name", "name");
+        copyIfPresent(item, params, "quantity", "quantity");
+        copyIfPresent(item, params, "unit", "unit");
+        copyIfPresent(item, params, "list_id", "listId");
+
+        return params;
+    }
+
+    private DecisionResult.Clarify mapClarify(AiDecisionResponse response, String rawPayload) {
+        Map<String, Object> payload = payload(response);
+        String question = stringValue(payload.get("question"));
+        if (question == null || question.isBlank()) {
+            question = "Please add more details to complete the command.";
+        }
+
+        return new DecisionResult.Clarify(
+                DecisionSource.AI_PLATFORM,
+                confidenceOrZero(response),
+                response.decisionUuidOrNull(),
+                rawPayload,
+                question,
+                stringList(payload.get("missing_fields")),
+                suggestions(payload));
+    }
+
+    private DecisionResult.Reject mapToReject(AiDecisionResponse response, String rawPayload, String errorCode) {
+        return new DecisionResult.Reject(
+                DecisionSource.AI_PLATFORM,
+                confidenceOrZero(response),
+                response.decisionUuidOrNull(),
+                rawPayload,
+                response.explanation(),
+                errorCode);
+    }
+
+    private DecisionResult unknownDecisionAction(AiDecisionResponse response, String rawPayload) {
         log.error(
-                "Unknown decision type from AI Platform: type={}, decisionId={}",
-                response.type(),
+                "Unknown decision action from AI Platform: action={}, decisionId={}",
+                response.action(),
                 response.decisionId());
 
         return new DecisionResult.Reject(
                 DecisionSource.AI_PLATFORM,
                 BigDecimal.ZERO,
-                response.decisionId(),
+                response.decisionUuidOrNull(),
                 rawPayload,
-                "Неизвестный тип решения от AI Platform: " + response.type(),
-                "UNKNOWN_DECISION_TYPE");
+                "Unknown AI Platform decision action: " + response.action(),
+                "UNKNOWN_DECISION_ACTION");
     }
 
-    private DecisionResult.Clarify mapToClarify(AiDecisionResponse response, String rawPayload) {
-        return new DecisionResult.Clarify(
-                DecisionSource.AI_PLATFORM,
-                response.confidence(),
-                response.decisionId(),
-                rawPayload,
-                response.question(),
-                response.requiredFields() != null ? response.requiredFields() : List.of(),
-                response.suggestions() != null ? response.suggestions() : Map.of());
+    private Map<String, Object> suggestions(Map<String, Object> payload) {
+        Object options = payload.get("options");
+        if (options == null) {
+            return Map.of();
+        }
+        return Map.of("options", options);
     }
 
-    private DecisionResult.Reject mapToReject(AiDecisionResponse response, String rawPayload) {
-        return new DecisionResult.Reject(
-                DecisionSource.AI_PLATFORM,
-                response.confidence(),
-                response.decisionId(),
-                rawPayload,
-                response.reason(),
-                response.errorCode());
+    private Map<String, Object> payload(AiDecisionResponse response) {
+        return response.payload() != null ? response.payload() : Map.of();
     }
 
-    /**
-     * Checks if action type is supported by HomeTusk.
-     */
-    private boolean isSupportedAction(AiDecisionResponse.ProposedActionDto action) {
-        return ACTION_CREATE_TASK.equals(action.actionType())
-                || ACTION_COMPLETE_TASK.equals(action.actionType())
-                || ACTION_ADD_SHOPPING_ITEM.equals(action.actionType());
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> mapValue(Object value) {
+        if (value instanceof Map<?, ?> map) {
+            return (Map<String, Object>) map;
+        }
+        return Map.of();
     }
 
-    /**
-     * Checks if any actions in the list are unsupported.
-     */
-    private boolean hasUnsupportedActions(List<AiDecisionResponse.ProposedActionDto> actions) {
-        return actions.stream().anyMatch(a -> !isSupportedAction(a));
+    private List<String> stringList(Object value) {
+        if (!(value instanceof List<?> list)) {
+            return List.of();
+        }
+        return list.stream().map(Object::toString).toList();
+    }
+
+    private void copyIfPresent(
+            Map<String, Object> source, Map<String, Object> target, String sourceKey, String targetKey) {
+        Object value = source.get(sourceKey);
+        if (value != null) {
+            target.put(targetKey, value);
+        }
+    }
+
+    private String stringValue(Object value) {
+        return value != null ? value.toString() : null;
+    }
+
+    private BigDecimal confidenceOrZero(AiDecisionResponse response) {
+        return response.confidence() != null ? response.confidence() : BigDecimal.ZERO;
     }
 
     private String toJson(Object obj) {

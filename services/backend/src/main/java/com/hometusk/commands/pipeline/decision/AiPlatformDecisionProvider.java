@@ -60,7 +60,7 @@ public class AiPlatformDecisionProvider implements DecisionProvider {
             return new DecisionResult.Reject(
                     DecisionSource.AI_PLATFORM,
                     BigDecimal.ZERO,
-                    response.decisionId(),
+                    response.decisionUuidOrNull(),
                     serializeResponseForLog(response),
                     "AI response failed schema validation: " + validationResult.getErrorSummary(),
                     "AI_RESPONSE_INVALID");
@@ -82,7 +82,13 @@ public class AiPlatformDecisionProvider implements DecisionProvider {
 
     private String serializeResponseForLog(AiDecisionResponse response) {
         try {
-            return "{\"decisionId\":\"" + response.decisionId() + "\",\"type\":\"" + response.type() + "\"}";
+            return "{\"decision_id\":\""
+                    + response.decisionId()
+                    + "\",\"status\":\""
+                    + response.status()
+                    + "\",\"action\":\""
+                    + response.action()
+                    + "\"}";
         } catch (Exception e) {
             return "{\"error\":\"Unable to serialize response\"}";
         }

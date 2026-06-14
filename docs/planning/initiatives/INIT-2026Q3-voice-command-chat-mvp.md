@@ -824,6 +824,7 @@ Required:
 
 * User can complete a shopping command by voice.
 * User can complete a task + shopping command by voice.
+* UAT proves the full chain: ASR transcript -> manual Send -> `/api/v1/commands` -> `AiPlatformDecisionProvider`.
 * User can handle needs_input from voice-originated command.
 * User can recover from rejected command.
 * User can recover from ASR permission error.
@@ -834,6 +835,7 @@ Required:
 
 * `/api/v1/voice/transcriptions` is implemented.
 * AI Platform ASR client is isolated.
+* Confirmed transcript is processed by the existing command pipeline with `decision.provider=aiplatform`.
 * Config is environment-driven.
 * Controlled errors are mapped.
 * Tests exist for success and failure paths.
@@ -873,6 +875,7 @@ Required:
 * Frontend Voice Command Chat implemented.
 * Existing typed Commands flow still works.
 * Voice flow works locally.
+* UAT smoke proves an ASR-originated command creates or updates domain state through AI Platform decisioning.
 * Backend tests added.
 * Frontend tests or stories added.
 * Visual QA document created.

@@ -383,7 +383,7 @@ docker compose down -v
 | `DECISION_PROVIDER` | `manual` | `manual` или `aiplatform` |
 | `DECISION_FALLBACK_ENABLED` | `true` | fallback при недоступности AI |
 | `AI_PLATFORM_URL` | `http://localhost:8090` | Внешняя AI Platform, если включена |
-| `AI_PLATFORM_DECISION_PATH` | `/decision` | Можно поставить `/decide` для upstream |
+| `AI_PLATFORM_DECISION_PATH` | `/v1/decide` | Можно поставить `/decide`, если base URL уже содержит version/proxy routing |
 | `ASR_SERVICE_URL` | `http://localhost:8000/api/v1/asr` | Внешний ASR service |
 | `GUARDRAILS_ENABLED` | `true` | Включение guardrails |
 

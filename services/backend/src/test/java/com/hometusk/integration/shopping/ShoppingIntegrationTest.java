@@ -353,38 +353,55 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
         String responseBody =
                 """
                 {
-                    "decisionId": "550e8400-e29b-41d4-a716-446655440010",
-                    "type": "start_job",
+                    "decision_id": "550e8400-e29b-41d4-a716-446655440010",
+                    "command_id": "cmd-test",
+                    "status": "ok",
+                    "action": "start_job",
                     "confidence": 0.95,
-                    "actions": [
-                        {
-                            "actionType": "create_task",
-                            "parameters": {
-                                "title": "%s",
-                                "assigneeId": "%s"
+                    "payload": {
+                        "job_id": "job-shopping-task",
+                        "job_type": "create_task",
+                        "proposed_actions": [
+                            {
+                                "action": "propose_create_task",
+                                "payload": {
+                                    "task": {
+                                        "title": "%s",
+                                        "assignee_id": "%s"
+                                    }
+                                }
+                            },
+                            {
+                                "action": "propose_add_shopping_item",
+                                "payload": {
+                                    "item": {
+                                        "name": "Milk",
+                                        "quantity": "2",
+                                        "unit": "liters"
+                                    }
+                                }
+                            },
+                            {
+                                "action": "propose_add_shopping_item",
+                                "payload": {
+                                    "item": {
+                                        "name": "Bread",
+                                        "quantity": "1"
+                                    }
+                                }
                             }
-                        },
-                        {
-                            "actionType": "add_shopping_item",
-                            "parameters": {
-                                "name": "Milk",
-                                "quantity": 2,
-                                "unit": "liters"
-                            }
-                        },
-                        {
-                            "actionType": "add_shopping_item",
-                            "parameters": {
-                                "name": "Bread",
-                                "quantity": 1
-                            }
-                        }
-                    ]
+                        ]
+                    },
+                    "explanation": "Task and shopping items accepted.",
+                    "trace_id": "trace-test-shopping-task",
+                    "schema_version": "1.0.0",
+                    "decision_version": "test-1",
+                    "created_at": "2026-06-14T00:00:00Z"
                 }
                 """
                         .formatted(title, assigneeId);
 
-        stubFor(WireMock.post(urlEqualTo("/decision"))
+        stubFor(WireMock.post(urlEqualTo(DECIDE_PATH))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -396,23 +413,36 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
         String responseBody =
                 """
                 {
-                    "decisionId": "550e8400-e29b-41d4-a716-446655440011",
-                    "type": "start_job",
+                    "decision_id": "550e8400-e29b-41d4-a716-446655440011",
+                    "command_id": "cmd-test",
+                    "status": "ok",
+                    "action": "start_job",
                     "confidence": 0.85,
-                    "actions": [
-                        {
-                            "actionType": "add_shopping_item",
-                            "parameters": {
-                                "name": "%s",
-                                "quantity": %d%s
+                    "payload": {
+                        "job_id": "job-shopping",
+                        "job_type": "add_shopping_item",
+                        "proposed_actions": [
+                            {
+                                "action": "propose_add_shopping_item",
+                                "payload": {
+                                    "item": {
+                                        "name": "%s",
+                                        "quantity": "%d"%s
+                                    }
+                                }
                             }
-                        }
-                    ]
+                        ]
+                    },
+                    "explanation": "Shopping item accepted.",
+                    "trace_id": "trace-test-shopping-only",
+                    "schema_version": "1.0.0",
+                    "decision_version": "test-1",
+                    "created_at": "2026-06-14T00:00:00Z"
                 }
                 """
                         .formatted(name, quantity, unitField);
 
-        stubFor(WireMock.post(urlEqualTo("/decision"))
+        stubFor(WireMock.post(urlEqualTo(DECIDE_PATH))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -423,22 +453,35 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
         String responseBody =
                 """
                 {
-                    "decisionId": "550e8400-e29b-41d4-a716-446655440012",
-                    "type": "start_job",
+                    "decision_id": "550e8400-e29b-41d4-a716-446655440012",
+                    "command_id": "cmd-test",
+                    "status": "ok",
+                    "action": "start_job",
                     "confidence": 0.85,
-                    "actions": [
-                        {
-                            "actionType": "add_shopping_item",
-                            "parameters": {
-                                "name": "",
-                                "quantity": 1
+                    "payload": {
+                        "job_id": "job-shopping-empty",
+                        "job_type": "add_shopping_item",
+                        "proposed_actions": [
+                            {
+                                "action": "propose_add_shopping_item",
+                                "payload": {
+                                    "item": {
+                                        "name": "",
+                                        "quantity": "1"
+                                    }
+                                }
                             }
-                        }
-                    ]
+                        ]
+                    },
+                    "explanation": "Shopping item accepted.",
+                    "trace_id": "trace-test-shopping-empty",
+                    "schema_version": "1.0.0",
+                    "decision_version": "test-1",
+                    "created_at": "2026-06-14T00:00:00Z"
                 }
                 """;
 
-        stubFor(WireMock.post(urlEqualTo("/decision"))
+        stubFor(WireMock.post(urlEqualTo(DECIDE_PATH))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -449,30 +492,45 @@ class ShoppingIntegrationTest extends AiPlatformIntegrationTestBase {
         String responseBody =
                 """
                 {
-                    "decisionId": "550e8400-e29b-41d4-a716-446655440013",
-                    "type": "propose_add_shopping_item",
+                    "decision_id": "550e8400-e29b-41d4-a716-446655440013",
+                    "command_id": "cmd-test",
+                    "status": "ok",
+                    "action": "start_job",
                     "confidence": 0.88,
-                    "actions": [
-                        {
-                            "actionType": "create_task",
-                            "parameters": {
-                                "title": "%s",
-                                "assigneeId": "%s"
+                    "payload": {
+                        "job_id": "job-shopping-chain",
+                        "job_type": "add_shopping_item",
+                        "proposed_actions": [
+                            {
+                                "action": "propose_create_task",
+                                "payload": {
+                                    "task": {
+                                        "title": "%s",
+                                        "assignee_id": "%s"
+                                    }
+                                }
+                            },
+                            {
+                                "action": "propose_add_shopping_item",
+                                "payload": {
+                                    "item": {
+                                        "name": "Full chain item",
+                                        "quantity": "3"
+                                    }
+                                }
                             }
-                        },
-                        {
-                            "actionType": "add_shopping_item",
-                            "parameters": {
-                                "name": "Full chain item",
-                                "quantity": 3
-                            }
-                        }
-                    ]
+                        ]
+                    },
+                    "explanation": "Shopping item and task accepted.",
+                    "trace_id": "trace-test-shopping-chain",
+                    "schema_version": "1.0.0",
+                    "decision_version": "test-1",
+                    "created_at": "2026-06-14T00:00:00Z"
                 }
                 """
                         .formatted(taskTitle, assigneeId);
 
-        stubFor(WireMock.post(urlEqualTo("/decision"))
+        stubFor(WireMock.post(urlEqualTo(DECIDE_PATH))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")

@@ -15,11 +15,10 @@ import org.springframework.test.context.DynamicPropertySource;
 
 /**
  * Base class for AI Platform integration tests using WireMock.
- *
- * <p>Provides WireMock server setup and common stubbing utilities.
  */
 public abstract class AiPlatformIntegrationTestBase extends IntegrationTestBase {
 
+    protected static final String DECIDE_PATH = "/v1/decide";
     protected static WireMockServer wireMockServer;
 
     @Autowired
@@ -35,6 +34,7 @@ public abstract class AiPlatformIntegrationTestBase extends IntegrationTestBase 
     static void configureAiPlatform(DynamicPropertyRegistry registry) {
         registry.add("decision.provider", () -> "aiplatform");
         registry.add("aiplatform.base-url", () -> "http://localhost:" + wireMockServer.port());
+        registry.add("aiplatform.decision-path", () -> DECIDE_PATH);
         registry.add("aiplatform.timeout-ms", () -> "300");
         registry.add("decision.fallback.enabled", () -> "true");
         registry.add("guardrails.enabled", () -> "true");
@@ -44,7 +44,6 @@ public abstract class AiPlatformIntegrationTestBase extends IntegrationTestBase 
     @BeforeEach
     void setUpWireMock() {
         wireMockServer.resetAll();
-        // Default health check stub
         stubFor(get(urlEqualTo("/health")).willReturn(aResponse().withStatus(200)));
     }
 
@@ -56,39 +55,59 @@ public abstract class AiPlatformIntegrationTestBase extends IntegrationTestBase 
         }
     }
 
-    /**
-     * Stubs AI Platform to return a start_job decision.
-     */
     protected void stubStartJobDecision(String assigneeId, String title) {
+        stubStartJobDecisionWithTitleAssertion(assigneeId, title, null);
+    }
+
+    protected void stubStartJobDecisionWithTitleAssertion(String assigneeId, String title, String expectedText) {
         String responseBody =
                 """
                 {
-                    "decisionId": "550e8400-e29b-41d4-a716-446655440000",
-                    "type": "start_job",
+                    "decision_id": "550e8400-e29b-41d4-a716-446655440000",
+                    "command_id": "cmd-test",
+                    "status": "ok",
+                    "action": "start_job",
                     "confidence": 0.95,
-                    "actions": [
-                        {
-                            "actionType": "create_task",
-                            "parameters": {
-                                "title": "%s",
-                                "assigneeId": "%s"
+                    "payload": {
+                        "job_id": "job-test",
+                        "job_type": "create_task",
+                        "proposed_actions": [
+                            {
+                                "action": "propose_create_task",
+                                "payload": {
+                                    "task": {
+                                        "title": "%s",
+                                        "assignee_id": "%s"
+                                    }
+                                }
                             }
-                        }
-                    ]
+                        ]
+                    },
+                    "explanation": "Task creation accepted.",
+                    "trace_id": "trace-test-start-job",
+                    "schema_version": "1.0.0",
+                    "decision_version": "test-1",
+                    "created_at": "2026-06-14T00:00:00Z"
                 }
                 """
                         .formatted(title, assigneeId);
 
-        stubFor(post(urlEqualTo("/decision"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(responseBody)));
+        var mapping = post(urlEqualTo(DECIDE_PATH))
+                .withRequestBody(matchingJsonPath("$.command_id"))
+                .withRequestBody(matchingJsonPath("$.user_id"))
+                .withRequestBody(matchingJsonPath("$.text"))
+                .withRequestBody(matchingJsonPath("$.capabilities[?(@ == 'start_job')]"))
+                .withRequestBody(matchingJsonPath("$.context.household.members[0].user_id"));
+        if (expectedText != null) {
+            mapping = mapping.withRequestBody(matchingJsonPath("$.text", equalTo(expectedText)));
+        }
+
+        stubFor(mapping.willReturn(aResponse()
+                .withStatus(200)
+                .withHeader("Content-Type", "application/json")
+                .withBody(responseBody)));
     }
 
-    /**
-     * Stubs AI Platform to return a clarify decision.
-     */
     protected void stubClarifyDecision(String question, String... requiredFields) {
         StringBuilder fieldsJson = new StringBuilder("[");
         for (int i = 0; i < requiredFields.length; i++) {
@@ -100,143 +119,159 @@ public abstract class AiPlatformIntegrationTestBase extends IntegrationTestBase 
         String responseBody =
                 """
                 {
-                    "decisionId": "550e8400-e29b-41d4-a716-446655440001",
-                    "type": "clarify",
+                    "decision_id": "550e8400-e29b-41d4-a716-446655440001",
+                    "command_id": "cmd-test",
+                    "status": "clarify",
+                    "action": "clarify",
                     "confidence": 0.4,
-                    "question": "%s",
-                    "requiredFields": %s,
-                    "suggestions": {}
+                    "payload": {
+                        "question": "%s",
+                        "missing_fields": %s
+                    },
+                    "explanation": "More input is required.",
+                    "trace_id": "trace-test-clarify",
+                    "schema_version": "1.0.0",
+                    "decision_version": "test-1",
+                    "created_at": "2026-06-14T00:00:00Z"
                 }
                 """
                         .formatted(question, fieldsJson);
 
-        stubFor(post(urlEqualTo("/decision"))
+        stubFor(post(urlEqualTo(DECIDE_PATH))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody(responseBody)));
     }
 
-    /**
-     * Stubs AI Platform to return an invalid response (schema validation failure).
-     */
     protected void stubInvalidResponse() {
         String responseBody =
                 """
                 {
-                    "decisionId": "550e8400-e29b-41d4-a716-446655440002",
-                    "type": "start_job",
-                    "confidence": 0.9
+                    "decision_id": "550e8400-e29b-41d4-a716-446655440002",
+                    "command_id": "cmd-test",
+                    "status": "ok",
+                    "action": "start_job",
+                    "confidence": 0.9,
+                    "explanation": "Missing required payload.",
+                    "trace_id": "trace-test-invalid",
+                    "schema_version": "1.0.0",
+                    "decision_version": "test-1",
+                    "created_at": "2026-06-14T00:00:00Z"
                 }
                 """
                         .stripIndent();
-        // Missing required "actions" field for start_job type
 
-        stubFor(post(urlEqualTo("/decision"))
+        stubFor(post(urlEqualTo(DECIDE_PATH))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody(responseBody)));
     }
 
-    /**
-     * Stubs AI Platform to timeout.
-     */
     protected void stubTimeout() {
-        stubFor(post(urlEqualTo("/decision")).willReturn(aResponse().withFixedDelay(10000)));
+        stubFor(post(urlEqualTo(DECIDE_PATH)).willReturn(aResponse().withFixedDelay(10000)));
     }
 
-    /**
-     * Stubs AI Platform health check to fail.
-     */
     protected void stubHealthCheckFailed() {
         stubFor(get(urlEqualTo("/health")).willReturn(aResponse().withStatus(503)));
     }
 
-    // --- Upstream contract stubs ---
-
-    /**
-     * Stubs upstream propose_create_task (mapped to start_job in HomeTusk).
-     */
     protected void stubProposeCreateTaskDecision(String assigneeId, String title) {
         String responseBody =
                 """
                 {
-                    "decisionId": "e390f1ee-7c54-4b01-90e6-d701748f0852",
-                    "type": "propose_create_task",
+                    "decision_id": "e390f1ee-7c54-4b01-90e6-d701748f0852",
+                    "command_id": "cmd-test",
+                    "status": "ok",
+                    "action": "propose_create_task",
                     "confidence": 0.75,
-                    "actions": [
-                        {
-                            "actionType": "create_task",
-                            "parameters": {
-                                "title": "%s",
-                                "assigneeId": "%s"
-                            }
+                    "payload": {
+                        "task": {
+                            "title": "%s",
+                            "assignee_id": "%s"
                         }
-                    ]
+                    },
+                    "explanation": "Task proposal accepted.",
+                    "trace_id": "trace-test-propose-task",
+                    "schema_version": "1.0.0",
+                    "decision_version": "test-1",
+                    "created_at": "2026-06-14T00:00:00Z"
                 }
                 """
                         .formatted(title, assigneeId);
 
-        stubFor(post(urlEqualTo("/decision"))
+        stubFor(post(urlEqualTo(DECIDE_PATH))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody(responseBody)));
     }
 
-    /**
-     * Stubs upstream propose_add_shopping_item (now supported, executes immediately).
-     */
     protected void stubProposeAddShoppingItemDecision() {
         String responseBody =
                 """
                 {
-                    "decisionId": "f490f1ee-8c54-4b01-90e6-d701748f0853",
-                    "type": "propose_add_shopping_item",
+                    "decision_id": "f490f1ee-8c54-4b01-90e6-d701748f0853",
+                    "command_id": "cmd-test",
+                    "status": "ok",
+                    "action": "start_job",
                     "confidence": 0.85,
-                    "actions": [
-                        {
-                            "actionType": "add_shopping_item",
-                            "parameters": {
-                                "name": "Молоко",
-                                "quantity": 2
+                    "payload": {
+                        "job_id": "job-shopping",
+                        "job_type": "add_shopping_item",
+                        "proposed_actions": [
+                            {
+                                "action": "propose_add_shopping_item",
+                                "payload": {
+                                    "item": {
+                                        "name": "Milk",
+                                        "quantity": "2"
+                                    }
+                                }
                             }
-                        }
-                    ]
+                        ]
+                    },
+                    "explanation": "Shopping item accepted.",
+                    "trace_id": "trace-test-shopping",
+                    "schema_version": "1.0.0",
+                    "decision_version": "test-1",
+                    "created_at": "2026-06-14T00:00:00Z"
                 }
                 """;
 
-        stubFor(post(urlEqualTo("/decision"))
+        stubFor(post(urlEqualTo(DECIDE_PATH))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody(responseBody)));
     }
 
-    /**
-     * Stubs unknown decision type (safe degradation → Reject).
-     */
     protected void stubUnknownDecisionType() {
         String responseBody =
                 """
                 {
-                    "decisionId": "a590f1ee-9c54-4b01-90e6-d701748f0854",
-                    "type": "unknown_future_type",
-                    "confidence": 0.9
+                    "decision_id": "a590f1ee-9c54-4b01-90e6-d701748f0854",
+                    "command_id": "cmd-test",
+                    "status": "ok",
+                    "action": "unknown_future_type",
+                    "confidence": 0.9,
+                    "payload": {},
+                    "explanation": "Future action.",
+                    "trace_id": "trace-test-unknown",
+                    "schema_version": "1.0.0",
+                    "decision_version": "test-1",
+                    "created_at": "2026-06-14T00:00:00Z"
                 }
                 """;
 
-        stubFor(post(urlEqualTo("/decision"))
+        stubFor(post(urlEqualTo(DECIDE_PATH))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody(responseBody)));
     }
 
-    /**
-     * Stubs upstream start_job with deadline and zone for guardrails test.
-     */
     protected void stubStartJobWithFullParams(String assigneeId, String title, String zoneId) {
         String futureDeadline = java.time.Instant.now()
                 .plus(7, java.time.temporal.ChronoUnit.DAYS)
@@ -244,25 +279,38 @@ public abstract class AiPlatformIntegrationTestBase extends IntegrationTestBase 
         String responseBody =
                 """
                 {
-                    "decisionId": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-                    "type": "start_job",
+                    "decision_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                    "command_id": "cmd-test",
+                    "status": "ok",
+                    "action": "start_job",
                     "confidence": 0.95,
-                    "actions": [
-                        {
-                            "actionType": "create_task",
-                            "parameters": {
-                                "title": "%s",
-                                "assigneeId": "%s",
-                                "zoneId": "%s",
-                                "deadline": "%s"
+                    "payload": {
+                        "job_id": "job-full",
+                        "job_type": "create_task",
+                        "proposed_actions": [
+                            {
+                                "action": "propose_create_task",
+                                "payload": {
+                                    "task": {
+                                        "title": "%s",
+                                        "assignee_id": "%s",
+                                        "zone_id": "%s",
+                                        "due": "%s"
+                                    }
+                                }
                             }
-                        }
-                    ]
+                        ]
+                    },
+                    "explanation": "Task creation accepted.",
+                    "trace_id": "trace-test-full",
+                    "schema_version": "1.0.0",
+                    "decision_version": "test-1",
+                    "created_at": "2026-06-14T00:00:00Z"
                 }
                 """
                         .formatted(title, assigneeId, zoneId, futureDeadline);
 
-        stubFor(post(urlEqualTo("/decision"))
+        stubFor(post(urlEqualTo(DECIDE_PATH))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
