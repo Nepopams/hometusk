@@ -10,6 +10,7 @@ import com.hometusk.commands.pipeline.guardrails.HouseholdSnapshot;
 import com.hometusk.households.domain.Household;
 import com.hometusk.households.domain.Zone;
 import com.hometusk.households.repository.ZoneRepository;
+import com.hometusk.shopping.domain.ShoppingList;
 import com.hometusk.shopping.repository.ShoppingListRepository;
 import com.hometusk.tasks.repository.TaskRepository;
 import com.hometusk.users.domain.Membership;
@@ -18,6 +19,7 @@ import com.hometusk.users.domain.User;
 import com.hometusk.users.repository.MembershipRepository;
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -178,12 +180,16 @@ class ContextBuilderTest {
             User user = createUser("user@test.com", "Alice");
             Membership membership = new Membership(user, household, MembershipRole.member);
             Zone kitchen = new Zone(household, "Kitchen");
+            ShoppingList shoppingList = new ShoppingList(household, "Groceries");
             setZoneId(kitchen, UUID.randomUUID());
+            setShoppingListId(shoppingList, UUID.randomUUID());
 
             when(membershipRepository.findByHousehold_Id(householdId)).thenReturn(List.of(membership));
             when(zoneRepository.findByHousehold_Id(householdId)).thenReturn(List.of(kitchen));
             when(shoppingListRepository.findByHousehold_IdOrderByCreatedAtDesc(householdId))
-                    .thenReturn(List.of());
+                    .thenReturn(List.of(shoppingList));
+            when(shoppingListRepository.findFirstByHousehold_IdOrderByCreatedAtAsc(householdId))
+                    .thenReturn(Optional.of(shoppingList));
 
             // When
             var context = contextBuilder.buildHouseholdContextForAi(householdId, correlationId);
@@ -191,6 +197,8 @@ class ContextBuilderTest {
             // Then
             assertThat(context).containsKey("members");
             assertThat(context).containsKey("zones");
+            assertThat(context)
+                    .containsEntry("default_list_id", shoppingList.getId().toString());
             assertThat(context.get("members")).isInstanceOf(List.class);
             assertThat(context.get("zones")).isInstanceOf(List.class);
         }
@@ -253,6 +261,16 @@ class ContextBuilderTest {
             idField.set(zone, id);
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException("Failed to set zone id for tests", e);
+        }
+    }
+
+    private void setShoppingListId(ShoppingList shoppingList, UUID id) {
+        try {
+            Field idField = ShoppingList.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(shoppingList, id);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Failed to set shopping list id for tests", e);
         }
     }
 }

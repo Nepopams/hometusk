@@ -101,8 +101,8 @@ propose_add_shopping_item -> add_shopping_item
 
 > Runtime note (2026-06-14): HomeTusk now sends the upstream snake_case
 > envelope directly: `command_id`, `user_id`, `timestamp`, `text`,
-> `capabilities`, and `context.household`. The legacy camelCase table below is
-> retained as migration context only.
+> `capabilities`, `context.household`, and `context.defaults`. The legacy
+> camelCase table below is retained as migration context only.
 
 | HomeTusk Field | Upstream Field | Notes |
 |----------------|----------------|-------|
@@ -114,6 +114,8 @@ propose_add_shopping_item -> add_shopping_item
 | `householdId` | `householdId` | UUID, 1:1 |
 | `householdContext.members` | `householdContext.members` | 1:1 |
 | `householdContext.zones` | `householdContext.zones` | 1:1 |
+| `householdContext.default_list_id` | `context.defaults.default_list_id` | First/oldest household shopping list when available |
+| `requesterId` | `context.defaults.default_assignee_id` | Requesting user as deterministic default |
 
 #### commandType enum
 

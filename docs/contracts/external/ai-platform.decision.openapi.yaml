@@ -125,6 +125,14 @@ components:
                     type: string
                   name:
                     type: string
+        defaults:
+          type: object
+          additionalProperties: false
+          properties:
+            default_assignee_id:
+              type: string
+            default_list_id:
+              type: string
 
     DecisionResponse:
       type: object

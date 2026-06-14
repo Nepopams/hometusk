@@ -3,6 +3,7 @@ package com.hometusk.commands.pipeline.decision.client;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hometusk.commands.pipeline.decision.DecisionContext;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -27,7 +28,7 @@ public record AiDecisionRequest(
                 Instant.now().toString(),
                 extractText(context),
                 DEFAULT_CAPABILITIES,
-                Map.of("household", buildHouseholdContext(context)));
+                buildContext(context));
     }
 
     private static String extractText(DecisionContext context) {
@@ -43,10 +44,24 @@ public record AiDecisionRequest(
         return context.commandType().name().toLowerCase();
     }
 
-    private static Map<String, Object> buildHouseholdContext(DecisionContext context) {
+    private static Map<String, Object> buildContext(DecisionContext context) {
         Map<String, Object> householdContext =
                 context.householdContext() != null ? context.householdContext() : Map.of();
+        Map<String, Object> household = buildHouseholdContext(context, householdContext);
 
+        Map<String, Object> requestContext = new LinkedHashMap<>();
+        requestContext.put("household", household);
+
+        Map<String, Object> defaults = buildDefaultsContext(context, householdContext, household);
+        if (!defaults.isEmpty()) {
+            requestContext.put("defaults", defaults);
+        }
+
+        return requestContext;
+    }
+
+    private static Map<String, Object> buildHouseholdContext(
+            DecisionContext context, Map<String, Object> householdContext) {
         List<Map<String, Object>> members = remapList(
                 householdContext.get("members"),
                 Map.of("id", "user_id", "name", "display_name", "role", "role", "workload_score", "workload_score"));
@@ -64,6 +79,36 @@ public record AiDecisionRequest(
                 "members", members,
                 "zones", zones,
                 "shopping_lists", shoppingLists);
+    }
+
+    private static Map<String, Object> buildDefaultsContext(
+            DecisionContext context, Map<String, Object> householdContext, Map<String, Object> household) {
+        Map<String, Object> defaults = new LinkedHashMap<>();
+        if (context.requesterId() != null) {
+            defaults.put("default_assignee_id", context.requesterId().toString());
+        }
+
+        Object defaultListId = householdContext.get("default_list_id");
+        if (defaultListId == null) {
+            defaultListId = firstShoppingListId(household.get("shopping_lists"));
+        }
+        if (defaultListId != null && !defaultListId.toString().isBlank()) {
+            defaults.put("default_list_id", defaultListId.toString());
+        }
+
+        return defaults;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Object firstShoppingListId(Object rawShoppingLists) {
+        if (!(rawShoppingLists instanceof List<?> shoppingLists) || shoppingLists.isEmpty()) {
+            return null;
+        }
+        Object first = shoppingLists.get(0);
+        if (!(first instanceof Map<?, ?> firstMap)) {
+            return null;
+        }
+        return ((Map<String, Object>) firstMap).get("list_id");
     }
 
     @SuppressWarnings("unchecked")
