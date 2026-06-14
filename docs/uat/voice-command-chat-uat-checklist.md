@@ -47,6 +47,8 @@ HomeTusk `AI_PLATFORM_API_KEY`.
 - [ ] AI Platform responds locally from HomeTusk UAT:
   `curl -v --max-time 10 http://10.0.0.5/v1/asr/transcribe` returns `405 Method Not Allowed` for GET.
 - [ ] AI Platform `/v1/decide` is reachable from HomeTusk UAT with a valid POST smoke payload.
+- [ ] Do not use AI Platform `/health` as the decisioning gate on UAT; `/v1/decide`
+      reachability and `DecisionLog.source=AI_PLATFORM` are the proof points.
 
 ## Smoke Scenarios
 
