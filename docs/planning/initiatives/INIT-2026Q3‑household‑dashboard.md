@@ -1,7 +1,7 @@
 Initiative: INIT-2026Q3‑household‑dashboard — Unified Household Home & Navigation
 Status
 
-Proposed — Ready for epic decomposition (2026‑Q3)
+DONE (NOW) — selected on 2026-06-13 after closing INIT-2026Q3‑command‑attributes and closed on 2026-06-13 through EP-034 / ST-3401 Gate D GO.
 
 Sources of Truth
 Household lifecycle initiative delivered the ability to create, join and invite households【turn42file0†L20-L34】.
@@ -89,3 +89,18 @@ Dashboard displays cards summarising tasks, shopping lists, routines and members
 Aggregated data retrieved efficiently and respects household boundaries.
 Empty states and error handling implemented.
 Documentation updated; DoR/DoD satisfied.
+
+12. Closure / Next Workflow
+Current gate: CLOSED for the NOW minimal dashboard slice. EP-034 / ST-3401 delivered the dedicated household home at `/households/{householdId}` with summary cards for tasks, shopping lists, routines and members, explicit Home navigation, empty/error/loading states, and desktop/mobile verification.
+
+Closure evidence:
+- Epic: `docs/planning/epics/EP-034/epic.md`
+- Story: `docs/planning/epics/EP-034/stories/ST-3401-household-dashboard-minimal.md`
+- Workpack: `docs/planning/workpacks/ST-3401/workpack.md`
+- Review gate: `docs/planning/workpacks/ST-3401/review-gate.md`
+- Gate D: `docs/planning/workpacks/ST-3401/gate-d.md`
+
+Decision notes:
+- NOW uses client-side aggregation through existing household-scoped endpoints.
+- No new `GET /api/v1/households/{id}/dashboard` endpoint was introduced.
+- Dedicated backend aggregation, personalization, analytics widgets and notification feed remain deferred to NEXT/LATER.

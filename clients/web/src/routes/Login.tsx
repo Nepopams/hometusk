@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { loginWithPassword } from '../lib/api';
+import { signinWithYandex } from '../lib/auth/oidc';
 import { useAuth } from '../hooks/useAuth';
 import { STORAGE_KEYS } from '../lib/constants';
 import { ApiError } from '../lib/errors';
@@ -18,13 +19,15 @@ const ERROR_MESSAGE_KEYS: Record<string, TranslationKey> = {
   invalid_credentials: 'auth.invalidCredentials',
 };
 
+type LoginAction = 'password' | 'yandex' | null;
+
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [formError, setFormError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loadingAction, setLoadingAction] = useState<LoginAction>(null);
   const { clearError, refetchUser } = useAuth();
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -33,6 +36,7 @@ export default function Login() {
   const authProvider = import.meta.env.VITE_AUTH_PROVIDER;
   const errorParam = searchParams.get('error');
   const errorMessage = errorParam ? t(ERROR_MESSAGE_KEYS[errorParam] ?? 'auth.genericError') : null;
+  const loading = loadingAction !== null;
 
   const clearErrorParam = () => {
     if (errorParam) {
@@ -77,7 +81,7 @@ export default function Login() {
       return;
     }
 
-    setLoading(true);
+    setLoadingAction('password');
     try {
       if (authProvider !== 'keycloak') {
         throw new Error(t('auth.unsupportedProvider'));
@@ -96,7 +100,20 @@ export default function Login() {
     } catch (err) {
       console.error('[Login] Sign in failed', err);
       setFormError(resolveLoginError(err, t));
-      setLoading(false);
+      setLoadingAction(null);
+    }
+  };
+
+  const handleYandexSignIn = async () => {
+    clearErrorParam();
+    setLoadingAction('yandex');
+
+    try {
+      await signinWithYandex();
+    } catch (err) {
+      console.error('[Login] Yandex sign in failed', err);
+      setFormError(t('auth.socialSignInFailed'));
+      setLoadingAction(null);
     }
   };
 
@@ -160,15 +177,29 @@ export default function Login() {
                 variant="primary"
                 size="lg"
                 fullWidth
-                loading={loading}
+                loading={loadingAction === 'password'}
                 disabled={loading}
               >
-                {loading ? t('auth.signingIn') : t('auth.signIn')}
+                {loadingAction === 'password' ? t('auth.signingIn') : t('auth.signIn')}
               </Button>
             </div>
 
             {/* Divider */}
             <Divider text={t('auth.or')} />
+
+            <div className="login-form__actions">
+              <Button
+                type="button"
+                variant="secondary"
+                size="lg"
+                fullWidth
+                loading={loadingAction === 'yandex'}
+                disabled={loading}
+                onClick={() => void handleYandexSignIn()}
+              >
+                {t('auth.signInWithYandex')}
+              </Button>
+            </div>
 
             {/* Create Account Link */}
             <div className="login-form__footer">

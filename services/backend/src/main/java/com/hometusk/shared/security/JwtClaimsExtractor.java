@@ -1,5 +1,6 @@
 package com.hometusk.shared.security;
 
+import java.util.Locale;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -16,7 +17,8 @@ public class JwtClaimsExtractor {
         }
 
         String sub = jwt.getClaimAsString("sub");
-        String email = jwt.getClaimAsString("email");
+        String email = normalizeEmail(jwt.getClaimAsString("email"));
+        Boolean emailVerified = extractEmailVerified(jwt);
         String givenName = jwt.getClaimAsString("given_name");
         String familyName = jwt.getClaimAsString("family_name");
         String name = jwt.getClaimAsString("name");
@@ -24,7 +26,7 @@ public class JwtClaimsExtractor {
         // Build display name from available claims
         String displayName = buildDisplayName(name, givenName, familyName, email, sub);
 
-        return new JwtClaims(sub, email, displayName);
+        return new JwtClaims(sub, email, emailVerified, displayName);
     }
 
     private String buildDisplayName(String name, String givenName, String familyName, String email, String sub) {
@@ -46,5 +48,34 @@ public class JwtClaimsExtractor {
         return sub != null ? sub.substring(0, Math.min(8, sub.length())) : "Unknown";
     }
 
-    public record JwtClaims(String sub, String email, String displayName) {}
+    private Boolean extractEmailVerified(Jwt jwt) {
+        Object claim = jwt.getClaims().get("email_verified");
+        if (claim instanceof Boolean value) {
+            return value;
+        }
+        if (claim instanceof String value) {
+            if ("true".equalsIgnoreCase(value)) {
+                return true;
+            }
+            if ("false".equalsIgnoreCase(value)) {
+                return false;
+            }
+        }
+        return null;
+    }
+
+    private String normalizeEmail(String email) {
+        if (email == null) {
+            return null;
+        }
+
+        String trimmed = email.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+
+        return trimmed.toLowerCase(Locale.ROOT);
+    }
+
+    public record JwtClaims(String sub, String email, Boolean emailVerified, String displayName) {}
 }

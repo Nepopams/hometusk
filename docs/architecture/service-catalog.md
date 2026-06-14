@@ -61,11 +61,11 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 - `commands` — Command pipeline (POST /api/v1/commands)
 - `tasks` — Task domain
 - `households` — Household, Zone, and Invite management
-- `users` — User profiles and Memberships
+- `users` — User profiles, email verification state, and Memberships
 - `shopping` — Shopping lists and items (Step 1 Web MVP)
 - `routines` — Routine definitions and scheduling
 - `activity` — TaskActivity events
-- `notifications` — In-app notifications (Step 3)
+- `notifications` — In-app notifications (Step 3) and email notification outbox delivery
 - `shared` — Security, logging, exceptions, validation
 
 **Key Endpoints (MVP Iteration 1):**
@@ -74,7 +74,7 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 - `POST /api/v1/auth/refresh` — Refresh HttpOnly auth cookies
 - `POST /api/v1/auth/logout` — Clear cookies and best-effort Keycloak logout
 - `POST /api/v1/commands` — Execute or schedule command (create_task, complete_task) with optional command-level create-task attributes `dueDate`, `assigneeId`, `zoneId`, and one-off `scheduleAt`
-- `GET /api/v1/users/me` — Current user profile with household memberships
+- `GET /api/v1/users/me` — Current user profile with household memberships and email verification state
 - `POST /api/v1/households` — Create household
 - `POST /api/v1/households/{id}/invites` — Create invite token
 - `POST /api/v1/invites/accept` — Accept invite token
@@ -93,7 +93,7 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 |------------|-----------|-------|
 | AuthController | `POST /api/v1/auth/login`, `POST /api/v1/auth/register`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout`, `POST /api/v1/auth/session` | Keycloak-backed browser auth and legacy session cookie bridge |
 | CommandController | `POST /api/v1/commands` | Intent-driven command execution |
-| UserController | `GET /api/v1/users/me` | User profile with household memberships |
+| UserController | `GET /api/v1/users/me` | User profile with household memberships and email verification state |
 | HouseholdController | `POST /api/v1/households`, `GET/POST /*/zones`, `GET /*/members`, `POST /*/invites` | Household administration |
 | HouseholdInviteController | `POST /api/v1/invites/accept` | Invite acceptance |
 | TaskController | `GET /api/v1/households/{id}/tasks`, `GET /*/tasks/{taskId}` | Task reads (writes via commands) |
@@ -147,6 +147,25 @@ Request → JWT Auth → UserResolver → Idempotency-Key Dedupe → MembershipV
 - `hometusk.command-scheduler.enabled=false` - Disabled by default for local/dev safety
 - `hometusk.command-scheduler.fixed-rate-ms=60000` - Poll cadence for due scheduled commands
 - `hometusk.command-scheduler.batch-size=50` - Maximum due scheduled commands per scheduler run
+
+**Email Notification Configuration:**
+- `hometusk.email.enabled=false` - Disabled by default; enqueue remains available while delivery is stopped
+- `hometusk.email.sender=log` - Local/dev sender; use `smtp` for SMTP provider or local sink
+- `hometusk.email.from=noreply@hometusk.local` - SMTP From address
+- `hometusk.email.fixed-rate-ms=60000` - Poll cadence for due email outbox rows
+- `hometusk.email.batch-size=25` - Maximum email outbox rows per delivery run
+- `hometusk.email.max-attempts=3` - Delivery retry limit per email
+- `hometusk.email.retry-delay-ms=60000` - Delay before retrying failed delivery attempts
+- `hometusk.email.task-assignment.enabled=true` - Enable task-assignment email enqueue
+- `hometusk.email.task-assignment.skip-self-notifications=true` - Skip emails when the actor assigns a task to self
+- `hometusk.email.task-assignment.app-base-url=http://localhost:5173` - Base URL used for task links in email templates
+- `hometusk.email.task-assignment.task-path-template=/households/{householdId}/tasks/{taskId}` - Task link path template
+
+**Task Assignment Email Rule:**
+- `TaskAssignedEvent` is emitted after the final task assignee is known.
+- Email is enqueued only for household members with verified email.
+- Missing/unverified email, non-member assignee, and self-assignment are skipped.
+- Enqueue failures are logged after task assignment commit and do not fail command execution.
 
 **Traceability:**
 - `X-Correlation-ID` header propagates through all layers
@@ -265,13 +284,14 @@ Handles all notifications to users.
 **Domain Tables:**
 - `households` — Container for all data
 - `zones` — Locations within household
-- `users` — User profiles (linked to Keycloak sub)
+- `users` — User profiles linked to Keycloak sub, including normalized email, verification state, source, and email update timestamp
 - `memberships` — User ↔ Household relationship
 - `tasks` — Work items
 - `shopping_lists` — Shopping list containers
 - `shopping_items` — Items in shopping lists, with optional `category`, `source`, and `linked_task_id` metadata
 - `shopping_runs` — Shopping run snapshots for active/completed/cancelled trips
 - `shopping_run_items` — Shopping run item snapshots, including category/source copied from original list items
+- `email_notification_outbox` — Async email delivery intents with status, idempotency key, retry state, and correlation/context fields
 
 **Command Pipeline Tables (2):**
 - `commands` — First-class command entities with JSONB payload, nullable explicit create-task attributes (`due_date`, `assignee_id`, `zone_id`), and nullable one-off `schedule_at`
@@ -288,6 +308,7 @@ Handles all notifications to users.
 |------------|---------|----------|--------|
 | Identity Provider | User authentication | Keycloak (local) | **In Development** |
 | AI Platform | Decision-making for commands | External (stub) | **In Development (Stage 2)** |
+| SMTP Provider / Mail Sink | Email notification delivery | Configured SMTP or local log sender | **In Development** |
 | Push Provider | Push notifications | TBD | Planned (Stage 3) |
 
 ### AI Platform (Stage 2 + Enhancement)

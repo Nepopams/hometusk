@@ -82,6 +82,141 @@ For the "Register" flow to work:
 2. Enable: **User registration** → ON
 3. Save
 
+## Enable Yandex Sign-In
+
+The local and UAT stacks build Keycloak from `infra/keycloak/Dockerfile`: the
+base image remains the official `quay.io/keycloak/keycloak:23.0.6`, while the
+Yandex/VK provider support is installed through pinned
+`keycloak-russian-providers` artifacts.
+
+### 1. Register The App In Yandex OAuth
+
+Use this redirect URI for local development:
+
+```text
+http://localhost:8180/realms/hometusk/broker/yandex/endpoint
+```
+
+For UAT/stage, use the public domain:
+
+```text
+https://<domain>/realms/hometusk/broker/yandex/endpoint
+```
+
+Requested scopes:
+
+```text
+login:info login:email login:avatar
+```
+
+### 2. Provide Secrets Through Environment
+
+For local `infra/compose`:
+
+```bash
+HOMETUSK_IDP_YANDEX_CLIENT_ID=<client_id>
+HOMETUSK_IDP_YANDEX_CLIENT_SECRET=<client_secret>
+HOMETUSK_IDP_YANDEX_DEFAULT_SCOPE="login:info login:email login:avatar"
+```
+
+For UAT, add these variables to `infra/uat/.env`.
+
+### 3. Start The Stack
+
+```bash
+cd infra/compose
+docker compose up -d --build
+```
+
+The `keycloak-social-idps` service creates or updates the `yandex` identity
+provider after Keycloak becomes healthy. If client ID/secret are not set, it
+skips configuration and exits successfully.
+
+### 4. Verify Provider Configuration
+
+```bash
+docker compose logs keycloak-social-idps
+```
+
+Expected:
+
+```text
+Yandex identity provider 'yandex' created.
+```
+
+or:
+
+```text
+Yandex identity provider 'yandex' updated.
+```
+
+Yandex email is not trusted as verified automatically: the provider is
+configured with `trustEmail=false`, and HomeTusk continues to use the
+`emailVerified` claim from the Keycloak JWT.
+
+### 5. Smoke Broker Configuration
+
+Check configuration without completing a real Yandex login:
+
+```bash
+cd infra/uat
+KEYCLOAK_BASE_URL=http://localhost:8180 \
+KEYCLOAK_ADMIN_PASSWORD=admin \
+VITE_OIDC_REDIRECT_URI=http://localhost:5173/callback \
+./smoke-social-auth-broker.sh
+```
+
+If the Yandex provider instance has already been created, enable instance and
+Yandex OAuth redirect checks:
+
+```bash
+EXPECT_YANDEX_IDP=true \
+HOMETUSK_IDP_YANDEX_CLIENT_ID=<client_id> \
+./smoke-social-auth-broker.sh
+```
+
+This smoke does not replace the manual happy-path login. It verifies that
+Keycloak has the `yandex` provider factory, `hometusk-web` is configured as a
+public authorization-code + PKCE client, the browser flow can process
+`kc_idp_hint`, and brokered auth redirects to `oauth.yandex.ru`.
+
+If a HAR shows `client_id=hometusk-api` or a Keycloak `200 text/html` response
+instead of a `302` to broker/Yandex, UAT was built or configured with the legacy
+client. Rebuild the web image with `VITE_OIDC_CLIENT_ID=hometusk-web`, then run
+the configurator and smoke again.
+
+The UAT GitHub Actions deploy sets `EXPECT_YANDEX_IDP=true`. If Yandex
+credentials are missing from `UAT_ENV_FILE` or the `keycloak-social-idps`
+one-shot fails, the deploy must fail and print the configurator logs.
+
+### 6. Existing Account With the Same Email
+
+Check the scenario where a user already has a HomeTusk password account with a
+`*@yandex.ru` email and then chooses Yandex login with the same email:
+
+1. Sign in to HomeTusk with email/password and open `/api/v1/users/me`.
+2. Save the `externalId` value.
+3. Sign out from HomeTusk.
+4. Click **Sign in with Yandex**.
+5. Complete the Keycloak account-linking confirmation if it appears.
+6. After returning to HomeTusk, open `/api/v1/users/me` again.
+
+Expected result: `externalId` is unchanged, household membership is still
+present, and no new HomeTusk profile is created. HomeTusk does not merge users
+by email; account linking must happen inside Keycloak after existing-account
+ownership is confirmed.
+
+## VK ID Status
+
+VK ID is not enabled automatically on the Keycloak 23 stack. The compatible
+`keycloak-russian-providers:23.0.6.rsp-3` release contains provider ID `vkid`,
+but uses obsolete VK endpoints. Before enabling VK, use one of:
+
+- upgrade Keycloak and the provider plugin to a version where `vkid` uses the
+  current `id.vk.ru/oauth2/*` endpoints;
+- backport the current `vkid` provider implementation into a Keycloak
+  23-compatible jar and complete a separate security review.
+
 ## Test Users
 
 Pre-configured test users (if using seed data):

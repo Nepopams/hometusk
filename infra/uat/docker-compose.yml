@@ -47,7 +47,10 @@ services:
   # Keycloak (OIDC / Auth)
   # ==========================================
   keycloak:
-    image: quay.io/keycloak/keycloak:23.0
+    build:
+      context: ../keycloak
+      dockerfile: Dockerfile
+    image: hometusk-keycloak:23.0.6-russian-providers
     container_name: hometusk-uat-keycloak
     restart: unless-stopped
     command: start-dev --import-realm --proxy=edge
@@ -83,6 +86,35 @@ services:
         limits:
           memory: 1280m
 
+  keycloak-social-idps:
+    image: hometusk-keycloak:23.0.6-russian-providers
+    container_name: hometusk-uat-keycloak-social-idps
+    restart: "no"
+    entrypoint: ["/bin/sh", "/opt/hometusk/configure-social-idps.sh"]
+    environment:
+      KEYCLOAK_BASE_URL: http://keycloak:8080
+      KEYCLOAK_REALM: hometusk
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env}
+      EXPECT_YANDEX_IDP: ${EXPECT_YANDEX_IDP:-false}
+      HOMETUSK_WEB_OIDC_CLIENT_ID: ${HOMETUSK_WEB_OIDC_CLIENT_ID:-hometusk-web}
+      VITE_OIDC_REDIRECT_URI: ${VITE_OIDC_REDIRECT_URI:-http://localhost/callback}
+      HOMETUSK_WEB_BASE_URL: ${HOMETUSK_WEB_BASE_URL:-}
+      HOMETUSK_IDP_YANDEX_CLIENT_ID: ${HOMETUSK_IDP_YANDEX_CLIENT_ID:-}
+      HOMETUSK_IDP_YANDEX_CLIENT_SECRET: ${HOMETUSK_IDP_YANDEX_CLIENT_SECRET:-}
+      HOMETUSK_IDP_YANDEX_DEFAULT_SCOPE: ${HOMETUSK_IDP_YANDEX_DEFAULT_SCOPE:-login:info login:email login:avatar}
+      HOMETUSK_IDP_YANDEX_FORCE_CONFIRM: ${HOMETUSK_IDP_YANDEX_FORCE_CONFIRM:-false}
+      HOMETUSK_IDP_YANDEX_HOSTED_DOMAIN: ${HOMETUSK_IDP_YANDEX_HOSTED_DOMAIN:-}
+      HOMETUSK_IDP_VKID_CLIENT_ID: ${HOMETUSK_IDP_VKID_CLIENT_ID:-}
+      HOMETUSK_IDP_VKID_CLIENT_SECRET: ${HOMETUSK_IDP_VKID_CLIENT_SECRET:-}
+    volumes:
+      - ../keycloak/configure-social-idps.sh:/opt/hometusk/configure-social-idps.sh:ro
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    networks:
+      - internal
+
   # ==========================================
   # Backend (Spring Boot)
   # ==========================================
@@ -110,6 +142,7 @@ services:
       HOMETUSK_AUTH_KEYCLOAK_USER_CLIENT_ID: ${HOMETUSK_AUTH_KEYCLOAK_USER_CLIENT_ID:-hometusk-api}
       HOMETUSK_AUTH_KEYCLOAK_ADMIN_CLIENT_ID: ${HOMETUSK_AUTH_KEYCLOAK_ADMIN_CLIENT_ID:-hometusk-backend}
       HOMETUSK_AUTH_KEYCLOAK_ADMIN_CLIENT_SECRET: ${HOMETUSK_AUTH_KEYCLOAK_ADMIN_CLIENT_SECRET:-hometusk-backend-secret}
+      MANAGEMENT_HEALTH_MAIL_ENABLED: ${MANAGEMENT_HEALTH_MAIL_ENABLED:-false}
     depends_on:
       postgres:
         condition: service_healthy

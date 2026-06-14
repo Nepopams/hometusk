@@ -44,6 +44,7 @@ jobs:
           owner_lc="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
           echo "BACKEND_IMAGE=ghcr.io/${owner_lc}/hometusk-backend" >> "$GITHUB_ENV"
           echo "WEB_IMAGE=ghcr.io/${owner_lc}/hometusk-web" >> "$GITHUB_ENV"
+          echo "KEYCLOAK_IMAGE=ghcr.io/${owner_lc}/hometusk-keycloak:${IMAGE_TAG}" >> "$GITHUB_ENV"
 
       - name: Configure SSH
         uses: webfactory/ssh-agent@v0.9.0

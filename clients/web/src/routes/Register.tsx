@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { registerWithPassword } from '../lib/api';
+import { signinWithYandex } from '../lib/auth/oidc';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { STORAGE_KEYS } from '../lib/constants';
@@ -17,6 +18,8 @@ const ERROR_MESSAGE_KEYS: Record<string, TranslationKey> = {
   auth_unavailable: 'auth.authUnavailable',
 };
 
+type RegisterAction = 'password' | 'yandex' | null;
+
 export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -24,7 +27,7 @@ export default function Register() {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [formError, setFormError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loadingAction, setLoadingAction] = useState<RegisterAction>(null);
   const { clearError, refetchUser } = useAuth();
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -33,6 +36,7 @@ export default function Register() {
   const authProvider = import.meta.env.VITE_AUTH_PROVIDER;
   const errorParam = searchParams.get('error');
   const errorMessage = errorParam ? t(ERROR_MESSAGE_KEYS[errorParam] ?? 'auth.genericError') : null;
+  const loading = loadingAction !== null;
 
   const clearErrorParam = () => {
     if (errorParam) {
@@ -80,7 +84,7 @@ export default function Register() {
       return;
     }
 
-    setLoading(true);
+    setLoadingAction('password');
     try {
       if (authProvider !== 'keycloak') {
         throw new Error(t('auth.unsupportedProvider'));
@@ -103,7 +107,20 @@ export default function Register() {
     } catch (err) {
       console.error('[Register] Registration failed', err);
       setFormError(resolveRegisterError(err, t));
-      setLoading(false);
+      setLoadingAction(null);
+    }
+  };
+
+  const handleYandexSignIn = async () => {
+    clearErrorParam();
+    setLoadingAction('yandex');
+
+    try {
+      await signinWithYandex();
+    } catch (err) {
+      console.error('[Register] Yandex sign in failed', err);
+      setFormError(t('auth.socialSignInFailed'));
+      setLoadingAction(null);
     }
   };
 
@@ -178,15 +195,29 @@ export default function Register() {
                 variant="primary"
                 size="lg"
                 fullWidth
-                loading={loading}
+                loading={loadingAction === 'password'}
                 disabled={loading}
               >
-                {loading ? t('auth.creatingAccount') : t('auth.createAccount')}
+                {loadingAction === 'password' ? t('auth.creatingAccount') : t('auth.createAccount')}
               </Button>
             </div>
 
             {/* Divider */}
             <Divider text={t('auth.or')} />
+
+            <div className="register-form__actions">
+              <Button
+                type="button"
+                variant="secondary"
+                size="lg"
+                fullWidth
+                loading={loadingAction === 'yandex'}
+                disabled={loading}
+                onClick={() => void handleYandexSignIn()}
+              >
+                {t('auth.continueWithYandex')}
+              </Button>
+            </div>
 
             {/* Sign In Link */}
             <div className="register-form__footer">

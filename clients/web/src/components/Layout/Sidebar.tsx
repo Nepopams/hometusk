@@ -27,6 +27,9 @@ export default function Sidebar({ isCompactHidden = false, onNavigate }: Sidebar
       <div className="app-sidebar__section">
         <div className="app-sidebar__title">{t('nav.navigation')}</div>
         <nav className="app-nav">
+          <NavLink end className={getLinkClass} to={basePath} onClick={onNavigate}>
+            {t('nav.home')}
+          </NavLink>
           <NavLink className={getLinkClass} to={`${basePath}/tasks`} onClick={onNavigate}>
             {t('nav.tasks')}
           </NavLink>

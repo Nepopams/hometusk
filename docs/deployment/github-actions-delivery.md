@@ -26,11 +26,13 @@ Production is not represented by a long-lived branch. Production deploys are man
 
 ## Image model
 
-GitHub Actions builds two application images and pushes them to GHCR:
+GitHub Actions builds deployable backend, web, and Keycloak images and pushes
+them to GHCR:
 
 ```text
 ghcr.io/<owner>/hometusk-backend:sha-<commit_sha>
 ghcr.io/<owner>/hometusk-web:sha-<commit_sha>
+ghcr.io/<owner>/hometusk-keycloak:sha-<commit_sha>
 ```
 
 Convenience tags are also maintained:
@@ -38,8 +40,10 @@ Convenience tags are also maintained:
 ```text
 ghcr.io/<owner>/hometusk-backend:develop-latest
 ghcr.io/<owner>/hometusk-web:develop-latest
+ghcr.io/<owner>/hometusk-keycloak:develop-latest
 ghcr.io/<owner>/hometusk-backend:main-latest
 ghcr.io/<owner>/hometusk-web:main-latest
+ghcr.io/<owner>/hometusk-keycloak:main-latest
 ```
 
 Do not use `*-latest` for production. Production should use the immutable `sha-*` tag.
@@ -73,7 +77,6 @@ DEV_SSH_KEY
 DEV_DEPLOY_PATH
 DEV_ENV_FILE
 DEV_OIDC_AUTHORITY
-DEV_OIDC_CLIENT_ID
 DEV_OIDC_REDIRECT_URI
 ```
 
@@ -86,9 +89,15 @@ UAT_SSH_KEY
 UAT_DEPLOY_PATH
 UAT_ENV_FILE
 UAT_OIDC_AUTHORITY
-UAT_OIDC_CLIENT_ID
 UAT_OIDC_REDIRECT_URI
 ```
+
+The browser image is always built with `VITE_OIDC_CLIENT_ID=hometusk-web`.
+Do not point the SPA at `hometusk-api`; that legacy client is not the canonical
+browser client and can bypass the social-auth broker redirect guardrails.
+The UAT workflow sets `EXPECT_YANDEX_IDP=true`, so a green UAT deploy also
+requires the Keycloak social IdP configurator to complete successfully and the
+public `kc_idp_hint=yandex` authorization request to redirect to broker/Yandex.
 
 ### Prod
 
@@ -149,6 +158,8 @@ KEYCLOAK_FRONTEND_URL=https://uat.example.com
 VITE_OIDC_AUTHORITY=https://uat.example.com/realms/hometusk
 VITE_OIDC_CLIENT_ID=hometusk-web
 VITE_OIDC_REDIRECT_URI=https://uat.example.com/callback
+HOMETUSK_IDP_YANDEX_CLIENT_ID=change-me
+HOMETUSK_IDP_YANDEX_CLIENT_SECRET=change-me
 SPRING_PROFILES_ACTIVE=local
 DECISION_PROVIDER=manual
 DECISION_FALLBACK_ENABLED=true

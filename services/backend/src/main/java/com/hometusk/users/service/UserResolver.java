@@ -45,8 +45,7 @@ public class UserResolver {
     private User updateUserIfNeeded(User user, JwtClaimsExtractor.JwtClaims claims) {
         boolean updated = false;
 
-        if (claims.email() != null && !claims.email().equals(user.getEmail())) {
-            user.setEmail(claims.email());
+        if (user.syncEmailFromIdentityProvider(claims.email(), claims.emailVerified())) {
             updated = true;
         }
 
@@ -65,6 +64,7 @@ public class UserResolver {
 
     private User createUser(JwtClaimsExtractor.JwtClaims claims) {
         log.info("Creating new user for external ID: {}", claims.sub());
-        return userService.create(claims.sub(), claims.email(), claims.displayName());
+        return userService.createFromIdentityClaims(
+                claims.sub(), claims.email(), claims.emailVerified(), claims.displayName());
     }
 }

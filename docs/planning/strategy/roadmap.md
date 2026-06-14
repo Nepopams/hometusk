@@ -3,13 +3,39 @@
 > Формат Now/Next/Later фиксирует направление и приоритеты без преждевременных дат.
 > У каждого пункта должен быть "якорь" — initiative/release документ.
 
-## NOW (текущий фокус: structured command attributes)
+## NOW (текущий фокус: social auth via Yandex/VK)
 
-- Initiative (active): **INIT-2026Q3‑command‑attributes** — Structured Command Attributes & Scheduling
+- Initiative (current): **INIT-2026Q2-social-auth-yandex-vk** — Social Auth via Yandex/VK
+  - Anchor: docs/planning/initiatives/INIT-2026Q2-social-auth-yandex-vk.md
+  - Outcome: вход через Яндекс и подтверждённый technical path для VK через Keycloak identity brokering, без OAuth token exchange логики в HomeTusk backend
+  - Why now: email validation, email notification platform и task assignment email notifications закрыты; следующий рычаг — снизить onboarding friction без переноса OAuth-сложности в HomeTusk backend
+  - Readiness: IN_PROGRESS as NOW focus; security_sensitive, adr_needed, requires provider runbook/secrets handling and VK spike result
+
+- Initiative (done): **INIT-2026Q2-task-assignment-email-notifications** — Task Assignment Email Notifications
+  - Anchor: docs/planning/initiatives/INIT-2026Q2-task-assignment-email-notifications.md
+  - Outcome: назначение задачи создаёт idempotent pending email notification для verified assignee через единое `TASK_ASSIGNED` событие, одинаково для manual, command pipeline, AI decision и guardrails fallback
+  - Closed: 2026-06-13 (branch `codex/task-assignment-email-notifications`; `TaskAssignedEvent`, assignment email handler, idempotent outbox enqueue, degraded behavior, sequence diagram, backend tests passed)
+
+- Initiative (done): **INIT-2026Q2-email-notification-platform** — Email Notification Platform
+  - Anchor: docs/planning/initiatives/INIT-2026Q2-email-notification-platform.md
+  - Outcome: безопасная email platform с outbox, sender abstraction, retry/idempotency, delivery status и degraded behavior без падения доменных операций при сбое SMTP/provider
+  - Closed: 2026-06-13 (branch `codex/email-notification-platform`; ADR-018, V030 outbox migration, `EmailSender` log/SMTP implementations, retry worker, metrics, local runbook, backend tests passed)
+
+- Initiative (done): **INIT-2026Q2-email-validation** — Email Validation & Verified Profile State
+  - Anchor: docs/planning/initiatives/INIT-2026Q2-email-validation.md
+  - Outcome: `UserProfile` хранит нормализованный email и явное состояние `email_verified`/`email_source`, `/api/v1/users/me` показывает email eligibility, а notification logic не отправляет письма на missing/unverified email
+  - Closed: 2026-06-13 (branch `codex/ui-email-validation`, commit `7c69eee`; ADR-017, OpenAPI/UserProfile delta, V029 migration, backend tests passed)
+
+- Initiative (done): **INIT-2026Q3‑household‑dashboard** — Unified Household Home & Navigation
+  - Anchor: docs/planning/initiatives/INIT-2026Q3‑household‑dashboard.md
+  - Outcome: единая household home страница с обзором tasks, shopping, routines и members, явной навигацией и пустыми состояниями для нового household
+  - Why now: structured command attributes закрыты, PR влит в main и проверен на UAT 2026-06-13; следующий продуктовый рычаг — собрать уже реализованные household, tasks, shopping, routines и members в понятный операционный центр дома
+  - Closed: 2026-06-13 (EP-034 / ST-3401; delegated Gate D GO; NOW minimal dashboard delivered without a new backend dashboard endpoint)
+
+- Initiative (done): **INIT-2026Q3‑command‑attributes** — Structured Command Attributes & Scheduling
   - Anchor: docs/planning/initiatives/INIT-2026Q3‑command‑attributes.md
   - Outcome: команды получают явные optional-атрибуты dueDate/assigneeId/zoneId/scheduleAt, confirmation UI и безопасное выполнение позже при сохранении schema validation, idempotency и DecisionLog traceability
-  - Why now: shopping NOW-scope закрыт и проверен на UAT; следующий максимальный продуктовый рычаг — усилить intent-driven ядро HomeTusk, чтобы AI/command path меньше угадывал и больше показывал пользователю управляемые параметры
-  - Current gate: planning intake; next artifact is epic/story decomposition and Gate C-ready workpack for the minimal structured attributes slice
+  - Closed: 2026-06-13 (EP-033 / ST-3301-ST-3303; PR merged to main and UAT verified)
 
 - Initiative (done): **INIT-2026Q3-shopping-manual-flow** — Manual Shopping Flow without AI
   - Anchor: docs/planning/initiatives/INIT-2026Q3-shopping-manual-flow.md
@@ -88,12 +114,7 @@
   - Purge/TTL housekeeping для idempotency/decision logs (если нужно) + минимальные метрики/алерты
   - Цель: не расширять домен, а снизить риск "всё работает только на демо"
 
-## NEXT (следующие инициативы после command attributes / параллельные кандидаты)
-
-- Initiative (candidate): **INIT-2026Q3‑household‑dashboard** — Unified Household Home & Navigation
-  - Anchor: docs/planning/initiatives/INIT-2026Q3‑household‑dashboard.md
-  - Outcome: единая household home страница с обзором tasks, shopping, routines и members, явной навигацией и пустыми состояниями для нового household
-  - Planning note: вероятен новый dashboard endpoint или client-side aggregation; перед commitment нужен contract/performance/security slice
+## NEXT (будущие инициативы / ranked candidates)
 
 - Initiative (candidate): **Agreements v0 (read-only)** (consent-first)
   - Anchor: TBD — requires initiative spec
@@ -117,6 +138,13 @@
   - Любая работа маппится на один из Pillars Product Goal: Fairness/Agreements/Analytics-first Web/Reliability.
   - Сначала "E2E пользовательский путь", потом улучшение точности/оптимизации.
   - Contract-first: внешнее поведение фиксируем в docs/contracts до реализации.
+  - Email/channel work сортируем по цепочке безопасности: verified profile state → delivery platform → конкретный notification use case.
+
+- Текущий рейтинг новых инициатив:
+  - #1 INIT-2026Q2-email-validation — DONE; foundation для доверенного email-state и eligibility.
+  - #2 INIT-2026Q2-email-notification-platform — DONE; безопасная delivery foundation перед use-case логикой.
+  - #3 INIT-2026Q2-task-assignment-email-notifications — DONE; прямой user value после готовой платформы.
+  - #4 INIT-2026Q2-social-auth-yandex-vk — CURRENT; activation lever, но с внешним provider/security spike.
 
 - Риски:
   - Scope creep в web (слишком много экранов/фич за раз) → режем до NOW-инкремента инициативы.
