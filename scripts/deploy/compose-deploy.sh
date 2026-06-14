@@ -39,6 +39,9 @@ EOF_ENV
 if [[ -n "${KEYCLOAK_IMAGE:-}" ]]; then
   printf 'KEYCLOAK_IMAGE=%s\n' "${KEYCLOAK_IMAGE}" >> /tmp/hometusk-env-delivery
 fi
+if [[ -n "${EXPECT_YANDEX_IDP:-}" ]]; then
+  printf 'EXPECT_YANDEX_IDP=%s\n' "${EXPECT_YANDEX_IDP}" >> /tmp/hometusk-env-delivery
+fi
 rsync -az -e "ssh -o StrictHostKeyChecking=yes" /tmp/hometusk-env-delivery "${remote}:${DEPLOY_PATH}/.env.delivery"
 rm -f /tmp/hometusk-env-delivery
 
@@ -51,7 +54,94 @@ fi
 echo "Deploying ${IMAGE_TAG} to ${DEPLOY_ENV}"
 ssh "${ssh_opts[@]}" "${remote}" "cd '${DEPLOY_PATH}' && cat .env .env.delivery > .env.runtime && docker compose --env-file .env.runtime -f docker-compose.yml pull && docker compose --env-file .env.runtime -f docker-compose.yml up -d --remove-orphans"
 
+echo "Checking Keycloak social IdP configurator"
+ssh "${ssh_opts[@]}" "${remote}" "bash -s -- '${DEPLOY_PATH}'" <<'REMOTE_CHECK_IDP'
+set -euo pipefail
+
+deploy_path="$1"
+cd "$deploy_path"
+
+service="keycloak-social-idps"
+container_id="$(docker compose --env-file .env.runtime -f docker-compose.yml ps -q "$service")"
+if [ -z "$container_id" ]; then
+  echo "Container for service '$service' was not created." >&2
+  exit 1
+fi
+
+for _ in $(seq 1 60); do
+  status="$(docker inspect -f '{{.State.Status}}' "$container_id")"
+  if [ "$status" = "exited" ] || [ "$status" = "dead" ]; then
+    break
+  fi
+  sleep 2
+done
+
+status="$(docker inspect -f '{{.State.Status}}' "$container_id")"
+exit_code="$(docker inspect -f '{{.State.ExitCode}}' "$container_id")"
+
+echo "--- $service logs ---"
+docker logs "$container_id" || true
+echo "--- end $service logs ---"
+
+if [ "$status" != "exited" ] || [ "$exit_code" != "0" ]; then
+  echo "Service '$service' did not complete successfully: status=$status exit_code=$exit_code" >&2
+  exit 1
+fi
+REMOTE_CHECK_IDP
+
 echo "Running healthcheck"
 ssh "${ssh_opts[@]}" "${remote}" "cd '${DEPLOY_PATH}' && docker compose --env-file .env.runtime -f docker-compose.yml ps && curl -fsS --retry 12 --retry-delay 5 --retry-connrefused http://127.0.0.1:\${HEALTHCHECK_PORT:-80}/actuator/health"
+
+echo "Checking Yandex broker redirect"
+ssh "${ssh_opts[@]}" "${remote}" "bash -s -- '${DEPLOY_PATH}'" <<'REMOTE_CHECK_BROKER'
+set -euo pipefail
+
+deploy_path="$1"
+cd "$deploy_path"
+
+get_env_value() {
+  key="$1"
+  sed -n "s/^${key}=//p" .env.runtime | tail -n 1
+}
+
+domain="$(get_env_value DOMAIN)"
+expect_yandex="$(get_env_value EXPECT_YANDEX_IDP)"
+if [ "$expect_yandex" != "true" ]; then
+  echo "SKIP Yandex broker redirect check (EXPECT_YANDEX_IDP=$expect_yandex)"
+  exit 0
+fi
+
+authority="$(get_env_value VITE_OIDC_AUTHORITY)"
+redirect_uri="$(get_env_value VITE_OIDC_REDIRECT_URI)"
+client_id="$(get_env_value HOMETUSK_WEB_OIDC_CLIENT_ID)"
+alias="$(get_env_value HOMETUSK_IDP_YANDEX_ALIAS)"
+
+authority="${authority:-https://${domain}/realms/hometusk}"
+redirect_uri="${redirect_uri:-https://${domain}/callback}"
+client_id="${client_id:-hometusk-web}"
+alias="${alias:-yandex}"
+
+authority="${authority//\$\{DOMAIN\}/$domain}"
+redirect_uri="${redirect_uri//\$\{DOMAIN\}/$domain}"
+realm="${authority##*/}"
+
+encoded_redirect_uri="${redirect_uri//:/%3A}"
+encoded_redirect_uri="${encoded_redirect_uri//\//%2F}"
+
+auth_url="${authority%/}/protocol/openid-connect/auth?client_id=${client_id}&redirect_uri=${encoded_redirect_uri}&response_type=code&scope=openid%20profile%20email&state=hometusk-deploy-smoke&nonce=hometusk-deploy-smoke&code_challenge=hometuskSocialAuthSmokeCodeChallenge00000001&code_challenge_method=S256&kc_idp_hint=${alias}"
+headers="$(curl -ksS -o /dev/null -D - "$auth_url")"
+status="$(printf '%s\n' "$headers" | awk '/^HTTP/ { code=$2 } END { print code }')"
+location="$(printf '%s\n' "$headers" | awk 'tolower($1) == "location:" { sub(/\r$/, ""); print substr($0, index($0, $2)); exit }')"
+
+case "$status:$location" in
+  302:*"/realms/${realm}/broker/${alias}/login"*|303:*"/realms/${realm}/broker/${alias}/login"*|302:https://oauth.yandex.ru/authorize*|303:https://oauth.yandex.ru/authorize*)
+    echo "OK Yandex broker redirect: HTTP $status -> $location"
+    ;;
+  *)
+    echo "FAIL Yandex broker redirect expected broker/Yandex Location, got HTTP $status Location '$location'" >&2
+    exit 1
+    ;;
+esac
+REMOTE_CHECK_BROKER
 
 echo "Deploy completed: ${DEPLOY_ENV} ${IMAGE_TAG}"

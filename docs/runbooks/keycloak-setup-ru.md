@@ -184,6 +184,10 @@ broker redirect ведёт на `oauth.yandex.ru`.
 Пересоберите web с `VITE_OIDC_CLIENT_ID=hometusk-web` и повторно запустите
 конфигуратор/smoke.
 
+Для UAT GitHub Actions deploy выставляет `EXPECT_YANDEX_IDP=true`. Если Yandex
+credentials отсутствуют в `UAT_ENV_FILE` или one-shot `keycloak-social-idps`
+падает, deploy должен завершиться ошибкой и показать логи configurator.
+
 ### 6. Ручная проверка существующего аккаунта с тем же email
 
 Проверьте сценарий, где пользователь уже зарегистрирован в HomeTusk паролем на

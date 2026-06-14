@@ -6,6 +6,7 @@ KEYCLOAK_BASE_URL="${KEYCLOAK_BASE_URL:-http://keycloak:8080}"
 KEYCLOAK_REALM="${KEYCLOAK_REALM:-hometusk}"
 KEYCLOAK_ADMIN="${KEYCLOAK_ADMIN:-admin}"
 KEYCLOAK_ADMIN_PASSWORD="${KEYCLOAK_ADMIN_PASSWORD:-}"
+EXPECT_YANDEX_IDP="${EXPECT_YANDEX_IDP:-false}"
 
 if [ -z "$KEYCLOAK_ADMIN_PASSWORD" ]; then
   echo "KEYCLOAK_ADMIN_PASSWORD is not set; skipping social identity provider configuration."
@@ -160,6 +161,10 @@ upsert_yandex() {
   hosted_domain="${HOMETUSK_IDP_YANDEX_HOSTED_DOMAIN:-}"
 
   if [ -z "$client_id" ] || [ -z "$client_secret" ]; then
+    if [ "$EXPECT_YANDEX_IDP" = "true" ]; then
+      echo "Yandex identity provider required but HOMETUSK_IDP_YANDEX_CLIENT_ID/SECRET are not both set." >&2
+      exit 1
+    fi
     echo "Yandex identity provider skipped: HOMETUSK_IDP_YANDEX_CLIENT_ID/SECRET are not both set."
     return
   fi

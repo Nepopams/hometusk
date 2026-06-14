@@ -95,6 +95,9 @@ UAT_OIDC_REDIRECT_URI
 The browser image is always built with `VITE_OIDC_CLIENT_ID=hometusk-web`.
 Do not point the SPA at `hometusk-api`; that legacy client is not the canonical
 browser client and can bypass the social-auth broker redirect guardrails.
+The UAT workflow sets `EXPECT_YANDEX_IDP=true`, so a green UAT deploy also
+requires the Keycloak social IdP configurator to complete successfully and the
+public `kc_idp_hint=yandex` authorization request to redirect to broker/Yandex.
 
 ### Prod
 
@@ -155,6 +158,8 @@ KEYCLOAK_FRONTEND_URL=https://uat.example.com
 VITE_OIDC_AUTHORITY=https://uat.example.com/realms/hometusk
 VITE_OIDC_CLIENT_ID=hometusk-web
 VITE_OIDC_REDIRECT_URI=https://uat.example.com/callback
+HOMETUSK_IDP_YANDEX_CLIENT_ID=change-me
+HOMETUSK_IDP_YANDEX_CLIENT_SECRET=change-me
 SPRING_PROFILES_ACTIVE=local
 DECISION_PROVIDER=manual
 DECISION_FALLBACK_ENABLED=true
