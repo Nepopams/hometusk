@@ -144,17 +144,33 @@ POST /api/v1/voice/transcriptions
 
 UAT must be configured to use AI Platform decisioning on the happy path.
 
-Expected environment/config shape:
+Expected environment/config shape. In GitHub Actions this can live in
+`UAT_VOICE_ENV_FILE`, which is appended after `UAT_ENV_FILE` by
+`deploy-uat.yml`. If `UAT_VOICE_ENV_FILE` already exists, recreate it with
+the existing values plus this block; do not overwrite it with only the
+decision settings.
 
 ```dotenv
+HOMETUSK_VOICE_ENABLED=true
+HOMETUSK_VOICE_ASR_ENABLED=true
 DECISION_PROVIDER=aiplatform
 DECISION_FALLBACK_ENABLED=true
 AI_PLATFORM_URL=http://10.0.0.5
+AI_PLATFORM_ASR_TRANSCRIBE_PATH=/v1/asr/transcribe
 AI_PLATFORM_DECISION_PATH=/v1/decide
 AI_PLATFORM_API_KEY=
+AI_PLATFORM_ASR_CONNECT_TIMEOUT_MS=5000
+AI_PLATFORM_ASR_READ_TIMEOUT_MS=30000
+HOMETUSK_VOICE_ASR_MAX_SIZE_BYTES=10485760
+HOMETUSK_VOICE_ASR_REQUESTS_PER_MINUTE=5
 ```
 
 If the application uses YAML/config properties instead of these exact env names, Codex must map these logical settings to the actual existing HomeTusk configuration names.
+
+`AI_PLATFORM_API_KEY` is intentionally blank for the current private UAT
+network setup unless the HomeTusk -> AI Platform gateway starts requiring a
+bearer token. Cloud.ru ASR credentials remain inside the AI Platform service
+as `ASR_API_KEY`.
 
 Manual decision provider is allowed only for:
 
@@ -603,11 +619,18 @@ ADR: Voice Command Chat ASR vs Decision Boundary
 Set UAT to AI Platform decisioning:
 
 ```dotenv
+HOMETUSK_VOICE_ENABLED=true
+HOMETUSK_VOICE_ASR_ENABLED=true
 DECISION_PROVIDER=aiplatform
 DECISION_FALLBACK_ENABLED=true
 AI_PLATFORM_URL=http://10.0.0.5
+AI_PLATFORM_ASR_TRANSCRIBE_PATH=/v1/asr/transcribe
 AI_PLATFORM_DECISION_PATH=/v1/decide
 AI_PLATFORM_API_KEY=
+AI_PLATFORM_ASR_CONNECT_TIMEOUT_MS=5000
+AI_PLATFORM_ASR_READ_TIMEOUT_MS=30000
+HOMETUSK_VOICE_ASR_MAX_SIZE_BYTES=10485760
+HOMETUSK_VOICE_ASR_REQUESTS_PER_MINUTE=5
 ```
 
 ### Step 3: UAT smoke
