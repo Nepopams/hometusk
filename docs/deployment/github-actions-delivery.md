@@ -26,11 +26,13 @@ Production is not represented by a long-lived branch. Production deploys are man
 
 ## Image model
 
-GitHub Actions builds two application images and pushes them to GHCR:
+GitHub Actions builds deployable backend, web, and Keycloak images and pushes
+them to GHCR:
 
 ```text
 ghcr.io/<owner>/hometusk-backend:sha-<commit_sha>
 ghcr.io/<owner>/hometusk-web:sha-<commit_sha>
+ghcr.io/<owner>/hometusk-keycloak:sha-<commit_sha>
 ```
 
 Convenience tags are also maintained:
@@ -38,8 +40,10 @@ Convenience tags are also maintained:
 ```text
 ghcr.io/<owner>/hometusk-backend:develop-latest
 ghcr.io/<owner>/hometusk-web:develop-latest
+ghcr.io/<owner>/hometusk-keycloak:develop-latest
 ghcr.io/<owner>/hometusk-backend:main-latest
 ghcr.io/<owner>/hometusk-web:main-latest
+ghcr.io/<owner>/hometusk-keycloak:main-latest
 ```
 
 Do not use `*-latest` for production. Production should use the immutable `sha-*` tag.

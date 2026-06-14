@@ -36,6 +36,8 @@ jobs:
           owner_lc="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
           echo "BACKEND_IMAGE=ghcr.io/${owner_lc}/hometusk-backend" >> "$GITHUB_ENV"
           echo "WEB_IMAGE=ghcr.io/${owner_lc}/hometusk-web" >> "$GITHUB_ENV"
+          echo "KEYCLOAK_IMAGE_REPOSITORY=ghcr.io/${owner_lc}/hometusk-keycloak" >> "$GITHUB_ENV"
+          echo "KEYCLOAK_IMAGE=ghcr.io/${owner_lc}/hometusk-keycloak:sha-${GITHUB_SHA}" >> "$GITHUB_ENV"
           echo "IMAGE_TAG=sha-${GITHUB_SHA}" >> "$GITHUB_ENV"
           echo "LATEST_TAG=main-latest" >> "$GITHUB_ENV"
 
@@ -78,6 +80,18 @@ jobs:
             VITE_OIDC_REDIRECT_URI=${{ secrets.UAT_OIDC_REDIRECT_URI }}
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
+
+      - name: Build and push Keycloak image
+        uses: docker/build-push-action@v6
+        with:
+          context: infra/keycloak
+          file: infra/keycloak/Dockerfile
+          push: true
+          tags: |
+            ${{ env.KEYCLOAK_IMAGE }}
+            ${{ env.KEYCLOAK_IMAGE_REPOSITORY }}:${{ env.LATEST_TAG }}
+          cache-from: type=gha,scope=keycloak
+          cache-to: type=gha,mode=max,scope=keycloak
 
       - name: Configure SSH
         uses: webfactory/ssh-agent@v0.9.0

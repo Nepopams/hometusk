@@ -8,8 +8,9 @@
 #   BACKEND_IMAGE=ghcr.io/<owner>/hometusk-backend
 #   WEB_IMAGE=ghcr.io/<owner>/hometusk-web
 #   IMAGE_TAG=sha-<commit_sha> or release tag
-# Optional social-auth image:
+# Social-auth Keycloak image:
 #   KEYCLOAK_IMAGE=<image with keycloak-russian-providers installed>
+# GitHub deploy writes this to .env.delivery; manual deployments must set it.
 
 services:
   postgres:
@@ -84,7 +85,7 @@ services:
       HOMETUSK_IDP_VKID_CLIENT_ID: ${HOMETUSK_IDP_VKID_CLIENT_ID:-}
       HOMETUSK_IDP_VKID_CLIENT_SECRET: ${HOMETUSK_IDP_VKID_CLIENT_SECRET:-}
     volumes:
-      - ../keycloak/configure-social-idps.sh:/opt/hometusk/configure-social-idps.sh:ro
+      - ./keycloak/configure-social-idps.sh:/opt/hometusk/configure-social-idps.sh:ro
     depends_on:
       keycloak:
         condition: service_healthy
