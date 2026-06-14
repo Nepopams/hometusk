@@ -62,9 +62,17 @@ deploy_path="$1"
 cd "$deploy_path"
 
 service="keycloak-social-idps"
-container_id="$(docker compose --env-file .env.runtime -f docker-compose.yml ps -q "$service")"
+container_id="$(docker compose --env-file .env.runtime -f docker-compose.yml ps -a -q "$service" || true)"
 if [ -z "$container_id" ]; then
-  echo "Container for service '$service' was not created." >&2
+  deploy_env="$(sed -n 's/^DEPLOY_ENV=//p' .env.runtime | tail -n 1)"
+  deploy_env="${deploy_env:-uat}"
+  container_name="hometusk-${deploy_env}-keycloak-social-idps"
+  container_id="$(docker ps -a -q --filter "name=^/${container_name}$" | head -n 1 || true)"
+fi
+if [ -z "$container_id" ]; then
+  echo "Container for service '$service' was not found." >&2
+  docker compose --env-file .env.runtime -f docker-compose.yml ps -a || true
+  docker ps -a --filter "name=keycloak-social-idps" || true
   exit 1
 fi
 
