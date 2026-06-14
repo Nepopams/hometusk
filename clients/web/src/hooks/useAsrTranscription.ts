@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { logVoiceEvent } from '../lib/voiceTelemetry';
-import { getAuthToken } from '../lib/auth/tokenProvider';
+import { refreshAuthSession } from '../lib/api';
+import { getAuthToken, handleAuthError } from '../lib/auth/tokenProvider';
 
 const DEFAULT_RETRY_AFTER_MS = 60_000;
 
@@ -43,12 +44,35 @@ export interface UseAsrTranscriptionResult {
   reset: () => void;
 }
 
-const getApiBaseUrl = (): string => {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+const getApiBaseUrl = (rawBaseUrl = import.meta.env.VITE_API_BASE_URL || ''): string => {
+  const baseUrl = rawBaseUrl || '';
   return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
 };
 
 const generateCorrelationId = (): string => crypto.randomUUID();
+
+export const getVoiceTranscriptionUrl = (rawBaseUrl?: string): string =>
+  `${getApiBaseUrl(rawBaseUrl)}/voice/transcriptions`;
+
+export const getAudioFileName = (contentType: string): string => {
+  const normalizedType = contentType.split(';')[0]?.trim().toLowerCase();
+  switch (normalizedType) {
+    case 'audio/mp4':
+    case 'audio/m4a':
+      return 'recording.m4a';
+    case 'audio/ogg':
+      return 'recording.ogg';
+    case 'audio/wav':
+    case 'audio/x-wav':
+      return 'recording.wav';
+    case 'audio/mpeg':
+    case 'audio/mp3':
+      return 'recording.mp3';
+    case 'audio/webm':
+    default:
+      return 'recording.webm';
+  }
+};
 
 export const mapAsrErrorType = (status: number, code?: string): AsrErrorType => {
   if (status === 401) return 'not_authenticated';
@@ -60,6 +84,29 @@ export const mapAsrErrorType = (status: number, code?: string): AsrErrorType => 
   }
   return 'upload_failed';
 };
+
+function createTranscriptionRequestInit(
+  audioBlob: Blob,
+  correlationId: string,
+  signal: AbortSignal,
+  includeBearerToken: boolean
+): RequestInit {
+  const token = includeBearerToken ? getAuthToken() : null;
+  const headers: HeadersInit = {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    'X-Correlation-ID': correlationId,
+  };
+  const formData = new FormData();
+  formData.append('file', audioBlob, getAudioFileName(audioBlob.type));
+
+  return {
+    method: 'POST',
+    headers,
+    body: formData,
+    credentials: 'include',
+    signal,
+  };
+}
 
 export function useAsrTranscription(): UseAsrTranscriptionResult {
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -74,12 +121,6 @@ export function useAsrTranscription(): UseAsrTranscriptionResult {
 
   const transcribe = useCallback(
     async (audioBlob: Blob, correlationId?: string): Promise<AsrTranscriptionResult | null> => {
-      const token = getAuthToken();
-      if (!token) {
-        setError({ type: 'not_authenticated', message: 'Not authenticated' });
-        return null;
-      }
-
       correlationIdRef.current = correlationId || generateCorrelationId();
       startTimeRef.current = Date.now();
       setError(null);
@@ -93,27 +134,41 @@ export function useAsrTranscription(): UseAsrTranscriptionResult {
       }
       abortControllerRef.current = new AbortController();
 
-      const formData = new FormData();
-      formData.append('file', audioBlob, 'recording.webm');
-
       try {
-        const baseUrl = getApiBaseUrl();
-        const response = await fetch(`${baseUrl}/api/v1/voice/transcriptions`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'X-Correlation-ID': correlationIdRef.current,
-          },
-          body: formData,
-          credentials: 'include',
-          signal: abortControllerRef.current.signal,
-        });
+        const url = getVoiceTranscriptionUrl();
+        let response = await fetch(
+          url,
+          createTranscriptionRequestInit(
+            audioBlob,
+            correlationIdRef.current,
+            abortControllerRef.current.signal,
+            true
+          )
+        );
+
+        if (response.status === 401) {
+          const refreshed = await refreshAuthSession().catch(() => false);
+          if (refreshed) {
+            response = await fetch(
+              url,
+              createTranscriptionRequestInit(
+                audioBlob,
+                correlationIdRef.current,
+                abortControllerRef.current.signal,
+                false
+              )
+            );
+          }
+        }
 
         const data = await response.json().catch(() => ({}));
 
         if (!response.ok) {
           const code = typeof data.code === 'string' ? data.code : undefined;
           const errorType = mapAsrErrorType(response.status, code);
+          if (errorType === 'not_authenticated') {
+            handleAuthError('session_expired');
+          }
           const retryAfterMs =
             errorType === 'rate_limited' ? parseRetryAfterMs(response.headers.get('Retry-After')) : undefined;
 
