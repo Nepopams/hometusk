@@ -187,10 +187,11 @@ HOMETUSK_VOICE_ASR_MAX_SIZE_BYTES=10485760
 HOMETUSK_VOICE_ASR_REQUESTS_PER_MINUTE=5
 ```
 
-For Voice Command Chat UAT validation, set `UAT_VOICE_COMMAND_ENABLED=true` as
-a GitHub environment variable for the `uat` environment and set the backend
-voice/ASR values in `UAT_VOICE_ENV_FILE`. Remove the secret or set both backend
-voice flags to `false` after the validation window.
+Voice Command Chat UI is enabled by default for UAT builds. Set
+`UAT_VOICE_COMMAND_ENABLED=false` as a GitHub environment variable for the `uat`
+environment only when the UI must be hidden. Set the backend voice/ASR values in
+`UAT_VOICE_ENV_FILE`; remove the secret or set both backend voice flags to
+`false` after the validation window.
 
 ## Production promotion
 
