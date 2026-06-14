@@ -8,6 +8,7 @@ import com.hometusk.voice.dto.VoiceAsrUpstreamResponse;
 import com.hometusk.voice.exception.VoiceAsrException;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ByteArrayResource;
@@ -98,6 +99,9 @@ public class VoiceAsrClientImpl implements VoiceAsrClient {
             }
             throw VoiceAsrException.upstreamUnavailable("ASR provider is unavailable", ex);
         } catch (RestClientException ex) {
+            if (isTimeout(ex)) {
+                throw VoiceAsrException.timeout("ASR provider request timed out", ex);
+            }
             throw VoiceAsrException.upstreamUnavailable("ASR provider request failed", ex);
         }
     }
@@ -204,8 +208,19 @@ public class VoiceAsrClientImpl implements VoiceAsrClient {
         };
     }
 
-    private boolean isTimeout(ResourceAccessException ex) {
-        return ex.getCause() instanceof SocketTimeoutException;
+    private boolean isTimeout(Throwable ex) {
+        Throwable current = ex;
+        while (current != null) {
+            if (current instanceof SocketTimeoutException) {
+                return true;
+            }
+            String message = current.getMessage();
+            if (message != null && message.toLowerCase(Locale.ROOT).contains("timed out")) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private String firstNonBlank(String... values) {
