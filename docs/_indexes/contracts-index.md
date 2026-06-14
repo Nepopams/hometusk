@@ -18,6 +18,7 @@ This index tracks all API contracts (OpenAPI, JSON Schema, AsyncAPI) in the proj
 | Commands API | Frontend (future) | HomeTusk Backend | v1 | stable | [Link](../contracts/http/commands.openapi.yaml) |
 | Routines API | Web Frontend | HomeTusk Backend | v1 | draft | [Link](../contracts/http/routines.openapi.yaml) |
 | ASR Proxy API | Web/Bot | HomeTusk Backend | v1 | draft | [Link](../contracts/http/asr-proxy.openapi.yaml) |
+| Voice Transcriptions API | Web Frontend | HomeTusk Backend | v1 | draft | [Link](../contracts/http/voice-transcriptions.openapi.yaml) |
 | Shopping Marketplaces API | Web Frontend | HomeTusk Backend | v1 | draft | [Link](../contracts/http/shopping-marketplaces.openapi.yaml) |
 | AI Platform Decision API | HomeTusk Backend | AI Platform (external) | v1 | stable | [Link](../contracts/external/ai-platform.decision.openapi.yaml) |
 | Task Schema | Commands API | Backend | v1 | stable | [Link](../contracts/schemas/task.schema.json) |
@@ -76,3 +77,8 @@ This index tracks all API contracts (OpenAPI, JSON Schema, AsyncAPI) in the proj
   identity brokering; the HomeTusk backend continues to consume only
   Keycloak-issued JWTs. Integration mapping is captured in
   `docs/integration/identity/social-auth-keycloak-broker.md`.
+- 2026-06-14 - INIT-2026Q3-voice-command-chat-mvp adds
+  `voice-transcriptions.openapi.yaml` for synchronous ASR draft creation and a
+  backward-compatible Commands API delta: `source=voice` plus optional
+  `asrTraceId`. ASR does not execute commands; explicit user Send still calls
+  `/api/v1/commands`.

@@ -21,6 +21,11 @@ info:
     durable email verification state and notification eligibility. The new
     fields are additive and backward-compatible.
 
+    **INIT-2026Q3-voice-command-chat-mvp compatibility delta:** voice-originated
+    commands may use `source=voice` and optional `asrTraceId` returned by
+    `POST /api/v1/voice/transcriptions`. ASR only creates an editable draft;
+    command execution still requires an explicit `POST /api/v1/commands`.
+
     See also:
     - [CLAUDE.md](../../../CLAUDE.md) — Development rules
     - [ADR-003](../../architecture/decisions/003-stage1-commands-api.md) — Stage 1 decisions
@@ -1364,7 +1369,17 @@ components:
             - api
             - web
             - mobile
-          description: Origin of the command
+            - voice
+          description: |
+            Origin of the command. `voice` means the user explicitly submitted
+            an editable ASR transcript draft; ASR never auto-executes commands.
+        asrTraceId:
+          type: string
+          maxLength: 128
+          description: |
+            Optional trace id returned by `POST /api/v1/voice/transcriptions`.
+            Only used for audit linkage when `source=voice`; clients that do not
+            use voice omit this field.
         clientTimestamp:
           type: string
           format: date-time

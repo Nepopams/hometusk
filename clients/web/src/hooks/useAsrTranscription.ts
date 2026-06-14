@@ -2,8 +2,6 @@ import { useCallback, useRef, useState } from 'react';
 import { logVoiceEvent } from '../lib/voiceTelemetry';
 import { getAuthToken } from '../lib/auth/tokenProvider';
 
-const MAX_POLL_ATTEMPTS = 30;
-const DEFAULT_POLL_INTERVAL_MS = 2000;
 const DEFAULT_RETRY_AFTER_MS = 60_000;
 
 const parseRetryAfterMs = (headerValue: string | null): number => {
@@ -18,6 +16,7 @@ export type AsrErrorType =
   | 'transcription_failed'
   | 'timeout'
   | 'rate_limited'
+  | 'unsupported_media'
   | 'network_error'
   | 'not_authenticated';
 
@@ -28,10 +27,18 @@ export interface AsrTranscriptionError {
   retryAfterMs?: number;
 }
 
+export interface AsrTranscriptionResult {
+  transcript: string;
+  traceId: string;
+  latencyMs: number;
+}
+
 export interface UseAsrTranscriptionResult {
-  transcribe: (audioBlob: Blob, householdId: string, correlationId?: string) => Promise<void>;
+  transcribe: (audioBlob: Blob, correlationId?: string) => Promise<AsrTranscriptionResult | null>;
   isTranscribing: boolean;
   transcript: string | null;
+  traceId: string | null;
+  latencyMs: number | null;
   error: AsrTranscriptionError | null;
   reset: () => void;
 }
@@ -43,192 +50,107 @@ const getApiBaseUrl = (): string => {
 
 const generateCorrelationId = (): string => crypto.randomUUID();
 
-const generateIdempotencyKey = (): string => `asr-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
+export const mapAsrErrorType = (status: number, code?: string): AsrErrorType => {
+  if (status === 401) return 'not_authenticated';
+  if (status === 415 || code === 'unsupported_media') return 'unsupported_media';
+  if (status === 429 || code === 'local_rate_limit') return 'rate_limited';
+  if (status === 504 || code === 'timeout') return 'timeout';
+  if (status === 502 || code === 'upstream_unavailable' || code === 'bad_upstream_response') {
+    return 'transcription_failed';
+  }
+  return 'upload_failed';
+};
 
 export function useAsrTranscription(): UseAsrTranscriptionResult {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcript, setTranscript] = useState<string | null>(null);
+  const [traceId, setTraceId] = useState<string | null>(null);
+  const [latencyMs, setLatencyMs] = useState<number | null>(null);
   const [error, setError] = useState<AsrTranscriptionError | null>(null);
 
   const abortControllerRef = useRef<AbortController | null>(null);
-  const pollCountRef = useRef(0);
   const correlationIdRef = useRef<string | null>(null);
   const startTimeRef = useRef<number>(0);
 
-  const uploadAudio = async (
-    audioBlob: Blob,
-    householdId: string,
-    signal: AbortSignal
-  ): Promise<{ id: string } | null> => {
-    const token = getAuthToken();
-    if (!token) {
-      setError({ type: 'not_authenticated', message: 'Not authenticated' });
-      return null;
-    }
+  const transcribe = useCallback(
+    async (audioBlob: Blob, correlationId?: string): Promise<AsrTranscriptionResult | null> => {
+      const token = getAuthToken();
+      if (!token) {
+        setError({ type: 'not_authenticated', message: 'Not authenticated' });
+        return null;
+      }
 
-    const formData = new FormData();
-    formData.append('file', audioBlob, 'recording.webm');
-    formData.append('languageHint', 'auto');
+      correlationIdRef.current = correlationId || generateCorrelationId();
+      startTimeRef.current = Date.now();
+      setError(null);
+      setTranscript(null);
+      setTraceId(null);
+      setLatencyMs(null);
+      setIsTranscribing(true);
 
-    const baseUrl = getApiBaseUrl();
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = new AbortController();
 
-    try {
-      const response = await fetch(
-        `${baseUrl}/api/v1/households/${householdId}/asr/transcriptions`,
-        {
+      const formData = new FormData();
+      formData.append('file', audioBlob, 'recording.webm');
+
+      try {
+        const baseUrl = getApiBaseUrl();
+        const response = await fetch(`${baseUrl}/api/v1/voice/transcriptions`, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`,
-            'Idempotency-Key': generateIdempotencyKey(),
-            'X-Correlation-ID': generateCorrelationId(),
+            'X-Correlation-ID': correlationIdRef.current,
           },
           body: formData,
-          signal,
-        }
-      );
+          credentials: 'include',
+          signal: abortControllerRef.current.signal,
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        if (response.status === 429) {
-          const retryAfterMs = parseRetryAfterMs(response.headers.get('Retry-After'));
-          logVoiceEvent({
-            type: 'voice_upload_fail',
-            correlationId: correlationIdRef.current || undefined,
-            errorType: 'rate_limited',
-          });
-          setError({
-            type: 'rate_limited',
-            code: errorData.code,
-            message: errorData.message || 'Rate limit exceeded',
-            retryAfterMs,
-          });
-        } else {
-          logVoiceEvent({
-            type: 'voice_upload_fail',
-            correlationId: correlationIdRef.current || undefined,
-            errorType: 'upload_failed',
-          });
-          setError({
-            type: 'upload_failed',
-            code: errorData.code,
-            message: errorData.message || 'Upload failed',
-          });
-        }
-        return null;
-      }
-
-      const data = await response.json();
-      logVoiceEvent({
-        type: 'voice_upload_ok',
-        correlationId: correlationIdRef.current || undefined,
-      });
-      return { id: data.id };
-    } catch (err) {
-      if ((err as Error).name === 'AbortError') {
-        return null;
-      }
-      logVoiceEvent({
-        type: 'voice_upload_fail',
-        correlationId: correlationIdRef.current || undefined,
-        errorType: 'network_error',
-      });
-      setError({ type: 'network_error', message: (err as Error).message });
-      return null;
-    }
-  };
-
-  const pollTranscription = async (
-    transcriptionId: string,
-    householdId: string,
-    signal: AbortSignal
-  ): Promise<void> => {
-    const token = getAuthToken();
-    if (!token) return;
-
-    const baseUrl = getApiBaseUrl();
-    pollCountRef.current = 0;
-
-    while (pollCountRef.current < MAX_POLL_ATTEMPTS) {
-      if (signal.aborted) return;
-
-      pollCountRef.current++;
-
-      try {
-        const response = await fetch(
-          `${baseUrl}/api/v1/households/${householdId}/asr/transcriptions/${transcriptionId}`,
-          {
-            method: 'GET',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'X-Correlation-ID': generateCorrelationId(),
-            },
-            signal,
-          }
-        );
+        const data = await response.json().catch(() => ({}));
 
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          if (response.status === 429) {
-            const retryAfterMs = parseRetryAfterMs(response.headers.get('Retry-After'));
-            logVoiceEvent({
-              type: 'voice_asr_fail',
-              correlationId: correlationIdRef.current || undefined,
-              errorType: 'rate_limited',
-              durationMs: Date.now() - startTimeRef.current,
-            });
-            setError({
-              type: 'rate_limited',
-              code: errorData.code,
-              message: errorData.message,
-              retryAfterMs,
-            });
-          } else {
-            logVoiceEvent({
-              type: 'voice_asr_fail',
-              correlationId: correlationIdRef.current || undefined,
-              errorType: 'transcription_failed',
-              durationMs: Date.now() - startTimeRef.current,
-            });
-            setError({
-              type: 'transcription_failed',
-              code: errorData.code,
-              message: errorData.message,
-            });
-          }
-          return;
-        }
+          const code = typeof data.code === 'string' ? data.code : undefined;
+          const errorType = mapAsrErrorType(response.status, code);
+          const retryAfterMs =
+            errorType === 'rate_limited' ? parseRetryAfterMs(response.headers.get('Retry-After')) : undefined;
 
-        const data = await response.json();
-
-        if (data.status === 'done') {
-          logVoiceEvent({
-            type: 'voice_asr_ok',
-            correlationId: correlationIdRef.current || undefined,
-            durationMs: Date.now() - startTimeRef.current,
-          });
-          setTranscript(data.text || '');
-          return;
-        }
-
-        if (data.status === 'failed') {
           logVoiceEvent({
             type: 'voice_asr_fail',
             correlationId: correlationIdRef.current || undefined,
-            errorType: 'transcription_failed',
+            errorType,
             durationMs: Date.now() - startTimeRef.current,
           });
           setError({
-            type: 'transcription_failed',
-            code: data.error?.code,
-            message: data.error?.message || 'Transcription failed',
+            type: errorType,
+            code,
+            message: typeof data.message === 'string' ? data.message : 'Transcription failed',
+            retryAfterMs,
           });
-          return;
+          return null;
         }
 
-        const waitMs = data.pollAfterMs || DEFAULT_POLL_INTERVAL_MS;
-        await new Promise((resolve) => setTimeout(resolve, waitMs));
+        const result: AsrTranscriptionResult = {
+          transcript: typeof data.transcript === 'string' ? data.transcript : '',
+          traceId: typeof data.traceId === 'string' ? data.traceId : correlationIdRef.current,
+          latencyMs: typeof data.latencyMs === 'number' ? data.latencyMs : Date.now() - startTimeRef.current,
+        };
+
+        logVoiceEvent({
+          type: 'voice_asr_ok',
+          correlationId: correlationIdRef.current || undefined,
+          durationMs: Date.now() - startTimeRef.current,
+        });
+        setTranscript(result.transcript);
+        setTraceId(result.traceId);
+        setLatencyMs(result.latencyMs);
+        return result;
       } catch (err) {
-        if ((err as Error).name === 'AbortError') return;
+        if ((err as Error).name === 'AbortError') {
+          return null;
+        }
         logVoiceEvent({
           type: 'voice_asr_fail',
           correlationId: correlationIdRef.current || undefined,
@@ -236,42 +158,7 @@ export function useAsrTranscription(): UseAsrTranscriptionResult {
           durationMs: Date.now() - startTimeRef.current,
         });
         setError({ type: 'network_error', message: (err as Error).message });
-        return;
-      }
-    }
-
-    logVoiceEvent({
-      type: 'voice_asr_fail',
-      correlationId: correlationIdRef.current || undefined,
-      errorType: 'timeout',
-      durationMs: Date.now() - startTimeRef.current,
-    });
-    setError({ type: 'timeout', message: 'Transcription timed out' });
-  };
-
-  const transcribe = useCallback(
-    async (audioBlob: Blob, householdId: string, correlationId?: string) => {
-      correlationIdRef.current = correlationId || null;
-      startTimeRef.current = Date.now();
-      setError(null);
-      setTranscript(null);
-      setIsTranscribing(true);
-      pollCountRef.current = 0;
-
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-      abortControllerRef.current = new AbortController();
-      const signal = abortControllerRef.current.signal;
-
-      try {
-        const result = await uploadAudio(audioBlob, householdId, signal);
-        if (!result) {
-          setIsTranscribing(false);
-          return;
-        }
-
-        await pollTranscription(result.id, householdId, signal);
+        return null;
       } finally {
         setIsTranscribing(false);
       }
@@ -286,8 +173,9 @@ export function useAsrTranscription(): UseAsrTranscriptionResult {
     }
     setIsTranscribing(false);
     setTranscript(null);
+    setTraceId(null);
+    setLatencyMs(null);
     setError(null);
-    pollCountRef.current = 0;
     correlationIdRef.current = null;
     startTimeRef.current = 0;
   }, []);
@@ -296,6 +184,8 @@ export function useAsrTranscription(): UseAsrTranscriptionResult {
     transcribe,
     isTranscribing,
     transcript,
+    traceId,
+    latencyMs,
     error,
     reset,
   };

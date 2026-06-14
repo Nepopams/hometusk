@@ -11,6 +11,7 @@ export type VoiceErrorType =
   | 'transcription_failed'
   | 'timeout'
   | 'rate_limited'
+  | 'unsupported_media'
   | 'network_error'
   | 'not_authenticated';
 
@@ -53,6 +54,10 @@ const ERROR_CONFIG: Record<VoiceErrorType, { messageKey: TranslationKey; showRet
   rate_limited: {
     messageKey: 'voice.rateLimited',
     showRetry: true,
+  },
+  unsupported_media: {
+    messageKey: 'voice.unsupportedMedia',
+    showRetry: false,
   },
   network_error: {
     messageKey: 'voice.network',

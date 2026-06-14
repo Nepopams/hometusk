@@ -4,6 +4,7 @@ import com.hometusk.commands.domain.CommandType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -16,6 +17,7 @@ public record CommandRequest(
         UUID zoneId,
         Instant scheduleAt,
         @NotBlank(message = "source is required") String source,
+        @Size(max = 128, message = "asrTraceId must be at most 128 characters") String asrTraceId,
         Instant clientTimestamp) {
 
     public CommandType getCommandType() {

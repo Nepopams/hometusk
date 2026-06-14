@@ -21,9 +21,19 @@ rsync -az -e "ssh -o StrictHostKeyChecking=yes" infra/uat/postgres/ "${remote}:$
 rsync -az -e "ssh -o StrictHostKeyChecking=yes" infra/compose/keycloak/realm-export.json "${remote}:${DEPLOY_PATH}/keycloak/realm-export.json"
 rsync -az -e "ssh -o StrictHostKeyChecking=yes" infra/keycloak/configure-social-idps.sh "${remote}:${DEPLOY_PATH}/keycloak/configure-social-idps.sh"
 
-if [[ -n "${ENV_FILE_CONTENT:-}" ]]; then
+if [[ -n "${ENV_FILE_CONTENT:-}" || -n "${EXTRA_ENV_FILE_CONTENT:-}" ]]; then
   tmp_env="$(mktemp)"
-  printf '%s\n' "${ENV_FILE_CONTENT}" > "${tmp_env}"
+  if [[ -n "${ENV_FILE_CONTENT:-}" ]]; then
+    printf '%s\n' "${ENV_FILE_CONTENT}" > "${tmp_env}"
+  else
+    : > "${tmp_env}"
+  fi
+  if [[ -n "${EXTRA_ENV_FILE_CONTENT:-}" ]]; then
+    if [[ -s "${tmp_env}" ]]; then
+      printf '\n' >> "${tmp_env}"
+    fi
+    printf '%s\n' "${EXTRA_ENV_FILE_CONTENT}" >> "${tmp_env}"
+  fi
   rsync -az -e "ssh -o StrictHostKeyChecking=yes" "${tmp_env}" "${remote}:${DEPLOY_PATH}/.env"
   rm -f "${tmp_env}"
 else

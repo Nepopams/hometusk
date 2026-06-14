@@ -184,6 +184,29 @@ asr:
     post-requests-per-minute: 5
     get-requests-per-minute: 30
 
+# Voice Command Chat MVP
+voice:
+  enabled: ${HOMETUSK_VOICE_ENABLED:true}
+  asr:
+    enabled: ${HOMETUSK_VOICE_ASR_ENABLED:true}
+    base-url: ${AI_PLATFORM_URL:http://localhost:8090}
+    transcribe-path: ${AI_PLATFORM_ASR_TRANSCRIBE_PATH:/v1/asr/transcribe}
+    api-key: ${AI_PLATFORM_API_KEY:}
+    connect-timeout-ms: ${AI_PLATFORM_ASR_CONNECT_TIMEOUT_MS:5000}
+    read-timeout-ms: ${AI_PLATFORM_ASR_READ_TIMEOUT_MS:30000}
+    max-size-bytes: ${HOMETUSK_VOICE_ASR_MAX_SIZE_BYTES:10485760}
+    requests-per-minute: ${HOMETUSK_VOICE_ASR_REQUESTS_PER_MINUTE:5}
+    allowed-media-types:
+      - audio/mpeg
+      - audio/mp3
+      - audio/mp4
+      - audio/m4a
+      - audio/wav
+      - audio/x-wav
+      - audio/webm
+      - audio/ogg
+      - audio/flac
+
 # Guardrails Configuration (Stage 3+)
 guardrails:
   enabled: ${GUARDRAILS_ENABLED:true}

@@ -1,8 +1,8 @@
 # MVP API Coverage Matrix
 
-**Last Updated:** 2026-06-13
-**Scope:** MVP Closure / Email Validation
-**Source of truth:** `docs/contracts/http/commands.openapi.yaml`
+**Last Updated:** 2026-06-14
+**Scope:** MVP Closure / Voice Command Chat
+**Source of truth:** `docs/contracts/http/commands.openapi.yaml`, `docs/contracts/http/voice-transcriptions.openapi.yaml`
 
 ## User Journey Mapping
 
@@ -17,6 +17,8 @@
 | 5 | Create task (manual) | `/api/v1/commands` | POST | JWT | In payload | **Implemented** |
 | 6 | Complete task | `/api/v1/commands` | POST | JWT | In payload | **Implemented** |
 | 7 | Run command (AI) | `/api/v1/commands` | POST | JWT | In payload | **Implemented** |
+| 7a | Create voice transcript draft | `/api/v1/voice/transcriptions` | POST | JWT | N/A | **Implemented** |
+| 7b | Send voice-originated command | `/api/v1/commands` with `source=voice` | POST | JWT | In payload | **Implemented** |
 | 8 | View tasks list | `/api/v1/households/{id}/tasks` | GET | JWT | requireMembership | **Implemented** |
 | 9a | List shopping lists | `/api/v1/households/{id}/shopping-lists` | GET | JWT | requireMembership | **Implemented** |
 | 9b | Create shopping list | `/api/v1/households/{id}/shopping-lists` | POST | JWT | requireMembership | **Implemented** |
@@ -81,7 +83,13 @@
 
 | Endpoint | Method | Request | Response | Errors |
 |----------|--------|---------|----------|--------|
-| `/api/v1/commands` | POST | `CommandRequest` (+ optional `Idempotency-Key`) | `CommandResponse` (200: executed / needs_input / rejected / executed_degraded) | 400, 401, 403, 409 |
+| `/api/v1/commands` | POST | `CommandRequest` (+ optional `Idempotency-Key`, `source=voice`, `asrTraceId`) | `CommandResponse` (200: executed / scheduled / needs_input / rejected / executed_degraded) | 400, 401, 403, 409 |
+
+### Voice Endpoints
+
+| Endpoint | Method | Request | Response | Errors |
+|----------|--------|---------|----------|--------|
+| `/api/v1/voice/transcriptions` | POST | Multipart `file` | `VoiceTranscriptionResponse` | 400, 401, 413, 415, 429, 500, 502, 504 |
 
 ## Query Parameters
 

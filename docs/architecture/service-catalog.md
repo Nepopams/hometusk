@@ -2,7 +2,7 @@
 
 Living registry of all services and applications in the HomeTusk monorepo.
 
-**Last updated:** 2026-06-13
+**Last updated:** 2026-06-14
 
 ---
 
@@ -57,6 +57,7 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 - JUnit 5 + Testcontainers
 
 **Internal Packages:**
+- `voice` - Voice Command Chat ASR BFF for editable transcript drafts
 - `auth` — Keycloak-backed login, registration, refresh, logout, and session cookies
 - `commands` — Command pipeline (POST /api/v1/commands)
 - `tasks` — Task domain
@@ -69,6 +70,7 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 - `shared` — Security, logging, exceptions, validation
 
 **Key Endpoints (MVP Iteration 1):**
+- `POST /api/v1/voice/transcriptions` - Create an authenticated voice transcript draft; ASR does not execute commands
 - `POST /api/v1/auth/login` — Login via Keycloak and set HttpOnly cookies
 - `POST /api/v1/auth/register` — Create Keycloak user and auto-login
 - `POST /api/v1/auth/refresh` — Refresh HttpOnly auth cookies
@@ -91,6 +93,7 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 
 | Controller | Endpoints | Scope |
 |------------|-----------|-------|
+| VoiceTranscriptionController | `POST /api/v1/voice/transcriptions` | Synchronous ASR draft creation for Voice Command Chat; authenticated, no command execution |
 | AuthController | `POST /api/v1/auth/login`, `POST /api/v1/auth/register`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout`, `POST /api/v1/auth/session` | Keycloak-backed browser auth and legacy session cookie bridge |
 | CommandController | `POST /api/v1/commands` | Intent-driven command execution |
 | UserController | `GET /api/v1/users/me` | User profile with household memberships and email verification state |
@@ -168,6 +171,7 @@ Request → JWT Auth → UserResolver → Idempotency-Key Dedupe → MembershipV
 - Enqueue failures are logged after task assignment commit and do not fail command execution.
 
 **Traceability:**
+- Voice-originated commands may store `asr_trace_id` from the ASR BFF for audit linkage
 - `X-Correlation-ID` header propagates through all layers
 - `correlationId` stored in Command, DecisionLog, TaskActivity
 - MDC logging with correlationId

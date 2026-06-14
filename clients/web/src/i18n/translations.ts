@@ -485,6 +485,8 @@ const en = {
   'voice.timeout': 'The transcription took too long. Please try a shorter message.',
   'voice.rateLimited': 'Too many requests.',
   'voice.rateLimitedCountdown': 'Too many requests. You can try again in {{count}}s.',
+  'voice.unsupportedMedia': 'This audio format is not supported. Try recording again or type the command.',
+  'voice.draftReady': 'Draft ready',
   'voice.network': 'Network issue. Check your connection and try again.',
   'voice.notAuthenticated': 'Please sign in to use voice input.',
   'voice.typeInstead': 'Type instead',

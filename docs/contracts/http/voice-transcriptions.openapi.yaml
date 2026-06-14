@@ -1,0 +1,172 @@
+openapi: 3.1.0
+info:
+  title: HomeTusk Voice Transcriptions API
+  version: 1.0.0
+  description: |
+    Synchronous HomeTusk ASR BFF for Voice Command Chat MVP.
+
+    This API returns an editable transcript draft. It never executes a command.
+    Command execution remains behind `POST /api/v1/commands` and requires an
+    explicit user action.
+servers:
+  - url: /api/v1
+    description: API version 1
+security:
+  - bearerAuth: []
+tags:
+  - name: Voice
+    description: Voice command transcription endpoints
+paths:
+  /voice/transcriptions:
+    post:
+      tags:
+        - Voice
+      summary: Transcribe one audio file into an editable command draft
+      description: |
+        Accepts exactly one multipart `file` field, validates audio guardrails,
+        calls AI Platform ASR, and returns safe transcript metadata. The raw
+        audio is not persisted and the raw transcript is not logged by the ASR
+        flow.
+      operationId: createVoiceTranscription
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: One supported audio file.
+            encoding:
+              file:
+                contentType: audio/mpeg, audio/mp3, audio/mp4, audio/m4a, audio/wav, audio/x-wav, audio/webm, audio/ogg, audio/flac
+      responses:
+        "200":
+          description: Transcript draft created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoiceTranscriptionResponse"
+              examples:
+                ok:
+                  value:
+                    transcript: add trash bags and radish to the Auchan shopping list
+                    status: ok
+                    traceId: trace-asr-123
+                    latencyMs: 1234
+        "400":
+          description: Invalid multipart request or missing audio file
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoiceTranscriptionError"
+        "401":
+          description: Authentication required
+        "413":
+          description: Audio file exceeds configured limit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoiceTranscriptionError"
+        "415":
+          description: Unsupported audio media type
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoiceTranscriptionError"
+        "429":
+          description: Local voice ASR rate limit exceeded
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Seconds until retry is allowed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoiceTranscriptionError"
+        "500":
+          description: ASR configuration error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoiceTranscriptionError"
+        "502":
+          description: AI Platform ASR auth, availability, or response error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoiceTranscriptionError"
+        "504":
+          description: AI Platform ASR timeout
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoiceTranscriptionError"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    VoiceTranscriptionResponse:
+      type: object
+      required:
+        - transcript
+        - status
+        - traceId
+        - latencyMs
+      properties:
+        transcript:
+          type: string
+          minLength: 0
+          description: Editable transcript draft. Clients must not auto-send it.
+        status:
+          type: string
+          enum:
+            - ok
+        traceId:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: Safe ASR trace identifier for audit linkage.
+        latencyMs:
+          type: integer
+          format: int64
+          minimum: 0
+    VoiceTranscriptionError:
+      type: object
+      required:
+        - code
+        - message
+        - correlationId
+      properties:
+        code:
+          type: string
+          enum:
+            - invalid_multipart
+            - missing_audio_file
+            - file_too_large
+            - unsupported_media
+            - asr_config_error
+            - auth_error
+            - bad_upstream_response
+            - upstream_unavailable
+            - timeout
+            - local_rate_limit
+        message:
+          type: string
+        correlationId:
+          type:
+            - string
+            - "null"
+        details:
+          type:
+            - object
+            - "null"
+          additionalProperties: true

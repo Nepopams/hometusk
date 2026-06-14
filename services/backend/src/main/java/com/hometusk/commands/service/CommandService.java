@@ -25,6 +25,7 @@ import com.hometusk.shared.exception.NotFoundException;
 import com.hometusk.shared.exception.ValidationException;
 import com.hometusk.shopping.service.ShoppingService;
 import com.hometusk.users.domain.User;
+import com.hometusk.voice.metrics.VoiceMetrics;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -71,6 +72,7 @@ public class CommandService {
     private final GuardrailsOrchestrator guardrailsOrchestrator;
     private final DecisionMetrics metrics;
     private final ShoppingService shoppingService;
+    private final VoiceMetrics voiceMetrics;
 
     public CommandService(
             CommandRepository commandRepository,
@@ -84,7 +86,8 @@ public class CommandService {
             ContextBuilder contextBuilder,
             GuardrailsOrchestrator guardrailsOrchestrator,
             DecisionMetrics metrics,
-            ShoppingService shoppingService) {
+            ShoppingService shoppingService,
+            VoiceMetrics voiceMetrics) {
         this.commandRepository = commandRepository;
         this.householdService = householdService;
         this.objectMapper = objectMapper;
@@ -97,6 +100,7 @@ public class CommandService {
         this.guardrailsOrchestrator = guardrailsOrchestrator;
         this.metrics = metrics;
         this.shoppingService = shoppingService;
+        this.voiceMetrics = voiceMetrics;
     }
 
     @Transactional
@@ -134,9 +138,11 @@ public class CommandService {
                 request.zoneId(),
                 request.scheduleAt(),
                 request.source(),
+                request.asrTraceId(),
                 request.clientTimestamp());
 
         command = commandRepository.save(command);
+        recordVoiceCommandReceived(command);
         log.debug("Command created: id={}, correlationId={}", command.getId(), correlationId);
 
         try {
@@ -262,9 +268,8 @@ public class CommandService {
                 .command(command)
                 .correlationId(correlationId)
                 .intent(Map.of("type", command.getType().name().toLowerCase()))
-                .contextSnapshot(Map.of(
-                        "householdId", command.getHouseholdId(),
-                        "scheduleAt", command.getScheduleAt().toString()))
+                .contextSnapshot(commandContextSnapshot(
+                        command, Map.of("scheduleAt", command.getScheduleAt().toString())))
                 .decision(Map.of(
                         "type",
                         "scheduled",
@@ -274,6 +279,7 @@ public class CommandService {
                 .build());
 
         int executionMs = (int) (System.currentTimeMillis() - startTime);
+        recordVoiceCommandOutcome(command, "scheduled");
         return CommandResponse.scheduled(
                 command.getId(), correlationId, command.getScheduleAt(), executionMs, requester.getId());
     }
@@ -310,6 +316,7 @@ public class CommandService {
         int executionMs = (int) (System.currentTimeMillis() - startTime);
         command.markRejected(ErrorCode.SCHEMA_INVALID.name(), e.getMessage(), executionMs);
         commandRepository.save(command);
+        recordVoiceCommandOutcome(command, "rejected");
 
         decisionLogWriter.writeValidationFailure(
                 command, correlationId, Map.of("type", commandType.name()), e.getErrors(), true);
@@ -320,6 +327,7 @@ public class CommandService {
         int executionMs = (int) (System.currentTimeMillis() - startTime);
         command.markRejected(e.getErrorCode().name(), e.getMessage(), executionMs);
         commandRepository.save(command);
+        recordVoiceCommandOutcome(command, "rejected");
 
         decisionLogWriter.writeValidationFailure(
                 command, correlationId, Map.of("type", commandType.name()), e.getViolations(), false);
@@ -329,6 +337,7 @@ public class CommandService {
         int executionMs = (int) (System.currentTimeMillis() - startTime);
         command.markFailed(ErrorCode.INTERNAL_ERROR.name(), e.getMessage(), executionMs);
         commandRepository.save(command);
+        recordVoiceCommandOutcome(command, "failed");
 
         log.error("Command failed: id={}, correlationId={}", command.getId(), correlationId, e);
     }
@@ -458,7 +467,7 @@ public class CommandService {
                         .command(command)
                         .correlationId(correlationId)
                         .intent(Map.of("type", command.getType().name().toLowerCase()))
-                        .contextSnapshot(Map.of("householdId", command.getHouseholdId()))
+                        .contextSnapshot(commandContextSnapshot(command))
                         .decision(Map.of(
                                 "type", "guardrails_clarify",
                                 "policy", clarify.triggeredPolicy(),
@@ -472,6 +481,7 @@ public class CommandService {
                 int executionMs = (int) (System.currentTimeMillis() - startTime);
                 command.markNeedsInput(clarify.question());
                 commandRepository.save(command);
+                recordVoiceCommandOutcome(command, "needs_input");
 
                 yield CommandResponse.needsInput(
                         command.getId(),
@@ -497,7 +507,7 @@ public class CommandService {
                         .command(command)
                         .correlationId(correlationId)
                         .intent(Map.of("type", command.getType().name().toLowerCase()))
-                        .contextSnapshot(Map.of("householdId", command.getHouseholdId()))
+                        .contextSnapshot(commandContextSnapshot(command))
                         .decision(Map.of(
                                 "type", "guardrails_reject",
                                 "policy", rejected.triggeredPolicy(),
@@ -514,6 +524,7 @@ public class CommandService {
                         rejected.errorCode() != null ? rejected.errorCode() : ErrorCode.GUARDRAILS_REJECTED.name();
                 command.markRejected(errorCode, rejected.reason(), executionMs);
                 commandRepository.save(command);
+                recordVoiceCommandOutcome(command, "rejected");
                 yield CommandResponse.rejected(
                         command.getId(), correlationId, errorCode, rejected.reason(), executionMs, requester.getId());
             }
@@ -539,7 +550,7 @@ public class CommandService {
                 .command(command)
                 .correlationId(correlationId)
                 .intent(Map.of("type", command.getType().name().toLowerCase()))
-                .contextSnapshot(Map.of("householdId", command.getHouseholdId()))
+                .contextSnapshot(commandContextSnapshot(command))
                 .decision(decisionMap)
                 .source(decision.source())
                 .confidence(decision.confidence())
@@ -589,10 +600,12 @@ public class CommandService {
 
         // Check if this was a fallback (degraded mode)
         if (decision.source() == DecisionSource.FALLBACK) {
+            recordVoiceCommandOutcome(command, "executed_degraded");
             return CommandResponse.degraded(
                     command.getId(), correlationId, commandResult, executionMs, requester.getId(), "ai_unavailable");
         }
 
+        recordVoiceCommandOutcome(command, "executed");
         return CommandResponse.success(command.getId(), correlationId, commandResult, executionMs, requester.getId());
     }
 
@@ -604,7 +617,7 @@ public class CommandService {
                 .command(command)
                 .correlationId(correlationId)
                 .intent(Map.of("type", command.getType().name().toLowerCase()))
-                .contextSnapshot(Map.of("householdId", command.getHouseholdId()))
+                .contextSnapshot(commandContextSnapshot(command))
                 .decision(Map.of(
                         "type", "clarify",
                         "question", decision.question(),
@@ -619,6 +632,7 @@ public class CommandService {
         int executionMs = (int) (System.currentTimeMillis() - startTime);
         command.markNeedsInput(decision.question());
         commandRepository.save(command);
+        recordVoiceCommandOutcome(command, "needs_input");
 
         log.info(
                 "Command needs input: id={}, correlationId={}, question={}",
@@ -645,7 +659,7 @@ public class CommandService {
                 .command(command)
                 .correlationId(correlationId)
                 .intent(Map.of("type", command.getType().name().toLowerCase()))
-                .contextSnapshot(Map.of("householdId", command.getHouseholdId()))
+                .contextSnapshot(commandContextSnapshot(command))
                 .decision(Map.of("type", "reject", "reason", decision.reason(), "errorCode", decision.errorCode()))
                 .source(decision.source())
                 .confidence(decision.confidence())
@@ -661,11 +675,42 @@ public class CommandService {
                 : ErrorCode.AI_REJECTED.getDefaultMessage();
         command.markRejected(errorCode, reason, executionMs);
         commandRepository.save(command);
+        recordVoiceCommandOutcome(command, "rejected");
 
         log.info("Command rejected by AI: id={}, correlationId={}, reason={}", command.getId(), correlationId, reason);
 
         return CommandResponse.rejected(
                 command.getId(), correlationId, errorCode, reason, executionMs, requester.getId());
+    }
+
+    private Map<String, Object> commandContextSnapshot(Command command) {
+        return commandContextSnapshot(command, Map.of());
+    }
+
+    private Map<String, Object> commandContextSnapshot(Command command, Map<String, Object> extra) {
+        Map<String, Object> snapshot = new HashMap<>();
+        snapshot.put("householdId", command.getHouseholdId());
+        if (command.getAsrTraceId() != null && !command.getAsrTraceId().isBlank()) {
+            snapshot.put("asrTraceId", command.getAsrTraceId());
+        }
+        snapshot.putAll(extra);
+        return snapshot;
+    }
+
+    private void recordVoiceCommandReceived(Command command) {
+        if (isVoiceCommand(command)) {
+            voiceMetrics.recordVoiceCommandReceived();
+        }
+    }
+
+    private void recordVoiceCommandOutcome(Command command, String outcome) {
+        if (isVoiceCommand(command)) {
+            voiceMetrics.recordVoiceCommandOutcome(outcome);
+        }
+    }
+
+    private boolean isVoiceCommand(Command command) {
+        return command.getSource() != null && "voice".equalsIgnoreCase(command.getSource());
     }
 
     private String toJson(Object obj) {

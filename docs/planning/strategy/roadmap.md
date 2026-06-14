@@ -3,13 +3,19 @@
 > Формат Now/Next/Later фиксирует направление и приоритеты без преждевременных дат.
 > У каждого пункта должен быть "якорь" — initiative/release документ.
 
-## NOW (текущий фокус: social auth via Yandex/VK)
+## NOW (текущий фокус: Voice Command Chat MVP)
 
-- Initiative (current): **INIT-2026Q2-social-auth-yandex-vk** — Social Auth via Yandex/VK
+- Initiative (current): **INIT-2026Q3-voice-command-chat-mvp** — Voice Command Chat MVP
+  - Anchor: docs/planning/initiatives/INIT-2026Q3-voice-command-chat-mvp.md
+  - Outcome: пользователь записывает голосовую команду, ASR создаёт редактируемый transcript draft, пользователь вручную отправляет его через существующий command pipeline, а UI показывает controlled outcomes: executed, needs_input, rejected или ASR error
+  - Why now: ASR foundation и voice input ранее закрыты как отдельные основы; следующий продуктовый рычаг — собрать голос, editable draft, command execution и domain result cards в единый Commands flow без generic assistant и без LLM-логики внутри HomeTusk
+  - Readiness: PROPOSED selected as NOW planning focus; requires Plan Mode before implementation, Gate C before APPLY, and likely contract_impact, security_sensitive, traceability_critical, diagrams_needed/adr_needed
+
+- Initiative (carry-over / in progress): **INIT-2026Q2-social-auth-yandex-vk** — Social Auth via Yandex/VK
   - Anchor: docs/planning/initiatives/INIT-2026Q2-social-auth-yandex-vk.md
   - Outcome: вход через Яндекс и подтверждённый technical path для VK через Keycloak identity brokering, без OAuth token exchange логики в HomeTusk backend
   - Why now: email validation, email notification platform и task assignment email notifications закрыты; следующий рычаг — снизить onboarding friction без переноса OAuth-сложности в HomeTusk backend
-  - Readiness: IN_PROGRESS as NOW focus; security_sensitive, adr_needed, requires provider runbook/secrets handling and VK spike result
+  - Readiness: IN_PROGRESS carry-over; security_sensitive, adr_needed, requires provider runbook/secrets handling and VK spike result; not the primary NOW focus while Voice Command Chat MVP is selected
 
 - Initiative (done): **INIT-2026Q2-task-assignment-email-notifications** — Task Assignment Email Notifications
   - Anchor: docs/planning/initiatives/INIT-2026Q2-task-assignment-email-notifications.md
@@ -141,10 +147,11 @@
   - Email/channel work сортируем по цепочке безопасности: verified profile state → delivery platform → конкретный notification use case.
 
 - Текущий рейтинг новых инициатив:
-  - #1 INIT-2026Q2-email-validation — DONE; foundation для доверенного email-state и eligibility.
-  - #2 INIT-2026Q2-email-notification-platform — DONE; безопасная delivery foundation перед use-case логикой.
-  - #3 INIT-2026Q2-task-assignment-email-notifications — DONE; прямой user value после готовой платформы.
-  - #4 INIT-2026Q2-social-auth-yandex-vk — CURRENT; activation lever, но с внешним provider/security spike.
+  - #1 INIT-2026Q3-voice-command-chat-mvp — CURRENT; E2E voice-to-command value inside existing Commands, with editable transcript and manual Send.
+  - #2 INIT-2026Q2-social-auth-yandex-vk — CARRY-OVER / IN_PROGRESS; activation lever, но с внешним provider/security spike.
+  - #3 INIT-2026Q2-email-validation — DONE; foundation для доверенного email-state и eligibility.
+  - #4 INIT-2026Q2-email-notification-platform — DONE; безопасная delivery foundation перед use-case логикой.
+  - #5 INIT-2026Q2-task-assignment-email-notifications — DONE; прямой user value после готовой платформы.
 
 - Риски:
   - Scope creep в web (слишком много экранов/фич за раз) → режем до NOW-инкремента инициативы.
