@@ -2,6 +2,9 @@
 
 > Актуален на: 2026-02-08. Покрывает backend, web-клиент, инфраструктуру.
 
+> Для Windows 10/11 и PowerShell используйте отдельный ранбук:
+> [`docs/runbooks/local-dev-windows-ru.md`](./local-dev-windows-ru.md).
+
 ---
 
 ## 1. Предварительные требования
