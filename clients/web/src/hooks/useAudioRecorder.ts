@@ -6,6 +6,7 @@ const DURATION_UPDATE_INTERVAL_MS = 100;
 
 export type AudioRecorderError =
   | 'permission_denied'
+  | 'no_microphone'
   | 'not_supported'
   | 'recording_failed'
   | 'no_audio_data';
@@ -53,6 +54,22 @@ function logRecorderError(error: unknown) {
   }
 
   console.warn('[VoiceRecorder] recording failed', error);
+}
+
+function mapRecorderStartError(error: unknown): AudioRecorderError {
+  if (error instanceof DOMException) {
+    if (error.name === 'NotAllowedError' || error.name === 'SecurityError') {
+      return 'permission_denied';
+    }
+    if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+      return 'no_microphone';
+    }
+    if (error.name === 'NotSupportedError') {
+      return 'not_supported';
+    }
+  }
+
+  return 'recording_failed';
 }
 
 export function useAudioRecorder(): UseAudioRecorderResult {
@@ -172,11 +189,7 @@ export function useAudioRecorder(): UseAudioRecorderResult {
     } catch (err) {
       logRecorderError(err);
       cleanup();
-      if (err instanceof DOMException && err.name === 'NotAllowedError') {
-        setError('permission_denied');
-      } else {
-        setError('recording_failed');
-      }
+      setError(mapRecorderStartError(err));
     }
   }, [cleanup, stop]);
 

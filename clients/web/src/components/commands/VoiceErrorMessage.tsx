@@ -4,6 +4,7 @@ import './VoiceErrorMessage.css';
 
 export type VoiceErrorType =
   | 'permission_denied'
+  | 'no_microphone'
   | 'not_supported'
   | 'recording_failed'
   | 'no_audio_data'
@@ -25,6 +26,10 @@ export interface VoiceErrorMessageProps {
 const ERROR_CONFIG: Record<VoiceErrorType, { messageKey: TranslationKey; showRetry: boolean }> = {
   permission_denied: {
     messageKey: 'voice.permissionDenied',
+    showRetry: false,
+  },
+  no_microphone: {
+    messageKey: 'voice.noMicrophone',
     showRetry: false,
   },
   not_supported: {
