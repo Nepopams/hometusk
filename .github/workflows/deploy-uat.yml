@@ -29,7 +29,7 @@ jobs:
       GHCR_USERNAME: ${{ github.actor }}
       GHCR_TOKEN: ${{ secrets.GHCR_READ_TOKEN || github.token }}
       EXPECT_YANDEX_IDP: "true"
-      UAT_VOICE_COMMAND_ENABLED: ${{ vars.UAT_VOICE_COMMAND_ENABLED || 'false' }}
+      UAT_VOICE_COMMAND_ENABLED: ${{ vars.UAT_VOICE_COMMAND_ENABLED || 'true' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
