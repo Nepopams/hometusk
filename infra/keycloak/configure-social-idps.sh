@@ -156,6 +156,7 @@ ensure_identity_provider_redirector() {
   fi
 
   "$KCADM" update "authentication/flows/$browser_flow/executions" -r "$KEYCLOAK_REALM" \
+    -n \
     -s "id=$redirector_id" \
     -s "requirement=ALTERNATIVE"
 
