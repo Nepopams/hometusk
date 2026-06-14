@@ -176,7 +176,13 @@ HOMETUSK_IDP_YANDEX_CLIENT_ID=<client_id> \
 
 Этот smoke не заменяет ручной happy-path login: он подтверждает, что Keycloak
 имеет provider factory `yandex`, клиент `hometusk-web` настроен как public
-authorization-code + PKCE, а broker redirect ведёт на `oauth.yandex.ru`.
+authorization-code + PKCE, browser flow умеет обрабатывать `kc_idp_hint`, а
+broker redirect ведёт на `oauth.yandex.ru`.
+
+Если HAR показывает `client_id=hometusk-api` или ответ Keycloak `200 text/html`
+вместо `302` на broker/Yandex, UAT собран или настроен старым способом.
+Пересоберите web с `VITE_OIDC_CLIENT_ID=hometusk-web` и повторно запустите
+конфигуратор/smoke.
 
 ### 6. Ручная проверка существующего аккаунта с тем же email
 

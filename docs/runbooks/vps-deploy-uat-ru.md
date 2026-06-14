@@ -274,13 +274,14 @@ docker compose up -d keycloak
 
 Логин: значения из `.env` (`KEYCLOAK_ADMIN` / `KEYCLOAK_ADMIN_PASSWORD`).
 
-### 6.2. Обновить клиент `hometusk-api`
+### 6.2. Проверить клиент `hometusk-web`
 
-> В `realm-export.json` SPA-клиент называется `hometusk-api`.
-> Переменная `VITE_OIDC_CLIENT_ID` в `.env` по умолчанию `hometusk-web`.
-> Нужно либо создать клиент `hometusk-web`, либо изменить `VITE_OIDC_CLIENT_ID=hometusk-api` в `.env`.
+SPA-клиент HomeTusk должен называться `hometusk-web`. Не используйте
+`hometusk-api` для браузерного приложения: это старый API/user client, и такой
+перекос ломает проверку social-auth broker redirect.
 
-**Вариант A** (рекомендуемый): Создать клиент `hometusk-web`
+Актуальный deploy-конфигуратор создает или обновляет `hometusk-web`
+автоматически. Если настраиваете вручную, проверьте:
 
 1. Realm **hometusk** → Clients → Create client
 2. Настройки:
@@ -288,7 +289,7 @@ docker compose up -d keycloak
    - Client Protocol: `openid-connect`
    - Client authentication: **OFF** (public client)
    - Standard flow: **ON**
-   - Direct access grants: **ON**
+   - Direct access grants: **OFF**
 3. Settings:
    - Valid redirect URIs:
      ```
@@ -307,16 +308,6 @@ docker compose up -d keycloak
      ```
 4. Advanced → PKCE Code Challenge Method: `S256`
 5. Save
-
-**Вариант B**: Обновить существующий `hometusk-api` + поменять `.env`
-
-1. Realm **hometusk** → Clients → `hometusk-api`
-2. Обновить Valid redirect URIs и Web Origins (как в варианте A)
-3. В `.env` поменять: `VITE_OIDC_CLIENT_ID=hometusk-api`
-4. Пересобрать nginx (SPA встроена в образ):
-   ```bash
-   docker compose up -d --build nginx
-   ```
 
 ### 6.3. Создать тестовых пользователей (опционально)
 
@@ -530,7 +521,7 @@ curl -i -s -X POST "http://$DOMAIN/api/v1/auth/login" \
 
 ```bash
 DOMAIN="uat.hometusk.example.com"
-CLIENT_ID="hometusk-web"  # или hometusk-api, в зависимости от настройки
+CLIENT_ID="hometusk-api"  # только для CLI Direct Access Grant, не для SPA
 
 # Получить токен через Direct Access Grant
 TOKEN=$(curl -s -X POST "http://$DOMAIN/realms/hometusk/protocol/openid-connect/token" \

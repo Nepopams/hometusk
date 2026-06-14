@@ -117,6 +117,8 @@ ownership proof and HomeTusk does not do domain-level social account linking.
 Required guardrails:
 
 - realm `duplicateEmailsAllowed=false`;
+- browser flow includes an enabled `identity-provider-redirector` execution so
+  `kc_idp_hint=yandex` does not fall through to the Keycloak login form;
 - Yandex identity provider uses `firstBrokerLoginFlowAlias=first broker login`;
 - `trustEmail=false`;
 - no HomeTusk repository lookup or merge by email.
@@ -127,10 +129,12 @@ Minimum dev/stage verification:
 
 1. Keycloak image includes provider `yandex`.
 2. `hometusk-web` exists and has the expected redirect URI for the environment.
-3. Yandex app contains the matching broker redirect URI.
-4. Yandex login creates or links a Keycloak user.
-5. HomeTusk `/api/v1/users/me` resolves a profile from the Keycloak JWT.
-6. Missing or unverified email does not reject login and yields
+3. Browser flow processes `kc_idp_hint=yandex` and redirects to Yandex OAuth,
+   not the Keycloak login form.
+4. Yandex app contains the matching broker redirect URI.
+5. Yandex login creates or links a Keycloak user.
+6. HomeTusk `/api/v1/users/me` resolves a profile from the Keycloak JWT.
+7. Missing or unverified email does not reject login and yields
    `emailNotificationEligible=false`.
-7. Existing password user with the same Yandex email links through Keycloak and
+8. Existing password user with the same Yandex email links through Keycloak and
    keeps the same HomeTusk `externalId`; no HomeTusk merge-by-email occurs.

@@ -77,7 +77,6 @@ DEV_SSH_KEY
 DEV_DEPLOY_PATH
 DEV_ENV_FILE
 DEV_OIDC_AUTHORITY
-DEV_OIDC_CLIENT_ID
 DEV_OIDC_REDIRECT_URI
 ```
 
@@ -90,9 +89,12 @@ UAT_SSH_KEY
 UAT_DEPLOY_PATH
 UAT_ENV_FILE
 UAT_OIDC_AUTHORITY
-UAT_OIDC_CLIENT_ID
 UAT_OIDC_REDIRECT_URI
 ```
+
+The browser image is always built with `VITE_OIDC_CLIENT_ID=hometusk-web`.
+Do not point the SPA at `hometusk-api`; that legacy client is not the canonical
+browser client and can bypass the social-auth broker redirect guardrails.
 
 ### Prod
 

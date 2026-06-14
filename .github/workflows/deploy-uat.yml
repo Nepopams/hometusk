@@ -76,7 +76,7 @@ jobs:
             VITE_API_BASE_URL=/api/v1
             VITE_AUTH_PROVIDER=keycloak
             VITE_OIDC_AUTHORITY=${{ secrets.UAT_OIDC_AUTHORITY }}
-            VITE_OIDC_CLIENT_ID=${{ secrets.UAT_OIDC_CLIENT_ID || 'hometusk-web' }}
+            VITE_OIDC_CLIENT_ID=hometusk-web
             VITE_OIDC_REDIRECT_URI=${{ secrets.UAT_OIDC_REDIRECT_URI }}
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web

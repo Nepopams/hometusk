@@ -35,6 +35,10 @@ configure_web_client_redirects() {
     web_base_url="${redirect_uri%/callback}"
   fi
 
+  if [ "$web_client_id" != "hometusk-web" ]; then
+    echo "WARNING: web OIDC client is '$web_client_id'; canonical browser client is 'hometusk-web'."
+  fi
+
   client_uuid=$("$KCADM" get clients -r "$KEYCLOAK_REALM" \
     -q "clientId=$web_client_id" \
     --fields id \
@@ -42,8 +46,40 @@ configure_web_client_redirects() {
     --noquotes | head -n 1)
 
   if [ -z "$client_uuid" ]; then
-    echo "OIDC client '$web_client_id' not found; redirect URI update skipped."
-    return
+    echo "OIDC client '$web_client_id' not found; creating public browser client."
+    "$KCADM" create clients -r "$KEYCLOAK_REALM" \
+      -s "clientId=$web_client_id" \
+      -s "name=HomeTusk Web" \
+      -s "description=Public browser OIDC client for the HomeTusk web app" \
+      -s "enabled=true" \
+      -s "protocol=openid-connect" \
+      -s "publicClient=true" \
+      -s "standardFlowEnabled=true" \
+      -s "implicitFlowEnabled=false" \
+      -s "directAccessGrantsEnabled=false" \
+      -s "serviceAccountsEnabled=false" \
+      -s 'attributes={"access.token.lifespan":"3600","pkce.code.challenge.method":"S256","post.logout.redirect.uris":"+"}'
+
+    client_uuid=$("$KCADM" get clients -r "$KEYCLOAK_REALM" \
+      -q "clientId=$web_client_id" \
+      --fields id \
+      --format csv \
+      --noquotes | head -n 1)
+
+    if [ -z "$client_uuid" ]; then
+      echo "Failed to create OIDC client '$web_client_id'." >&2
+      exit 1
+    fi
+  elif [ "$web_client_id" = "hometusk-web" ]; then
+    "$KCADM" update "clients/$client_uuid" -r "$KEYCLOAK_REALM" \
+      -s "enabled=true" \
+      -s "protocol=openid-connect" \
+      -s "publicClient=true" \
+      -s "standardFlowEnabled=true" \
+      -s "implicitFlowEnabled=false" \
+      -s "directAccessGrantsEnabled=false" \
+      -s "serviceAccountsEnabled=false" \
+      -s 'attributes={"access.token.lifespan":"3600","pkce.code.challenge.method":"S256","post.logout.redirect.uris":"+"}'
   fi
 
   client_json=$("$KCADM" get "clients/$client_uuid" -r "$KEYCLOAK_REALM" --fields redirectUris,webOrigins)
@@ -59,6 +95,60 @@ configure_web_client_redirects() {
   fi
 
   echo "OIDC client '$web_client_id' redirect URI set to '$redirect_uri'."
+}
+
+get_browser_flow_alias() {
+  realm_json=$("$KCADM" get "realms/$KEYCLOAK_REALM" --fields browserFlow)
+  browser_flow=$(printf '%s' "$realm_json" | sed -n 's/.*"browserFlow"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+  if [ -z "$browser_flow" ]; then
+    browser_flow="browser"
+  fi
+  printf '%s' "$browser_flow"
+}
+
+get_redirector_execution_id() {
+  browser_flow="$1"
+  "$KCADM" get "authentication/flows/$browser_flow/executions" -r "$KEYCLOAK_REALM" \
+    --fields id,providerId \
+    --format csv \
+    --noquotes | awk -F, '$2 == "identity-provider-redirector" { print $1; exit }'
+}
+
+ensure_identity_provider_redirector() {
+  browser_flow=$(get_browser_flow_alias)
+  redirector_id=$(get_redirector_execution_id "$browser_flow")
+
+  if [ -z "$redirector_id" ]; then
+    "$KCADM" create "authentication/flows/$browser_flow/executions/execution" -r "$KEYCLOAK_REALM" \
+      -s "provider=identity-provider-redirector"
+    redirector_id=$(get_redirector_execution_id "$browser_flow")
+  fi
+
+  if [ -z "$redirector_id" ]; then
+    echo "Failed to configure Identity Provider Redirector in browser flow '$browser_flow'." >&2
+    exit 1
+  fi
+
+  "$KCADM" update "authentication/flows/$browser_flow/executions" -r "$KEYCLOAK_REALM" \
+    -s "id=$redirector_id" \
+    -s "requirement=ALTERNATIVE"
+
+  execution_rows=$("$KCADM" get "authentication/flows/$browser_flow/executions" -r "$KEYCLOAK_REALM" \
+    --fields id,providerId,requirement,index,displayName,flowAlias \
+    --format csv \
+    --noquotes)
+  redirector_index=$(printf '%s\n' "$execution_rows" | awk -F, '$2 == "identity-provider-redirector" { print $4; exit }')
+  forms_index=$(printf '%s\n' "$execution_rows" | awk -F, '($2 == "auth-username-password-form" || $5 == "Forms" || $6 == "forms") { print $4; exit }')
+
+  if [ -n "$redirector_index" ] && [ -n "$forms_index" ] && [ "$redirector_index" -gt "$forms_index" ]; then
+    moves=$((redirector_index - forms_index))
+    while [ "$moves" -gt 0 ]; do
+      "$KCADM" create "authentication/executions/$redirector_id/raise-priority" -r "$KEYCLOAK_REALM" >/dev/null 2>&1 || true
+      moves=$((moves - 1))
+    done
+  fi
+
+  echo "Identity Provider Redirector is enabled in browser flow '$browser_flow'."
 }
 
 upsert_yandex() {
@@ -131,5 +221,6 @@ report_vkid_path() {
 }
 
 configure_web_client_redirects
+ensure_identity_provider_redirector
 upsert_yandex
 report_vkid_path
