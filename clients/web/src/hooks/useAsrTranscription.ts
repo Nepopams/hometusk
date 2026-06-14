@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import { logVoiceEvent } from '../lib/voiceTelemetry';
 import { refreshAuthSession } from '../lib/api';
 import { getAuthToken, handleAuthError } from '../lib/auth/tokenProvider';
+import { normalizeAudioForAsr } from '../lib/audioWav';
 
 const DEFAULT_RETRY_AFTER_MS = 60_000;
 
@@ -135,11 +136,15 @@ export function useAsrTranscription(): UseAsrTranscriptionResult {
       abortControllerRef.current = new AbortController();
 
       try {
+        const uploadBlob = await normalizeAudioForAsr(audioBlob).catch((err) => {
+          console.warn('[VoiceASR] audio normalization failed', err);
+          return audioBlob;
+        });
         const url = getVoiceTranscriptionUrl();
         let response = await fetch(
           url,
           createTranscriptionRequestInit(
-            audioBlob,
+            uploadBlob,
             correlationIdRef.current,
             abortControllerRef.current.signal,
             true
@@ -152,7 +157,7 @@ export function useAsrTranscription(): UseAsrTranscriptionResult {
             response = await fetch(
               url,
               createTranscriptionRequestInit(
-                audioBlob,
+                uploadBlob,
                 correlationIdRef.current,
                 abortControllerRef.current.signal,
                 false
