@@ -330,8 +330,8 @@ HomeTusk is a **consumer** of an external AI Platform for intelligent decision-m
 - Wrapper Schemas: `docs/integration/ai-platform/v1/contracts/schemas/`
 
 **Endpoints (configurable):**
-- `POST /decision` (default, HomeTusk legacy)
-- `POST /decide` (upstream canonical)
+- `POST /v1/decide` (HomeTusk default for UAT)
+- `POST /decide` (upstream canonical when base URL already includes version routing)
 - `GET /health` - Health check
 
 **Upstream Response types:**
@@ -350,7 +350,7 @@ HomeTusk is a **consumer** of an external AI Platform for intelligent decision-m
 ```yaml
 aiplatform:
   base-url: ${AI_PLATFORM_URL}
-  decision-path: /decision  # or /decide for upstream
+  decision-path: /v1/decide
   timeout-ms: 5000
   api-key: ${AI_PLATFORM_API_KEY}
 ```

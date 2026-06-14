@@ -82,3 +82,7 @@ This index tracks all API contracts (OpenAPI, JSON Schema, AsyncAPI) in the proj
   backward-compatible Commands API delta: `source=voice` plus optional
   `asrTraceId`. ASR does not execute commands; explicit user Send still calls
   `/api/v1/commands`.
+- 2026-06-14 - INIT-2026Q3 voice follow-up aligns HomeTusk's external
+  AI Platform decision contract with upstream `POST /v1/decide`:
+  snake_case command request fields, upstream decision response envelope, and
+  nested `payload.proposed_actions` mapping.

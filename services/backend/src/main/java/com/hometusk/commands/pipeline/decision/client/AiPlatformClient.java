@@ -24,8 +24,7 @@ import org.springframework.web.client.RestClientException;
  *
  * <p>Endpoint configuration:
  * <ul>
- *   <li>aiplatform.decision-path=/decision (default, HomeTusk legacy)</li>
- *   <li>aiplatform.decision-path=/decide (upstream canonical)</li>
+ *   <li>aiplatform.decision-path=/v1/decide (upstream canonical in UAT)</li>
  * </ul>
  */
 @Component
@@ -44,7 +43,7 @@ public class AiPlatformClient {
             @Value("${aiplatform.base-url}") String baseUrl,
             @Value("${aiplatform.timeout-ms:5000}") int timeoutMs,
             @Value("${aiplatform.api-key:}") String apiKey,
-            @Value("${aiplatform.decision-path:/decision}") String decisionPath,
+            @Value("${aiplatform.decision-path:/v1/decide}") String decisionPath,
             RetryRegistry retryRegistry,
             CircuitBreakerRegistry circuitBreakerRegistry) {
         this.timeoutMs = timeoutMs;
@@ -90,9 +89,10 @@ public class AiPlatformClient {
             AiDecisionResponse response = decorated.get();
 
             log.debug(
-                    "Received decision from AI Platform: decisionId={}, type={}",
+                    "Received decision from AI Platform: decisionId={}, status={}, action={}",
                     response.decisionId(),
-                    response.type());
+                    response.status(),
+                    response.action());
 
             return response;
 
