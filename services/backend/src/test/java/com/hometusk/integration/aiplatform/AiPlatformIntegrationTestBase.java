@@ -173,6 +173,10 @@ public abstract class AiPlatformIntegrationTestBase extends IntegrationTestBase 
         stubFor(post(urlEqualTo(DECIDE_PATH)).willReturn(aResponse().withFixedDelay(10000)));
     }
 
+    protected void stubDecisionEndpointUnavailable() {
+        stubFor(post(urlEqualTo(DECIDE_PATH)).willReturn(aResponse().withStatus(503)));
+    }
+
     protected void stubHealthCheckFailed() {
         stubFor(get(urlEqualTo("/health")).willReturn(aResponse().withStatus(503)));
     }

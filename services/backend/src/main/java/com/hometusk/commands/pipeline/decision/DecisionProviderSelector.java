@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Selects the appropriate DecisionProvider based on configuration.
- * Handles fallback when primary provider is unavailable.
+ * Handles fallback when the configured provider cannot produce a decision.
  *
  * Simple selection: if-else based on config, no factory pattern.
  */
@@ -47,7 +47,7 @@ public class DecisionProviderSelector {
 
     /**
      * Makes a decision using the configured provider.
-     * Falls back to manual if AI platform is unavailable and fallback is enabled.
+     * Falls back to manual if AI platform decisioning fails and fallback is enabled.
      *
      * @param context Decision context
      * @return Decision result (may have FALLBACK source if degraded)
@@ -79,14 +79,8 @@ public class DecisionProviderSelector {
             return decideWithFallback(context, "provider_not_configured");
         }
 
-        AiPlatformDecisionProvider provider = aiPlatformProvider.get();
-        if (!provider.isAvailable()) {
-            log.warn("AI Platform provider unavailable, falling back to manual");
-            return decideWithFallback(context, "provider_unavailable");
-        }
-
         try {
-            return provider.decide(context);
+            return aiPlatformProvider.get().decide(context);
         } catch (Exception e) {
             log.error("AI Platform decision failed, falling back to manual", e);
             return decideWithFallback(context, "provider_error");
