@@ -112,7 +112,32 @@ get_redirector_execution_id() {
   "$KCADM" get "authentication/flows/$browser_flow/executions" -r "$KEYCLOAK_REALM" \
     --fields id,providerId \
     --format csv \
-    --noquotes | awk -F, '$2 == "identity-provider-redirector" { print $1; exit }'
+    --noquotes | while IFS=, read -r execution_id provider_id remainder; do
+      if [ "$provider_id" = "identity-provider-redirector" ]; then
+        printf '%s\n' "$execution_id"
+        break
+      fi
+    done
+}
+
+get_redirector_execution_index() {
+  execution_rows="$1"
+  printf '%s\n' "$execution_rows" | while IFS=, read -r execution_id provider_id requirement execution_index display_name flow_alias remainder; do
+    if [ "$provider_id" = "identity-provider-redirector" ]; then
+      printf '%s\n' "$execution_index"
+      break
+    fi
+  done
+}
+
+get_forms_execution_index() {
+  execution_rows="$1"
+  printf '%s\n' "$execution_rows" | while IFS=, read -r execution_id provider_id requirement execution_index display_name flow_alias remainder; do
+    if [ "$provider_id" = "auth-username-password-form" ] || [ "$display_name" = "Forms" ] || [ "$flow_alias" = "forms" ]; then
+      printf '%s\n' "$execution_index"
+      break
+    fi
+  done
 }
 
 ensure_identity_provider_redirector() {
@@ -138,8 +163,8 @@ ensure_identity_provider_redirector() {
     --fields id,providerId,requirement,index,displayName,flowAlias \
     --format csv \
     --noquotes)
-  redirector_index=$(printf '%s\n' "$execution_rows" | awk -F, '$2 == "identity-provider-redirector" { print $4; exit }')
-  forms_index=$(printf '%s\n' "$execution_rows" | awk -F, '($2 == "auth-username-password-form" || $5 == "Forms" || $6 == "forms") { print $4; exit }')
+  redirector_index=$(get_redirector_execution_index "$execution_rows")
+  forms_index=$(get_forms_execution_index "$execution_rows")
 
   if [ -n "$redirector_index" ] && [ -n "$forms_index" ] && [ "$redirector_index" -gt "$forms_index" ]; then
     moves=$((redirector_index - forms_index))
