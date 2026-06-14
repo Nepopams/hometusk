@@ -63,6 +63,18 @@ export async function signinRedirect(): Promise<void> {
   await manager.signinRedirect();
 }
 
+export async function signinWithYandex(): Promise<void> {
+  const manager = getUserManager();
+  if (!manager) {
+    throw new Error('OIDC configuration is invalid. Check environment variables.');
+  }
+  await manager.signinRedirect({
+    extraQueryParams: {
+      kc_idp_hint: 'yandex',
+    },
+  });
+}
+
 export async function signupRedirect(): Promise<void> {
   const manager = getUserManager();
   if (!manager) {

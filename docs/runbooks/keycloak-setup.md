@@ -180,6 +180,23 @@ Keycloak has the `yandex` provider factory, `hometusk-web` is configured as a
 public authorization-code + PKCE client, and brokered auth redirects to
 `oauth.yandex.ru`.
 
+### 6. Existing Account With the Same Email
+
+Check the scenario where a user already has a HomeTusk password account with a
+`*@yandex.ru` email and then chooses Yandex login with the same email:
+
+1. Sign in to HomeTusk with email/password and open `/api/v1/users/me`.
+2. Save the `externalId` value.
+3. Sign out from HomeTusk.
+4. Click **Sign in with Yandex**.
+5. Complete the Keycloak account-linking confirmation if it appears.
+6. After returning to HomeTusk, open `/api/v1/users/me` again.
+
+Expected result: `externalId` is unchanged, household membership is still
+present, and no new HomeTusk profile is created. HomeTusk does not merge users
+by email; account linking must happen inside Keycloak after existing-account
+ownership is confirmed.
+
 ## VK ID Status
 
 VK ID is not enabled automatically on the Keycloak 23 stack. The compatible

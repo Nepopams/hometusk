@@ -95,6 +95,32 @@ This is a non-breaking integration change:
 - backend resource server configuration is unchanged;
 - `GET /api/v1/users/me` response shape is unchanged from ADR-017.
 
+## Existing Account With Same Email
+
+If a user already has a HomeTusk password account whose Keycloak email is the
+same as the Yandex account email, HomeTusk must not merge accounts by email.
+
+The expected path is owned by Keycloak:
+
+1. Keycloak detects the existing user during the `first broker login` flow.
+2. Keycloak asks the user to confirm account linking and verifies ownership by
+   email verification or re-authentication with the existing account.
+3. After successful linking, Keycloak issues tokens for the existing Keycloak
+   user, so the JWT `sub` remains the same.
+4. HomeTusk resolves the existing `users.external_id` mapping and no duplicate
+   HomeTusk profile is created.
+
+If Keycloak is misconfigured and emits a new `sub` for the same email, HomeTusk
+creates a separate profile. This is intentional: email alone is not an account
+ownership proof and HomeTusk does not do domain-level social account linking.
+
+Required guardrails:
+
+- realm `duplicateEmailsAllowed=false`;
+- Yandex identity provider uses `firstBrokerLoginFlowAlias=first broker login`;
+- `trustEmail=false`;
+- no HomeTusk repository lookup or merge by email.
+
 ## Verification
 
 Minimum dev/stage verification:
@@ -106,3 +132,5 @@ Minimum dev/stage verification:
 5. HomeTusk `/api/v1/users/me` resolves a profile from the Keycloak JWT.
 6. Missing or unverified email does not reject login and yields
    `emailNotificationEligible=false`.
+7. Existing password user with the same Yandex email links through Keycloak and
+   keeps the same HomeTusk `externalId`; no HomeTusk merge-by-email occurs.
