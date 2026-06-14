@@ -185,6 +185,10 @@ instead of a `302` to broker/Yandex, UAT was built or configured with the legacy
 client. Rebuild the web image with `VITE_OIDC_CLIENT_ID=hometusk-web`, then run
 the configurator and smoke again.
 
+The UAT GitHub Actions deploy sets `EXPECT_YANDEX_IDP=true`. If Yandex
+credentials are missing from `UAT_ENV_FILE` or the `keycloak-social-idps`
+one-shot fails, the deploy must fail and print the configurator logs.
+
 ### 6. Existing Account With the Same Email
 
 Check the scenario where a user already has a HomeTusk password account with a

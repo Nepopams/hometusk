@@ -27,6 +27,7 @@ jobs:
       ENV_FILE_CONTENT: ${{ secrets.UAT_ENV_FILE }}
       GHCR_USERNAME: ${{ github.actor }}
       GHCR_TOKEN: ${{ secrets.GHCR_READ_TOKEN || github.token }}
+      EXPECT_YANDEX_IDP: "true"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
