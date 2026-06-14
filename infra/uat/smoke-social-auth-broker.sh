@@ -42,6 +42,18 @@ admin_get() {
 
 echo "Smoke social auth broker against $KEYCLOAK_BASE_URL realm $KEYCLOAK_REALM"
 
+admin_get "realms/$KEYCLOAK_REALM"
+python3 - "$TMP_BODY" "$KEYCLOAK_REALM" <<'PY'
+import json
+import sys
+
+realm = json.load(open(sys.argv[1]))
+realm_name = sys.argv[2]
+if realm.get("duplicateEmailsAllowed"):
+    raise SystemExit(f"FAIL realm '{realm_name}' allows duplicate emails")
+print(f"OK realm '{realm_name}' rejects duplicate emails")
+PY
+
 admin_get serverinfo
 python3 - "$TMP_BODY" "$YANDEX_ALIAS" <<'PY'
 import json
@@ -99,10 +111,14 @@ if idp.get("providerId") != "yandex":
     raise SystemExit(f"FAIL identity provider '{alias}' providerId is not yandex")
 if not idp.get("enabled"):
     raise SystemExit(f"FAIL identity provider '{alias}' is disabled")
+if idp.get("linkOnly"):
+    raise SystemExit(f"FAIL identity provider '{alias}' is link-only")
 if idp.get("trustEmail"):
     raise SystemExit(f"FAIL identity provider '{alias}' has trustEmail enabled")
 if idp.get("storeToken"):
     raise SystemExit(f"FAIL identity provider '{alias}' stores provider tokens")
+if idp.get("firstBrokerLoginFlowAlias") != "first broker login":
+    raise SystemExit(f"FAIL identity provider '{alias}' does not use default first broker login flow")
 
 config = idp.get("config", {})
 if expected_client_id and config.get("clientId") != expected_client_id:
@@ -110,7 +126,10 @@ if expected_client_id and config.get("clientId") != expected_client_id:
 if "login:email" not in config.get("defaultScope", ""):
     raise SystemExit(f"FAIL identity provider '{alias}' defaultScope does not request login:email")
 
-print(f"OK identity provider '{alias}' is enabled with trustEmail=false and no token storage")
+print(
+    f"OK identity provider '{alias}' is enabled with default first broker login, "
+    "trustEmail=false, and no token storage"
+)
 PY
 
   auth_url=$(KEYCLOAK_BASE_URL="$KEYCLOAK_BASE_URL" KEYCLOAK_REALM="$KEYCLOAK_REALM" WEB_CLIENT_ID="$WEB_CLIENT_ID" WEB_REDIRECT_URI="$WEB_REDIRECT_URI" YANDEX_ALIAS="$YANDEX_ALIAS" python3 <<'PY'

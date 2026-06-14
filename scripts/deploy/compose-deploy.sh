@@ -19,6 +19,7 @@ echo "Syncing deployment descriptors"
 rsync -az -e "ssh -o StrictHostKeyChecking=yes" infra/uat/docker-compose.ghcr.yml "${remote}:${DEPLOY_PATH}/docker-compose.yml"
 rsync -az -e "ssh -o StrictHostKeyChecking=yes" infra/uat/postgres/ "${remote}:${DEPLOY_PATH}/postgres/" 2>/dev/null || true
 rsync -az -e "ssh -o StrictHostKeyChecking=yes" infra/compose/keycloak/realm-export.json "${remote}:${DEPLOY_PATH}/keycloak/realm-export.json"
+rsync -az -e "ssh -o StrictHostKeyChecking=yes" infra/keycloak/configure-social-idps.sh "${remote}:${DEPLOY_PATH}/keycloak/configure-social-idps.sh"
 
 if [[ -n "${ENV_FILE_CONTENT:-}" ]]; then
   tmp_env="$(mktemp)"
@@ -35,6 +36,9 @@ BACKEND_IMAGE=${BACKEND_IMAGE}
 WEB_IMAGE=${WEB_IMAGE}
 IMAGE_TAG=${IMAGE_TAG}
 EOF_ENV
+if [[ -n "${KEYCLOAK_IMAGE:-}" ]]; then
+  printf 'KEYCLOAK_IMAGE=%s\n' "${KEYCLOAK_IMAGE}" >> /tmp/hometusk-env-delivery
+fi
 rsync -az -e "ssh -o StrictHostKeyChecking=yes" /tmp/hometusk-env-delivery "${remote}:${DEPLOY_PATH}/.env.delivery"
 rm -f /tmp/hometusk-env-delivery
 

@@ -178,6 +178,23 @@ HOMETUSK_IDP_YANDEX_CLIENT_ID=<client_id> \
 имеет provider factory `yandex`, клиент `hometusk-web` настроен как public
 authorization-code + PKCE, а broker redirect ведёт на `oauth.yandex.ru`.
 
+### 6. Ручная проверка существующего аккаунта с тем же email
+
+Проверьте сценарий, где пользователь уже зарегистрирован в HomeTusk паролем на
+адрес `*@yandex.ru`, а затем выбирает вход через Яндекс с тем же email:
+
+1. Войдите в HomeTusk обычным email/password и откройте `/api/v1/users/me`.
+2. Сохраните значение `externalId`.
+3. Выйдите из HomeTusk.
+4. Нажмите **Войти через Яндекс**.
+5. Пройдите подтверждение linking в Keycloak, если оно появится.
+6. После возврата в HomeTusk снова откройте `/api/v1/users/me`.
+
+Ожидаемый результат: `externalId` совпадает с сохранённым значением, household
+membership не потерян, новый HomeTusk-профиль не создан. HomeTusk не делает
+merge по email; linking должен происходить только внутри Keycloak после
+подтверждения владения существующим аккаунтом.
+
 ## Статус VK ID
 
 VK ID пока не включается автоматически в Keycloak 23 stack. Совместимый с
