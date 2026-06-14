@@ -53,6 +53,10 @@ if realm.get("duplicateEmailsAllowed"):
     raise SystemExit(f"FAIL realm '{realm_name}' allows duplicate emails")
 print(f"OK realm '{realm_name}' rejects duplicate emails")
 PY
+BROWSER_FLOW=$(json_field browserFlow)
+if [ -z "$BROWSER_FLOW" ]; then
+  BROWSER_FLOW=browser
+fi
 
 admin_get serverinfo
 python3 - "$TMP_BODY" "$YANDEX_ALIAS" <<'PY'
@@ -93,6 +97,29 @@ if redirect_uri not in client.get("redirectUris", []):
     raise SystemExit(f"FAIL redirect URI '{redirect_uri}' is not registered for '{client_id}'")
 
 print(f"OK client '{client_id}' is public auth-code + PKCE with redirect '{redirect_uri}'")
+PY
+
+admin_get "realms/$KEYCLOAK_REALM/authentication/flows/$BROWSER_FLOW/executions"
+python3 - "$TMP_BODY" "$BROWSER_FLOW" <<'PY'
+import json
+import sys
+
+executions = json.load(open(sys.argv[1]))
+browser_flow = sys.argv[2]
+redirectors = [
+    execution for execution in executions
+    if execution.get("providerId") == "identity-provider-redirector"
+]
+if not redirectors:
+    raise SystemExit(
+        f"FAIL browser flow '{browser_flow}' has no Identity Provider Redirector"
+    )
+if redirectors[0].get("requirement") == "DISABLED":
+    raise SystemExit(
+        f"FAIL browser flow '{browser_flow}' has disabled Identity Provider Redirector"
+    )
+
+print(f"OK browser flow '{browser_flow}' can process kc_idp_hint")
 PY
 
 if [ "$EXPECT_YANDEX_IDP" = "true" ]; then
