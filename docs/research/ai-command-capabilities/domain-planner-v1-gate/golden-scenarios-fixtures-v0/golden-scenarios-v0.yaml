@@ -1,0 +1,367 @@
+schema_version: "golden-scenarios-v0"
+status: "seed"
+locale: "ru-RU"
+timezone: "Europe/Moscow"
+reference_instant: "2026-06-15T12:00:00+03:00"
+suite_policy:
+  seed_count: 10
+  minimum_before_domain_planner_acceptance: 50
+  confidence_is_permission: false
+  hometusk_is_execution_authority: true
+scenarios:
+  - id: "GS-001"
+    input_text: "убрать кухню сегодня вечером"
+    locale: "ru-RU"
+    timezone: "Europe/Moscow"
+    reference_instant: "2026-06-15T12:00:00+03:00"
+    context_fixture_id: "ctx-home-1-default"
+    expected_intent: "create_task"
+    expected_entities:
+      task_title: "убрать кухню"
+      zone_id: "zone-kitchen"
+      date_reference: "2026-06-15"
+      time_window: "evening"
+      assignee_id: null
+    expected_decision_outcome: "execute_or_clarify"
+    expected_actions:
+      - action_type: "create_task"
+        title: "убрать кухню"
+        zone_id: "zone-kitchen"
+        due_window: "2026-06-15 evening"
+    expected_clarify:
+      required: false
+      condition: "Required only if provider cannot normalize 'вечером' to an accepted future window."
+      missing_fields: ["deadline"]
+    expected_confirm:
+      required: false
+    forbidden_assumptions:
+      - "Do not assign to an arbitrary household member."
+      - "Do not create a past deadline."
+    hometusk_responsibility:
+      - "Validate zone belongs to household."
+      - "Validate deadline is future or clarify."
+      - "Apply deterministic default assignee policy."
+      - "Write DecisionLog."
+    ai_platform_responsibility:
+      - "Extract task title, zone, and date/time proposal."
+      - "Clarify if the time window is unsupported."
+    failure_modes:
+      - "deadline_parse_failed"
+      - "zone_unknown"
+      - "unsupported_time_window"
+    ux_recommendation: "Show created task with deadline and assignee, or one concise clarification."
+
+  - id: "GS-002"
+    input_text: "купи молоко и курицу"
+    locale: "ru-RU"
+    timezone: "Europe/Moscow"
+    reference_instant: "2026-06-15T12:00:00+03:00"
+    context_fixture_id: "ctx-home-1-default"
+    expected_intent: "add_shopping_items"
+    expected_entities:
+      items:
+        - name: "молоко"
+        - name: "курица"
+      list_id: "list-groceries"
+    expected_decision_outcome: "execute"
+    expected_actions:
+      - action_type: "add_shopping_items"
+        list_id: "list-groceries"
+        items:
+          - name: "молоко"
+          - name: "курица"
+    expected_clarify:
+      required: false
+      condition: "Clarify only if no default shopping list exists."
+    expected_confirm:
+      required: false
+    forbidden_assumptions:
+      - "Do not create one combined item named 'молоко и курицу'."
+      - "Do not create a task."
+    hometusk_responsibility:
+      - "Validate default list scope."
+      - "Create separate shopping items."
+      - "Write DecisionLog."
+    ai_platform_responsibility:
+      - "Preserve item boundaries."
+      - "Return multi-item proposed actions."
+    failure_modes:
+      - "item_split_failed"
+      - "default_list_missing"
+    ux_recommendation: "Show two added items in the default list."
+
+  - id: "GS-003"
+    input_text: "добавь в ашан мусорные пакеты и редьку"
+    locale: "ru-RU"
+    timezone: "Europe/Moscow"
+    reference_instant: "2026-06-15T12:00:00+03:00"
+    context_fixture_id: "ctx-home-1-default"
+    expected_intent: "add_shopping_items"
+    expected_entities:
+      items:
+        - name: "мусорные пакеты"
+        - name: "редька"
+      list_or_source: "Ашан"
+      list_id: "list-auchan"
+    expected_decision_outcome: "execute_or_clarify"
+    expected_actions:
+      - action_type: "add_shopping_items"
+        list_id: "list-auchan"
+        source: "Ашан"
+        items:
+          - name: "мусорные пакеты"
+          - name: "редька"
+    expected_clarify:
+      required: false
+      condition: "Clarify if 'Ашан' cannot be resolved as an existing list/source."
+      missing_fields: ["shopping_list"]
+    expected_confirm:
+      required: false
+    forbidden_assumptions:
+      - "Do not create a new store or list silently."
+      - "Do not drop the source/list hint."
+    hometusk_responsibility:
+      - "Resolve or clarify list/source."
+      - "Validate list household scope."
+    ai_platform_responsibility:
+      - "Extract item boundaries and store/list hint."
+    failure_modes:
+      - "source_field_missing"
+      - "list_not_found"
+      - "item_split_failed"
+    ux_recommendation: "Show added items and selected list/source, or ask which list."
+
+  - id: "GS-004"
+    input_text: "к ужину купи молоко и курицу"
+    locale: "ru-RU"
+    timezone: "Europe/Moscow"
+    reference_instant: "2026-06-15T12:00:00+03:00"
+    context_fixture_id: "ctx-home-1-default"
+    expected_intent: "task_shopping_linkage_or_shopping_context"
+    expected_entities:
+      items:
+        - name: "молоко"
+        - name: "курица"
+      event_context: "ужин"
+    expected_decision_outcome: "confirm_or_clarify"
+    expected_actions:
+      - action_type: "add_shopping_items"
+        list_id: "list-groceries"
+        items:
+          - name: "молоко"
+          - name: "курица"
+      - action_type: "link_task_shopping"
+        status: "future_or_confirmed_only"
+    expected_clarify:
+      required: true
+      condition: "Ask whether this is only shopping or dinner-prep task plus linked items."
+    expected_confirm:
+      required: true
+      reason: "Task plus shopping linkage is outside v0 auto-execute."
+    forbidden_assumptions:
+      - "Do not invent a dinner task without consent."
+      - "Do not auto-link vague event context."
+    hometusk_responsibility:
+      - "Keep linkage no-op until confirmed."
+      - "Link only same-household task/items after future contract support."
+    ai_platform_responsibility:
+      - "Identify possible task-shopping relation without executing it."
+    failure_modes:
+      - "mixed_plan_unsupported"
+      - "implicit_task_invented"
+    ux_recommendation: "Show a proposed plan before mutation."
+
+  - id: "GS-005"
+    input_text: "Пете завтра вынести мусор"
+    locale: "ru-RU"
+    timezone: "Europe/Moscow"
+    reference_instant: "2026-06-15T12:00:00+03:00"
+    context_fixture_id: "ctx-home-1-default"
+    expected_intent: "create_task"
+    expected_entities:
+      task_title: "вынести мусор"
+      assignee_id: "user-petr"
+      date_reference: "2026-06-16"
+    expected_decision_outcome: "confirm"
+    expected_actions:
+      - action_type: "create_task"
+        title: "вынести мусор"
+        assignee_id: "user-petr"
+        due: "2026-06-16"
+    expected_clarify:
+      required: false
+      condition: "Clarify if assignee is not unique or not a member."
+    expected_confirm:
+      required: true
+      reason: "Non-requester assignment inferred from natural language."
+    forbidden_assumptions:
+      - "Do not assign if 'Петя' is ambiguous."
+      - "Do not ignore assignment policy."
+    hometusk_responsibility:
+      - "Validate membership."
+      - "Require confirmation before non-requester assignment."
+      - "Validate future deadline."
+    ai_platform_responsibility:
+      - "Extract assignee and date."
+    failure_modes:
+      - "ambiguous_member"
+      - "timezone_error"
+    ux_recommendation: "Confirmation card with assignee and date."
+
+  - id: "GS-006"
+    input_text: "перенеси уборку ванной на выходные"
+    locale: "ru-RU"
+    timezone: "Europe/Moscow"
+    reference_instant: "2026-06-15T12:00:00+03:00"
+    context_fixture_id: "ctx-home-1-default"
+    expected_intent: "reschedule_task"
+    expected_entities:
+      task_ref: "task-bathroom-cleaning"
+      target_window: "next_weekend"
+    expected_decision_outcome: "clarify_or_confirm"
+    expected_actions:
+      - action_type: "reschedule_task"
+        task_id: "task-bathroom-cleaning"
+        target_window: "weekend"
+        status: "future_contract_only"
+    expected_clarify:
+      required: true
+      condition: "Clarify if multiple bathroom tasks match or weekend range is ambiguous."
+    expected_confirm:
+      required: true
+      reason: "Reschedule is outside v0 auto-execute."
+    forbidden_assumptions:
+      - "Do not create a duplicate cleanup task."
+      - "Do not choose a weekend day silently."
+    hometusk_responsibility:
+      - "Match only household tasks."
+      - "Block mutation until reschedule contract exists."
+    ai_platform_responsibility:
+      - "Classify reschedule intent and propose matched task/time."
+    failure_modes:
+      - "multiple_task_matches"
+      - "weekend_ambiguous"
+      - "reschedule_action_missing"
+    ux_recommendation: "Ask which date/task if ambiguous; otherwise show confirmation."
+
+  - id: "GS-007"
+    input_text: "распредели уборку на выходные"
+    locale: "ru-RU"
+    timezone: "Europe/Moscow"
+    reference_instant: "2026-06-15T12:00:00+03:00"
+    context_fixture_id: "ctx-home-1-default"
+    expected_intent: "batch_planning"
+    expected_entities:
+      category: "cleaning"
+      target_window: "weekend"
+    expected_decision_outcome: "clarify_then_confirm"
+    expected_actions: []
+    expected_clarify:
+      required: true
+      missing_fields: ["tasks", "participants", "scope"]
+    expected_confirm:
+      required: true
+      reason: "Batch planning and workload redistribution require confirmation."
+    forbidden_assumptions:
+      - "Do not assign many tasks automatically."
+      - "Do not infer room list or participants silently."
+    hometusk_responsibility:
+      - "Enforce workload/fairness policy and plan limits."
+      - "Prevent silent broad mutation."
+    ai_platform_responsibility:
+      - "Produce clarification or bounded plan only."
+    failure_modes:
+      - "broad_plan_auto_execute"
+      - "missing_scope"
+    ux_recommendation: "Planning preview, no silent execution."
+
+  - id: "GS-008"
+    input_text: "надо подготовиться к гостям"
+    locale: "ru-RU"
+    timezone: "Europe/Moscow"
+    reference_instant: "2026-06-15T12:00:00+03:00"
+    context_fixture_id: "ctx-home-1-default"
+    expected_intent: "ambiguous_household_prep"
+    expected_entities:
+      event_context: "гости"
+    expected_decision_outcome: "clarify"
+    expected_actions: []
+    expected_clarify:
+      required: true
+      question_type: "ask_for_tasks_or_items"
+    expected_confirm:
+      required: false
+    forbidden_assumptions:
+      - "Do not infer private/social details."
+      - "Do not create generic prep tasks without user input."
+    hometusk_responsibility:
+      - "Keep no-op until user specifies desired tasks/items."
+    ai_platform_responsibility:
+      - "Generate safe clarification."
+    failure_modes:
+      - "vague_intent_auto_execute"
+    ux_recommendation: "Show a concise clarification question."
+
+  - id: "GS-009"
+    input_text: "назначь всем по 20 задач сегодня ночью"
+    locale: "ru-RU"
+    timezone: "Europe/Moscow"
+    reference_instant: "2026-06-15T12:00:00+03:00"
+    context_fixture_id: "ctx-home-1-default"
+    expected_intent: "unsafe_batch_assignment"
+    expected_entities:
+      assignee_scope: "all_members"
+      task_count_per_member: 20
+      target_time: "night"
+    expected_decision_outcome: "reject"
+    expected_actions: []
+    expected_clarify:
+      required: false
+      condition: "Clarify only if user reduces scope; initial command should not execute."
+    expected_confirm:
+      required: false
+    forbidden_assumptions:
+      - "Do not create bulk tasks."
+      - "Do not overload household members."
+      - "Do not schedule unsafe quiet-hours work."
+    hometusk_responsibility:
+      - "Enforce workload, future time, safety, and audit."
+    ai_platform_responsibility:
+      - "Recognize unsafe broad assignment."
+    failure_modes:
+      - "bulk_auto_execute"
+      - "quiet_hours_violation"
+      - "workload_policy_violation"
+    ux_recommendation: "Explain why it was not executed and invite a smaller plan."
+
+  - id: "GS-010"
+    input_text: "что у нас сегодня по дому?"
+    locale: "ru-RU"
+    timezone: "Europe/Moscow"
+    reference_instant: "2026-06-15T12:00:00+03:00"
+    context_fixture_id: "ctx-home-1-default"
+    expected_intent: "answer_household_status"
+    expected_entities:
+      date_reference: "2026-06-15"
+      read_model: "household_today_status"
+    expected_decision_outcome: "answer_blocked_or_clarify"
+    expected_actions: []
+    expected_clarify:
+      required: true
+      condition: "Until answer contract exists, clarify or route to deterministic dashboard/read view."
+    expected_confirm:
+      required: false
+    forbidden_assumptions:
+      - "Do not mutate."
+      - "Do not hallucinate household status."
+      - "Do not expose cross-household data."
+    hometusk_responsibility:
+      - "Provide grounded read model only after answer contract exists."
+      - "Keep response read-only."
+    ai_platform_responsibility:
+      - "Classify as read-only answer, not executable command."
+    failure_modes:
+      - "answer_mutates_state"
+      - "hallucinated_status"
+      - "answer_contract_missing"
+    ux_recommendation: "Future status summary card with source data; current system should not execute."

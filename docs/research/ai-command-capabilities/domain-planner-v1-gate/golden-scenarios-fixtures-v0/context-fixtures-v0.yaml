@@ -1,0 +1,95 @@
+schema_version: "golden-context-v0"
+status: "seed"
+locale: "ru-RU"
+timezone: "Europe/Moscow"
+reference_instant: "2026-06-15T12:00:00+03:00"
+notes:
+  - "Seed contexts for Domain Planner v1 artifact gate."
+  - "No fixture grants permission to bypass HomeTusk validation."
+contexts:
+  - id: "ctx-home-1-default"
+    household:
+      household_id: "home-1"
+      name: "Дом Анны"
+    requester:
+      user_id: "user-anna"
+      display_name: "Анна"
+      role: "admin"
+    members:
+      - user_id: "user-anna"
+        display_name: "Анна"
+        aliases: ["Аня", "мне", "я"]
+        role: "admin"
+        workload_score: 3
+      - user_id: "user-petr"
+        display_name: "Петя"
+        aliases: ["Петя", "Пете", "Петр", "Петру"]
+        role: "member"
+        workload_score: 4
+    zones:
+      - zone_id: "zone-kitchen"
+        name: "кухня"
+        aliases: ["кухню", "на кухне", "кухонная зона"]
+      - zone_id: "zone-bathroom"
+        name: "ванная"
+        aliases: ["ванную", "ванной", "санузел"]
+    shopping_lists:
+      - list_id: "list-groceries"
+        name: "Продукты"
+        aliases: ["покупки", "список продуктов", "default"]
+        is_default: true
+      - list_id: "list-auchan"
+        name: "Ашан"
+        aliases: ["ашан", "в ашан"]
+        is_default: false
+    open_tasks:
+      - task_id: "task-kitchen-cleanup"
+        title: "убрать кухню"
+        zone_id: "zone-kitchen"
+        assignee_id: "user-anna"
+        status: "open"
+        due: null
+      - task_id: "task-bathroom-cleaning"
+        title: "уборка ванной"
+        zone_id: "zone-bathroom"
+        assignee_id: "user-petr"
+        status: "open"
+        due: null
+    defaults:
+      default_assignee_id: "user-anna"
+      default_list_id: "list-groceries"
+    policies:
+      max_open_tasks_per_user: 10
+      quiet_hours: "23:00-07:00"
+      non_requester_assignment_requires_confirmation: true
+      broad_batch_requires_confirmation: true
+
+  - id: "ctx-home-1-no-default-list"
+    extends: "ctx-home-1-default"
+    shopping_lists: []
+    defaults:
+      default_assignee_id: "user-anna"
+      default_list_id: null
+    notes:
+      - "Used to verify clarify behavior when shopping list grounding is missing."
+
+  - id: "ctx-home-1-ambiguous-petr"
+    extends: "ctx-home-1-default"
+    members:
+      - user_id: "user-anna"
+        display_name: "Анна"
+        aliases: ["Аня", "мне", "я"]
+        role: "admin"
+        workload_score: 3
+      - user_id: "user-petr"
+        display_name: "Петя"
+        aliases: ["Петя", "Пете", "Петр", "Петру"]
+        role: "member"
+        workload_score: 4
+      - user_id: "user-petr-senior"
+        display_name: "Петр"
+        aliases: ["Петя", "Пете", "Петр", "Петру"]
+        role: "member"
+        workload_score: 2
+    notes:
+      - "Used to verify clarify behavior for ambiguous assignee references."

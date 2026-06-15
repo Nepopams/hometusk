@@ -44,6 +44,7 @@ natural command execution until the gaps in this pack are resolved.
 | `target-architecture-v0.md` | Proposed target architecture and trust corridor. |
 | `recommendation.md` | GO / LIMITED-GO / NO-GO decision and next initiative recommendation. |
 | `external-research-comparison-2026-06-15.md` | Follow-up comparison between this repo-grounded audit and the external deep research report supplied after the initial pass. |
+| `domain-planner-v1-gate/` | Accepted artifact gate package for Domain Planner v1 planning handoff. |
 
 ## Boundary Decision
 
@@ -88,10 +89,15 @@ If external research and repo-grounded evidence disagree about current
 capability, repo-grounded evidence wins. If they differ about future sequencing,
 use HomeTusk gate posture, product risk, and contract readiness to decide.
 
-## Next Artifact Gate
+## Artifact Gate Completed
 
-Before AI Platform Domain Planner v1, HomeTusk `natural_command`, or Mobile AI
-Command UX moves to APPLY, create a separate artifact/contract/eval gate with:
+The separate artifact/contract/eval gate has been created under:
+
+```text
+docs/research/ai-command-capabilities/domain-planner-v1-gate/
+```
+
+It includes:
 
 - natural-command contract draft;
 - accepted decision/action taxonomy;
@@ -101,6 +107,8 @@ Command UX moves to APPLY, create a separate artifact/contract/eval gate with:
 - mobile AI state matrix;
 - provider planner readiness checklist.
 
+This does not approve runtime, contract, mobile, or AI Platform APPLY work.
+
 ## Current Readiness
 
 | Area | Readiness |
@@ -108,6 +116,6 @@ Command UX moves to APPLY, create a separate artifact/contract/eval gate with:
 | HomeTusk command execution authority | Strong for current structured commands. |
 | HomeTusk AI Platform adapter | Useful but narrow; adapter supports more than public HomeTusk command types. |
 | AI Platform current planner | Narrow deterministic baseline with flagged assist/partial-trust paths. |
-| Golden scenario regression | Present conceptually in provider tests, missing HomeTusk-owned catalog. |
+| Golden scenario regression | HomeTusk-owned seed fixtures now exist; expand to at least 50 before Domain Planner v1 acceptance. |
 | Mobile AI Command Center | Not ready; current mobile surface is deterministic shell over `/commands`. |
-| Domain Planner v1 | Limited-go for narrow task/shopping corridor after contract cleanup. |
+| Domain Planner v1 | Limited-go for provider-side planning handoff; implementation still requires separate gates. |
