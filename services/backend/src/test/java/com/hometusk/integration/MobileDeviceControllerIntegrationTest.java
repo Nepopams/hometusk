@@ -156,14 +156,14 @@ class MobileDeviceControllerIntegrationTest extends IntegrationTestBase {
     }
 
     private UUID responseId(MvcResult result) throws Exception {
-        return UUID.fromString(objectMapper.readTree(result.getResponse().getContentAsString())
+        return UUID.fromString(objectMapper
+                .readTree(result.getResponse().getContentAsString())
                 .get("id")
                 .asText());
     }
 
     private RegisterMobileDeviceRequest registerRequest(String platform, String token) {
-        return new RegisterMobileDeviceRequest(
-                platform, "expo", token, "Pixel 8", "0.1.0", "en-US", "Europe/Moscow");
+        return new RegisterMobileDeviceRequest(platform, "expo", token, "Pixel 8", "0.1.0", "en-US", "Europe/Moscow");
     }
 
     private String expoToken(String label) {

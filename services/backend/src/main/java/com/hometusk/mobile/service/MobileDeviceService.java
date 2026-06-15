@@ -60,8 +60,8 @@ public class MobileDeviceService {
     public MobileDevice update(UUID userId, UUID deviceId, UpdateMobileDeviceRequest request) {
         MobileDevice device = mobileDeviceRepository
                 .findByIdAndUser_Id(deviceId, userId)
-                .orElseThrow(() -> new NotFoundException(
-                        ErrorCode.DEVICE_NOT_FOUND, "Mobile device registration not found"));
+                .orElseThrow(() ->
+                        new NotFoundException(ErrorCode.DEVICE_NOT_FOUND, "Mobile device registration not found"));
 
         String nextToken = trimToNull(request.pushToken());
         if (nextToken != null) {
@@ -83,14 +83,13 @@ public class MobileDeviceService {
     public void deactivate(UUID userId, UUID deviceId) {
         MobileDevice device = mobileDeviceRepository
                 .findByIdAndUser_Id(deviceId, userId)
-                .orElseThrow(() -> new NotFoundException(
-                        ErrorCode.DEVICE_NOT_FOUND, "Mobile device registration not found"));
+                .orElseThrow(() ->
+                        new NotFoundException(ErrorCode.DEVICE_NOT_FOUND, "Mobile device registration not found"));
         device.deactivate();
         mobileDeviceRepository.save(device);
     }
 
-    private void assertTokenAvailableForDevice(
-            UUID currentDeviceId, UUID userId, PushProvider provider, String token) {
+    private void assertTokenAvailableForDevice(UUID currentDeviceId, UUID userId, PushProvider provider, String token) {
         mobileDeviceRepository
                 .findByPushProviderAndPushTokenAndStatus(provider, token, MobileDeviceStatus.ACTIVE)
                 .filter(existing -> !existing.getId().equals(currentDeviceId))
