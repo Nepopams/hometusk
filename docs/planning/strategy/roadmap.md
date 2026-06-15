@@ -17,6 +17,12 @@
   - Why now: email validation, email notification platform и task assignment email notifications закрыты; следующий рычаг — снизить onboarding friction без переноса OAuth-сложности в HomeTusk backend
   - Readiness: IN_PROGRESS carry-over; security_sensitive, adr_needed, requires provider runbook/secrets handling and VK spike result; not the primary NOW focus while Voice Command Chat MVP is selected
 
+- Initiative (done): **INIT-2026Q3-native-mobile-mvp** — Native Mobile Client MVP
+  - Anchor: docs/planning/initiatives/INIT-2026Q3-native-mobile-mvp.md
+  - Outcome: first-class Android/iOS client for core household flows, command chat, session persistence, push token registration, and deep-link handoff without replacing HomeTusk backend or calling AI Platform directly
+  - Why now: web household, command, shopping, notification, email, and auth foundations are mature enough to validate the "home in your pocket" product loop while social auth continues as a parallel activation/security track
+  - Closed: 2026-06-14 (EP-035 / ST-3501-ST-3507; delegated Gate D GO; Expo mobile app, auth/session, household reads, tasks/shopping mutations, command chat, device registration backend, push/deep-link handoff, and release smoke docs delivered)
+
 - Initiative (done): **INIT-2026Q2-task-assignment-email-notifications** — Task Assignment Email Notifications
   - Anchor: docs/planning/initiatives/INIT-2026Q2-task-assignment-email-notifications.md
   - Outcome: назначение задачи создаёт idempotent pending email notification для verified assignee через единое `TASK_ASSIGNED` событие, одинаково для manual, command pipeline, AI decision и guardrails fallback
@@ -133,7 +139,7 @@
 - Shopping source presets, budgets, multi-store runs and delegation
 - Dashboard personalisation, analytics widgets and notification feed
 - Advanced command recurrence, priority, reminders and explainable AI suggestions
-- Mobile/PWA (после доказанного value на web)
+- PWA/mobile web enhancements (supporting only; Native Mobile MVP is now the primary mobile validation track)
 - Calendar integrations / внешние интеграции
 - Task dependencies (task A блокирует task B)
 - Voice enhancements (streaming, wake word, hands-free)
@@ -147,11 +153,12 @@
   - Email/channel work сортируем по цепочке безопасности: verified profile state → delivery platform → конкретный notification use case.
 
 - Текущий рейтинг новых инициатив:
-  - #1 INIT-2026Q3-voice-command-chat-mvp — CURRENT; E2E voice-to-command value inside existing Commands, with editable transcript and manual Send.
-  - #2 INIT-2026Q2-social-auth-yandex-vk — CARRY-OVER / IN_PROGRESS; activation lever, но с внешним provider/security spike.
-  - #3 INIT-2026Q2-email-validation — DONE; foundation для доверенного email-state и eligibility.
-  - #4 INIT-2026Q2-email-notification-platform — DONE; безопасная delivery foundation перед use-case логикой.
-  - #5 INIT-2026Q2-task-assignment-email-notifications — DONE; прямой user value после готовой платформы.
+  - #1 INIT-2026Q3-voice-command-chat-mvp - CURRENT; E2E voice-to-command value inside existing Commands, with editable transcript and manual Send.
+  - #2 INIT-2026Q2-social-auth-yandex-vk - CARRY-OVER / IN_PROGRESS; activation lever with external provider/security spike.
+  - #3 INIT-2026Q3-native-mobile-mvp - DONE; product validation track for native Android/iOS client, push/deep links, and mobile command chat without a new backend source of truth.
+  - #4 INIT-2026Q2-email-validation - DONE; foundation for trusted email state and eligibility.
+  - #5 INIT-2026Q2-email-notification-platform - DONE; safe delivery foundation before use-case logic.
+  - #6 INIT-2026Q2-task-assignment-email-notifications - DONE; direct user value after delivery foundation.
 
 - Риски:
   - Scope creep в web (слишком много экранов/фич за раз) → режем до NOW-инкремента инициативы.

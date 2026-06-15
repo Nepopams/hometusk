@@ -58,7 +58,7 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 
 **Internal Packages:**
 - `voice` - Voice Command Chat ASR BFF for editable transcript drafts
-- `auth` — Keycloak-backed login, registration, refresh, logout, and session cookies
+- `auth` - Keycloak-backed login, registration, refresh, logout, browser session cookies, and native mobile token facade
 - `commands` — Command pipeline (POST /api/v1/commands)
 - `tasks` — Task domain
 - `households` — Household, Zone, and Invite management
@@ -67,6 +67,7 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 - `routines` — Routine definitions and scheduling
 - `activity` — TaskActivity events
 - `notifications` — In-app notifications (Step 3) and email notification outbox delivery
+- `mobile` - Native mobile device registration for Expo push tokens
 - `shared` — Security, logging, exceptions, validation
 
 **Key Endpoints (MVP Iteration 1):**
@@ -75,6 +76,13 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 - `POST /api/v1/auth/register` — Create Keycloak user and auto-login
 - `POST /api/v1/auth/refresh` — Refresh HttpOnly auth cookies
 - `POST /api/v1/auth/logout` — Clear cookies and best-effort Keycloak logout
+- `POST /api/v1/auth/mobile/login` — Native mobile login returning JSON access/refresh tokens for SecureStore
+- `POST /api/v1/auth/mobile/register` — Native mobile registration returning JSON access/refresh tokens for SecureStore
+- `POST /api/v1/auth/mobile/refresh` — Native mobile refresh-token renewal
+- `POST /api/v1/auth/mobile/logout` — Native mobile best-effort refresh-token logout
+- `POST /api/v1/mobile/devices` - Register or refresh a current user's native mobile push device
+- `PATCH /api/v1/mobile/devices/{deviceId}` - Rotate push token, status, and metadata for a current user's device
+- `DELETE /api/v1/mobile/devices/{deviceId}` - Deactivate a current user's mobile device registration
 - `POST /api/v1/commands` — Execute or schedule command (create_task, complete_task) with optional command-level create-task attributes `dueDate`, `assigneeId`, `zoneId`, and one-off `scheduleAt`
 - `GET /api/v1/users/me` — Current user profile with household memberships and email verification state
 - `POST /api/v1/households` — Create household
@@ -94,7 +102,7 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 | Controller | Endpoints | Scope |
 |------------|-----------|-------|
 | VoiceTranscriptionController | `POST /api/v1/voice/transcriptions` | Synchronous ASR draft creation for Voice Command Chat; authenticated, no command execution |
-| AuthController | `POST /api/v1/auth/login`, `POST /api/v1/auth/register`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout`, `POST /api/v1/auth/session` | Keycloak-backed browser auth and legacy session cookie bridge |
+| AuthController | `POST /api/v1/auth/login`, `POST /api/v1/auth/register`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout`, `POST /api/v1/auth/session`, `POST /api/v1/auth/mobile/*` | Keycloak-backed browser auth, legacy session cookie bridge, and native mobile JSON-token auth facade |
 | CommandController | `POST /api/v1/commands` | Intent-driven command execution |
 | UserController | `GET /api/v1/users/me` | User profile with household memberships and email verification state |
 | HouseholdController | `POST /api/v1/households`, `GET/POST /*/zones`, `GET /*/members`, `POST /*/invites` | Household administration |
@@ -102,6 +110,7 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 | TaskController | `GET /api/v1/households/{id}/tasks`, `GET /*/tasks/{taskId}` | Task reads (writes via commands) |
 | ShoppingController | `GET/POST /*/shopping-lists`, `GET/POST /*/shopping-lists/*/items`, `PATCH/DELETE /*/shopping-items/*` | Manual shopping management, including list creation, optional category/source metadata, and task link/unlink validation (see ADR-009) |
 | NotificationController | `GET /api/v1/households/{id}/notifications`, `POST /api/v1/notifications/{id}/read` | In-app notifications |
+| MobileDeviceController | `POST/PATCH/DELETE /api/v1/mobile/devices` | Native mobile Expo push device registration scoped to the authenticated user |
 
 **Invites:** Active (MVP Iteration 1 / Step 2)
 **Notifications:** Active (MVP Iteration 1 / Step 3)
@@ -272,7 +281,7 @@ Handles all notifications to users.
 | App | Purpose | Tech Stack | Status | Owner | MVP Scope |
 |-----|---------|------------|--------|-------|-----------|
 | web | Web application for desktop/mobile browsers | TBD | Planned | TBD | Yes |
-| mobile | Native mobile app (iOS/Android) | TBD | Planned | TBD | No (post-MVP) |
+| mobile | Native mobile app (iOS/Android) | React Native + Expo + TypeScript + Expo Notifications | **In Development** | HomeTusk product engineering team | Yes |
 | ai | AI interface / conversational UI | TBD | Planned | TBD | Partial |
 
 ---
@@ -296,6 +305,7 @@ Handles all notifications to users.
 - `shopping_runs` — Shopping run snapshots for active/completed/cancelled trips
 - `shopping_run_items` — Shopping run item snapshots, including category/source copied from original list items
 - `email_notification_outbox` — Async email delivery intents with status, idempotency key, retry state, and correlation/context fields
+- `mobile_devices` - Native mobile push device registrations with provider token, status, and non-sensitive device metadata
 
 **Command Pipeline Tables (2):**
 - `commands` — First-class command entities with JSONB payload, nullable explicit create-task attributes (`due_date`, `assignee_id`, `zone_id`), and nullable one-off `schedule_at`
@@ -313,7 +323,7 @@ Handles all notifications to users.
 | Identity Provider | User authentication | Keycloak (local) | **In Development** |
 | AI Platform | Decision-making for commands | External (stub) | **In Development (Stage 2)** |
 | SMTP Provider / Mail Sink | Email notification delivery | Configured SMTP or local log sender | **In Development** |
-| Push Provider | Push notifications | TBD | Planned (Stage 3) |
+| Push Provider | Native mobile push notifications | Expo Push Service for MVP, backed by FCM/APNs through Expo | **In Development** |
 
 ### AI Platform (Stage 2 + Enhancement)
 
@@ -345,7 +355,6 @@ HomeTusk is a **consumer** of an external AI Platform for intelligent decision-m
 - `create_task` - Create a new task
 - `complete_task` - Complete an existing task
 - `add_shopping_item` - Add item to shopping list; HomeTusk preserves null category/source when upstream omits optional metadata
-
 **Configuration:**
 ```yaml
 aiplatform:
