@@ -3,7 +3,13 @@
 > Формат Now/Next/Later фиксирует направление и приоритеты без преждевременных дат.
 > У каждого пункта должен быть "якорь" — initiative/release документ.
 
-## NOW (AI Command Artifact Gate closed; provider handoff next)
+## NOW (AI Provider Domain Planner v1 acceptance review closed)
+
+- Initiative (done / closed acceptance review): **INIT-2026Q3-ai-provider-domain-planner-v1-acceptance-review** — AI Provider Domain Planner v1 Evidence Review
+  - Anchor: docs/planning/initiatives/INIT-2026Q3-ai-provider-domain-planner-v1-acceptance-review.md
+  - Outcome: HomeTusk-owned acceptance decision for provider Domain Planner v1 evidence, expanded product golden scenarios, provider evidence index, contract posture decision for `reject` / `confirm` / `answer`, and natural command readiness recommendation
+  - Why now: the AI Command Capability Audit and Artifact Gate are closed; provider-side Domain Planner v1 evidence now needs HomeTusk product acceptance before any `natural_command`, Mobile AI Command UX, provider contract follow-up, or runtime APPLY
+  - Closed: 2026-06-15 with **LIMITED-GO**; acceptance artifacts delivered under `docs/research/ai-command-capabilities/provider-domain-planner-v1-acceptance/**`; provider revision inspected read-only: `b1ca7235dfacb1faee35e042d6a072976c640d35`; next recommended action is a provider contract + 50-scenario eval workpack; no runtime/backend/mobile/OpenAPI/AI Platform changes approved
 
 - Initiative (done / closed artifact gate): **INIT-2026Q3-ai-command-artifact-gate** — AI Command Artifact Gate for Domain Planner v1
   - Anchor: docs/planning/initiatives/INIT-2026Q3-ai-command-artifact-gate.md
@@ -29,16 +35,16 @@
   - Why now: Native Mobile MVP, mobile command shell, voice/ASR foundations, command pipeline, shopping linkage, guardrails, and AI Platform integration are in place; before building Domain Planner v1, `natural_command`, or Mobile AI Command Center, the team needed evidence that the planner/trust corridor is strong enough for product UX
   - Closed: 2026-06-15 as docs-only research/audit; no production code/API/mobile/AI Platform contract changes; next step is a separate artifact/contract/eval gate before AI Platform Domain Planner v1, not APPLY approval
 
-- Initiative (carry-over / in progress): **INIT-2026Q2-social-auth-yandex-vk** — Social Auth via Yandex/VK
+- Initiative (deferred / closed as NOW focus): **INIT-2026Q2-social-auth-yandex-vk** — Social Auth via Yandex/VK
   - Anchor: docs/planning/initiatives/INIT-2026Q2-social-auth-yandex-vk.md
   - Outcome: вход через Яндекс и подтверждённый technical path для VK через Keycloak identity brokering, без OAuth token exchange логики в HomeTusk backend
   - Why now: email validation, email notification platform и task assignment email notifications закрыты; следующий рычаг — снизить onboarding friction без переноса OAuth-сложности в HomeTusk backend
-  - Readiness: IN_PROGRESS carry-over; security_sensitive, adr_needed, requires provider runbook/secrets handling and VK spike result; not the primary next action while AI Platform Domain Planner handoff is queued
+  - Closed: 2026-06-15 as active roadmap focus, not as delivered scope; remains a future activation/security candidate after the AI provider acceptance review; security_sensitive, adr_needed, requires provider runbook/secrets handling and VK spike result
 
 - Initiative (done): **INIT-2026Q3-native-mobile-mvp** — Native Mobile Client MVP
   - Anchor: docs/planning/initiatives/INIT-2026Q3-native-mobile-mvp.md
   - Outcome: first-class Android/iOS client for core household flows, command chat, session persistence, push token registration, and deep-link handoff without replacing HomeTusk backend or calling AI Platform directly
-  - Why now: web household, command, shopping, notification, email, and auth foundations are mature enough to validate the "home in your pocket" product loop while social auth continues as a parallel activation/security track
+  - Why now: web household, command, shopping, notification, email, and auth foundations are mature enough to validate the "home in your pocket" product loop while social auth remains a deferred activation/security candidate
   - Closed: 2026-06-14 (EP-035 / ST-3501-ST-3507; delegated Gate D GO; Expo mobile app, auth/session, household reads, tasks/shopping mutations, command chat, device registration backend, push/deep-link handoff, and release smoke docs delivered)
 
 - Initiative (done): **INIT-2026Q2-task-assignment-email-notifications** — Task Assignment Email Notifications
@@ -146,10 +152,10 @@
 
 ## NEXT (будущие инициативы / ranked candidates)
 
-- Initiative (gated candidate): **AI Platform Domain Planner v1**
-  - Anchor: docs/research/ai-command-capabilities/domain-planner-v1-gate/provider-initiative-brief.md
-  - Outcome: single production-oriented domain planner with structured decision output, narrow execution corridor, golden-scenario regression signal, and clear ownership split between AI Platform planning and HomeTusk validation/execution
-  - Planning note: unblocked for separate provider-side initiative planning after AI Command Artifact Gate acceptance; still not approved for APPLY, HomeTusk runtime changes, or direct mobile → AI Platform calls
+- Initiative (recommended candidate): **Provider contract + 50-scenario Domain Planner eval follow-up**
+  - Anchor: docs/research/ai-command-capabilities/provider-domain-planner-v1-acceptance/recommendation.md
+  - Outcome: provider-side follow-up that consumes HomeTusk `expanded-golden-scenarios-v1`, runs deterministic eval against all 50 scenarios, and resolves first-class `reject` plus non-executing `confirm` posture before any HomeTusk runtime integration
+  - Planning note: HomeTusk `natural_command`, Mobile AI Command UX, runtime APPLY, production rollout, and direct mobile → AI Platform remain blocked until this follow-up and a separate HomeTusk contract gate complete
 
 - Initiative (gated candidate): **HomeTusk natural_command + Mobile AI Command UX v1**
   - Anchor: TBD — depends on Domain Planner v1 provider readiness plus future HomeTusk contract gate
@@ -181,15 +187,17 @@
   - Email/channel work сортируем по цепочке безопасности: verified profile state → delivery platform → конкретный notification use case.
 
 - Текущий рейтинг новых инициатив:
-  - #1 INIT-2026Q3-ai-command-artifact-gate - DONE / CLOSED ARTIFACT GATE; docs-only artifact/contract/eval package accepted before Domain Planner v1 and any `natural_command` / Mobile AI Command UX APPLY.
-  - #2 INIT-2026Q3-ai-command-capability-audit - DONE / CLOSED DISCOVERY BASELINE; result LIMITED-GO with research pack and external comparison before Domain Planner v1, `natural_command`, and Mobile AI Command Center.
-  - #3 INIT-2026Q3-voice-command-chat-mvp - DONE / CLOSED NOW TRACK; E2E voice-to-command value inside existing Commands, with remaining planner semantics moved to artifact gate.
-  - #4 INIT-2026Q3-mobile-client-refactor-foundation - DONE; native mobile engineering enablement before richer command/voice semantics.
-  - #5 INIT-2026Q2-social-auth-yandex-vk - CARRY-OVER / IN_PROGRESS; activation lever with external provider/security spike.
-  - #6 INIT-2026Q3-native-mobile-mvp - DONE; product validation track for native Android/iOS client, push/deep links, and mobile command chat without a new backend source of truth.
-  - #7 INIT-2026Q2-email-validation - DONE; foundation for trusted email state and eligibility.
-  - #8 INIT-2026Q2-email-notification-platform - DONE; safe delivery foundation before use-case logic.
-  - #9 INIT-2026Q2-task-assignment-email-notifications - DONE; direct user value after delivery foundation.
+  - #1 Provider contract + 50-scenario Domain Planner eval follow-up - RECOMMENDED NEXT; consume `expanded-golden-scenarios-v1`, run all 50 scenarios, resolve first-class `reject` and non-executing `confirm` before HomeTusk runtime integration.
+  - #2 INIT-2026Q3-ai-provider-domain-planner-v1-acceptance-review - DONE / LIMITED-GO; HomeTusk-owned provider evidence review closed without runtime/backend/mobile/OpenAPI/AI Platform approval.
+  - #3 INIT-2026Q3-ai-command-artifact-gate - DONE / CLOSED ARTIFACT GATE; docs-only artifact/contract/eval package accepted before Domain Planner v1 and any `natural_command` / Mobile AI Command UX APPLY.
+  - #4 INIT-2026Q3-ai-command-capability-audit - DONE / CLOSED DISCOVERY BASELINE; result LIMITED-GO with research pack and external comparison before Domain Planner v1, `natural_command`, and Mobile AI Command Center.
+  - #5 INIT-2026Q3-voice-command-chat-mvp - DONE / CLOSED NOW TRACK; E2E voice-to-command value inside existing Commands, with remaining planner semantics moved to artifact gate.
+  - #6 INIT-2026Q3-mobile-client-refactor-foundation - DONE; native mobile engineering enablement before richer command/voice semantics.
+  - #7 INIT-2026Q2-social-auth-yandex-vk - DEFERRED / CLOSED AS NOW FOCUS; activation/security candidate, not delivered, parked behind AI provider acceptance review.
+  - #8 INIT-2026Q3-native-mobile-mvp - DONE; product validation track for native Android/iOS client, push/deep links, and mobile command chat without a new backend source of truth.
+  - #9 INIT-2026Q2-email-validation - DONE; foundation for trusted email state and eligibility.
+  - #10 INIT-2026Q2-email-notification-platform - DONE; safe delivery foundation before use-case logic.
+  - #11 INIT-2026Q2-task-assignment-email-notifications - DONE; direct user value after delivery foundation.
 
 - Риски:
   - Scope creep в web (слишком много экранов/фич за раз) → режем до NOW-инкремента инициативы.

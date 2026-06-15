@@ -1,0 +1,174 @@
+schema_version: "golden-context-v1"
+status: "acceptance"
+locale: "ru-RU"
+timezone: "Europe/Moscow"
+reference_instant: "2026-06-15T12:00:00+03:00"
+notes:
+  - "HomeTusk-owned expanded acceptance contexts for provider Domain Planner v1 review."
+  - "No fixture grants permission to bypass HomeTusk validation, guardrails, or audit."
+contexts:
+  - id: "ctx-v1-home-default"
+    household:
+      household_id: "home-1"
+      name: "Дом Анны"
+    requester:
+      user_id: "user-anna"
+      display_name: "Анна"
+      role: "admin"
+    members:
+      - user_id: "user-anna"
+        display_name: "Анна"
+        aliases: ["Аня", "мне", "я"]
+        role: "admin"
+        workload_score: 3
+      - user_id: "user-petr"
+        display_name: "Петя"
+        aliases: ["Петя", "Пете", "Петр", "Петру"]
+        role: "member"
+        workload_score: 4
+      - user_id: "user-maria"
+        display_name: "Мария"
+        aliases: ["Маша", "Марии", "Марию"]
+        role: "member"
+        workload_score: 2
+      - user_id: "user-dima"
+        display_name: "Дима"
+        aliases: ["Диме", "Диму"]
+        role: "member"
+        workload_score: 5
+    zones:
+      - zone_id: "zone-kitchen"
+        name: "кухня"
+        aliases: ["кухню", "на кухне", "кухонная зона"]
+      - zone_id: "zone-bathroom"
+        name: "ванная"
+        aliases: ["ванную", "ванной", "санузел"]
+      - zone_id: "zone-living"
+        name: "гостиная"
+        aliases: ["гостиную", "зал"]
+      - zone_id: "zone-hallway"
+        name: "прихожая"
+        aliases: ["коридор", "прихожую"]
+    shopping_lists:
+      - list_id: "list-groceries"
+        name: "Продукты"
+        aliases: ["покупки", "список продуктов", "default"]
+        is_default: true
+      - list_id: "list-auchan"
+        name: "Ашан"
+        aliases: ["ашан", "в ашан"]
+        is_default: false
+      - list_id: "list-pyaterochka"
+        name: "Пятерочка"
+        aliases: ["пятерочка", "пятерочку"]
+        is_default: false
+    open_tasks:
+      - task_id: "task-kitchen-cleanup"
+        title: "убрать кухню"
+        zone_id: "zone-kitchen"
+        assignee_id: "user-anna"
+        status: "open"
+        due: null
+      - task_id: "task-bathroom-cleaning"
+        title: "уборка ванной"
+        zone_id: "zone-bathroom"
+        assignee_id: "user-petr"
+        status: "open"
+        due: null
+      - task_id: "task-trash"
+        title: "вынести мусор"
+        zone_id: "zone-hallway"
+        assignee_id: "user-dima"
+        status: "open"
+        due: null
+    defaults:
+      default_assignee_id: "user-anna"
+      default_list_id: "list-groceries"
+    policies:
+      max_open_tasks_per_user: 10
+      quiet_hours: "23:00-07:00"
+      non_requester_assignment_requires_confirmation: true
+      broad_batch_requires_confirmation: true
+      task_shopping_linkage_requires_confirmation: true
+      reschedule_requires_confirmation: true
+
+  - id: "ctx-v1-no-default-list"
+    extends: "ctx-v1-home-default"
+    shopping_lists: []
+    defaults:
+      default_assignee_id: "user-anna"
+      default_list_id: null
+    notes:
+      - "Shopping commands must clarify when no default or named list is grounded."
+
+  - id: "ctx-v1-ambiguous-petr"
+    extends: "ctx-v1-home-default"
+    members:
+      - user_id: "user-anna"
+        display_name: "Анна"
+        aliases: ["Аня", "мне", "я"]
+        role: "admin"
+        workload_score: 3
+      - user_id: "user-petr"
+        display_name: "Петя"
+        aliases: ["Петя", "Пете", "Петр", "Петру"]
+        role: "member"
+        workload_score: 4
+      - user_id: "user-petr-senior"
+        display_name: "Петр"
+        aliases: ["Петя", "Пете", "Петр", "Петру"]
+        role: "member"
+        workload_score: 2
+    notes:
+      - "Member reference Петя/Петр is ambiguous."
+
+  - id: "ctx-v1-ambiguous-lists"
+    extends: "ctx-v1-home-default"
+    shopping_lists:
+      - list_id: "list-groceries"
+        name: "Продукты"
+        aliases: ["список", "покупки"]
+        is_default: false
+      - list_id: "list-weekend"
+        name: "Покупки выходного дня"
+        aliases: ["список", "покупки"]
+        is_default: false
+    defaults:
+      default_assignee_id: "user-anna"
+      default_list_id: null
+    notes:
+      - "Generic list references are ambiguous."
+
+  - id: "ctx-v1-ambiguous-tasks"
+    extends: "ctx-v1-home-default"
+    open_tasks:
+      - task_id: "task-kitchen-cleanup"
+        title: "убрать кухню"
+        zone_id: "zone-kitchen"
+        assignee_id: "user-anna"
+        status: "open"
+        due: null
+      - task_id: "task-kitchen-deep-clean"
+        title: "генеральная уборка кухни"
+        zone_id: "zone-kitchen"
+        assignee_id: "user-maria"
+        status: "open"
+        due: null
+      - task_id: "task-bathroom-cleaning"
+        title: "уборка ванной"
+        zone_id: "zone-bathroom"
+        assignee_id: "user-petr"
+        status: "open"
+        due: null
+    notes:
+      - "Task references such as уборка/кухня can match more than one task."
+
+  - id: "ctx-v1-foreign-reference"
+    extends: "ctx-v1-home-default"
+    foreign_entities:
+      household_id: "home-foreign"
+      member_id: "user-neighbor"
+      task_id: "task-foreign"
+      list_id: "list-foreign"
+    notes:
+      - "Foreign ids are not valid HomeTusk execution targets."

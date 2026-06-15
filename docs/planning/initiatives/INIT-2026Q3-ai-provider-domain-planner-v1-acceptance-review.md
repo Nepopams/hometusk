@@ -2,7 +2,21 @@
 
 ## Status
 
-Draft (to be approved at Human Gate A)
+Completed - HomeTusk acceptance review closed with **LIMITED-GO** on
+2026-06-15.
+
+Gate posture:
+
+- Human Gate A: GO, selected as HomeTusk evidence review focus.
+- Human Gate B: GO, committed docs-only acceptance package scope.
+- Human Gate C: GO, delegated approval for docs-only APPLY.
+- Human Gate D: GO, acceptance package accepted with LIMITED-GO.
+- Provider repository was inspected read-only.
+- No runtime/backend/mobile/OpenAPI/AI Platform changes are approved.
+- Final evidence and decisions are recorded in
+  `docs/planning/initiatives/INIT-2026Q3-ai-provider-domain-planner-v1-acceptance-review.execution.md`
+  and
+  `docs/research/ai-command-capabilities/provider-domain-planner-v1-acceptance/**`.
 
 ## Initiative type
 

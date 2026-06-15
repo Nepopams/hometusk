@@ -2,7 +2,15 @@
 
 ## Status
 
-In Progress
+DONE - roadmap NOW track closed on 2026-06-15.
+
+Closure posture:
+
+- Voice Command Chat MVP is no longer the active roadmap focus.
+- Remaining AI-command readiness and planner/product semantics are moved to
+  `docs/planning/initiatives/INIT-2026Q3-ai-command-artifact-gate.md`.
+- This closure does not approve new runtime behavior, `natural_command`, Mobile
+  AI Command UX, or direct mobile to AI Platform calls.
 
 ## Initiative type
 
