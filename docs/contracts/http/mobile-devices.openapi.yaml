@@ -1,0 +1,335 @@
+openapi: 3.1.0
+info:
+  title: HomeTusk Mobile Devices API
+  version: 1.0.0
+  description: |
+    Contract for authenticated native mobile device registration.
+    The backend stores push device registrations for the current user and
+    remains the source of truth for notification delivery decisions.
+
+    This contract is additive for INIT-2026Q3-native-mobile-mvp and does not
+    change existing web or command behavior.
+  x-status: stable
+
+servers:
+  - url: /api/v1
+    description: API version 1
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Mobile Devices
+    description: Native mobile push device registration endpoints
+
+paths:
+  /mobile/devices:
+    post:
+      operationId: registerMobileDevice
+      summary: Register or refresh a mobile push device
+      tags:
+        - Mobile Devices
+      description: |
+        Registers a push token for the current authenticated user. Re-registering
+        the same provider token for the same user returns the current registration
+        with refreshed metadata.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterMobileDeviceRequest'
+            examples:
+              expoAndroid:
+                summary: Android Expo push token
+                value:
+                  platform: android
+                  pushProvider: expo
+                  pushToken: ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]
+                  deviceName: Pixel 8
+                  appVersion: 0.1.0
+                  locale: en-US
+                  timezone: Europe/Moscow
+      responses:
+        '201':
+          description: Device registered or refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileDevice'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileDeviceError'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileDeviceError'
+        '409':
+          description: Token belongs to another active user registration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileDeviceError'
+
+  /mobile/devices/{deviceId}:
+    patch:
+      operationId: updateMobileDevice
+      summary: Update a mobile device registration
+      tags:
+        - Mobile Devices
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMobileDeviceRequest'
+      responses:
+        '200':
+          description: Device registration updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileDevice'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileDeviceError'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileDeviceError'
+        '404':
+          description: Device registration not found for current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileDeviceError'
+        '409':
+          description: Token belongs to another active registration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileDeviceError'
+    delete:
+      operationId: deleteMobileDevice
+      summary: Deactivate a mobile device registration
+      tags:
+        - Mobile Devices
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdPath'
+      responses:
+        '204':
+          description: Device registration deactivated
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileDeviceError'
+        '404':
+          description: Device registration not found for current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileDeviceError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    DeviceIdPath:
+      name: deviceId
+      in: path
+      required: true
+      description: Mobile device registration UUID
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    MobilePlatform:
+      type: string
+      enum:
+        - ios
+        - android
+
+    PushProvider:
+      type: string
+      enum:
+        - expo
+      description: MVP provider. Direct fcm/apns may be added behind the backend boundary later.
+
+    MobileDeviceStatus:
+      type: string
+      enum:
+        - active
+        - inactive
+
+    RegisterMobileDeviceRequest:
+      type: object
+      required:
+        - platform
+        - pushProvider
+        - pushToken
+      properties:
+        platform:
+          $ref: '#/components/schemas/MobilePlatform'
+        pushProvider:
+          $ref: '#/components/schemas/PushProvider'
+        pushToken:
+          type: string
+          minLength: 8
+          maxLength: 512
+          description: Provider push token. Must not be logged.
+        deviceName:
+          type:
+            - string
+            - 'null'
+          maxLength: 120
+        appVersion:
+          type:
+            - string
+            - 'null'
+          maxLength: 40
+        locale:
+          type:
+            - string
+            - 'null'
+          maxLength: 35
+        timezone:
+          type:
+            - string
+            - 'null'
+          maxLength: 80
+
+    UpdateMobileDeviceRequest:
+      type: object
+      properties:
+        pushToken:
+          type:
+            - string
+            - 'null'
+          minLength: 8
+          maxLength: 512
+          description: New provider push token after token rotation.
+        status:
+          $ref: '#/components/schemas/MobileDeviceStatus'
+        appVersion:
+          type:
+            - string
+            - 'null'
+          maxLength: 40
+        locale:
+          type:
+            - string
+            - 'null'
+          maxLength: 35
+        timezone:
+          type:
+            - string
+            - 'null'
+          maxLength: 80
+
+    MobileDevice:
+      type: object
+      required:
+        - id
+        - userId
+        - platform
+        - pushProvider
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+          description: Current authenticated HomeTusk user.
+        platform:
+          $ref: '#/components/schemas/MobilePlatform'
+        pushProvider:
+          $ref: '#/components/schemas/PushProvider'
+        status:
+          $ref: '#/components/schemas/MobileDeviceStatus'
+        deviceName:
+          type:
+            - string
+            - 'null'
+        appVersion:
+          type:
+            - string
+            - 'null'
+        locale:
+          type:
+            - string
+            - 'null'
+        timezone:
+          type:
+            - string
+            - 'null'
+        lastSeenAt:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    MobileDeviceError:
+      type: object
+      required:
+        - errorCode
+        - message
+      properties:
+        correlationId:
+          type:
+            - string
+            - 'null'
+          format: uuid
+        errorCode:
+          type: string
+          enum:
+            - AUTH_TOKEN_MISSING
+            - AUTH_TOKEN_INVALID
+            - SCHEMA_INVALID
+            - DEVICE_NOT_FOUND
+            - DEVICE_TOKEN_CONFLICT
+        message:
+          type: string
+        validationErrors:
+          type: array
+          items:
+            type: object
+            required:
+              - path
+              - code
+              - message
+            properties:
+              path:
+                type: string
+              code:
+                type: string
+              message:
+                type: string

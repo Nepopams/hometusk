@@ -21,6 +21,11 @@ info:
     durable email verification state and notification eligibility. The new
     fields are additive and backward-compatible.
 
+    **INIT-2026Q3-native-mobile-mvp ST-3502 compatibility delta:** native
+    mobile clients may use `/auth/mobile/*` endpoints to receive Keycloak
+    access/refresh tokens as JSON for platform secure storage. Existing browser
+    cookie auth endpoints are unchanged.
+
     See also:
     - [CLAUDE.md](../../../CLAUDE.md) — Development rules
     - [ADR-003](../../architecture/decisions/003-stage1-commands-api.md) — Stage 1 decisions
@@ -379,6 +384,155 @@ paths:
       responses:
         '204':
           description: Auth cookies cleared
+
+  /auth/mobile/login:
+    post:
+      operationId: loginMobileWithPassword
+      summary: Login mobile client with email and password
+      description: |
+        Authenticates against Keycloak and returns access/refresh tokens as JSON
+        for native mobile clients. Tokens must be stored only in platform secure
+        storage. Browser clients should continue to use `/auth/login`.
+      tags:
+        - Auth
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Mobile auth tokens issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileAuthResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '503':
+          description: Authentication provider unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+
+  /auth/mobile/register:
+    post:
+      operationId: registerMobileWithPassword
+      summary: Register mobile user with email and password
+      description: |
+        Creates an enabled Keycloak user, assigns the default user role, and
+        returns access/refresh tokens as JSON for native mobile secure storage.
+      tags:
+        - Auth
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '200':
+          description: User created and mobile auth tokens issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileAuthResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '409':
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '503':
+          description: Authentication provider unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+
+  /auth/mobile/refresh:
+    post:
+      operationId: refreshMobileAuthSession
+      summary: Refresh mobile auth tokens
+      description: |
+        Uses a refresh token from native secure storage to renew the mobile
+        access/refresh token pair. Missing or invalid refresh tokens return
+        `AUTH_REFRESH_REQUIRED`.
+      tags:
+        - Auth
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MobileRefreshRequest'
+      responses:
+        '200':
+          description: Mobile auth tokens refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileAuthResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '401':
+          description: Refresh required or refresh token invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '503':
+          description: Authentication provider unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+
+  /auth/mobile/logout:
+    post:
+      operationId: logoutMobileAuthSession
+      summary: Logout mobile client
+      description: |
+        Best-effort logout from Keycloak using the refresh token stored in the
+        native client. The mobile app must clear secure session state regardless
+        of provider logout outcome.
+      tags:
+        - Auth
+      security: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MobileLogoutRequest'
+      responses:
+        '204':
+          description: Mobile auth session cleared
 
   /auth/session:
     post:
@@ -1303,6 +1457,52 @@ components:
           type: string
           minLength: 8
 
+    MobileAuthResponse:
+      type: object
+      required:
+        - accessToken
+        - refreshToken
+        - expiresInSeconds
+        - refreshExpiresInSeconds
+        - tokenType
+      properties:
+        accessToken:
+          type: string
+          description: Keycloak access token. Native clients must store it only in platform secure storage.
+        refreshToken:
+          type: string
+          description: Keycloak refresh token. Native clients must store it only in platform secure storage.
+        expiresInSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+        refreshExpiresInSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+        tokenType:
+          type: string
+          enum: [Bearer]
+
+    MobileRefreshRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          minLength: 1
+          description: Refresh token previously returned by `/auth/mobile/login`, `/auth/mobile/register`, or `/auth/mobile/refresh`.
+
+    MobileLogoutRequest:
+      type: object
+      properties:
+        refreshToken:
+          type:
+            - string
+            - 'null'
+          description: Optional refresh token to revoke at Keycloak before local secure storage is cleared.
+
     # Command Request/Response
     CommandRequest:
       type: object
@@ -1710,9 +1910,8 @@ components:
         - message
       properties:
         correlationId:
-          type: string
+          type: [string, 'null']
           format: uuid
-          nullable: true
         errorCode:
           type: string
           enum:
@@ -1746,9 +1945,8 @@ components:
           type: string
           description: Keycloak subject claim
         email:
-          type: string
+          type: [string, 'null']
           format: email
-          nullable: true
           description: Normalized email address when known.
         emailVerified:
           type: boolean
@@ -1761,9 +1959,8 @@ components:
             - unknown
           description: Source of the current email value.
         emailUpdatedAt:
-          type: string
+          type: [string, 'null']
           format: date-time
-          nullable: true
           description: Timestamp when the email value last changed.
         emailNotificationEligible:
           type: boolean
@@ -1874,9 +2071,8 @@ components:
           $ref: '#/components/schemas/RoutineSummary'
           description: Source routine (if generated from a routine)
         scheduledDate:
-          type: string
+          type: [string, 'null']
           format: date
-          nullable: true
           description: Scheduled date for routine instance (null for manual tasks)
         createdAt:
           type: string
@@ -2014,17 +2210,15 @@ components:
         - interpretation
       properties:
         gini:
-          type: number
+          type: [number, 'null']
           format: float
           minimum: 0
           maximum: 1
-          nullable: true
           description: Gini coefficient (0=equal, 1=unequal). Null if no tasks.
         balance:
-          type: integer
+          type: [integer, 'null']
           minimum: 0
           maximum: 100
-          nullable: true
           description: Balance score = round((1-gini)*100). Null if no tasks.
         formula:
           type: string
@@ -2107,9 +2301,8 @@ components:
           type: string
           format: uuid
         taskId:
-          type: string
+          type: [string, 'null']
           format: uuid
-          nullable: true
         points:
           type: integer
         reason:
@@ -2146,9 +2339,8 @@ components:
         earned:
           type: boolean
         earnedAt:
-          type: string
+          type: [string, 'null']
           format: date-time
-          nullable: true
 
     # Request schemas
     CreateHouseholdRequest:
@@ -2197,8 +2389,7 @@ components:
           type: string
           enum: [active, redeemed, expired, revoked]
         inviteLink:
-          type: string
-          nullable: true
+          type: [string, 'null']
 
     InviteMembership:
       type: object
@@ -2263,13 +2454,11 @@ components:
           type: string
           format: date-time
         readAt:
-          type: string
+          type: [string, 'null']
           format: date-time
-          nullable: true
         correlationId:
-          type: string
+          type: [string, 'null']
           format: uuid
-          nullable: true
 
     NotificationPayload:
       type: object
@@ -2341,21 +2530,19 @@ components:
         unit:
           type: string
         category:
-          allOf:
+          oneOf:
             - $ref: '#/components/schemas/ShoppingItemCategory'
-          nullable: true
+            - type: 'null'
           description: Optional category for grouping/filtering. Null for uncategorised legacy items.
         source:
-          type: string
-          nullable: true
+          type: [string, 'null']
           maxLength: 120
           description: Optional source/store name. User-provided, household-scoped display text.
         purchased:
           type: boolean
         linkedTaskId:
-          type: string
+          type: [string, 'null']
           format: uuid
-          nullable: true
           description: Associated task (if any)
         addedBy:
           $ref: '#/components/schemas/UserSummary'
@@ -2383,19 +2570,17 @@ components:
           type: string
           maxLength: 50
         category:
-          allOf:
+          oneOf:
             - $ref: '#/components/schemas/ShoppingItemCategory'
-          nullable: true
+            - type: 'null'
           description: Optional category. Omit or null to leave uncategorised.
         source:
-          type: string
+          type: [string, 'null']
           maxLength: 120
-          nullable: true
           description: Optional source/store name. Server trims blank values to null.
         linkedTaskId:
-          type: string
+          type: [string, 'null']
           format: uuid
-          nullable: true
           description: Optional same-household task link. Invalid cross-household links return 404.
 
     UpdateShoppingItemRequest:
@@ -2406,19 +2591,17 @@ components:
           type: boolean
           description: Optional purchase status change.
         category:
-          allOf:
+          oneOf:
             - $ref: '#/components/schemas/ShoppingItemCategory'
-          nullable: true
+            - type: 'null'
           description: Optional category update. Null clears the category.
         source:
-          type: string
+          type: [string, 'null']
           maxLength: 120
-          nullable: true
           description: Optional source/store update. Null or blank clears the source.
         linkedTaskId:
-          type: string
+          type: [string, 'null']
           format: uuid
-          nullable: true
           description: Optional task-link update. Omit to keep current link; null unlinks.
 
     # Task detail with linked shopping items
