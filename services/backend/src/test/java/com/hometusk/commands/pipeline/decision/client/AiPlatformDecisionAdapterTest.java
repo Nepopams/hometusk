@@ -41,7 +41,9 @@ class AiPlatformDecisionAdapterTest {
                         "zones",
                         List.of(Map.of("id", zoneId.toString(), "name", "Kitchen")),
                         "shopping_lists",
-                        List.of(Map.of("id", listId.toString(), "name", "Groceries"))))
+                        List.of(Map.of("id", listId.toString(), "name", "Groceries")),
+                        "default_list_id",
+                        listId.toString()))
                 .build();
 
         AiDecisionRequest request = AiDecisionRequest.from(context);
@@ -59,6 +61,11 @@ class AiPlatformDecisionAdapterTest {
                 .containsEntry("workload_score", 0.2);
         assertThat(nestedList(household, "zones").get(0)).containsEntry("zone_id", zoneId.toString());
         assertThat(nestedList(household, "shopping_lists").get(0)).containsEntry("list_id", listId.toString());
+
+        Map<String, Object> defaults = nestedMap(request.context(), "defaults");
+        assertThat(defaults)
+                .containsEntry("default_assignee_id", requesterId.toString())
+                .containsEntry("default_list_id", listId.toString());
     }
 
     @Test
