@@ -2,7 +2,24 @@
 
 ## Status
 
-Draft (to be approved at Human Gate A)
+DONE - research baseline accepted on 2026-06-15.
+
+Closure posture:
+
+- Closed as docs-only research/audit.
+- Final recommendation: **LIMITED-GO**.
+- No production code changed.
+- No backend/API/mobile/AI Platform contract changed.
+- No AI Platform code changed.
+- Follow-up work requires a separate artifact/contract/eval gate before any
+  Codex APPLY or implementation.
+
+Closure evidence:
+
+- Research pack: `docs/research/ai-command-capabilities/README.md`
+- Recommendation: `docs/research/ai-command-capabilities/recommendation.md`
+- External research comparison:
+  `docs/research/ai-command-capabilities/external-research-comparison-2026-06-15.md`
 
 ## Initiative type
 
@@ -39,7 +56,9 @@ Before AI Platform Domain Planner v1 and before Mobile AI Command Center.
 - Mobile Command Feature: `clients/mobile/src/features/command/**`
 - Backend Command Pipeline: `services/backend/src/main/java/com/hometusk/commands/**`
 - Backend Context / Guardrails: `services/backend/src/main/java/com/hometusk/commands/pipeline/**`
-- External research input: AI-command capabilities deep research report, 2026-06-15, to be summarized into `docs/research/ai-command-capabilities/**` during this initiative.
+- Research Pack: `docs/research/ai-command-capabilities/README.md`
+- External Research Comparison: `docs/research/ai-command-capabilities/external-research-comparison-2026-06-15.md`
+- External research input: AI-command capabilities deep research report, 2026-06-15, later compared as secondary research input after the repo-grounded baseline.
 - Provider repository for read-only audit: `Nepopams/vr_ai_platform`
 
 ---
@@ -256,13 +275,16 @@ Produce a final recommendation:
 
 Not part of this initiative.
 
-Likely follow-up if audit result is GO or LIMITED-GO:
+Follow-up after the closed **LIMITED-GO** result:
 
-- implement a single domain planner in AI Platform;
-- support structured decision output;
-- support narrow execution corridor;
-- validate against golden scenarios;
+- create a separate artifact/contract/eval gate first;
+- draft `natural_command` and planner decision contract material;
+- accept the decision/action taxonomy;
+- expand machine-readable golden scenarios;
+- define eval, privacy, retention, mobile state, and provider readiness gates;
 - avoid multi-agent architecture as the first production brain.
+
+Implementation remains out of scope until a separate approved PLAN/APPLY flow.
 
 ---
 
@@ -408,6 +430,7 @@ docs/research/ai-command-capabilities/
   hometusk-contract-gap-analysis.md
   target-architecture-v0.md
   recommendation.md
+  external-research-comparison-2026-06-15.md
 ```
 
 Codex may also create:

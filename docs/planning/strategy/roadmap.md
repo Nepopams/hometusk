@@ -3,7 +3,7 @@
 > Формат Now/Next/Later фиксирует направление и приоритеты без преждевременных дат.
 > У каждого пункта должен быть "якорь" — initiative/release документ.
 
-## NOW (текущий фокус: Voice Command Chat MVP + AI Command Capability Audit)
+## NOW (текущий фокус: Voice Command Chat MVP + Mobile Client Refactor Foundation)
 
 - Initiative (current): **INIT-2026Q3-voice-command-chat-mvp** — Voice Command Chat MVP
   - Anchor: docs/planning/initiatives/INIT-2026Q3-voice-command-chat-mvp.md
@@ -17,11 +17,11 @@
   - Why now: Native Mobile MVP is already merged and APK testing is active; future mobile AI-command/voice work needs an isolated command feature before adding new semantics
   - Readiness: IN_PROGRESS under delegated human-gate authority; contract_impact=no, backend_impact=no, ai_platform_impact=no; verification requires `clients/mobile` typecheck and CI formatting fix
 
-- Initiative (current / discovery gate): **INIT-2026Q3-ai-command-capability-audit** — AI Command Capability Audit & Golden Scenarios
+- Initiative (done / closed discovery baseline): **INIT-2026Q3-ai-command-capability-audit** — AI Command Capability Audit & Golden Scenarios
   - Anchor: docs/planning/initiatives/INIT-2026Q3-ai-command-capability-audit.md
-  - Outcome: decision-grade audit of current HomeTusk ↔ AI Platform AI-command capability, including decision taxonomy v0, action taxonomy v0, golden scenarios, capability matrix, HomeTusk/AI Platform gap analysis, target architecture notes, and GO / LIMITED-GO / NO-GO recommendation
-  - Why now: Native Mobile MVP, mobile command shell, voice/ASR foundations, command pipeline, shopping linkage, guardrails, and AI Platform integration are in place; before building Domain Planner v1, `natural_command`, or Mobile AI Command Center, the team needs evidence that the planner/trust corridor is strong enough for product UX
-  - Readiness: DRAFT for Human Gate A; discovery-only, no production code/API/mobile/AI Platform changes; contract_impact=no for this audit, security_sensitive=yes, traceability_critical=yes, cross_repo=yes; `vr_ai_platform` is read-only context
+  - Outcome: research pack created under `docs/research/ai-command-capabilities/**`, external research comparison added, and current HomeTusk ↔ AI Platform AI-command readiness assessed as **LIMITED-GO**
+  - Why now: Native Mobile MVP, mobile command shell, voice/ASR foundations, command pipeline, shopping linkage, guardrails, and AI Platform integration are in place; before building Domain Planner v1, `natural_command`, or Mobile AI Command Center, the team needed evidence that the planner/trust corridor is strong enough for product UX
+  - Closed: 2026-06-15 as docs-only research/audit; no production code/API/mobile/AI Platform contract changes; next step is a separate artifact/contract/eval gate before AI Platform Domain Planner v1, not APPLY approval
 
 - Initiative (carry-over / in progress): **INIT-2026Q2-social-auth-yandex-vk** — Social Auth via Yandex/VK
   - Anchor: docs/planning/initiatives/INIT-2026Q2-social-auth-yandex-vk.md
@@ -143,12 +143,12 @@
 - Initiative (gated candidate): **AI Platform Domain Planner v1**
   - Anchor: TBD — depends on `docs/planning/initiatives/INIT-2026Q3-ai-command-capability-audit.md`
   - Outcome: single production-oriented domain planner with structured decision output, narrow execution corridor, golden-scenario regression signal, and clear ownership split between AI Platform planning and HomeTusk validation/execution
-  - Planning note: only starts after the AI Command Capability Audit returns GO or LIMITED-GO; likely AI Platform-owned with HomeTusk contract/adapter follow-up
+  - Planning note: AI Command Capability Audit returned LIMITED-GO; next step is artifact/contract/eval gate with natural-command contract draft, accepted taxonomy, machine-readable scenarios, eval rubric, privacy/retention questions, mobile state matrix, and provider readiness checklist; not approved for APPLY
 
 - Initiative (gated candidate): **HomeTusk natural_command + Mobile AI Command UX v1**
   - Anchor: TBD — depends on AI Command Capability Audit and Domain Planner v1 readiness
   - Outcome: HomeTusk-owned natural command contract and mobile command UX for clarify/confirm/answer/execute outcomes without direct mobile → AI Platform calls
-  - Planning note: blocked until the audit defines the accepted decision/action taxonomy, trust corridor, and contract gaps
+  - Planning note: blocked until Domain Planner v1 artifact gate accepts the decision/action taxonomy, trust corridor, contract gaps, eval rubric, privacy posture, and mobile state model
 
 - Initiative (candidate): **Agreements v0 (read-only)** (consent-first)
   - Anchor: TBD — requires initiative spec
@@ -175,7 +175,7 @@
   - Email/channel work сортируем по цепочке безопасности: verified profile state → delivery platform → конкретный notification use case.
 
 - Текущий рейтинг новых инициатив:
-  - #1 INIT-2026Q3-ai-command-capability-audit - CURRENT / DISCOVERY GATE; evidence-based baseline before Domain Planner v1, `natural_command`, and Mobile AI Command Center.
+  - #1 INIT-2026Q3-ai-command-capability-audit - DONE / CLOSED DISCOVERY BASELINE; result LIMITED-GO with research pack and external comparison before Domain Planner v1, `natural_command`, and Mobile AI Command Center.
   - #2 INIT-2026Q3-voice-command-chat-mvp - CURRENT; E2E voice-to-command value inside existing Commands, with editable transcript and manual Send.
   - #3 INIT-2026Q3-mobile-client-refactor-foundation - CURRENT / PARALLEL; native mobile engineering enablement before richer command/voice semantics.
   - #4 INIT-2026Q2-social-auth-yandex-vk - CARRY-OVER / IN_PROGRESS; activation lever with external provider/security spike.

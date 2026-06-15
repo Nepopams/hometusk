@@ -75,6 +75,32 @@ The follow-up comparison is captured in
 secondary research and product strategy input; the repo-grounded audit remains
 the canonical current-state baseline.
 
+## Evidence Weighting
+
+| Evidence | Use | Weight |
+| --- | --- | --- |
+| HomeTusk repository audit | Current-state implementation claims about contracts, runtime behavior, backend command pipeline, mobile command surface, and AI Platform adapter behavior. | Canonical |
+| Local AI Platform provider audit | Current provider capability and gap claims. | High, but read-only and not HomeTusk product acceptance by itself |
+| External deep research report | Product strategy, industry patterns, roadmap framing, eval/privacy/backlog deltas, and future artifact-gate input. | Secondary |
+| Roadmap and initiative docs | HomeTusk sequencing, gates, and scope boundaries. | Canonical for planning posture |
+
+If external research and repo-grounded evidence disagree about current
+capability, repo-grounded evidence wins. If they differ about future sequencing,
+use HomeTusk gate posture, product risk, and contract readiness to decide.
+
+## Next Artifact Gate
+
+Before AI Platform Domain Planner v1, HomeTusk `natural_command`, or Mobile AI
+Command UX moves to APPLY, create a separate artifact/contract/eval gate with:
+
+- natural-command contract draft;
+- accepted decision/action taxonomy;
+- machine-readable golden scenarios;
+- eval rubric;
+- privacy/retention questions;
+- mobile AI state matrix;
+- provider planner readiness checklist.
+
 ## Current Readiness
 
 | Area | Readiness |
