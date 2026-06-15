@@ -2,7 +2,20 @@
 
 ## Status
 
-Draft (to be approved at Human Gate A)
+Completed - artifact/contract/eval gate accepted on 2026-06-15.
+
+Gate posture:
+
+- Human Gate A: GO, selected as planning focus for this gate.
+- Human Gate B: GO, committed docs-only artifact package scope.
+- Human Gate C: GO, delegated approval for docs-only APPLY.
+- Human Gate D: GO, artifact package accepted.
+- No runtime or provider APPLY approval is implied.
+- Docs-only artifact gate; no runtime code or contract changes in this
+  initiative.
+- Final inherited recommendation remains **LIMITED-GO**.
+- Gate decisions and evidence are recorded in
+  `docs/planning/initiatives/INIT-2026Q3-ai-command-artifact-gate.execution.md`.
 
 ## Initiative type
 
@@ -14,19 +27,17 @@ HomeTusk product engineering team.
 
 ## Target milestone
 
-Before AI Platform Domain Planner v1 APPLY, before HomeTusk `natural_command`, and before Mobile AI Command UX.
+Before AI Platform Domain Planner v1 APPLY.
 
 ## Parent / Related initiatives
 
-- Completed discovery baseline: `docs/planning/initiatives/INIT-2026Q3-ai-command-capability-audit.md`
-- Completed discovery execution index: `docs/planning/initiatives/INIT-2026Q3-ai-command-capability-audit.execution.md`
-- Research pack: `docs/research/ai-command-capabilities/README.md`
+- Parent discovery baseline: `docs/planning/initiatives/INIT-2026Q3-ai-command-capability-audit.md`
+- Research pack: `docs/research/ai-command-capabilities/**`
+- Artifact gate package: `docs/research/ai-command-capabilities/domain-planner-v1-gate/**`
 - External research comparison: `docs/research/ai-command-capabilities/external-research-comparison-2026-06-15.md`
-- Final audit recommendation: `docs/research/ai-command-capabilities/recommendation.md`
-- Related mobile refactor: `docs/planning/initiatives/INIT-2026Q3-mobile-client-refactor-foundation.md`
-- Future provider initiative: AI Platform Domain Planner v1 — Narrow Household Command Corridor
-- Future consumer initiative: HomeTusk `natural_command` contract
-- Future client initiative: Mobile AI Command UX v1
+- Future provider initiative: AI Platform Domain Planner v1 - Narrow Household Command Corridor
+- Future HomeTusk initiative: `natural_command` contract and backend integration
+- Future mobile initiative: Mobile AI Command UX v1
 
 ---
 
@@ -35,485 +46,469 @@ Before AI Platform Domain Planner v1 APPLY, before HomeTusk `natural_command`, a
 - Product Goal: `docs/planning/strategy/product-goal.md`
 - Roadmap: `docs/planning/strategy/roadmap.md`
 - DoR/DoD: `docs/_governance/dor.md`, `docs/_governance/dod.md`
+- AI Command Capability Audit: `docs/research/ai-command-capabilities/README.md`
+- Current-State Code Audit: `docs/research/ai-command-capabilities/current-state-code-audit.md`
+- Decision Taxonomy v0: `docs/research/ai-command-capabilities/decision-taxonomy-v0.md`
+- Action Taxonomy v0: `docs/research/ai-command-capabilities/action-taxonomy-v0.md`
+- Golden Scenarios v0: `docs/research/ai-command-capabilities/golden-scenarios-v0.md`
+- Capability Matrix: `docs/research/ai-command-capabilities/capability-matrix.md`
+- AI Platform Gap Analysis: `docs/research/ai-command-capabilities/platform-gap-analysis.md`
+- HomeTusk Contract Gap Analysis: `docs/research/ai-command-capabilities/hometusk-contract-gap-analysis.md`
+- Target Architecture v0: `docs/research/ai-command-capabilities/target-architecture-v0.md`
+- Recommendation: `docs/research/ai-command-capabilities/recommendation.md`
+- External Research Comparison: `docs/research/ai-command-capabilities/external-research-comparison-2026-06-15.md`
+- Domain Planner v1 Artifact Gate Package: `docs/research/ai-command-capabilities/domain-planner-v1-gate/README.md`
 - HomeTusk Commands Contract: `docs/contracts/http/commands.openapi.yaml`
-- HomeTusk AI Platform External Contract: `docs/contracts/external/ai-platform.decision.openapi.yaml`
-- HomeTusk AI Platform Integration Docs: `docs/integration/ai-platform/v1/**`
-- AI Command Capability Audit Pack: `docs/research/ai-command-capabilities/**`
-- Backend Command Pipeline: `services/backend/src/main/java/com/hometusk/commands/**`
-- Mobile Command Feature: `clients/mobile/src/features/command/**`
-- Provider repository for read-only context: `Nepopams/vr_ai_platform`
+- HomeTusk AI Platform Integration: `docs/integration/ai-platform/**`
+- Provider repository for read-only reference: `C:\Users\user\Documents\projects\VR_AI_Platform`
 
 ---
 
 ## 1. Problem / Opportunity
 
-The AI Command Capability Audit closed with **LIMITED-GO**: HomeTusk should proceed only toward a narrow AI Platform Domain Planner v1 corridor for simple task creation and shopping item addition.
+The AI Command Capability Audit established a useful direction but stopped short of implementation approval.
 
-The audit and external research comparison agree on the target direction:
+Current recommendation is **LIMITED-GO**:
 
-- build a command layer, not generic AI chat;
-- keep HomeTusk as validation, guardrails, execution, and audit authority;
-- keep AI Platform as planner/decision provider;
-- use a single domain planner before considering multi-agent architecture;
-- keep the first trust corridor narrow;
-- treat confidence as an audit/routing signal, not execution permission;
-- require golden scenarios, evals, traceability, and privacy boundaries before broad Mobile AI Command UX.
+- proceed only toward a narrow AI Platform Domain Planner v1 corridor;
+- focus on simple task creation and shopping item addition;
+- do not proceed yet to broad natural command execution, HomeTusk `natural_command`, Mobile AI Command Center, mixed task/shopping autonomous planning, or multi-agent production planner.
 
-However, the audit also identified blockers that make direct Domain Planner v1 implementation premature:
+The audit and external comparison agree on product direction:
 
-- decision/action taxonomy is proposed but not yet accepted as an implementation gate;
-- golden scenarios are markdown seed scenarios, not machine-readable fixtures;
-- eval rubric and deterministic grader expectations are not formalized;
-- privacy, retention, provider governance, and allowed context boundaries need explicit artifact-gate review;
-- `natural_command` is only a gap/direction, not a draft accepted contract;
-- `confirm` and `answer` are target outcomes but not implemented or contractually accepted;
-- HomeTusk AI Platform integration docs have known drift around legacy `/decision`, wrapper schemas, runtime snake_case envelope, and reject/action semantics;
-- Mobile AI state model is not yet accepted.
+```text
+HomeTusk needs a command layer, not a generic AI chat.
+AI Platform should plan/propose.
+HomeTusk should validate, guardrail, execute and audit.
+Single domain planner is the next reasonable provider shape.
+Multi-agent production architecture is premature.
+```
 
-This initiative turns the completed research baseline into an implementation-ready artifact package before any provider-side or HomeTusk runtime work begins.
+However, implementation is still blocked by artifact gaps:
 
----
+decision/action taxonomy is proposed but not accepted as an implementation baseline;
+golden scenarios are markdown seed only, not machine-readable fixtures;
+no eval rubric exists for planner acceptance;
+privacy, retention and provider governance questions are not yet formalized;
+natural_command exists only as a concept, not a draft contract package;
+mobile AI state model is not accepted;
+HomeTusk AI Platform integration docs have known drift against runtime behavior;
+AI Platform provider initiative needs a precise, bounded brief.
 
-## 2. Outcome (what changes for product/team)
+This initiative closes those artifact gaps before any provider-side or HomeTusk runtime APPLY work.
 
-No production feature is delivered.
+## 2. Outcome
 
-The outcome is an accepted artifact gate package that can be handed to the future AI Platform Domain Planner v1 initiative and later HomeTusk `natural_command` work.
+This initiative produces an implementation-ready artifact gate package.
 
-After this initiative, the team should have:
+After completion, the team should be able to start a separate AI Platform Domain Planner v1 initiative with clear inputs:
 
-- accepted decision/action taxonomy v0;
-- a `natural_command` contract draft, explicitly not implemented;
-- machine-readable golden scenario fixtures v0;
-- eval rubric v0;
-- privacy and retention questions for provider planning;
-- mobile AI state matrix v0;
-- provider planner readiness checklist;
-- documented AI Platform integration doc drift and cleanup requirements;
-- provider initiative brief for `vr_ai_platform`.
+accepted decision/action taxonomy;
+draft natural_command contract direction;
+machine-readable golden scenario fixtures;
+eval rubric and deterministic grading expectations;
+privacy and retention questions;
+mobile AI state matrix;
+provider readiness checklist;
+HomeTusk integration-doc drift summary;
+provider initiative brief.
 
-The initiative does **not** approve APPLY for Domain Planner v1, `natural_command`, or Mobile AI UX. It prepares the gate package required before those APPLY stages.
-
----
+This initiative does not implement the planner, natural_command, backend response types, mobile UI, or AI Platform code.
 
 ## 3. Scope (Now / Next / Later)
 
-### NOW — Artifact / contract / eval gate package
-
-Create a documentation package under:
-
-```text
-docs/research/ai-command-capabilities/domain-planner-v1-gate/
-```
-
-Expected artifacts:
-
-```text
-README.md
-natural-command-contract-v0-draft.md
-decision-action-taxonomy-accepted-v0.md
-golden-scenarios-fixtures-v0/
-eval-rubric-v0.md
-privacy-and-retention-questions.md
-mobile-ai-state-matrix-v0.md
-provider-planner-readiness-checklist.md
-hometusk-ai-platform-integration-doc-drift.md
-provider-initiative-brief.md
-```
-
-#### 3.1 Accepted decision/action taxonomy
-
-Promote the proposed taxonomy into an accepted artifact-gate baseline.
-
-Decision outcomes:
-
-```text
-execute
-clarify
-confirm
-reject
-answer
-```
-
-Action corridor v0:
-
-```text
-auto-execute candidate:
-  - create_task
-  - add_shopping_items
-
-clarify:
-  - ambiguous task title
-  - missing shopping item
-  - missing or ambiguous list/source
-  - ambiguous assignee/zone/deadline
-  - incomplete household context
-
-confirm:
-  - task + shopping linkage
-  - inferred non-requester assignment
-  - broad/batch planning
-  - reschedule
-  - actions outside the narrow corridor but inside HomeTusk domain
-
-reject:
-  - unsafe or impossible actions
-  - unsupported action types
-  - cross-household or unverifiable references
-  - direct AI execution bypassing HomeTusk
-
-answer:
-  - read-only status/query commands, blocked until answer response contract exists
-```
-
-This taxonomy remains an artifact-gate baseline. It must not modify runtime contracts in this initiative.
-
-#### 3.2 `natural_command` contract draft
-
-Draft a future HomeTusk-facing natural command contract.
-
-The draft must be explicit that it is **not** an OpenAPI/runtime contract yet.
-
-It should cover at least:
-
-- request shape direction;
-- payload fields:
-  - text;
-  - inputMode;
-  - locale;
-  - timezone;
-  - referenceInstant;
-  - optional asrTraceId;
-  - selected household context assumptions;
-- response/outcome shape direction:
-  - execute;
-  - clarify;
-  - confirm;
-  - reject;
-  - answer;
-- proposed action shape direction;
-- trace/audit fields;
-- compatibility notes with existing `POST /api/v1/commands`.
-
-The draft must not change `docs/contracts/http/commands.openapi.yaml`.
-
-#### 3.3 Machine-readable golden scenario fixtures
-
-Convert the current seed golden scenarios into machine-readable fixtures.
-
-Preferred structure:
-
-```text
-golden-scenarios-fixtures-v0/
-  README.md
-  context-fixtures-v0.yaml
-  golden-scenarios-v0.yaml
-```
-
-Minimum scenario set:
-
-- GS-001 simple task: `убрать кухню сегодня вечером`
-- GS-002 shopping: `купи молоко и курицу`
-- GS-003 shopping with list/source: `добавь в ашан мусорные пакеты и редьку`
-- GS-004 task + shopping linkage: `к ужину купи молоко и курицу`
-- GS-005 assignment: `Пете завтра вынести мусор`
-- GS-006 reschedule: `перенеси уборку ванной на выходные`
-- GS-007 batch planning: `распредели уборку на выходные`
-- GS-008 ambiguous prep: `надо подготовиться к гостям`
-- GS-009 unsafe overload: `назначь всем по 20 задач сегодня ночью`
-- GS-010 status/query: `что у нас сегодня по дому?`
-
-Each fixture should include:
-
-- id;
-- input text;
-- locale;
-- timezone;
-- reference instant;
-- context fixture id;
-- expected intent;
-- expected canonical outcome;
-- expected proposed actions;
-- expected clarify/confirm behavior;
-- forbidden assumptions;
-- HomeTusk responsibility;
-- AI Platform responsibility;
-- failure modes;
-- UX recommendation.
-
-The current 10 scenarios are seed only. The gate package must state that Domain Planner v1 acceptance should expand to at least 50 scenarios before broad rollout or auto-exec beyond the narrow corridor.
-
-#### 3.4 Eval rubric v0
-
-Define evaluation criteria for provider planner and HomeTusk integration readiness.
-
-Minimum rubric dimensions:
-
-- schema validity;
-- decision outcome correctness;
-- intent correctness;
-- entity extraction correctness;
-- item boundary preservation;
-- no forbidden assumptions;
-- clarify over guessing;
-- unsupported action not auto-executed;
-- unsafe broad assignment rejected;
-- no cross-household leakage;
-- no mutation for answer-style commands;
-- trace fields present;
-- deterministic graders for critical outcomes;
-- LLM-as-judge only for soft UX qualities, if used at all.
-
-Include future operational metrics:
-
-- execution precision;
-- wrong-object mutation rate;
-- unauthorized execution rate;
-- clarification resolution rate;
-- confirmation accept/cancel rate;
-- user correction and undo/revert rate;
-- p50/p95 latency;
-- drift by planner/model/prompt version.
-
-#### 3.5 Privacy and retention questions
-
-Define questions and constraints that must be answered before provider implementation or broader rollout.
-
-Must cover:
-
-- allowed context fields;
-- forbidden context fields;
-- raw audio handling;
-- raw text/transcript retention;
-- provider prompt/response retention;
-- region/provider/model provenance;
-- prompt versioning;
-- model/planner versioning;
-- audit payload retention;
-- household data minimization;
-- cross-household leakage prevention;
-- device token/auth token/invite token exclusion;
-- whether any zero-data-retention-like requirement exists.
-
-#### 3.6 Mobile AI state matrix v0
-
-Define future mobile states without implementing them.
-
-Minimum states:
-
-- composer;
-- processing;
-- executed result card;
-- clarify card;
-- confirmation card;
-- rejected card;
-- answered card;
-- degraded card;
-- timeline entry.
-
-For each state, define:
-
-- backend outcome required;
-- required payload shape;
-- user action;
-- retry/edit/continue behavior;
-- safety notes.
-
-This artifact should explicitly state that mobile must not call AI Platform directly and must not treat ASR transcript as execution permission.
-
-#### 3.7 Provider planner readiness checklist
-
-Create a checklist for the future provider-side initiative in `vr_ai_platform`.
-
-Minimum readiness items:
-
-- adopt or map accepted HomeTusk decision taxonomy;
-- support `execute`, `clarify`, `reject`, and optionally `confirm` for the narrow v1 corridor;
-- support `create_task` and multi-item `add_shopping_items`;
-- define timezone-aware date/time proposal behavior;
-- preserve schema validation;
-- preserve fallback/degradation behavior;
-- run HomeTusk golden scenario fixtures;
-- return trace id / decision version / confidence as audit fields;
-- avoid broad multi-agent planner as first production brain;
-- keep AI Platform mutation-free.
-
-#### 3.8 Integration doc drift note
-
-Document current HomeTusk integration doc drift and required cleanup before runtime work.
-
-Known drift areas include:
-
-- legacy `/decision` versus current `/v1/decide`;
-- wrapper schemas versus runtime upstream snake_case envelope;
-- wrapper schema action coverage versus runtime `propose_add_shopping_item` mapping;
-- reject/error taxonomy mismatch;
-- stale internal proposed action schema.
-
-This initiative may document cleanup requirements but must not change runtime contracts.
-
-#### 3.9 Provider initiative brief
-
-Prepare a short brief that can be copied into the future AI Platform initiative.
-
-It should include:
-
-- goal;
-- narrow corridor;
-- accepted input artifacts;
-- required provider outputs;
-- non-goals;
-- expected tests/evals;
-- HomeTusk ownership boundaries;
-- no direct mutation by provider.
-
----
-
-### NEXT — AI Platform Domain Planner v1
-
-Not part of this initiative.
-
-Likely follow-up after this artifact gate:
-
-- created in `vr_ai_platform`;
-- provider-owned implementation;
-- consumes HomeTusk artifact package as input;
-- produces structured decisions for narrow task/shopping corridor;
-- passes HomeTusk golden fixtures as provider regression.
-
----
-
-### LATER — HomeTusk `natural_command` and Mobile AI UX
-
-Not part of this initiative.
-
-Future HomeTusk work only after Domain Planner v1 and contract governance:
-
-- add `natural_command` to HomeTusk contract if approved;
-- add `needs_confirmation` / `answered` response contracts if approved;
-- update backend adapter and guardrails;
-- update mobile command feature to render structured cards, clarify chips, confirmation cards, answer cards, degraded states, and timeline.
-
----
-
-## 4. In Scope (explicit)
-
-- Docs-only artifact gate.
-- Accepted taxonomy document.
-- Natural command contract draft.
-- Machine-readable golden scenario fixtures.
-- Eval rubric.
-- Privacy/retention/provider governance questions.
-- Mobile AI state matrix.
-- Provider readiness checklist.
-- Integration doc drift note.
-- Provider initiative brief.
-- Optional concise execution index for this initiative after Gate A.
-
----
-
-## 5. Out of Scope (explicit)
-
-- No production code changes.
-- No backend implementation.
-- No mobile implementation.
-- No web implementation.
-- No OpenAPI changes.
-- No HomeTusk runtime contract changes.
-- No AI Platform code changes.
-- No AI Platform schema changes.
-- No prompt tuning.
-- No Domain Planner implementation.
-- No `natural_command` implementation.
-- No `needs_confirmation` or `answered` implementation.
-- No Mobile AI Command UX implementation.
-- No multi-agent production architecture.
-- No direct mobile → AI Platform integration.
-
----
-
-## 6. Cross-repo ownership and commit policy
-
-This initiative is committed in the HomeTusk repository.
-
-Codex may inspect `vr_ai_platform` as read-only context if available.
-
-Codex must not:
-
-- modify files in `vr_ai_platform`;
-- commit to `vr_ai_platform`;
-- vendor large provider snapshots into HomeTusk;
-- change provider schemas;
-- treat provider implementation details as HomeTusk product acceptance by themselves.
-
-The future AI Platform Domain Planner v1 work must be a separate provider-side initiative or PR.
-
----
-
-## 7. Assumptions
-
-- AI Command Capability Audit is accepted as the current baseline.
-- Final recommendation remains **LIMITED-GO**.
-- HomeTusk remains the product-service and execution authority.
-- AI Platform remains planner/decision provider.
-- Mobile and web remain clients of HomeTusk, not AI Platform.
-- External research is secondary product/industry evidence.
-- Repo-grounded audit remains canonical for current-state claims.
-- Domain Planner v1 should start with a narrow task/shopping corridor.
-
----
-
-## 8. Success Metrics
-
-The initiative succeeds when the team can hand one artifact package to the future provider-side Domain Planner v1 work and answer:
-
-1. What taxonomy must provider output map to?
-2. What actions are accepted for v0?
-3. Which actions can auto-execute, clarify, confirm, reject, or answer?
-4. What does a natural command request/decision contract look like directionally?
-5. What exact golden fixtures should provider run?
-6. What is a pass/fail for provider decisions?
-7. What privacy/retention questions must be answered before implementation or rollout?
-8. What future mobile states must backend contracts support?
-9. What integration documentation drift blocks implementation?
-10. What exact scope should the AI Platform Domain Planner v1 provider initiative take?
-
----
-
-## 9. Constraints / Guardrails
-
-- Keep recommendation as LIMITED-GO.
-- Do not turn draft contracts into runtime contracts.
-- Do not add implementation.
-- Prefer clarify/confirm over guessing.
-- Treat confidence as audit/routing signal only.
-- Keep HomeTusk as final authority for validation, guardrails, execution, and audit.
-- Keep provider stateless and mutation-free.
-- Keep mobile/web away from direct AI Platform calls.
-- Use machine-readable fixtures before implementation.
-- Make privacy and retention explicit before broader AI-command rollout.
-
----
-
-## 10. Risks & Mitigations
-
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Artifact gate becomes implementation work | HIGH | Explicit out-of-scope; docs-only; no runtime contract changes |
-| Draft contract is mistaken for accepted OpenAPI | HIGH | Label as draft; no OpenAPI modification |
-| Golden fixtures are too small | MEDIUM | Mark 10 as seed; require expansion to 50+ before broad rollout |
-| Provider initiative starts from stale docs | HIGH | Add integration doc drift artifact and readiness checklist |
-| Privacy questions are deferred too long | HIGH | Make privacy/retention document required in gate package |
-| Mobile AI UX starts before backend outcomes exist | HIGH | Mobile state matrix documents dependency on backend outcomes |
-| Multi-agent hype re-enters scope | MEDIUM | Provider brief explicitly recommends single domain planner first |
-
----
-
-## 11. Expected artifacts
+### NOW — Artifact Gate Package
 
 Create:
 
 ```text
+docs/research/ai-command-capabilities/domain-planner-v1-gate/
+  README.md
+  natural-command-contract-v0-draft.md
+  decision-action-taxonomy-accepted-v0.md
+  golden-scenarios-fixtures-v0/
+  eval-rubric-v0.md
+  privacy-and-retention-questions.md
+  mobile-ai-state-matrix-v0.md
+  provider-planner-readiness-checklist.md
+  hometusk-ai-platform-integration-doc-drift.md
+  provider-initiative-brief.md
+```
+
+README
+
+Must summarize:
+
+artifact gate purpose;
+LIMITED-GO posture;
+what is accepted;
+what remains draft;
+what is blocked;
+what the next provider initiative may consume;
+what must not be implemented yet.
+decision-action-taxonomy-accepted-v0.md
+
+Turn proposed taxonomy into an accepted baseline for the narrow corridor.
+
+Must include:
+
+canonical decision outcomes:
+execute;
+clarify;
+confirm;
+reject;
+answer;
+current support status;
+mapping to current HomeTusk statuses;
+mapping to current AI Platform statuses/actions;
+first trust corridor;
+execution permission rule;
+explicit statement that confidence is not permission.
+
+Expected accepted narrow corridor:
+
+auto-execute:
+  - create_task
+  - add_shopping_items
+
+clarify:
+  - ambiguous task/list/zone/member/date
+  - missing default shopping list
+  - incomplete household context
+
+confirm:
+  - inferred non-requester assignment
+  - task + shopping linkage
+  - reschedule
+  - batch planning
+  - broad workload redistribution
+
+reject:
+  - unsafe/impossible requests
+  - unsupported actions
+  - cross-household references
+  - unverifiable entities
+  - direct AI execution bypassing HomeTusk
+
+answer:
+  - design-only until read-only answer contract exists
+natural-command-contract-v0-draft.md
+
+Draft only. No OpenAPI change.
+
+Must propose:
+
+future HomeTusk-facing request shape;
+future provider-facing decision shape;
+context snapshot rules;
+allowed capabilities;
+source/input-mode fields;
+locale/timezone/reference-instant fields;
+audit/tracing fields;
+compatibility notes with existing create_task and complete_task.
+
+It must explicitly state:
+
+not accepted as runtime contract yet;
+not implemented in this initiative;
+future implementation requires contract impact gate;
+mobile/web must still call HomeTusk, not AI Platform.
+golden-scenarios-fixtures-v0/
+
+Convert seed scenarios into machine-readable fixtures.
+
+Minimum:
+
+golden-scenarios-v0.yaml
+context-fixtures-v0.yaml
+README.md
+
+The first fixture set must include the 10 existing canonical scenarios:
+
+убрать кухню сегодня вечером
+купи молоко и курицу
+добавь в ашан мусорные пакеты и редьку
+к ужину купи молоко и курицу
+Пете завтра вынести мусор
+перенеси уборку ванной на выходные
+распредели уборку на выходные
+надо подготовиться к гостям
+назначь всем по 20 задач сегодня ночью
+что у нас сегодня по дому?
+
+Each fixture should include:
+
+id;
+input text;
+locale;
+timezone;
+reference instant;
+context fixture id;
+expected intent;
+expected entities;
+expected decision outcome;
+expected actions;
+expected clarify;
+expected confirm;
+forbidden assumptions;
+HomeTusk responsibility;
+AI Platform responsibility;
+failure modes;
+UX recommendation.
+
+The fixture package must explicitly state that 10 scenarios are only the seed set. Before Domain Planner v1 acceptance, the suite should grow to at least 50 scenarios.
+
+eval-rubric-v0.md
+
+Define deterministic acceptance criteria for provider planner evaluation.
+
+Must cover:
+
+schema validity;
+decision outcome correctness;
+intent correctness;
+entity extraction correctness;
+item boundary preservation;
+date/time ambiguity handling;
+no unsupported auto-execute;
+no forbidden assumptions;
+no cross-household leakage;
+clarify over guessing;
+reject unsafe broad assignments;
+no mutation for answer-style commands;
+trace completeness;
+failure bucket taxonomy;
+which checks can be deterministic;
+which checks may be judged manually or later by LLM-as-judge for soft dimensions only.
+privacy-and-retention-questions.md
+
+Define open questions and minimum privacy boundary for future planner work.
+
+Must include:
+
+what HomeTusk may send to AI Platform;
+what must not be sent;
+raw audio prohibition;
+device/auth/invite token prohibition;
+email and private comment handling;
+cross-household prohibition;
+prompt/response retention questions;
+region/provider/model provenance questions;
+prompt version and planner version retention;
+audit and DecisionLog expectations.
+mobile-ai-state-matrix-v0.md
+
+Define future mobile state model without implementation.
+
+Must include states:
+
+composer;
+processing;
+executed card;
+clarify card;
+confirmation card;
+rejected card;
+answered card;
+degraded card;
+timeline entry.
+
+For each state, define:
+
+backend response dependency;
+user-visible behavior;
+required fields;
+blocked fields;
+local persistence;
+failure/retry behavior.
+
+Must state that mobile AI UX remains blocked until backend contract supports required states.
+
+provider-planner-readiness-checklist.md
+
+Define what AI Platform Domain Planner v1 must support.
+
+Minimum:
+
+consume HomeTusk golden fixtures;
+support accepted taxonomy mapping;
+support execute, clarify, reject;
+optionally support confirm as non-executing output;
+support create_task;
+support multi-item add_shopping_items;
+propose date/time with timezone or clarify;
+preserve schema validation;
+avoid direct mutation;
+avoid broad multi-agent planner;
+provide planner version / decision version / trace id;
+expose deterministic eval output for HomeTusk acceptance.
+hometusk-ai-platform-integration-doc-drift.md
+
+Summarize known drift:
+
+legacy /decision vs current /v1/decide;
+wrapper camelCase schema vs runtime upstream snake_case envelope;
+wrapper schema not reflecting current provider actions;
+reject documentation vs upstream action/status reality;
+internal add_shopping_item execution vs public command type mismatch.
+
+Must classify each drift item as:
+
+blocking before provider planner;
+blocking before HomeTusk integration;
+non-blocking documentation cleanup.
+provider-initiative-brief.md
+
+Prepare a concise brief for the future AI Platform initiative.
+
+Must include:
+
+recommended initiative name;
+repository owner: vr_ai_platform;
+HomeTusk artifacts to consume;
+provider scope;
+provider non-goals;
+expected contract outputs;
+expected eval outputs;
+HomeTusk acceptance gates;
+cross-repo commit policy.
+### NEXT — AI Platform Domain Planner v1
+
+Not part of this initiative.
+
+Likely provider-side follow-up if artifact gate is accepted:
+
+AI Platform Domain Planner v1 - Narrow Household Command Corridor
+
+Expected provider scope:
+
+implement or adapt planner to accepted taxonomy;
+support simple task and shopping corridor;
+run HomeTusk golden fixtures;
+keep schema validation;
+avoid multi-agent production brain.
+### LATER — HomeTusk natural_command and Mobile AI UX
+
+Not part of this initiative.
+
+Future HomeTusk work may include:
+
+natural_command request contract;
+needs_confirmation response;
+answered response;
+provider adapter mapping;
+DecisionLog expansion;
+mobile structured cards;
+clarify chips/forms;
+confirmation cards;
+command timeline.
+## 4. In Scope
+Docs-only artifact gate.
+Accepted taxonomy doc.
+Draft natural_command contract doc.
+Machine-readable seed golden fixtures.
+Eval rubric.
+Privacy/retention questions.
+Mobile AI state matrix.
+Provider readiness checklist.
+Integration doc drift summary.
+Provider initiative brief.
+Roadmap/planning updates if needed.
+## 5. Out of Scope
+No backend implementation.
+No Java code changes.
+No TypeScript/mobile implementation.
+No OpenAPI changes.
+No AI Platform code changes.
+No AI Platform schema changes.
+No runtime contract changes.
+No prompt tuning.
+No generic assistant chat.
+No multi-agent production planner.
+No direct mobile to AI Platform calls.
+No Domain Planner v1 implementation initiative in this patch unless explicitly approved later.
+## 6. Cross-repo Ownership
+
+This initiative is HomeTusk-owned and committed in the HomeTusk repository.
+
+AI Platform is provider-side follow-up work and must be handled in vr_ai_platform through a separate initiative/branch/PR.
+
+Codex may inspect vr_ai_platform as read-only context if available.
+
+Codex must not:
+
+modify AI Platform files;
+create commits in AI Platform;
+reformat AI Platform files;
+vendor large AI Platform snapshots into HomeTusk;
+treat AI Platform implementation as HomeTusk source of truth.
+
+HomeTusk owns:
+
+product golden scenarios;
+accepted decision/action taxonomy;
+trust corridor;
+safety/UX requirements;
+consumer contract direction;
+final acceptance gates.
+
+AI Platform owns:
+
+provider planner implementation;
+provider schema/runtime implementation;
+provider eval runner;
+provider-side contract outputs.
+## 7. Assumptions
+AI Command Capability Audit is accepted as research baseline with LIMITED-GO.
+External deep research is secondary evidence for product strategy and industry patterns.
+Repo-grounded audit remains canonical for current-state implementation claims.
+HomeTusk remains execution authority.
+AI Platform remains planner/decision provider.
+Mobile/web remain clients of HomeTusk, not AI Platform.
+Confidence must not be used as permission to execute.
+The first planner corridor is intentionally narrow.
+## 8. Success Metrics
+
+This initiative succeeds when:
+
+Accepted decision/action taxonomy exists.
+Draft natural command contract exists.
+Golden scenarios have machine-readable seed fixtures.
+Eval rubric exists.
+Privacy/retention questions are explicit.
+Mobile AI state matrix exists.
+Provider readiness checklist exists.
+Integration doc drift is documented and classified.
+Provider initiative brief exists.
+Recommendation remains LIMITED-GO.
+No runtime code or contracts are changed.
+The next provider-side initiative can start from clear inputs.
+## 9. Constraints / Guardrails
+Keep recommendation LIMITED-GO.
+Do not broaden to full GO.
+Do not implement.
+Do not modify runtime contracts.
+Do not modify AI Platform.
+Do not start Mobile AI UX.
+Do not hide prompt tuning or code changes under docs.
+Prefer clarify/confirm over guessing.
+Preserve HomeTusk final authority.
+Preserve traceability and audit requirements.
+Treat fixtures as product acceptance assets.
+## 10. Risks & Mitigations
+Risk	Impact	Mitigation
+Artifact gate turns into implementation	HIGH	Docs-only scope and no runtime files
+Taxonomy remains ambiguous	HIGH	Accepted taxonomy file with explicit mappings
+Fixtures are too weak	MEDIUM	Seed now, require 50+ before provider acceptance
+Provider initiative starts with stale docs	HIGH	Integration doc drift file
+Privacy questions are deferred	HIGH	Privacy/retention artifact required
+Mobile UX starts too early	HIGH	Mobile state matrix only, no UI work
+Multi-agent path returns through provider work	MEDIUM	Provider checklist forbids broad multi-agent brain for v1
+## 11. Expected Files
+
+Minimum expected files:
+
+docs/planning/initiatives/INIT-2026Q3-ai-command-artifact-gate.md
+
 docs/research/ai-command-capabilities/domain-planner-v1-gate/
   README.md
   natural-command-contract-v0-draft.md
@@ -528,90 +523,69 @@ docs/research/ai-command-capabilities/domain-planner-v1-gate/
   provider-planner-readiness-checklist.md
   hometusk-ai-platform-integration-doc-drift.md
   provider-initiative-brief.md
-```
 
-Optionally create after Gate A:
+Optional after Gate A:
 
-```text
 docs/planning/initiatives/INIT-2026Q3-ai-command-artifact-gate.execution.md
-```
-
-Do not create implementation epics/stories/workpacks until this initiative is approved and Codex produces a plan consistent with the existing pipeline.
-
----
-
 ## 12. Exit Criteria
 
-This initiative is complete when:
+The initiative is complete when:
 
-1. Gate package exists under `docs/research/ai-command-capabilities/domain-planner-v1-gate/`.
-2. Decision/action taxonomy v0 is accepted for artifact-gate purposes.
-3. Natural command contract draft exists and is clearly marked non-runtime.
-4. Golden scenarios are available as machine-readable fixtures.
-5. Eval rubric v0 is documented.
-6. Privacy/retention questions are documented.
-7. Mobile AI state matrix is documented.
-8. Provider planner readiness checklist is documented.
-9. Integration doc drift and cleanup requirements are documented.
-10. Provider initiative brief is documented.
-11. No production code changed.
-12. No OpenAPI/runtime contract changed.
-13. No AI Platform code or schema changed.
-14. Recommendation remains LIMITED-GO.
-15. Next provider-side Domain Planner v1 scope is explicit but not implemented.
-
----
-
+All expected artifact gate files exist.
+The decision/action taxonomy is explicitly accepted for the narrow v0 corridor.
+The natural command contract draft is explicit but not implemented.
+Seed golden scenarios are machine-readable.
+Eval rubric is explicit enough for provider work.
+Privacy/retention questions are documented.
+Mobile AI state matrix is documented.
+Provider readiness checklist is actionable.
+Integration doc drift is classified.
+Provider initiative brief can be handed to AI Platform.
+No production/runtime/API/mobile/AI Platform code changed.
+Roadmap or planning docs are updated if required.
+Final recommendation remains LIMITED-GO.
 ## 13. Flags
-
-| Flag | Value | Notes |
-|------|-------|-------|
-| contract_impact | no | Draft artifacts only; future implementation will have contract impact |
-| adr_needed | maybe | Future `natural_command` / planner boundary likely deserves ADR |
-| diagrams_needed | maybe | Optional architecture diagram expansion allowed in gate package |
-| security_sensitive | yes | AI-command execution, household context, provider retention, privacy |
-| traceability_critical | yes | Planner versioning, DecisionLog, replay, eval evidence |
-| backend_impact | no | No runtime backend changes |
-| mobile_impact | no | No mobile implementation; state matrix only |
-| ai_platform_impact | no | Read-only provider context; future provider initiative likely |
-| cross_repo | yes | HomeTusk write, AI Platform read-only |
-| data_impact | no | No runtime data flow changes; privacy questions only |
-
----
-
+Flag	Value	Notes
+contract_impact	no	Draft only; future implementation will have contract impact
+adr_needed	maybe	Future Domain Planner / natural_command boundary may need ADR
+diagrams_needed	maybe	Target architecture exists; can be expanded if useful
+security_sensitive	yes	Household context, AI provider, privacy, retention
+traceability_critical	yes	Planner version, decision log, replay and eval evidence
+backend_impact	no	Docs-only
+mobile_impact	no	State matrix only
+ai_platform_impact	no	Provider follow-up only
+cross_repo	yes	HomeTusk write, AI Platform read-only
+data_impact	no now	Future planner work must resolve privacy/retention
 ## 14. Anti-Scope-Creep
 
 DO NOT:
 
-- modify Java or TypeScript runtime code;
-- modify OpenAPI;
-- modify AI Platform files;
-- add `natural_command` implementation;
-- add `needs_confirmation` implementation;
-- add `answered` implementation;
-- implement Domain Planner v1;
-- build mobile AI cards;
-- tune prompts;
-- add multi-agent orchestration;
-- broaden recommendation from LIMITED-GO to GO;
-- treat draft schemas as accepted runtime contracts;
-- start provider work in this repository.
+implement Domain Planner v1;
+implement HomeTusk natural_command;
+add needs_confirmation;
+add answered;
+modify OpenAPI;
+modify Java/TypeScript code;
+modify mobile command UI;
+modify AI Platform code or schemas;
+create a production multi-agent architecture;
+tune prompts;
+broaden LIMITED-GO to GO;
+bypass HomeTusk guardrails;
+permit direct mobile to AI Platform calls.
+## 15. Next Step After Gate D
 
----
+Start a separate provider-side planning track:
 
-## 15. Next Step After Gate A
+`AI Platform Domain Planner v1 - Narrow Household Command Corridor`
 
-Codex should receive a planning prompt:
+Use:
 
-- read this initiative;
-- read the AI Command Capability Audit research pack;
-- read external research comparison;
-- inspect current HomeTusk integration docs;
-- inspect AI Platform as read-only context if available;
-- propose exact gate package files and contents;
-- produce PLAN only;
-- do not modify production code;
-- do not modify OpenAPI/contracts;
-- do not modify AI Platform;
-- do not implement Domain Planner v1;
-- wait for Human Gate C before APPLY.
+- `docs/research/ai-command-capabilities/domain-planner-v1-gate/provider-initiative-brief.md`
+- `docs/research/ai-command-capabilities/domain-planner-v1-gate/provider-planner-readiness-checklist.md`
+- `docs/research/ai-command-capabilities/domain-planner-v1-gate/golden-scenarios-fixtures-v0/`
+
+Keep the next track separate from HomeTusk runtime APPLY. HomeTusk
+`natural_command`, Mobile AI UX, and any OpenAPI/backend/mobile changes remain
+blocked until their own contract gate, workpack, PLAN, Gate C, APPLY, and
+review gate.

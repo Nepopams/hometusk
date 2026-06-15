@@ -56,18 +56,20 @@ Suggested scope:
 ## Required HomeTusk Follow-Up Before APPLY
 
 1. Contract/artifact gate:
-   - align AI Platform mapping docs with current `/v1/decide` runtime;
-   - update or supersede stale wrapper schemas;
-   - approve decision/action taxonomy.
+   - completed as artifact package under
+     `docs/research/ai-command-capabilities/domain-planner-v1-gate/`;
+   - AI Platform mapping/schema drift is classified, but runtime contract
+     cleanup remains separate from this audit;
+   - decision/action taxonomy is accepted for the narrow v0 corridor.
 
 2. Workpack:
-   - define exact files for machine-readable scenarios;
-   - define validation commands;
-   - define owner split for provider versus HomeTusk changes.
+   - provider-side work still needs its own initiative/workpack in
+     `vr_ai_platform`;
+   - HomeTusk runtime work still needs a separate future workpack.
 
 3. Codex PLAN:
-   - read-only exploration of the approved workpack;
-   - no code writes before Gate C.
+   - required separately for any provider, contract, backend, or mobile APPLY;
+   - artifact gate completion does not approve implementation.
 
 ## Trust Corridor
 
