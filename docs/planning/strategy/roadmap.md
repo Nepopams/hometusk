@@ -11,6 +11,12 @@
   - Why now: ASR foundation и voice input ранее закрыты как отдельные основы; следующий продуктовый рычаг — собрать голос, editable draft, command execution и domain result cards в единый Commands flow без generic assistant и без LLM-логики внутри HomeTusk
   - Readiness: PROPOSED selected as NOW planning focus; requires Plan Mode before implementation, Gate C before APPLY, and likely contract_impact, security_sensitive, traceability_critical, diagrams_needed/adr_needed
 
+- Initiative (current / parallel engineering enablement): **INIT-2026Q3-mobile-client-refactor-foundation** — Mobile Client Refactor Foundation
+  - Anchor: docs/planning/initiatives/INIT-2026Q3-mobile-client-refactor-foundation.md
+  - Outcome: behavior-preserving native mobile refactor after Native Mobile MVP; `clients/mobile/App.tsx` becomes a thin entrypoint, `src/app/AppShell.tsx` owns orchestration, and command/auth/household/home/tasks/shopping/notifications/shared UI responsibilities move into focused modules
+  - Why now: Native Mobile MVP is already merged and APK testing is active; future mobile AI-command/voice work needs an isolated command feature before adding new semantics
+  - Readiness: IN_PROGRESS under delegated human-gate authority; contract_impact=no, backend_impact=no, ai_platform_impact=no; verification requires `clients/mobile` typecheck and CI formatting fix
+
 - Initiative (carry-over / in progress): **INIT-2026Q2-social-auth-yandex-vk** — Social Auth via Yandex/VK
   - Anchor: docs/planning/initiatives/INIT-2026Q2-social-auth-yandex-vk.md
   - Outcome: вход через Яндекс и подтверждённый technical path для VK через Keycloak identity brokering, без OAuth token exchange логики в HomeTusk backend
@@ -154,11 +160,12 @@
 
 - Текущий рейтинг новых инициатив:
   - #1 INIT-2026Q3-voice-command-chat-mvp - CURRENT; E2E voice-to-command value inside existing Commands, with editable transcript and manual Send.
-  - #2 INIT-2026Q2-social-auth-yandex-vk - CARRY-OVER / IN_PROGRESS; activation lever with external provider/security spike.
-  - #3 INIT-2026Q3-native-mobile-mvp - DONE; product validation track for native Android/iOS client, push/deep links, and mobile command chat without a new backend source of truth.
-  - #4 INIT-2026Q2-email-validation - DONE; foundation for trusted email state and eligibility.
-  - #5 INIT-2026Q2-email-notification-platform - DONE; safe delivery foundation before use-case logic.
-  - #6 INIT-2026Q2-task-assignment-email-notifications - DONE; direct user value after delivery foundation.
+  - #2 INIT-2026Q3-mobile-client-refactor-foundation - CURRENT / PARALLEL; native mobile engineering enablement before richer command/voice semantics.
+  - #3 INIT-2026Q2-social-auth-yandex-vk - CARRY-OVER / IN_PROGRESS; activation lever with external provider/security spike.
+  - #4 INIT-2026Q3-native-mobile-mvp - DONE; product validation track for native Android/iOS client, push/deep links, and mobile command chat without a new backend source of truth.
+  - #5 INIT-2026Q2-email-validation - DONE; foundation for trusted email state and eligibility.
+  - #6 INIT-2026Q2-email-notification-platform - DONE; safe delivery foundation before use-case logic.
+  - #7 INIT-2026Q2-task-assignment-email-notifications - DONE; direct user value after delivery foundation.
 
 - Риски:
   - Scope creep в web (слишком много экранов/фич за раз) → режем до NOW-инкремента инициативы.

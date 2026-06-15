@@ -26,6 +26,20 @@ EXPO_PUBLIC_API_BASE_URL=http://localhost:8080/api/v1 npm start
 
 On Android emulators, use the host address that can reach the backend from the emulator environment.
 
+## Source Layout
+
+The mobile client keeps `App.tsx` as the Expo entrypoint and places app behavior under `src/`:
+
+- `src/app/` - app shell orchestration, surface metadata, shared app types, and read-model defaults.
+- `src/features/auth/` - auth screen and secure session bootstrap/login/logout controller.
+- `src/features/households/` - household switcher and selected-household persistence.
+- `src/features/home/`, `src/features/tasks/`, `src/features/shopping/` - household surfaces and mutation helpers.
+- `src/features/command/` - command composer, outcome/continuation cards, request builder, continuation parser, outcome formatting, and recent-command history wrapper.
+- `src/features/notifications/` - push registration and notification/deep-link routing helpers.
+- `src/shared/ui/`, `src/shared/format/`, `src/shared/errors/` - reusable mobile UI primitives, pure formatters, and API error formatting.
+
+Future command/voice work should prefer `src/features/command/**` first and avoid coupling command changes to auth, shopping, push, or household modules.
+
 ## Device Builds
 
 ```bash

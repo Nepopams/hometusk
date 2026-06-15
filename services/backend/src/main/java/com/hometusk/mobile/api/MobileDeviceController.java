@@ -38,8 +38,8 @@ public class MobileDeviceController {
     @PostMapping
     public ResponseEntity<MobileDeviceDto> register(@Valid @RequestBody RegisterMobileDeviceRequest request) {
         User user = currentUser();
-        return ResponseEntity.status(HttpStatus.CREATED).body(MobileDeviceDto.from(
-                mobileDeviceService.register(user, request)));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(MobileDeviceDto.from(mobileDeviceService.register(user, request)));
     }
 
     @PatchMapping("/{deviceId}")
