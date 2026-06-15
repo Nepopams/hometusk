@@ -43,6 +43,7 @@ natural command execution until the gaps in this pack are resolved.
 | `hometusk-contract-gap-analysis.md` | HomeTusk contract/runtime gaps before `natural_command` and Mobile AI UX. |
 | `target-architecture-v0.md` | Proposed target architecture and trust corridor. |
 | `recommendation.md` | GO / LIMITED-GO / NO-GO decision and next initiative recommendation. |
+| `external-research-comparison-2026-06-15.md` | Follow-up comparison between this repo-grounded audit and the external deep research report supplied after the initial pass. |
 
 ## Boundary Decision
 
@@ -57,12 +58,22 @@ Out of scope:
 - prompt tuning;
 - direct mobile to AI Platform integration.
 
-## Evidence Limitation
+## Evidence Note
 
-The initiative mentions an external AI-command capabilities deep research report
-dated 2026-06-15. No such report was found in the current HomeTusk or local
-AI Platform repository during this pass, so this baseline is grounded in
-repository code, contracts, docs, and tests only.
+The initial pass did not have the external AI-command capabilities deep research
+report available in the HomeTusk or local AI Platform repositories, so the
+baseline artifacts were grounded in repository code, contracts, docs, and tests.
+
+The external report was later supplied at:
+
+```text
+C:\Users\user\Downloads\deep-research-report (32).md
+```
+
+The follow-up comparison is captured in
+`external-research-comparison-2026-06-15.md`. The external report is treated as
+secondary research and product strategy input; the repo-grounded audit remains
+the canonical current-state baseline.
 
 ## Current Readiness
 
