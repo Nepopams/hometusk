@@ -1,6 +1,9 @@
 package com.hometusk.auth.api;
 
 import com.hometusk.auth.dto.LoginRequest;
+import com.hometusk.auth.dto.MobileAuthResponse;
+import com.hometusk.auth.dto.MobileLogoutRequest;
+import com.hometusk.auth.dto.MobileRefreshRequest;
 import com.hometusk.auth.dto.RegisterRequest;
 import com.hometusk.auth.keycloak.KeycloakAuthService;
 import com.hometusk.auth.service.AuthCookieService;
@@ -42,6 +45,37 @@ public class AuthController {
     public ResponseEntity<Void> register(@Valid @RequestBody RegisterRequest request) {
         AuthTokens tokens = keycloakAuthService.register(request.name(), request.email(), request.password());
         return withSessionCookies(tokens);
+    }
+
+    @PostMapping("/mobile/login")
+    public ResponseEntity<MobileAuthResponse> mobileLogin(@Valid @RequestBody LoginRequest request) {
+        AuthTokens tokens = keycloakAuthService.login(request.email(), request.password());
+        return ResponseEntity.ok(MobileAuthResponse.from(tokens));
+    }
+
+    @PostMapping("/mobile/register")
+    public ResponseEntity<MobileAuthResponse> mobileRegister(@Valid @RequestBody RegisterRequest request) {
+        AuthTokens tokens = keycloakAuthService.register(request.name(), request.email(), request.password());
+        return ResponseEntity.ok(MobileAuthResponse.from(tokens));
+    }
+
+    @PostMapping("/mobile/refresh")
+    public ResponseEntity<MobileAuthResponse> mobileRefresh(
+            @RequestBody(required = false) MobileRefreshRequest request) {
+        String refreshToken = request != null ? request.refreshToken() : null;
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new BusinessException(ErrorCode.AUTH_REFRESH_REQUIRED, "Authentication session must be refreshed");
+        }
+
+        AuthTokens tokens = keycloakAuthService.refresh(refreshToken);
+        return ResponseEntity.ok(MobileAuthResponse.from(tokens));
+    }
+
+    @PostMapping("/mobile/logout")
+    public ResponseEntity<Void> mobileLogout(@RequestBody(required = false) MobileLogoutRequest request) {
+        String refreshToken = request != null ? request.refreshToken() : null;
+        keycloakAuthService.logout(refreshToken);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/refresh")

@@ -2,7 +2,8 @@
 
 ## Status
 
-Draft (to be approved at Human Gate A)
+DONE - delegated Gate D GO on 2026-06-15 for branch
+`codex/mobile-client-refactor-foundation`.
 
 ## Initiative type
 
@@ -33,6 +34,9 @@ Post Native Mobile MVP / Before Mobile AI Command Center
 
 - Product Goal: `docs/planning/strategy/product-goal.md`
 - Roadmap: `docs/planning/strategy/roadmap.md`
+- Execution index: `docs/planning/initiatives/INIT-2026Q3-mobile-client-refactor-foundation.execution.md`
+- Epic: `docs/planning/epics/EP-036/epic.md`
+- Workpack: `docs/planning/workpacks/ST-3601/workpack.md`
 - DoR/DoD: `docs/_governance/dor.md`, `docs/_governance/dod.md`
 - Mobile README: `clients/mobile/README.md`
 - Mobile AGENTS: `clients/mobile/AGENTS.md`

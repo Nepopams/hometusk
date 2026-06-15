@@ -30,9 +30,11 @@ export function CommandInput() {
   const [lastRequest, setLastRequest] = useState<CommandRequest | null>(null);
   const [voiceMode, setVoiceMode] = useState<VoiceMode>('idle');
   const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [voiceAsrTraceId, setVoiceAsrTraceId] = useState<string | null>(null);
   const [voiceWasUsed, setVoiceWasUsed] = useState(false);
   const [transcriptWasEdited, setTranscriptWasEdited] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const voiceRunIdRef = useRef(0);
   const {
     start: startRecording,
     stop: stopRecording,
@@ -45,14 +47,17 @@ export function CommandInput() {
   const {
     transcribe,
     transcript: asrTranscript,
+    traceId: asrTraceId,
     error: asrError,
     reset: resetTranscription,
   } = useAsrTranscription();
   const resetVoiceFlow = useCallback(() => {
+    voiceRunIdRef.current += 1;
     resetRecording();
     resetTranscription();
     setVoiceMode('idle');
     setVoiceTranscript('');
+    setVoiceAsrTraceId(null);
     setVoiceWasUsed(false);
     setTranscriptWasEdited(false);
   }, [resetRecording, resetTranscription]);
@@ -74,28 +79,26 @@ export function CommandInput() {
   // Voice transcription flow - trigger transcribe when audioBlob is ready
   useEffect(() => {
     if (voiceMode !== 'uploading') return;
-    if (!audioBlob || !householdId) return;
+    if (!audioBlob) return;
 
-    let active = true;
+    const runId = voiceRunIdRef.current + 1;
+    voiceRunIdRef.current = runId;
     const run = async () => {
       setVoiceMode('transcribing');
-      await transcribe(audioBlob, householdId, voiceCorrelationId || undefined);
-      if (!active) return;
+      await transcribe(audioBlob, voiceCorrelationId || undefined);
+      if (voiceRunIdRef.current !== runId) return;
       setVoiceMode('idle');
       resetRecording();
     };
 
-    run();
-
-    return () => {
-      active = false;
-    };
-  }, [voiceMode, audioBlob, householdId, transcribe, resetRecording, voiceCorrelationId]);
+    void run();
+  }, [voiceMode, audioBlob, transcribe, resetRecording, voiceCorrelationId]);
 
   // Sync ASR transcript to local state and focus input
   useEffect(() => {
     if (asrTranscript) {
       setVoiceTranscript(asrTranscript);
+      setVoiceAsrTraceId(asrTraceId);
       requestAnimationFrame(() => {
         const input = containerRef.current?.querySelector<HTMLInputElement>(
           'input[type="text"], textarea'
@@ -103,7 +106,7 @@ export function CommandInput() {
         input?.focus();
       });
     }
-  }, [asrTranscript]);
+  }, [asrTranscript, asrTraceId]);
 
   // Escape cancels recording
   useEffect(() => {
@@ -186,7 +189,8 @@ export function CommandInput() {
       householdId,
       type: 'create_task',
       payload,
-      source: 'web',
+      source: voiceAsrTraceId ? 'voice' : 'web',
+      ...(voiceAsrTraceId && { asrTraceId: voiceAsrTraceId }),
     };
     setLastRequest(request);
     await execute(request);

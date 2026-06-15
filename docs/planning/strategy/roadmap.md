@@ -3,13 +3,37 @@
 > Формат Now/Next/Later фиксирует направление и приоритеты без преждевременных дат.
 > У каждого пункта должен быть "якорь" — initiative/release документ.
 
-## NOW (текущий фокус: social auth via Yandex/VK)
+## NOW (текущий фокус: Voice Command Chat MVP + AI Command Capability Audit)
 
-- Initiative (current): **INIT-2026Q2-social-auth-yandex-vk** — Social Auth via Yandex/VK
+- Initiative (current): **INIT-2026Q3-voice-command-chat-mvp** — Voice Command Chat MVP
+  - Anchor: docs/planning/initiatives/INIT-2026Q3-voice-command-chat-mvp.md
+  - Outcome: пользователь записывает голосовую команду, ASR создаёт редактируемый transcript draft, пользователь вручную отправляет его через существующий command pipeline, а UI показывает controlled outcomes: executed, needs_input, rejected или ASR error
+  - Why now: ASR foundation и voice input ранее закрыты как отдельные основы; следующий продуктовый рычаг — собрать голос, editable draft, command execution и domain result cards в единый Commands flow без generic assistant и без LLM-логики внутри HomeTusk
+  - Readiness: PROPOSED selected as NOW planning focus; requires Plan Mode before implementation, Gate C before APPLY, and likely contract_impact, security_sensitive, traceability_critical, diagrams_needed/adr_needed
+
+- Initiative (current / parallel engineering enablement): **INIT-2026Q3-mobile-client-refactor-foundation** — Mobile Client Refactor Foundation
+  - Anchor: docs/planning/initiatives/INIT-2026Q3-mobile-client-refactor-foundation.md
+  - Outcome: behavior-preserving native mobile refactor after Native Mobile MVP; `clients/mobile/App.tsx` becomes a thin entrypoint, `src/app/AppShell.tsx` owns orchestration, and command/auth/household/home/tasks/shopping/notifications/shared UI responsibilities move into focused modules
+  - Why now: Native Mobile MVP is already merged and APK testing is active; future mobile AI-command/voice work needs an isolated command feature before adding new semantics
+  - Readiness: IN_PROGRESS under delegated human-gate authority; contract_impact=no, backend_impact=no, ai_platform_impact=no; verification requires `clients/mobile` typecheck and CI formatting fix
+
+- Initiative (current / discovery gate): **INIT-2026Q3-ai-command-capability-audit** — AI Command Capability Audit & Golden Scenarios
+  - Anchor: docs/planning/initiatives/INIT-2026Q3-ai-command-capability-audit.md
+  - Outcome: decision-grade audit of current HomeTusk ↔ AI Platform AI-command capability, including decision taxonomy v0, action taxonomy v0, golden scenarios, capability matrix, HomeTusk/AI Platform gap analysis, target architecture notes, and GO / LIMITED-GO / NO-GO recommendation
+  - Why now: Native Mobile MVP, mobile command shell, voice/ASR foundations, command pipeline, shopping linkage, guardrails, and AI Platform integration are in place; before building Domain Planner v1, `natural_command`, or Mobile AI Command Center, the team needs evidence that the planner/trust corridor is strong enough for product UX
+  - Readiness: DRAFT for Human Gate A; discovery-only, no production code/API/mobile/AI Platform changes; contract_impact=no for this audit, security_sensitive=yes, traceability_critical=yes, cross_repo=yes; `vr_ai_platform` is read-only context
+
+- Initiative (carry-over / in progress): **INIT-2026Q2-social-auth-yandex-vk** — Social Auth via Yandex/VK
   - Anchor: docs/planning/initiatives/INIT-2026Q2-social-auth-yandex-vk.md
   - Outcome: вход через Яндекс и подтверждённый technical path для VK через Keycloak identity brokering, без OAuth token exchange логики в HomeTusk backend
   - Why now: email validation, email notification platform и task assignment email notifications закрыты; следующий рычаг — снизить onboarding friction без переноса OAuth-сложности в HomeTusk backend
-  - Readiness: IN_PROGRESS as NOW focus; security_sensitive, adr_needed, requires provider runbook/secrets handling and VK spike result
+  - Readiness: IN_PROGRESS carry-over; security_sensitive, adr_needed, requires provider runbook/secrets handling and VK spike result; not the primary NOW focus while Voice Command Chat MVP is selected
+
+- Initiative (done): **INIT-2026Q3-native-mobile-mvp** — Native Mobile Client MVP
+  - Anchor: docs/planning/initiatives/INIT-2026Q3-native-mobile-mvp.md
+  - Outcome: first-class Android/iOS client for core household flows, command chat, session persistence, push token registration, and deep-link handoff without replacing HomeTusk backend or calling AI Platform directly
+  - Why now: web household, command, shopping, notification, email, and auth foundations are mature enough to validate the "home in your pocket" product loop while social auth continues as a parallel activation/security track
+  - Closed: 2026-06-14 (EP-035 / ST-3501-ST-3507; delegated Gate D GO; Expo mobile app, auth/session, household reads, tasks/shopping mutations, command chat, device registration backend, push/deep-link handoff, and release smoke docs delivered)
 
 - Initiative (done): **INIT-2026Q2-task-assignment-email-notifications** — Task Assignment Email Notifications
   - Anchor: docs/planning/initiatives/INIT-2026Q2-task-assignment-email-notifications.md
@@ -116,6 +140,16 @@
 
 ## NEXT (будущие инициативы / ranked candidates)
 
+- Initiative (gated candidate): **AI Platform Domain Planner v1**
+  - Anchor: TBD — depends on `docs/planning/initiatives/INIT-2026Q3-ai-command-capability-audit.md`
+  - Outcome: single production-oriented domain planner with structured decision output, narrow execution corridor, golden-scenario regression signal, and clear ownership split between AI Platform planning and HomeTusk validation/execution
+  - Planning note: only starts after the AI Command Capability Audit returns GO or LIMITED-GO; likely AI Platform-owned with HomeTusk contract/adapter follow-up
+
+- Initiative (gated candidate): **HomeTusk natural_command + Mobile AI Command UX v1**
+  - Anchor: TBD — depends on AI Command Capability Audit and Domain Planner v1 readiness
+  - Outcome: HomeTusk-owned natural command contract and mobile command UX for clarify/confirm/answer/execute outcomes without direct mobile → AI Platform calls
+  - Planning note: blocked until the audit defines the accepted decision/action taxonomy, trust corridor, and contract gaps
+
 - Initiative (candidate): **Agreements v0 (read-only)** (consent-first)
   - Anchor: TBD — requires initiative spec
   - Outcome: отображение договорённостей/правил без конструктора и без токсичных лидербордов
@@ -127,7 +161,7 @@
 - Shopping source presets, budgets, multi-store runs and delegation
 - Dashboard personalisation, analytics widgets and notification feed
 - Advanced command recurrence, priority, reminders and explainable AI suggestions
-- Mobile/PWA (после доказанного value на web)
+- PWA/mobile web enhancements (supporting only; Native Mobile MVP is now the primary mobile validation track)
 - Calendar integrations / внешние интеграции
 - Task dependencies (task A блокирует task B)
 - Voice enhancements (streaming, wake word, hands-free)
@@ -141,10 +175,14 @@
   - Email/channel work сортируем по цепочке безопасности: verified profile state → delivery platform → конкретный notification use case.
 
 - Текущий рейтинг новых инициатив:
-  - #1 INIT-2026Q2-email-validation — DONE; foundation для доверенного email-state и eligibility.
-  - #2 INIT-2026Q2-email-notification-platform — DONE; безопасная delivery foundation перед use-case логикой.
-  - #3 INIT-2026Q2-task-assignment-email-notifications — DONE; прямой user value после готовой платформы.
-  - #4 INIT-2026Q2-social-auth-yandex-vk — CURRENT; activation lever, но с внешним provider/security spike.
+  - #1 INIT-2026Q3-ai-command-capability-audit - CURRENT / DISCOVERY GATE; evidence-based baseline before Domain Planner v1, `natural_command`, and Mobile AI Command Center.
+  - #2 INIT-2026Q3-voice-command-chat-mvp - CURRENT; E2E voice-to-command value inside existing Commands, with editable transcript and manual Send.
+  - #3 INIT-2026Q3-mobile-client-refactor-foundation - CURRENT / PARALLEL; native mobile engineering enablement before richer command/voice semantics.
+  - #4 INIT-2026Q2-social-auth-yandex-vk - CARRY-OVER / IN_PROGRESS; activation lever with external provider/security spike.
+  - #5 INIT-2026Q3-native-mobile-mvp - DONE; product validation track for native Android/iOS client, push/deep links, and mobile command chat without a new backend source of truth.
+  - #6 INIT-2026Q2-email-validation - DONE; foundation for trusted email state and eligibility.
+  - #7 INIT-2026Q2-email-notification-platform - DONE; safe delivery foundation before use-case logic.
+  - #8 INIT-2026Q2-task-assignment-email-notifications - DONE; direct user value after delivery foundation.
 
 - Риски:
   - Scope creep в web (слишком много экранов/фич за раз) → режем до NOW-инкремента инициативы.

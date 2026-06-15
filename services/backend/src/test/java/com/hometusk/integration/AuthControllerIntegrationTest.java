@@ -11,6 +11,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hometusk.auth.api.AuthController;
 import com.hometusk.auth.dto.LoginRequest;
+import com.hometusk.auth.dto.MobileLogoutRequest;
+import com.hometusk.auth.dto.MobileRefreshRequest;
 import com.hometusk.auth.dto.RegisterRequest;
 import com.hometusk.auth.filter.JwtCookieAuthFilter;
 import com.hometusk.auth.keycloak.KeycloakAuthService;
@@ -121,6 +123,41 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
+    @DisplayName("Mobile login returns token response without cookies")
+    void mobileLogin_withValidCredentials_returnsTokenResponseWithoutCookies() throws Exception {
+        when(keycloakAuthService.login(anyString(), anyString())).thenReturn(tokens());
+
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/mobile/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new LoginRequest("alice@test.local", "password123"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").value("access-token"))
+                .andExpect(jsonPath("$.refreshToken").value("refresh-token"))
+                .andExpect(jsonPath("$.expiresInSeconds").value(3600))
+                .andExpect(jsonPath("$.refreshExpiresInSeconds").value(7200))
+                .andExpect(jsonPath("$.tokenType").value("Bearer"))
+                .andReturn();
+
+        assertThat(result.getResponse().getHeaders(HttpHeaders.SET_COOKIE)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Mobile register returns token response")
+    void mobileRegister_withValidPayload_returnsTokenResponse() throws Exception {
+        when(keycloakAuthService.register(anyString(), anyString(), anyString()))
+                .thenReturn(tokens());
+
+        mockMvc.perform(post("/api/v1/auth/mobile/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new RegisterRequest("Alice Test", "alice@test.local", "password123"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").value("access-token"))
+                .andExpect(jsonPath("$.refreshToken").value("refresh-token"))
+                .andExpect(jsonPath("$.tokenType").value("Bearer"));
+    }
+
+    @Test
     @DisplayName("Register maps duplicate email to 409")
     void register_withDuplicateEmail_returns409() throws Exception {
         when(keycloakAuthService.register(anyString(), anyString(), anyString()))
@@ -157,6 +194,30 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
+    @DisplayName("Mobile refresh requires refresh token")
+    void mobileRefresh_withoutRefreshToken_returns401() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/mobile/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.errorCode").value("AUTH_REFRESH_REQUIRED"));
+    }
+
+    @Test
+    @DisplayName("Mobile refresh returns renewed token response")
+    void mobileRefresh_withValidRefreshToken_returnsTokenResponse() throws Exception {
+        when(keycloakAuthService.refresh("old-refresh-token")).thenReturn(tokens());
+
+        mockMvc.perform(post("/api/v1/auth/mobile/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new MobileRefreshRequest("old-refresh-token"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").value("access-token"))
+                .andExpect(jsonPath("$.refreshToken").value("refresh-token"))
+                .andExpect(jsonPath("$.tokenType").value("Bearer"));
+    }
+
+    @Test
     @DisplayName("Refresh updates session cookies")
     void refresh_withValidRefreshCookie_setsSessionCookies() throws Exception {
         when(keycloakAuthService.refresh("old-refresh-token")).thenReturn(tokens());
@@ -190,6 +251,20 @@ class AuthControllerIntegrationTest {
             assertThat(cookie).contains("hometusk_refresh_token=");
             assertThat(cookie).contains("Max-Age=0");
         });
+    }
+
+    @Test
+    @DisplayName("Mobile logout revokes refresh token without cookie response")
+    void mobileLogout_withRefreshToken_returnsNoContent() throws Exception {
+        doNothing().when(keycloakAuthService).logout("old-refresh-token");
+
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/mobile/logout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new MobileLogoutRequest("old-refresh-token"))))
+                .andExpect(status().isNoContent())
+                .andReturn();
+
+        assertThat(result.getResponse().getHeaders(HttpHeaders.SET_COOKIE)).isEmpty();
     }
 
     @Test

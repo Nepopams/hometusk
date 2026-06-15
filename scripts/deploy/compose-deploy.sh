@@ -21,9 +21,19 @@ rsync -az -e "ssh -o StrictHostKeyChecking=yes" infra/uat/postgres/ "${remote}:$
 rsync -az -e "ssh -o StrictHostKeyChecking=yes" infra/compose/keycloak/realm-export.json "${remote}:${DEPLOY_PATH}/keycloak/realm-export.json"
 rsync -az -e "ssh -o StrictHostKeyChecking=yes" infra/keycloak/configure-social-idps.sh "${remote}:${DEPLOY_PATH}/keycloak/configure-social-idps.sh"
 
-if [[ -n "${ENV_FILE_CONTENT:-}" ]]; then
+if [[ -n "${ENV_FILE_CONTENT:-}" || -n "${EXTRA_ENV_FILE_CONTENT:-}" ]]; then
   tmp_env="$(mktemp)"
-  printf '%s\n' "${ENV_FILE_CONTENT}" > "${tmp_env}"
+  if [[ -n "${ENV_FILE_CONTENT:-}" ]]; then
+    printf '%s\n' "${ENV_FILE_CONTENT}" > "${tmp_env}"
+  else
+    : > "${tmp_env}"
+  fi
+  if [[ -n "${EXTRA_ENV_FILE_CONTENT:-}" ]]; then
+    if [[ -s "${tmp_env}" ]]; then
+      printf '\n' >> "${tmp_env}"
+    fi
+    printf '%s\n' "${EXTRA_ENV_FILE_CONTENT}" >> "${tmp_env}"
+  fi
   rsync -az -e "ssh -o StrictHostKeyChecking=yes" "${tmp_env}" "${remote}:${DEPLOY_PATH}/.env"
   rm -f "${tmp_env}"
 else
@@ -137,7 +147,16 @@ encoded_redirect_uri="${redirect_uri//:/%3A}"
 encoded_redirect_uri="${encoded_redirect_uri//\//%2F}"
 
 auth_url="${authority%/}/protocol/openid-connect/auth?client_id=${client_id}&redirect_uri=${encoded_redirect_uri}&response_type=code&scope=openid%20profile%20email&state=hometusk-deploy-smoke&nonce=hometusk-deploy-smoke&code_challenge=hometuskSocialAuthSmokeCodeChallenge00000001&code_challenge_method=S256&kc_idp_hint=${alias}"
-headers="$(curl -ksS -o /dev/null -D - "$auth_url")"
+curl_args=(-ksS --connect-timeout 10 --max-time 30 -o /dev/null -D -)
+if [[ "$authority" == https://* ]]; then
+  authority_host="${authority#https://}"
+  authority_host="${authority_host%%/*}"
+  authority_host="${authority_host%%:*}"
+  if [ -n "$authority_host" ]; then
+    curl_args+=(--resolve "${authority_host}:443:127.0.0.1")
+  fi
+fi
+headers="$(curl "${curl_args[@]}" "$auth_url")"
 status="$(printf '%s\n' "$headers" | awk '/^HTTP/ { code=$2 } END { print code }')"
 location="$(printf '%s\n' "$headers" | awk 'tolower($1) == "location:" { sub(/\r$/, ""); print substr($0, index($0, $2)); exit }')"
 

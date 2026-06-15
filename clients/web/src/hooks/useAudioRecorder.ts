@@ -6,6 +6,7 @@ const DURATION_UPDATE_INTERVAL_MS = 100;
 
 export type AudioRecorderError =
   | 'permission_denied'
+  | 'no_microphone'
   | 'not_supported'
   | 'recording_failed'
   | 'no_audio_data';
@@ -19,6 +20,56 @@ export interface UseAudioRecorderResult {
   error: AudioRecorderError | null;
   reset: () => void;
   correlationId: string | null;
+}
+
+function createCorrelationId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, '0'));
+    return `${hex.slice(0, 4).join('')}-${hex.slice(4, 6).join('')}-${hex
+      .slice(6, 8)
+      .join('')}-${hex.slice(8, 10).join('')}-${hex.slice(10).join('')}`;
+  }
+
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
+    const random = Math.floor(Math.random() * 16);
+    const value = char === 'x' ? random : (random & 0x3) | 0x8;
+    return value.toString(16);
+  });
+}
+
+function logRecorderError(error: unknown) {
+  if (error instanceof DOMException) {
+    console.warn('[VoiceRecorder] recording failed', {
+      name: error.name,
+      message: error.message,
+    });
+    return;
+  }
+
+  console.warn('[VoiceRecorder] recording failed', error);
+}
+
+function mapRecorderStartError(error: unknown): AudioRecorderError {
+  if (error instanceof DOMException) {
+    if (error.name === 'NotAllowedError' || error.name === 'SecurityError') {
+      return 'permission_denied';
+    }
+    if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+      return 'no_microphone';
+    }
+    if (error.name === 'NotSupportedError') {
+      return 'not_supported';
+    }
+  }
+
+  return 'recording_failed';
 }
 
 export function useAudioRecorder(): UseAudioRecorderResult {
@@ -102,22 +153,25 @@ export function useAudioRecorder(): UseAudioRecorderResult {
       };
 
       recorder.onstop = () => {
+        const recordedChunks = [...chunksRef.current];
         cleanup();
-        if (chunksRef.current.length === 0) {
+        if (recordedChunks.length === 0) {
           setError('no_audio_data');
           return;
         }
-        const blob = new Blob(chunksRef.current, { type: mimeType });
+        const blob = new Blob(recordedChunks, { type: mimeType });
         setAudioBlob(blob);
       };
 
-      recorder.onerror = () => {
+      recorder.onerror = (event) => {
+        const recorderError = 'error' in event ? (event as Event & { error: unknown }).error : event;
+        logRecorderError(recorderError);
         cleanup();
         setError('recording_failed');
         setIsRecording(false);
       };
 
-      const newCorrelationId = crypto.randomUUID();
+      const newCorrelationId = createCorrelationId();
       setCorrelationId(newCorrelationId);
       logVoiceEvent({ type: 'voice_start', correlationId: newCorrelationId });
 
@@ -133,12 +187,9 @@ export function useAudioRecorder(): UseAudioRecorderResult {
         stop();
       }, MAX_DURATION_MS);
     } catch (err) {
+      logRecorderError(err);
       cleanup();
-      if (err instanceof DOMException && err.name === 'NotAllowedError') {
-        setError('permission_denied');
-      } else {
-        setError('recording_failed');
-      }
+      setError(mapRecorderStartError(err));
     }
   }, [cleanup, stop]);
 

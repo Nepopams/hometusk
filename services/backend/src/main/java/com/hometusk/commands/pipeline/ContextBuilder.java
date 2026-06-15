@@ -161,6 +161,15 @@ public class ContextBuilder {
                     })
                     .toList();
 
+            Map<String, Object> context = new HashMap<>();
+            context.put("members", membersList);
+            context.put("zones", zonesList);
+            context.put("shopping_lists", shoppingLists);
+            shoppingListRepository
+                    .findFirstByHousehold_IdOrderByCreatedAtAsc(householdId)
+                    .ifPresent(defaultList ->
+                            context.put("default_list_id", defaultList.getId().toString()));
+
             log.debug(
                     "AI context built: householdId={}, members={}, zones={}, shoppingLists={}, correlationId={}",
                     householdId,
@@ -169,7 +178,7 @@ public class ContextBuilder {
                     shoppingLists.size(),
                     correlationId);
 
-            return Map.of("members", membersList, "zones", zonesList, "shopping_lists", shoppingLists);
+            return Map.copyOf(context);
 
         } catch (Exception e) {
             log.error("Failed to build AI context: householdId={}, correlationId={}", householdId, correlationId, e);

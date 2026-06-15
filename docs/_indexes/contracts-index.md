@@ -18,7 +18,9 @@ This index tracks all API contracts (OpenAPI, JSON Schema, AsyncAPI) in the proj
 | Commands API | Frontend (future) | HomeTusk Backend | v1 | stable | [Link](../contracts/http/commands.openapi.yaml) |
 | Routines API | Web Frontend | HomeTusk Backend | v1 | draft | [Link](../contracts/http/routines.openapi.yaml) |
 | ASR Proxy API | Web/Bot | HomeTusk Backend | v1 | draft | [Link](../contracts/http/asr-proxy.openapi.yaml) |
+| Voice Transcriptions API | Web Frontend | HomeTusk Backend | v1 | draft | [Link](../contracts/http/voice-transcriptions.openapi.yaml) |
 | Shopping Marketplaces API | Web Frontend | HomeTusk Backend | v1 | draft | [Link](../contracts/http/shopping-marketplaces.openapi.yaml) |
+| Mobile Devices API | Native Mobile App | HomeTusk Backend | v1 | stable | [Link](../contracts/http/mobile-devices.openapi.yaml) |
 | AI Platform Decision API | HomeTusk Backend | AI Platform (external) | v1 | stable | [Link](../contracts/external/ai-platform.decision.openapi.yaml) |
 | Task Schema | Commands API | Backend | v1 | stable | [Link](../contracts/schemas/task.schema.json) |
 | Command Schema | Commands API | Backend | v1 | stable | [Link](../contracts/schemas/command.schema.json) |
@@ -76,3 +78,22 @@ This index tracks all API contracts (OpenAPI, JSON Schema, AsyncAPI) in the proj
   identity brokering; the HomeTusk backend continues to consume only
   Keycloak-issued JWTs. Integration mapping is captured in
   `docs/integration/identity/social-auth-keycloak-broker.md`.
+- 2026-06-14 — INIT-2026Q3-native-mobile-mvp ST-3506 implements stable
+  `mobile-devices.openapi.yaml` for native mobile push device registration:
+  create/refresh, token rotation/status update, and deactivation. The contract
+  is additive, bearer-authenticated, scoped to the current user, and does not
+  return provider push tokens in responses.
+- 2026-06-14 — INIT-2026Q3-native-mobile-mvp ST-3502 adds non-breaking
+  mobile auth endpoints to `commands.openapi.yaml`: `/auth/mobile/login`,
+  `/auth/mobile/register`, `/auth/mobile/refresh`, and `/auth/mobile/logout`.
+  These reuse the existing Keycloak-backed auth strategy but return JSON tokens
+  for native SecureStore instead of browser HttpOnly cookies.
+- 2026-06-14 - INIT-2026Q3-voice-command-chat-mvp adds
+  `voice-transcriptions.openapi.yaml` for synchronous ASR draft creation and a
+  backward-compatible Commands API delta: `source=voice` plus optional
+  `asrTraceId`. ASR does not execute commands; explicit user Send still calls
+  `/api/v1/commands`.
+- 2026-06-14 - INIT-2026Q3 voice follow-up aligns HomeTusk's external
+  AI Platform decision contract with upstream `POST /v1/decide`:
+  snake_case command request fields, upstream decision response envelope, and
+  nested `payload.proposed_actions` mapping.

@@ -9,6 +9,8 @@ import com.hometusk.asr.exception.AsrTimeoutException;
 import com.hometusk.asr.exception.AsrUnauthorizedException;
 import com.hometusk.asr.exception.AsrUnavailableException;
 import com.hometusk.shared.logging.MdcKeys;
+import com.hometusk.voice.dto.VoiceTranscriptionErrorResponse;
+import com.hometusk.voice.exception.VoiceAsrException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -47,12 +49,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
-        log.warn("Validation error: {}", ex.getMessage());
-
         List<ErrorResponse.ValidationError> errors = ex.getBindingResult().getFieldErrors().stream()
                 .map(error -> new ErrorResponse.ValidationError(
                         "$." + error.getField(), "VALIDATION_ERROR", error.getDefaultMessage()))
                 .toList();
+        log.warn("Validation error: {} field(s)", errors.size());
 
         ErrorResponse response = new ErrorResponse(
                 getCorrelationId(), ErrorCode.SCHEMA_INVALID.name(), "Validation failed", errors, null);
@@ -62,7 +63,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleUnreadable(HttpMessageNotReadableException ex) {
-        log.warn("Invalid JSON payload: {}", ex.getMessage());
+        log.warn("Invalid JSON payload");
 
         ErrorResponse response = new ErrorResponse(
                 getCorrelationId(), ErrorCode.SCHEMA_INVALID.name(), "Invalid JSON payload", null, null);
@@ -153,6 +154,29 @@ public class GlobalExceptionHandler {
         log.warn("ASR error: {}", ex.getMessage());
         HttpStatus status = resolveStatus(ex);
         return buildAsrResponse(ex, status, null, null);
+    }
+
+    @ExceptionHandler(VoiceAsrException.class)
+    public ResponseEntity<VoiceTranscriptionErrorResponse> handleVoiceAsrException(VoiceAsrException ex) {
+        log.warn(
+                "Voice ASR error: code={}, status={}",
+                ex.getCode(),
+                ex.getStatus().value());
+        Integer retryAfterSeconds = ex.getRetryAfterSeconds();
+        Map<String, Object> details = retryAfterSeconds != null ? Map.of("retryAfterSeconds", retryAfterSeconds) : null;
+        VoiceTranscriptionErrorResponse response =
+                new VoiceTranscriptionErrorResponse(ex.getCode(), ex.getMessage(), getCorrelationIdValue(), details);
+
+        HttpHeaders headers = new HttpHeaders();
+        String correlationId = getCorrelationIdValue();
+        if (correlationId != null) {
+            headers.set("X-Correlation-ID", correlationId);
+        }
+        if (retryAfterSeconds != null) {
+            headers.set("Retry-After", String.valueOf(retryAfterSeconds));
+        }
+
+        return ResponseEntity.status(ex.getStatus()).headers(headers).body(response);
     }
 
     @ExceptionHandler(Exception.class)
@@ -246,9 +270,10 @@ public class GlobalExceptionHandler {
                     USER_NOT_FOUND,
                     ZONE_NOT_FOUND,
                     SHOPPING_RUN_NOT_FOUND,
-                    NOTIFICATION_NOT_FOUND -> HttpStatus.NOT_FOUND;
+                    NOTIFICATION_NOT_FOUND,
+                    DEVICE_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case INVITE_EXPIRED, INVITE_REDEEMED, INVITE_REVOKED -> HttpStatus.GONE;
-            case AUTH_EMAIL_EXISTS, IDEMPOTENCY_CONFLICT -> HttpStatus.CONFLICT;
+            case AUTH_EMAIL_EXISTS, IDEMPOTENCY_CONFLICT, DEVICE_TOKEN_CONFLICT -> HttpStatus.CONFLICT;
             case AUTH_PROVIDER_UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
             case INTERNAL_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR;
             default -> HttpStatus.BAD_REQUEST;

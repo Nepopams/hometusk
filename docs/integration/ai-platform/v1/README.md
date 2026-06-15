@@ -33,12 +33,12 @@ v1/
 ## Endpoint
 
 **Upstream canonical:** `POST /decide`
-**HomeTusk default:** `POST /decision`
+**HomeTusk UAT/default path:** `POST /v1/decide`
 
 Endpoint настраивается через `aiplatform.decision-path`:
 ```yaml
 aiplatform:
-  decision-path: /decision  # или /decide для upstream
+  decision-path: /v1/decide
 ```
 
 ## Типы решений (Upstream)
@@ -47,7 +47,7 @@ aiplatform:
 |-----|----------|-------------------|
 | `start_job` | Выполнить предложенные действия | Полная |
 | `propose_create_task` | Предложить создание задачи | Маппится на start_job |
-| `propose_add_shopping_item` | Предложить добавление в список | **Не поддерживается** → Clarify |
+| `propose_add_shopping_item` | Предложить добавление в список | Маппится на `add_shopping_item` |
 | `clarify` | Нужно уточнение от пользователя | Полная |
 | `reject` | Невозможно обработать команду | Полная |
 
@@ -81,7 +81,7 @@ aiplatform:
 ```yaml
 aiplatform:
   base-url: ${AI_PLATFORM_URL:http://localhost:8090}
-  decision-path: ${AI_PLATFORM_DECISION_PATH:/decision}  # /decision или /decide
+  decision-path: ${AI_PLATFORM_DECISION_PATH:/v1/decide}
   timeout-ms: ${AI_PLATFORM_TIMEOUT_MS:5000}
   api-key: ${AI_PLATFORM_API_KEY:}
 ```

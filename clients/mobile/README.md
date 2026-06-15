@@ -1,0 +1,128 @@
+# HomeTusk Mobile
+
+Native mobile client for the HomeTusk Android/iOS MVP.
+
+## Stack
+
+- React Native + Expo + TypeScript.
+- Expo SecureStore for sensitive session material.
+- AsyncStorage only for non-sensitive app memory.
+- HomeTusk backend remains the source of truth.
+
+## Local Setup
+
+```bash
+cd clients/mobile
+npm install
+npm run typecheck
+npm start
+```
+
+Use `EXPO_PUBLIC_API_BASE_URL` to point the app at a backend:
+
+```bash
+EXPO_PUBLIC_API_BASE_URL=http://localhost:8080/api/v1 npm start
+```
+
+On Android emulators, use the host address that can reach the backend from the emulator environment.
+
+## Source Layout
+
+The mobile client keeps `App.tsx` as the Expo entrypoint and places app behavior under `src/`:
+
+- `src/app/` - app shell orchestration, surface metadata, shared app types, and read-model defaults.
+- `src/features/auth/` - auth screen and secure session bootstrap/login/logout controller.
+- `src/features/households/` - household switcher and selected-household persistence.
+- `src/features/home/`, `src/features/tasks/`, `src/features/shopping/` - household surfaces and mutation helpers.
+- `src/features/command/` - command composer, outcome/continuation cards, request builder, continuation parser, outcome formatting, and recent-command history wrapper.
+- `src/features/notifications/` - push registration and notification/deep-link routing helpers.
+- `src/shared/ui/`, `src/shared/format/`, `src/shared/errors/` - reusable mobile UI primitives, pure formatters, and API error formatting.
+
+Future command/voice work should prefer `src/features/command/**` first and avoid coupling command changes to auth, shopping, push, or household modules.
+
+## Device Builds
+
+```bash
+npm run android
+npm run ios
+```
+
+iOS simulator/device builds require macOS or an Expo/EAS path with Apple credentials. The MVP release path targets internal testing/dev builds first, not production store launch.
+
+## Push And Deep Links
+
+The app uses Expo Push Service for the MVP provider path. Push registration runs after sign-in:
+
+1. The app checks for an Expo/EAS project id from the development build config.
+2. It requests notification permission on iOS/Android.
+3. It obtains an Expo push token.
+4. It registers the token through `POST /api/v1/mobile/devices`.
+
+The push token is not stored in AsyncStorage and is not shown in the UI. The app stores only the non-sensitive backend device registration id so logout can deactivate the registration best effort.
+
+Supported handoff targets:
+
+- `hometusk://task/{taskId}?householdId={householdId}`
+- `hometusk://command?householdId={householdId}`
+- `hometusk://invite?token={inviteToken}`
+- `hometusk://notification/{notificationId}?householdId={householdId}`
+
+Push notification data can use the same fields through either `deepLink`/`url` or safe target keys such as `route`, `taskId`, `commandId`, `inviteToken`, `notificationId`, and `householdId`. Target data is only a handoff hint; the app reloads data through the authenticated backend session.
+
+## Internal Release Smoke
+
+Android dev build smoke:
+
+```bash
+npx expo install expo-notifications expo-constants expo-linking
+npx expo start
+npx uri-scheme open "hometusk://command" --android
+```
+
+For a push smoke, use an Android physical device or emulator with Google Play services, an Expo/EAS development build with push credentials, and the Expo push notifications tool. After sign-in, the app should show "Push registration is ready for this device"; send a test notification with `data.deepLink` such as `hometusk://command`.
+
+iOS dev/TestFlight-equivalent smoke:
+
+- Requires macOS or EAS Build plus Apple Developer credentials.
+- Register the test device before the first push-capable development build.
+- Build/install the development build, sign in, confirm push registration, then send a test notification through the Expo push notifications tool.
+- When Apple credentials are unavailable, treat iOS push receipt as credential-blocked but still verify TypeScript, app config, deep-link parsing, and Android path.
+
+Expo references checked on 2026-06-14:
+
+- `https://docs.expo.dev/push-notifications/push-notifications-setup/`
+- `https://docs.expo.dev/push-notifications/receiving-notifications/`
+- `https://docs.expo.dev/linking/into-your-app/`
+
+## Boundaries
+
+- Do not call AI Platform directly from mobile.
+- Do not add Firebase/Supabase as a HomeTusk domain backend.
+- Do not store access/refresh tokens in AsyncStorage.
+- Use `/api/v1/auth/mobile/login`, `/api/v1/auth/mobile/register`, `/api/v1/auth/mobile/refresh`, and `/api/v1/auth/mobile/logout` for native session flow.
+- Store `accessToken`, `refreshToken`, and token expiry metadata only through Expo SecureStore.
+- Keep push payloads small and safe; load deep-link target data from the backend after auth.
+- Keep offline mutation sync out of NOW; read-only cache and drafts are allowed.
+
+## Auth Session Flow
+
+The app opens a saved SecureStore session on boot, calls `/api/v1/users/me`, and attempts `/auth/mobile/refresh` once when the access token is stale or rejected. Failed refresh clears SecureStore and returns to the unauthenticated screen. Logout calls `/auth/mobile/logout` best effort, then clears SecureStore on the device.
+
+## Household Read Models
+
+After sign-in, the app validates the stored selected household ID against `/api/v1/users/me`, persists the active household as non-sensitive AsyncStorage state, and loads members, zones, tasks, shopping lists/items, and notifications through existing household-scoped REST endpoints. ST-3503 intentionally does not add a backend aggregation endpoint or mobile write flows.
+
+## Task And Shopping Mutations
+
+Task create and complete actions use `POST /api/v1/commands` with mobile idempotency and correlation headers. Shopping item add, mark-purchased, and delete actions use the existing selected-household shopping endpoints. The mobile client refreshes read models after successful writes and does not implement an offline mutation queue.
+
+## Command Chat
+
+The Command tab is a deterministic mobile text shell over HomeTusk command contracts. Plain text creates a task title, `done <id-or-title>` completes a matched open task, and `needs_input` continues through `/api/v1/commands/{commandId}/continue`. Recent command hints are stored only as non-sensitive AsyncStorage app memory; the mobile client never calls AI Platform directly.
+
+## Verification
+
+```bash
+npm run typecheck
+npx expo start --help
+```

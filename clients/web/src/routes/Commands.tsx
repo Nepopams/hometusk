@@ -1,16 +1,24 @@
-import { useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { useAudioRecorder } from '../hooks/useAudioRecorder';
+import { useAsrTranscription } from '../hooks/useAsrTranscription';
 import { useCommand } from '../hooks/useCommand';
 import { useCommandHistory } from '../hooks/useCommandHistory';
 import { useMembers } from '../hooks/useMembers';
 import { useZones } from '../hooks/useZones';
+import { VoiceErrorMessage, type VoiceErrorType } from '../components/commands/VoiceErrorMessage';
+import { VoiceMicButton } from '../components/commands/VoiceMicButton';
+import { VoiceRecordingStatus } from '../components/commands/VoiceRecordingStatus';
 import { Button } from '../components/ui';
 import { useI18n } from '../i18n';
+import { logVoiceEvent } from '../lib/voiceTelemetry';
 import type {
   CommandRequest,
   CreateTaskPayload,
 } from '../types/api';
 import './Commands.css';
+
+type VoiceMode = 'idle' | 'recording' | 'uploading' | 'transcribing';
 
 /**
  * Commands page with composer, result states, and history sidebar.
@@ -36,8 +44,87 @@ export default function Commands() {
   const [zoneId, setZoneId] = useState('');
   const [validationError, setValidationError] = useState('');
   const [showHistory, setShowHistory] = useState(false);
+  const [voiceMode, setVoiceMode] = useState<VoiceMode>('idle');
+  const [voiceWasUsed, setVoiceWasUsed] = useState(false);
+  const [voiceAsrTraceId, setVoiceAsrTraceId] = useState<string | null>(null);
+  const [transcriptWasEdited, setTranscriptWasEdited] = useState(false);
+  const isVoiceEnabled = import.meta.env.VITE_VOICE_COMMAND_ENABLED !== 'false';
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dueDateInputRef = useRef<HTMLInputElement>(null);
   const scheduleAtInputRef = useRef<HTMLInputElement>(null);
+  const voiceRunIdRef = useRef(0);
+  const {
+    start: startRecording,
+    stop: stopRecording,
+    duration: recordingDuration,
+    audioBlob,
+    error: recordingError,
+    reset: resetRecording,
+    correlationId: voiceCorrelationId,
+  } = useAudioRecorder();
+  const {
+    transcribe,
+    error: asrError,
+    reset: resetTranscription,
+  } = useAsrTranscription();
+
+  const resetVoiceFlow = useCallback(
+    ({ clearDraft = false } = {}) => {
+      voiceRunIdRef.current += 1;
+      resetRecording();
+      resetTranscription();
+      setVoiceMode('idle');
+      setVoiceWasUsed(false);
+      setVoiceAsrTraceId(null);
+      setTranscriptWasEdited(false);
+      if (clearDraft) {
+        setCommandText('');
+      }
+    },
+    [resetRecording, resetTranscription]
+  );
+
+  useEffect(() => {
+    if (voiceMode !== 'uploading' || !audioBlob) return;
+
+    const runId = voiceRunIdRef.current + 1;
+    voiceRunIdRef.current = runId;
+    const run = async () => {
+      setVoiceMode('transcribing');
+      const result = await transcribe(audioBlob, voiceCorrelationId || undefined);
+      if (voiceRunIdRef.current !== runId) return;
+      if (result) {
+        setCommandText(result.transcript);
+        setVoiceAsrTraceId(result.traceId);
+        setTranscriptWasEdited(false);
+        requestAnimationFrame(() => textareaRef.current?.focus());
+      }
+      setVoiceMode('idle');
+      resetRecording();
+    };
+
+    void run();
+  }, [voiceMode, audioBlob, transcribe, resetRecording, voiceCorrelationId]);
+
+  useEffect(() => {
+    if (recordingError || asrError) {
+      setVoiceMode('idle');
+    }
+  }, [recordingError, asrError]);
+
+  useEffect(() => {
+    if (voiceMode !== 'recording') return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        resetVoiceFlow();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [voiceMode, resetVoiceFlow]);
 
   const resetCommandAttributes = () => {
     if (dueDateInputRef.current) {
@@ -92,22 +179,79 @@ export default function Commands() {
       ...(assigneeId && { assigneeId }),
       ...(zoneId && { zoneId }),
       ...(scheduleAtIso && { scheduleAt: scheduleAtIso }),
-      source: 'web',
+      source: voiceAsrTraceId ? 'voice' : 'web',
+      ...(voiceAsrTraceId && { asrTraceId: voiceAsrTraceId }),
     };
+
+    if (voiceAsrTraceId) {
+      logVoiceEvent({
+        type: 'voice_command_submitted',
+        correlationId: voiceAsrTraceId,
+      });
+    }
 
     await execute(request);
   };
 
   const handleClear = () => {
-    setCommandText('');
     resetCommandAttributes();
+    resetVoiceFlow({ clearDraft: true });
     reset();
   };
 
   const handleNewCommand = () => {
-    setCommandText('');
     resetCommandAttributes();
+    resetVoiceFlow({ clearDraft: true });
     reset();
+  };
+
+  const handleCommandTextChange = (nextValue: string) => {
+    if (voiceWasUsed && voiceAsrTraceId && !transcriptWasEdited && nextValue !== commandText) {
+      setTranscriptWasEdited(true);
+      logVoiceEvent({
+        type: 'voice_transcript_edited',
+        correlationId: voiceAsrTraceId,
+      });
+    }
+    setCommandText(nextValue);
+    if (!nextValue.trim()) {
+      setVoiceAsrTraceId(null);
+    }
+  };
+
+  const handleMicClick = async () => {
+    if (voiceMode === 'recording') {
+      stopRecording();
+      setVoiceMode('uploading');
+      return;
+    }
+
+    if (isLoading || voiceMode !== 'idle') {
+      return;
+    }
+
+    resetTranscription();
+    resetRecording();
+    setVoiceMode('recording');
+    setVoiceWasUsed(true);
+    await startRecording();
+  };
+
+  const handleVoiceCancel = () => {
+    resetVoiceFlow();
+  };
+
+  const handleVoiceRetry = () => {
+    resetVoiceFlow();
+    requestAnimationFrame(() => {
+      void handleMicClick();
+    });
+  };
+
+  const handleVoiceDismiss = () => {
+    resetTranscription();
+    setVoiceMode('idle');
+    requestAnimationFrame(() => textareaRef.current?.focus());
   };
 
   const handleClearHistory = () => {
@@ -159,6 +303,23 @@ export default function Commands() {
         return status.replace(/_/g, ' ');
     }
   };
+
+  const voiceErrorType: VoiceErrorType | null = (() => {
+    if (recordingError) {
+      return recordingError as VoiceErrorType;
+    }
+    if (asrError) {
+      return asrError.type as VoiceErrorType;
+    }
+    return null;
+  })();
+
+  const micState = (() => {
+    if (voiceMode === 'recording') return 'recording';
+    if (voiceMode === 'uploading' || voiceMode === 'transcribing') return 'processing';
+    if (isLoading) return 'disabled';
+    return 'idle';
+  })();
 
   const renderResult = () => {
     if (isLoading) {
@@ -453,11 +614,46 @@ export default function Commands() {
           <h2 className="commands__section-title">{t('commands.title')}</h2>
           <form className="commands__composer-card" onSubmit={handleSubmit}>
             <div className="commands__textarea-wrapper">
+              {isVoiceEnabled && (
+                <div className="commands__voice-bar">
+                  <VoiceMicButton
+                    state={micState}
+                    onClick={handleMicClick}
+                    disabled={micState === 'disabled' || micState === 'processing'}
+                    aria-label={t('voice.input')}
+                  />
+                  {voiceMode !== 'idle' && (
+                    <VoiceRecordingStatus
+                      state={
+                        voiceMode === 'recording'
+                          ? 'recording'
+                          : voiceMode === 'uploading'
+                            ? 'uploading'
+                            : 'transcribing'
+                      }
+                      durationMs={recordingDuration}
+                      onCancel={handleVoiceCancel}
+                    />
+                  )}
+                  {voiceAsrTraceId && voiceMode === 'idle' && (
+                    <span className="commands__voice-draft-badge">{t('voice.draftReady')}</span>
+                  )}
+                </div>
+              )}
+              {voiceErrorType && (
+                <VoiceErrorMessage
+                  errorType={voiceErrorType}
+                  onRetry={handleVoiceRetry}
+                  onDismiss={handleVoiceDismiss}
+                  rateLimitResetMs={asrError?.retryAfterMs}
+                />
+              )}
               <textarea
+                ref={textareaRef}
                 className="commands__textarea"
                 placeholder={t('commands.placeholder')}
                 value={commandText}
-                onChange={(e) => setCommandText(e.target.value)}
+                onChange={(e) => handleCommandTextChange(e.target.value)}
                 disabled={isLoading}
                 rows={3}
               />

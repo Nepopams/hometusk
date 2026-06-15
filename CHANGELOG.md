@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased] - Stage 5: Task ↔ Shopping Linkage
 
 ### Added
+- **Voice Command Chat MVP**
+  - Synchronous Voice Transcriptions API contract for `POST /api/v1/voice/transcriptions`
+  - ADR-020 and sequence diagram for ASR draft creation followed by explicit command Send
+  - Commands API compatibility delta for `source=voice` and optional `asrTraceId`
+
 - **Shopping Module (Stage 5)**
   - `ShoppingList` and `ShoppingItem` JPA entities
   - `ShoppingService` with operations: addItem, markPurchased, deleteItem, linkItemsToTask

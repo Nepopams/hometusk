@@ -382,8 +382,8 @@ class Stage4GuardrailsIntegrationTest extends AiPlatformIntegrationTestBase {
 
             // Then: Verify request to AI Platform included workload_score
             // WireMock should have received request with context.members[].workload_score
-            wireMockServer.verify(postRequestedFor(urlEqualTo("/decision"))
-                    .withRequestBody(matchingJsonPath("$.context.members[?(@.workload_score)]")));
+            wireMockServer.verify(postRequestedFor(urlEqualTo(DECIDE_PATH))
+                    .withRequestBody(matchingJsonPath("$.context.household.members[?(@.workload_score)]")));
         }
     }
 
@@ -476,24 +476,37 @@ class Stage4GuardrailsIntegrationTest extends AiPlatformIntegrationTestBase {
         String responseBody =
                 """
                 {
-                    "decisionId": "%s",
-                    "type": "start_job",
+                    "decision_id": "%s",
+                    "command_id": "cmd-test",
+                    "status": "ok",
+                    "action": "start_job",
                     "confidence": 0.95,
-                    "actions": [
-                        {
-                            "actionType": "create_task",
-                            "parameters": {
-                                "title": "%s",
-                                "assigneeId": "%s",
-                                "deadline": "%s"
+                    "payload": {
+                        "job_id": "job-test",
+                        "job_type": "create_task",
+                        "proposed_actions": [
+                            {
+                                "action": "propose_create_task",
+                                "payload": {
+                                    "task": {
+                                        "title": "%s",
+                                        "assignee_id": "%s",
+                                        "due": "%s"
+                                    }
+                                }
                             }
-                        }
-                    ]
+                        ]
+                    },
+                    "explanation": "Task creation accepted.",
+                    "trace_id": "trace-test-guardrails",
+                    "schema_version": "1.0.0",
+                    "decision_version": "test-1",
+                    "created_at": "2026-06-14T00:00:00Z"
                 }
                 """
                         .formatted(UUID.randomUUID(), title, assigneeId, deadline);
 
-        stubFor(WireMock.post(urlEqualTo("/decision"))
+        stubFor(WireMock.post(urlEqualTo(DECIDE_PATH))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -507,23 +520,36 @@ class Stage4GuardrailsIntegrationTest extends AiPlatformIntegrationTestBase {
         String responseBody =
                 """
                 {
-                    "decisionId": "%s",
-                    "type": "start_job",
+                    "decision_id": "%s",
+                    "command_id": "cmd-test",
+                    "status": "ok",
+                    "action": "start_job",
                     "confidence": 0.90,
-                    "actions": [
-                        {
-                            "actionType": "create_task",
-                            "parameters": {
-                                "title": "%s",
-                                "zoneId": "%s"
+                    "payload": {
+                        "job_id": "job-test",
+                        "job_type": "create_task",
+                        "proposed_actions": [
+                            {
+                                "action": "propose_create_task",
+                                "payload": {
+                                    "task": {
+                                        "title": "%s",
+                                        "zone_id": "%s"
+                                    }
+                                }
                             }
-                        }
-                    ]
+                        ]
+                    },
+                    "explanation": "Task creation accepted.",
+                    "trace_id": "trace-test-guardrails",
+                    "schema_version": "1.0.0",
+                    "decision_version": "test-1",
+                    "created_at": "2026-06-14T00:00:00Z"
                 }
                 """
                         .formatted(UUID.randomUUID(), title, zoneId);
 
-        stubFor(WireMock.post(urlEqualTo("/decision"))
+        stubFor(WireMock.post(urlEqualTo(DECIDE_PATH))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -537,25 +563,38 @@ class Stage4GuardrailsIntegrationTest extends AiPlatformIntegrationTestBase {
         String responseBody =
                 """
                 {
-                    "decisionId": "%s",
-                    "type": "start_job",
+                    "decision_id": "%s",
+                    "command_id": "cmd-test",
+                    "status": "ok",
+                    "action": "start_job",
                     "confidence": 0.95,
-                    "actions": [
-                        {
-                            "actionType": "create_task",
-                            "parameters": {
-                                "title": "%s",
-                                "assigneeId": "%s",
-                                "zoneId": "%s",
-                                "deadline": "%s"
+                    "payload": {
+                        "job_id": "job-test",
+                        "job_type": "create_task",
+                        "proposed_actions": [
+                            {
+                                "action": "propose_create_task",
+                                "payload": {
+                                    "task": {
+                                        "title": "%s",
+                                        "assignee_id": "%s",
+                                        "zone_id": "%s",
+                                        "due": "%s"
+                                    }
+                                }
                             }
-                        }
-                    ]
+                        ]
+                    },
+                    "explanation": "Task creation accepted.",
+                    "trace_id": "trace-test-guardrails",
+                    "schema_version": "1.0.0",
+                    "decision_version": "test-1",
+                    "created_at": "2026-06-14T00:00:00Z"
                 }
                 """
                         .formatted(UUID.randomUUID(), title, assigneeId, zoneId, deadline);
 
-        stubFor(WireMock.post(urlEqualTo("/decision"))
+        stubFor(WireMock.post(urlEqualTo(DECIDE_PATH))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")

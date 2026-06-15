@@ -25,6 +25,7 @@ public enum ErrorCode {
     SHOPPING_RUN_NOT_FOUND("Shopping run not found"),
     INVALID_TOKEN("Invite token not found"),
     NOTIFICATION_NOT_FOUND("Notification not found"),
+    DEVICE_NOT_FOUND("Mobile device registration not found"),
 
     // Shopping validation (Stage 5)
     SHOPPING_ITEM_NAME_EMPTY("Shopping item name cannot be empty"),
@@ -43,6 +44,9 @@ public enum ErrorCode {
     AUTH_EMAIL_EXISTS("An account with this email already exists"),
     AUTH_REFRESH_REQUIRED("Authentication session must be refreshed"),
     AUTH_PROVIDER_UNAVAILABLE("Authentication provider is unavailable"),
+
+    // Mobile devices
+    DEVICE_TOKEN_CONFLICT("Mobile push token belongs to another active registration"),
 
     // AI Platform (Stage 2)
     AI_REJECTED("AI rejected the command"),

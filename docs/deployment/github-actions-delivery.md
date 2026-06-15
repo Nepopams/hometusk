@@ -11,7 +11,7 @@ This document defines the lightweight delivery model for HomeTusk. The goal is t
 |---|---|---|
 | `develop` | Integration line for active development | auto-deploy to `dev` |
 | `main` | Production-candidate line | auto-deploy to `uat` |
-| feature branches | Short-lived implementation branches | no deployment |
+| feature branches | Short-lived implementation branches | no automatic deployment |
 
 Production is not represented by a long-lived branch. Production deploys are manual promotions of a known immutable image tag that has already been verified on UAT.
 
@@ -47,6 +47,8 @@ ghcr.io/<owner>/hometusk-keycloak:main-latest
 ```
 
 Do not use `*-latest` for production. Production should use the immutable `sha-*` tag.
+Manual UAT candidate deploys from a feature branch publish and deploy only the
+immutable `sha-*` tag. They do not update `main-latest`.
 
 ## Required GitHub environments
 
@@ -88,6 +90,7 @@ UAT_USER
 UAT_SSH_KEY
 UAT_DEPLOY_PATH
 UAT_ENV_FILE
+UAT_VOICE_ENV_FILE
 UAT_OIDC_AUTHORITY
 UAT_OIDC_REDIRECT_URI
 ```
@@ -167,6 +170,38 @@ HEALTHCHECK_PORT=80
 ```
 
 Secrets must not be committed to the repository.
+
+The UAT workflow also accepts an optional `UAT_VOICE_ENV_FILE` secret. It is
+appended after `UAT_ENV_FILE` during deployment so a validation window can enable
+Voice Command Chat without replacing the existing base UAT environment secret.
+If this secret already exists, recreate it with the existing values plus any new
+ones; GitHub does not expose the old secret value for partial editing.
+
+```dotenv
+HOMETUSK_VOICE_ENABLED=true
+HOMETUSK_VOICE_ASR_ENABLED=true
+DECISION_PROVIDER=aiplatform
+DECISION_FALLBACK_ENABLED=true
+AI_PLATFORM_URL=http://10.0.0.5
+AI_PLATFORM_ASR_TRANSCRIBE_PATH=/v1/asr/transcribe
+AI_PLATFORM_DECISION_PATH=/v1/decide
+AI_PLATFORM_API_KEY=
+AI_PLATFORM_ASR_CONNECT_TIMEOUT_MS=5000
+AI_PLATFORM_ASR_READ_TIMEOUT_MS=30000
+HOMETUSK_VOICE_ASR_MAX_SIZE_BYTES=10485760
+HOMETUSK_VOICE_ASR_REQUESTS_PER_MINUTE=5
+```
+
+`AI_PLATFORM_API_KEY` is blank for the private UAT AI Platform route unless the
+HomeTusk -> AI Platform gateway starts requiring a bearer token. Provider
+credentials used by AI Platform itself, such as Cloud.ru ASR `ASR_API_KEY`,
+remain in the AI Platform service environment and are not HomeTusk secrets.
+
+Voice Command Chat UI is enabled by default for UAT builds. Set
+`UAT_VOICE_COMMAND_ENABLED=false` as a GitHub environment variable for the `uat`
+environment only when the UI must be hidden. Set the backend voice/ASR values in
+`UAT_VOICE_ENV_FILE`; remove the secret or set both backend voice flags to
+`false` after the validation window.
 
 ## Production promotion
 

@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.hometusk.commands.domain.CommandStatus;
+import com.hometusk.commands.domain.DecisionSource;
 import com.hometusk.commands.repository.CommandRepository;
 import com.hometusk.commands.repository.DecisionLogRepository;
 import com.hometusk.tasks.domain.Task;
@@ -32,7 +33,7 @@ import org.springframework.http.MediaType;
  *   <li>Timeout/unavailable → Fallback</li>
  *   <li>Guardrails CLARIFY → NEEDS_INPUT</li>
  *   <li>propose_create_task → Task created (mapped to start_job)</li>
- *   <li>propose_add_shopping_item → NEEDS_INPUT (unsupported, safe degradation)</li>
+ *   <li>propose_add_shopping_item → EXECUTED (mapped to add_shopping_item)</li>
  *   <li>Unknown type → REJECTED (safe degradation)</li>
  *   <li>Adapter → Guardrails flow (critical path test)</li>
  * </ol>
@@ -189,8 +190,8 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
         @Test
         @DisplayName("should use fallback when AI is unavailable")
         void usesFallbackOnTimeout() throws Exception {
-            // Given: AI Platform health check fails (triggers fallback)
-            stubHealthCheckFailed();
+            // Given: AI Platform decision endpoint is unavailable
+            stubDecisionEndpointUnavailable();
 
             String requestBody = objectMapper.writeValueAsString(Map.of(
                     "type", "create_task",
@@ -280,6 +281,44 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value("executed_degraded"))
                     .andExpect(jsonPath("$.degradedReason").value("ai_unavailable"));
+        }
+    }
+
+    @Nested
+    @DisplayName("Scenario 4d: Health endpoint unavailable")
+    class HealthEndpointUnavailableScenario {
+
+        @Test
+        @DisplayName("should still use AI decision endpoint when health check is unavailable")
+        void usesDecisionEndpointWhenHealthEndpointUnavailable() throws Exception {
+            stubHealthCheckFailed();
+            stubProposeAddShoppingItemDecision();
+
+            String requestBody = objectMapper.writeValueAsString(Map.of(
+                    "type",
+                    "create_task",
+                    "householdId",
+                    testHousehold.getId(),
+                    "source",
+                    "voice",
+                    "payload",
+                    Map.of("title", "Add milk to shopping list")));
+
+            mockMvc.perform(post("/api/v1/commands")
+                            .header("X-Correlation-ID", correlationId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestBody)
+                            .with(jwt()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("executed"))
+                    .andExpect(jsonPath("$.result.taskId").exists());
+
+            var tasks = taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId());
+            org.assertj.core.api.Assertions.assertThat(tasks).isEmpty();
+
+            var log = decisionLogRepository.findByCorrelationId(correlationId);
+            org.assertj.core.api.Assertions.assertThat(log).isPresent();
+            org.assertj.core.api.Assertions.assertThat(log.get().getSource()).isEqualTo(DecisionSource.AI_PLATFORM);
         }
     }
 

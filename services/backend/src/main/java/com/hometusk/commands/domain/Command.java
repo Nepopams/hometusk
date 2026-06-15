@@ -58,6 +58,9 @@ public class Command {
     @Column(name = "source", nullable = false, length = 50)
     private String source;
 
+    @Column(name = "asr_trace_id", length = 128)
+    private String asrTraceId;
+
     @Column(name = "client_timestamp")
     private Instant clientTimestamp;
 
@@ -83,6 +86,7 @@ public class Command {
             UUID zoneId,
             Instant scheduleAt,
             String source,
+            String asrTraceId,
             Instant clientTimestamp) {
         this.correlationId = correlationId;
         this.household = household;
@@ -94,6 +98,7 @@ public class Command {
         this.zoneId = zoneId;
         this.scheduleAt = scheduleAt;
         this.source = source;
+        this.asrTraceId = asrTraceId;
         this.clientTimestamp = clientTimestamp;
         this.status = CommandStatus.RECEIVED;
         this.createdAt = Instant.now();
@@ -164,6 +169,10 @@ public class Command {
 
     public String getSource() {
         return source;
+    }
+
+    public String getAsrTraceId() {
+        return asrTraceId;
     }
 
     public Instant getClientTimestamp() {
