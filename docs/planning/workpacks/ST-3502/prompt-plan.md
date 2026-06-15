@@ -12,7 +12,7 @@ Produce a decision-complete implementation plan for mobile auth/session persiste
 
 - `docs/planning/workpacks/ST-3502/workpack.md`
 - `docs/planning/epics/EP-035/stories/ST-3502-mobile-auth-session.md`
-- `docs/adr/020-native-mobile-client-stack.md`
+- `docs/adr/021-native-mobile-client-stack.md`
 - `docs/contracts/http/commands.openapi.yaml`
 - `services/backend/src/main/java/com/hometusk/auth/api/AuthController.java`
 - `services/backend/src/main/java/com/hometusk/auth/keycloak/KeycloakAuthService.java`

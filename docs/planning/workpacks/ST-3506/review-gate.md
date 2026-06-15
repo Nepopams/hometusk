@@ -11,7 +11,7 @@ None.
 
 ## Evidence
 
-- `V031__create_mobile_devices.sql` creates `mobile_devices` with current-user foreign key, platform/provider/status checks, and an active-token unique index.
+- `V032__create_mobile_devices.sql` creates `mobile_devices` with current-user foreign key, platform/provider/status checks, and an active-token unique index.
 - `MobileDeviceController` exposes `POST`, `PATCH`, and `DELETE` under `/api/v1/mobile/devices`.
 - `MobileDeviceService` scopes reads by authenticated user id, rejects cross-user token conflicts, and deactivates instead of hard-deleting.
 - `MobileDeviceDto` excludes `pushToken`; focused tests assert the token is not returned.

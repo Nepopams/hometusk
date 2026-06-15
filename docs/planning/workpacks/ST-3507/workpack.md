@@ -6,7 +6,7 @@
 - Initiative execution index: `docs/planning/initiatives/INIT-2026Q3-native-mobile-mvp.execution.md`
 - Contract: `docs/contracts/http/mobile-devices.openapi.yaml`
 - Command/auth contract: `docs/contracts/http/commands.openapi.yaml`
-- ADR: `docs/adr/020-native-mobile-client-stack.md`
+- ADR: `docs/adr/021-native-mobile-client-stack.md`
 - Diagram: `docs/diagrams/sequence-mobile-push-deep-link.md`
 - Mobile app: `clients/mobile/`
 - DoR/DoD: `docs/_governance/dor.md`, `docs/_governance/dod.md`

@@ -7,7 +7,7 @@
 - Roadmap: `docs/planning/strategy/roadmap.md`
 - Product goal: `docs/planning/strategy/product-goal.md`
 - MVP release baseline: `docs/planning/releases/MVP.md`
-- ADR: `docs/adr/020-native-mobile-client-stack.md`
+- ADR: `docs/adr/021-native-mobile-client-stack.md`
 - Mobile device contract: `docs/contracts/http/mobile-devices.openapi.yaml`
 - Mobile push/deep-link diagram: `docs/diagrams/sequence-mobile-push-deep-link.md`
 - Existing web client: `clients/web/`

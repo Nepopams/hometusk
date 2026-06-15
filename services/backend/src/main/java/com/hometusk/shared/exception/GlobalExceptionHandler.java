@@ -9,6 +9,8 @@ import com.hometusk.asr.exception.AsrTimeoutException;
 import com.hometusk.asr.exception.AsrUnauthorizedException;
 import com.hometusk.asr.exception.AsrUnavailableException;
 import com.hometusk.shared.logging.MdcKeys;
+import com.hometusk.voice.dto.VoiceTranscriptionErrorResponse;
+import com.hometusk.voice.exception.VoiceAsrException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -152,6 +154,29 @@ public class GlobalExceptionHandler {
         log.warn("ASR error: {}", ex.getMessage());
         HttpStatus status = resolveStatus(ex);
         return buildAsrResponse(ex, status, null, null);
+    }
+
+    @ExceptionHandler(VoiceAsrException.class)
+    public ResponseEntity<VoiceTranscriptionErrorResponse> handleVoiceAsrException(VoiceAsrException ex) {
+        log.warn(
+                "Voice ASR error: code={}, status={}",
+                ex.getCode(),
+                ex.getStatus().value());
+        Integer retryAfterSeconds = ex.getRetryAfterSeconds();
+        Map<String, Object> details = retryAfterSeconds != null ? Map.of("retryAfterSeconds", retryAfterSeconds) : null;
+        VoiceTranscriptionErrorResponse response =
+                new VoiceTranscriptionErrorResponse(ex.getCode(), ex.getMessage(), getCorrelationIdValue(), details);
+
+        HttpHeaders headers = new HttpHeaders();
+        String correlationId = getCorrelationIdValue();
+        if (correlationId != null) {
+            headers.set("X-Correlation-ID", correlationId);
+        }
+        if (retryAfterSeconds != null) {
+            headers.set("Retry-After", String.valueOf(retryAfterSeconds));
+        }
+
+        return ResponseEntity.status(ex.getStatus()).headers(headers).body(response);
     }
 
     @ExceptionHandler(Exception.class)

@@ -4,7 +4,7 @@
 
 1. `docs/contracts/http/mobile-devices.openapi.yaml` already defines register, update, and delete endpoints.
 2. No backend package currently owns mobile device registrations.
-3. Flyway migrations are under `services/backend/src/main/resources/db/migration`; next migration is `V031`.
+3. Flyway migrations are under `services/backend/src/main/resources/db/migration`; next migration is `V032` after the merged voice-command trace migration.
 4. Current exception mapping needs new `DEVICE_NOT_FOUND` and `DEVICE_TOKEN_CONFLICT` codes for contract alignment.
 5. Integration tests can extend `IntegrationTestBase` and use mock JWT users.
 

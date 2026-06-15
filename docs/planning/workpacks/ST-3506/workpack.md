@@ -4,7 +4,7 @@
 
 - Story: `docs/planning/epics/EP-035/stories/ST-3506-push-device-registration.md`
 - Contract: `docs/contracts/http/mobile-devices.openapi.yaml`
-- ADR: `docs/adr/020-native-mobile-client-stack.md`
+- ADR: `docs/adr/021-native-mobile-client-stack.md`
 - Service catalog: `docs/architecture/service-catalog.md`
 - Backend: `services/backend/`
 - DoR/DoD: `docs/_governance/dor.md`, `docs/_governance/dod.md`

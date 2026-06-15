@@ -1,4 +1,4 @@
-# ADR-020: Native Mobile Client Stack
+# ADR-021: Native Mobile Client Stack
 
 **Status:** Accepted
 **Date:** 2026-06-14

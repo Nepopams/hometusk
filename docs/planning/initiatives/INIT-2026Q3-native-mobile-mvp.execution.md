@@ -15,7 +15,7 @@
 - Workflow: `docs/CODEX-WORKFLOW.md`
 - DoR/DoD: `docs/_governance/dor.md`, `docs/_governance/dod.md`
 - Contracts: `docs/contracts/http/commands.openapi.yaml`, `docs/contracts/http/mobile-devices.openapi.yaml`
-- ADR: `docs/adr/020-native-mobile-client-stack.md`
+- ADR: `docs/adr/021-native-mobile-client-stack.md`
 - Diagram: `docs/diagrams/sequence-mobile-push-deep-link.md`
 - Service catalog: `docs/architecture/service-catalog.md`
 - Existing web client: `clients/web/`
@@ -147,7 +147,7 @@ Planned:
 - Epic: `docs/planning/epics/EP-035/epic.md`
 - Stories: `docs/planning/epics/EP-035/stories/`
 - First workpack: `docs/planning/workpacks/ST-3501/`
-- ADR: `docs/adr/020-native-mobile-client-stack.md`
+- ADR: `docs/adr/021-native-mobile-client-stack.md`
 - Diagram: `docs/diagrams/sequence-mobile-push-deep-link.md`
 - Contract: `docs/contracts/http/mobile-devices.openapi.yaml`
 

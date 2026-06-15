@@ -471,7 +471,7 @@ async function postAuthVoid(path: string, body?: unknown): Promise<void> {
   }
 }
 
-async function refreshAuthSession(): Promise<boolean> {
+export async function refreshAuthSession(): Promise<boolean> {
   const baseUrl = getApiBaseUrl();
   const response = await fetch(`${baseUrl}/auth/refresh`, {
     method: 'POST',

@@ -7,7 +7,7 @@
 - Roadmap: `docs/planning/strategy/roadmap.md`
 - Epic: `docs/planning/epics/EP-035/epic.md`
 - Story: `docs/planning/epics/EP-035/stories/ST-3501-mobile-stack-app-foundation.md`
-- ADR: `docs/adr/020-native-mobile-client-stack.md`
+- ADR: `docs/adr/021-native-mobile-client-stack.md`
 - Diagram: `docs/diagrams/sequence-mobile-push-deep-link.md`
 - Existing web API client/types: `clients/web/src/lib/api.ts`, `clients/web/src/types/api.ts`
 - Service catalog: `docs/architecture/service-catalog.md`
@@ -53,7 +53,7 @@ HomeTusk gets a first-class Expo TypeScript native mobile app foundation with do
 
 ## Files to change
 
-- `docs/adr/020-native-mobile-client-stack.md` - stack, push, local persistence decision.
+- `docs/adr/021-native-mobile-client-stack.md` - stack, push, local persistence decision.
 - `docs/_indexes/adr-index.md` - add ADR-020.
 - `docs/diagrams/sequence-mobile-push-deep-link.md` - mobile push/deep-link flow.
 - `docs/_indexes/diagrams-index.md` - add mobile diagram.

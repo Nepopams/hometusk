@@ -6,7 +6,7 @@
 - Execution index: `docs/planning/initiatives/INIT-2026Q3-native-mobile-mvp.execution.md`
 - Epic: `docs/planning/epics/EP-035/epic.md`
 - Story: `docs/planning/epics/EP-035/stories/ST-3502-mobile-auth-session.md`
-- ADR: `docs/adr/020-native-mobile-client-stack.md`
+- ADR: `docs/adr/021-native-mobile-client-stack.md`
 - Auth contract: `docs/contracts/http/commands.openapi.yaml`
 - Backend auth controller: `services/backend/src/main/java/com/hometusk/auth/api/AuthController.java`
 - Backend auth service: `services/backend/src/main/java/com/hometusk/auth/keycloak/KeycloakAuthService.java`

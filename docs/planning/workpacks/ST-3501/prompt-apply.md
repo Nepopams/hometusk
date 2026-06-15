@@ -14,7 +14,7 @@ Create the first-class native mobile app foundation for HomeTusk using React Nat
 - `docs/planning/workpacks/ST-3501/plan-findings.md`
 - `docs/planning/workpacks/ST-3501/gate-c.md`
 - `docs/planning/epics/EP-035/stories/ST-3501-mobile-stack-app-foundation.md`
-- `docs/adr/020-native-mobile-client-stack.md`
+- `docs/adr/021-native-mobile-client-stack.md`
 
 ## Allowed Files
 

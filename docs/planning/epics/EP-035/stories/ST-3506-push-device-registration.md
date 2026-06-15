@@ -41,5 +41,5 @@ Add the backend contract and implementation needed for authenticated mobile clie
 - Review gate: `docs/planning/workpacks/ST-3506/review-gate.md`
 - Gate D: `docs/planning/workpacks/ST-3506/gate-d.md`
 - Contract: `docs/contracts/http/mobile-devices.openapi.yaml`
-- Migration: `services/backend/src/main/resources/db/migration/V031__create_mobile_devices.sql`
+- Migration: `services/backend/src/main/resources/db/migration/V032__create_mobile_devices.sql`
 - Focused test: `MobileDeviceControllerIntegrationTest`

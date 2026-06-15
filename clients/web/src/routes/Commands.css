@@ -88,6 +88,36 @@
   border-color: var(--color-brand);
 }
 
+.commands__voice-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  flex-wrap: wrap;
+}
+
+.commands__voice-bar .voice-recording-status {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.commands__voice-draft-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--color-success-soft);
+  color: var(--color-success);
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.commands__textarea-wrapper .voice-error-message {
+  margin-bottom: 0;
+}
+
 .commands__textarea {
   width: 100%;
   min-height: 60px;
@@ -734,5 +764,13 @@
 
   .commands__result-empty {
     padding: 32px 16px;
+  }
+
+  .commands__voice-bar {
+    align-items: stretch;
+  }
+
+  .commands__voice-bar .voice-recording-status {
+    flex-basis: 100%;
   }
 }

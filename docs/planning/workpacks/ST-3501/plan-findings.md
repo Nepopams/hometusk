@@ -11,7 +11,7 @@ Read-only PLAN completed on 2026-06-14 before runtime scaffold APPLY.
 - `docs/planning/epics/EP-035/stories/ST-3501-mobile-stack-app-foundation.md`
 - `docs/planning/initiatives/INIT-2026Q3-native-mobile-mvp.md`
 - `docs/planning/initiatives/INIT-2026Q3-native-mobile-mvp.execution.md`
-- `docs/adr/020-native-mobile-client-stack.md`
+- `docs/adr/021-native-mobile-client-stack.md`
 - `docs/diagrams/sequence-mobile-push-deep-link.md`
 - `docs/contracts/http/mobile-devices.openapi.yaml`
 - `docs/architecture/service-catalog.md`
@@ -40,7 +40,7 @@ Read-only PLAN completed on 2026-06-14 before runtime scaffold APPLY.
 
 Already prepared before APPLY:
 
-- `docs/adr/020-native-mobile-client-stack.md`
+- `docs/adr/021-native-mobile-client-stack.md`
 - `docs/diagrams/sequence-mobile-push-deep-link.md`
 - `docs/contracts/http/mobile-devices.openapi.yaml`
 - planning, index, and service catalog docs
