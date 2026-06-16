@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hometusk.commands.domain.Command;
+import com.hometusk.commands.domain.CommandConfirmation;
+import com.hometusk.commands.domain.CommandConfirmationStatus;
 import com.hometusk.commands.domain.CommandStatus;
 import com.hometusk.commands.domain.CommandType;
 import com.hometusk.commands.domain.DecisionSource;
@@ -15,6 +17,7 @@ import com.hometusk.commands.pipeline.decision.DecisionProviderSelector;
 import com.hometusk.commands.pipeline.decision.DecisionResult;
 import com.hometusk.commands.pipeline.guardrails.GuardrailResult;
 import com.hometusk.commands.pipeline.guardrails.GuardrailsOrchestrator;
+import com.hometusk.commands.repository.CommandConfirmationRepository;
 import com.hometusk.commands.repository.CommandRepository;
 import com.hometusk.households.domain.Household;
 import com.hometusk.households.service.HouseholdService;
@@ -26,6 +29,7 @@ import com.hometusk.shared.exception.ValidationException;
 import com.hometusk.shopping.service.ShoppingService;
 import com.hometusk.users.domain.User;
 import com.hometusk.voice.metrics.VoiceMetrics;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -61,6 +65,7 @@ public class CommandService {
     private static final Logger log = LoggerFactory.getLogger(CommandService.class);
 
     private final CommandRepository commandRepository;
+    private final CommandConfirmationRepository commandConfirmationRepository;
     private final HouseholdService householdService;
     private final ObjectMapper objectMapper;
     private final SchemaValidator schemaValidator;
@@ -76,6 +81,7 @@ public class CommandService {
 
     public CommandService(
             CommandRepository commandRepository,
+            CommandConfirmationRepository commandConfirmationRepository,
             HouseholdService householdService,
             ObjectMapper objectMapper,
             SchemaValidator schemaValidator,
@@ -89,6 +95,7 @@ public class CommandService {
             ShoppingService shoppingService,
             VoiceMetrics voiceMetrics) {
         this.commandRepository = commandRepository;
+        this.commandConfirmationRepository = commandConfirmationRepository;
         this.householdService = householdService;
         this.objectMapper = objectMapper;
         this.schemaValidator = schemaValidator;
@@ -201,6 +208,193 @@ public class CommandService {
     }
 
     @Transactional
+    public CommandConfirmationApprovalResponse approveConfirmation(
+            UUID commandId, UUID confirmationId, User requester, UUID correlationId) {
+        long startTime = System.currentTimeMillis();
+        CommandConfirmation confirmation = loadConfirmationForUpdate(commandId, confirmationId);
+        Command command = confirmation.getCommand();
+        requireConfirmationInitiator(confirmation, requester);
+
+        if (confirmation.getStatus() == CommandConfirmationStatus.EXECUTED) {
+            return approvalResponse(
+                    command,
+                    confirmation,
+                    commandResultFromJson(confirmation.getExecutionResult()),
+                    (int) (System.currentTimeMillis() - startTime),
+                    true,
+                    null,
+                    null);
+        }
+
+        if (!confirmation.isPending()) {
+            throw new BusinessException(
+                    ErrorCode.CONFIRMATION_NOT_PENDING,
+                    "Command confirmation is not pending: " + confirmation.getStatus());
+        }
+
+        Instant now = Instant.now();
+        if (confirmation.isExpiredAt(now)) {
+            int executionMs = (int) (System.currentTimeMillis() - startTime);
+            confirmation.markExpired(now);
+            command.markRejected(
+                    ErrorCode.CONFIRMATION_EXPIRED.name(), "Command confirmation expired before approval", executionMs);
+            commandConfirmationRepository.save(confirmation);
+            commandRepository.save(command);
+            writeConfirmationLifecycleLog(
+                    command,
+                    confirmation,
+                    correlationId,
+                    "confirmation_expired",
+                    Map.of(
+                            "status",
+                            "expired",
+                            "expiresAt",
+                            confirmation.getExpiresAt().toString()));
+            recordVoiceCommandOutcome(command, "rejected");
+            return approvalResponse(
+                    command,
+                    confirmation,
+                    null,
+                    executionMs,
+                    false,
+                    ErrorCode.CONFIRMATION_EXPIRED.name(),
+                    "Command confirmation expired before approval");
+        }
+
+        Map<String, Object> originalPayload = readPayload(command.getPayload());
+        Map<String, Object> effectivePayload = buildEffectivePayload(
+                command.getType(), originalPayload, command.getDueDate(), command.getAssigneeId(), command.getZoneId());
+        DecisionContext context = buildDecisionContext(command, effectivePayload, requester.getId(), correlationId);
+        DecisionResult.StartJob decision = new DecisionResult.StartJob(
+                DecisionSource.USER_OVERRIDE,
+                BigDecimal.ONE,
+                confirmation.getProviderDecisionId(),
+                null,
+                storedProposedActions(confirmation));
+
+        GuardrailResult guardrailResult = guardrailsOrchestrator.evaluate(decision, context);
+        return switch (guardrailResult) {
+            case GuardrailResult.Proceed proceed -> {
+                confirmation.markConfirmed(requester, now);
+                CommandResponse.CommandResult result =
+                        executeActions(proceed.decision().actions(), command, correlationId);
+                int executionMs = (int) (System.currentTimeMillis() - startTime);
+                command.markExecuted(executionMs);
+                confirmation.markExecuted(toJson(result), Instant.now());
+                commandRepository.save(command);
+                commandConfirmationRepository.save(confirmation);
+                writeConfirmationLifecycleLog(
+                        command,
+                        confirmation,
+                        correlationId,
+                        "confirmation_approved",
+                        Map.of(
+                                "status",
+                                "executed",
+                                "actionsCount",
+                                proceed.decision().actions().size(),
+                                "guardrails_policies",
+                                proceed.appliedPolicies()));
+                recordVoiceCommandOutcome(command, "executed");
+                yield approvalResponse(command, confirmation, result, executionMs, false, null, null);
+            }
+            case GuardrailResult.NeedsClarification clarify -> {
+                int executionMs = (int) (System.currentTimeMillis() - startTime);
+                confirmation.markRejected("CONFIRMATION_GUARDRAILS_CLARIFY", clarify.question(), Instant.now());
+                command.markRejected("CONFIRMATION_GUARDRAILS_CLARIFY", clarify.question(), executionMs);
+                commandRepository.save(command);
+                commandConfirmationRepository.save(confirmation);
+                writeConfirmationLifecycleLog(
+                        command,
+                        confirmation,
+                        correlationId,
+                        "confirmation_guardrails_clarify",
+                        Map.of(
+                                "status", "rejected",
+                                "policy", clarify.triggeredPolicy(),
+                                "question", clarify.question()));
+                recordVoiceCommandOutcome(command, "rejected");
+                yield approvalResponse(
+                        command,
+                        confirmation,
+                        null,
+                        executionMs,
+                        false,
+                        "CONFIRMATION_GUARDRAILS_CLARIFY",
+                        clarify.question());
+            }
+            case GuardrailResult.Rejected rejected -> {
+                int executionMs = (int) (System.currentTimeMillis() - startTime);
+                String errorCode =
+                        rejected.errorCode() != null ? rejected.errorCode() : ErrorCode.GUARDRAILS_REJECTED.name();
+                confirmation.markRejected(errorCode, rejected.reason(), Instant.now());
+                command.markRejected(errorCode, rejected.reason(), executionMs);
+                commandRepository.save(command);
+                commandConfirmationRepository.save(confirmation);
+                writeConfirmationLifecycleLog(
+                        command,
+                        confirmation,
+                        correlationId,
+                        "confirmation_guardrails_reject",
+                        Map.of(
+                                "status",
+                                "rejected",
+                                "policy",
+                                rejected.triggeredPolicy(),
+                                "reason",
+                                rejected.reason(),
+                                "errorCode",
+                                errorCode));
+                recordVoiceCommandOutcome(command, "rejected");
+                yield approvalResponse(command, confirmation, null, executionMs, false, errorCode, rejected.reason());
+            }
+        };
+    }
+
+    @Transactional
+    public CommandConfirmationCancelResponse cancelConfirmation(
+            UUID commandId,
+            UUID confirmationId,
+            CommandConfirmationCancelRequest request,
+            User requester,
+            UUID correlationId) {
+        long startTime = System.currentTimeMillis();
+        CommandConfirmation confirmation = loadConfirmationForUpdate(commandId, confirmationId);
+        Command command = confirmation.getCommand();
+        requireConfirmationInitiator(confirmation, requester);
+
+        if (confirmation.getStatus() == CommandConfirmationStatus.CANCELLED) {
+            return cancelResponse(
+                    command,
+                    confirmation,
+                    (int) (System.currentTimeMillis() - startTime),
+                    true,
+                    confirmation.getCancelReason());
+        }
+
+        if (!confirmation.isPending()) {
+            throw new BusinessException(
+                    ErrorCode.CONFIRMATION_NOT_PENDING,
+                    "Command confirmation is not pending: " + confirmation.getStatus());
+        }
+
+        String reason = request != null ? request.reason() : null;
+        int executionMs = (int) (System.currentTimeMillis() - startTime);
+        confirmation.markCancelled(requester, reason, Instant.now());
+        command.markRejected("CONFIRMATION_CANCELLED", "Command confirmation cancelled", executionMs);
+        commandConfirmationRepository.save(confirmation);
+        commandRepository.save(command);
+        writeConfirmationLifecycleLog(
+                command,
+                confirmation,
+                correlationId,
+                "confirmation_cancelled",
+                Map.of("status", "cancelled", "reason", reason != null ? reason : ""));
+        recordVoiceCommandOutcome(command, "rejected");
+        return cancelResponse(command, confirmation, executionMs, false, reason);
+    }
+
+    @Transactional
     public boolean executeScheduledCommand(UUID commandId, UUID correlationId) {
         long startTime = System.currentTimeMillis();
 
@@ -307,6 +501,10 @@ public class CommandService {
             case COMPLETE_TASK -> {
                 CompleteTaskPayload payload = objectMapper.convertValue(effectivePayload, CompleteTaskPayload.class);
                 businessValidator.validateCompleteTask(payload, command.getHouseholdId());
+            }
+            case NATURAL_COMMAND -> {
+                // Natural command payload is schema-validated here. Domain invariants are enforced after
+                // AI mapping, guardrail proposal checks, and eventual explicit approval.
             }
         }
     }
@@ -432,7 +630,158 @@ public class CommandService {
             case DecisionResult.StartJob startJob -> handleStartJob(
                     startJob, command, context, correlationId, requester, startTime);
             case DecisionResult.Clarify clarify -> handleClarify(clarify, command, correlationId, requester, startTime);
+            case DecisionResult.Confirm confirm -> handleConfirm(
+                    confirm, command, context, correlationId, requester, startTime);
             case DecisionResult.Reject reject -> handleReject(reject, command, correlationId, requester, startTime);
+        };
+    }
+
+    private CommandResponseBase handleConfirm(
+            DecisionResult.Confirm decision,
+            Command command,
+            DecisionContext context,
+            UUID correlationId,
+            User requester,
+            long startTime) {
+
+        DecisionResult.StartJob proposal = new DecisionResult.StartJob(
+                decision.source(),
+                decision.confidence(),
+                decision.externalDecisionId(),
+                decision.rawPayload(),
+                decision.actions());
+
+        GuardrailResult guardrailResult = guardrailsOrchestrator.evaluate(proposal, context);
+
+        return switch (guardrailResult) {
+            case GuardrailResult.Proceed proceed -> {
+                metrics.recordDecisionOutcome("needs_confirmation");
+                List<CommandNeedsConfirmationResponse.ProposedAction> proposedActions =
+                        proposedActionDtos(proceed.decision().actions());
+                List<String> reasons = defaultReasons(decision.reasons());
+                List<String> riskLabels = defaultRiskLabels(decision.riskLabels());
+
+                CommandConfirmation confirmation = new CommandConfirmation(
+                        command,
+                        decision.providerConfirmationId(),
+                        decision.externalDecisionId(),
+                        decision.providerTraceId(),
+                        decision.schemaVersion(),
+                        decision.decisionVersion(),
+                        decision.summary(),
+                        toJson(reasons),
+                        toJson(riskLabels),
+                        toJson(proposedActions),
+                        decision.expiresAt());
+                confirmation = commandConfirmationRepository.save(confirmation);
+
+                decisionLogWriter.write(DecisionLogWriter.DecisionLogEntry.builder()
+                        .command(command)
+                        .correlationId(correlationId)
+                        .intent(Map.of("type", command.getType().name().toLowerCase()))
+                        .contextSnapshot(commandContextSnapshot(command))
+                        .decision(Map.of(
+                                "type",
+                                "needs_confirmation",
+                                "confirmationId",
+                                confirmation.getId().toString(),
+                                "providerConfirmationId",
+                                nullableString(decision.providerConfirmationId()),
+                                "actionsCount",
+                                proposedActions.size(),
+                                "guardrails_policies",
+                                proceed.appliedPolicies()))
+                        .source(decision.source())
+                        .confidence(decision.confidence())
+                        .externalDecisionId(decision.externalDecisionId())
+                        .rawDecisionPayload(decision.rawPayload())
+                        .build());
+
+                int executionMs = (int) (System.currentTimeMillis() - startTime);
+                command.markNeedsConfirmation(decision.summary());
+                commandRepository.save(command);
+                recordVoiceCommandOutcome(command, "needs_confirmation");
+
+                yield CommandResponse.needsConfirmation(
+                        command.getId(),
+                        correlationId,
+                        new CommandNeedsConfirmationResponse.Confirmation(
+                                confirmation.getId(),
+                                decision.providerConfirmationId(),
+                                decision.summary(),
+                                reasons,
+                                riskLabels,
+                                decision.expiresAt(),
+                                proposedActions),
+                        new CommandNeedsConfirmationResponse.ConfirmationTrace(
+                                decision.externalDecisionId(),
+                                decision.providerTraceId(),
+                                decision.schemaVersion(),
+                                decision.decisionVersion()),
+                        executionMs,
+                        requester.getId());
+            }
+
+            case GuardrailResult.NeedsClarification clarify -> {
+                metrics.recordDecisionOutcome("clarify");
+                decisionLogWriter.write(DecisionLogWriter.DecisionLogEntry.builder()
+                        .command(command)
+                        .correlationId(correlationId)
+                        .intent(Map.of("type", command.getType().name().toLowerCase()))
+                        .contextSnapshot(commandContextSnapshot(command))
+                        .decision(Map.of(
+                                "type", "confirmation_guardrails_clarify",
+                                "policy", clarify.triggeredPolicy(),
+                                "question", clarify.question()))
+                        .source(decision.source())
+                        .confidence(decision.confidence())
+                        .externalDecisionId(decision.externalDecisionId())
+                        .rawDecisionPayload(decision.rawPayload())
+                        .build());
+
+                int executionMs = (int) (System.currentTimeMillis() - startTime);
+                command.markNeedsInput(clarify.question());
+                commandRepository.save(command);
+                recordVoiceCommandOutcome(command, "needs_input");
+
+                yield CommandResponse.needsInput(
+                        command.getId(),
+                        correlationId,
+                        clarify.question(),
+                        clarify.requiredFields(),
+                        clarify.suggestions(),
+                        clarify.triggeredPolicy(),
+                        executionMs,
+                        requester.getId());
+            }
+
+            case GuardrailResult.Rejected rejected -> {
+                metrics.recordDecisionOutcome("reject");
+                decisionLogWriter.write(DecisionLogWriter.DecisionLogEntry.builder()
+                        .command(command)
+                        .correlationId(correlationId)
+                        .intent(Map.of("type", command.getType().name().toLowerCase()))
+                        .contextSnapshot(commandContextSnapshot(command))
+                        .decision(Map.of(
+                                "type", "confirmation_guardrails_reject",
+                                "policy", rejected.triggeredPolicy(),
+                                "reason", rejected.reason(),
+                                "errorCode", rejected.errorCode()))
+                        .source(decision.source())
+                        .confidence(decision.confidence())
+                        .externalDecisionId(decision.externalDecisionId())
+                        .rawDecisionPayload(decision.rawPayload())
+                        .build());
+
+                int executionMs = (int) (System.currentTimeMillis() - startTime);
+                String errorCode =
+                        rejected.errorCode() != null ? rejected.errorCode() : ErrorCode.GUARDRAILS_REJECTED.name();
+                command.markRejected(errorCode, rejected.reason(), executionMs);
+                commandRepository.save(command);
+                recordVoiceCommandOutcome(command, "rejected");
+                yield CommandResponse.rejected(
+                        command.getId(), correlationId, errorCode, rejected.reason(), executionMs, requester.getId());
+            }
         };
     }
 
@@ -558,12 +907,39 @@ public class CommandService {
                 .rawDecisionPayload(decision.rawPayload())
                 .build());
 
-        // Execute all actions and track created entities
+        CommandResponse.CommandResult commandResult = executeActions(decision.actions(), command, correlationId);
+
+        // Mark executed
+        int executionMs = (int) (System.currentTimeMillis() - startTime);
+        command.markExecuted(executionMs);
+        commandRepository.save(command);
+
+        log.info(
+                "Command executed: id={}, correlationId={}, executionMs={}, source={}, guardrails={}",
+                command.getId(),
+                correlationId,
+                executionMs,
+                decision.source(),
+                appliedPolicies);
+
+        // Check if this was a fallback (degraded mode)
+        if (decision.source() == DecisionSource.FALLBACK) {
+            recordVoiceCommandOutcome(command, "executed_degraded");
+            return CommandResponse.degraded(
+                    command.getId(), correlationId, commandResult, executionMs, requester.getId(), "ai_unavailable");
+        }
+
+        recordVoiceCommandOutcome(command, "executed");
+        return CommandResponse.success(command.getId(), correlationId, commandResult, executionMs, requester.getId());
+    }
+
+    private CommandResponse.CommandResult executeActions(
+            List<DecisionResult.StartJob.ProposedAction> actions, Command command, UUID correlationId) {
         ActionExecutor.ActionResult lastResult = null;
         UUID createdTaskId = null;
         List<UUID> createdItemIds = new ArrayList<>();
 
-        for (var action : decision.actions()) {
+        for (var action : actions) {
             ActionExecutor.ActionResult result = actionExecutor.executeAction(action, command, correlationId);
             lastResult = result;
 
@@ -581,32 +957,9 @@ public class CommandService {
             log.debug("Linked {} shopping items to task {}", createdItemIds.size(), createdTaskId);
         }
 
-        // Mark executed
-        int executionMs = (int) (System.currentTimeMillis() - startTime);
-        command.markExecuted(executionMs);
-        commandRepository.save(command);
-
-        log.info(
-                "Command executed: id={}, correlationId={}, executionMs={}, source={}, guardrails={}",
-                command.getId(),
-                correlationId,
-                executionMs,
-                decision.source(),
-                appliedPolicies);
-
-        CommandResponse.CommandResult commandResult = lastResult != null
+        return lastResult != null
                 ? CommandResponse.CommandResult.forTask(lastResult.taskId(), lastResult.assigneeId())
                 : null;
-
-        // Check if this was a fallback (degraded mode)
-        if (decision.source() == DecisionSource.FALLBACK) {
-            recordVoiceCommandOutcome(command, "executed_degraded");
-            return CommandResponse.degraded(
-                    command.getId(), correlationId, commandResult, executionMs, requester.getId(), "ai_unavailable");
-        }
-
-        recordVoiceCommandOutcome(command, "executed");
-        return CommandResponse.success(command.getId(), correlationId, commandResult, executionMs, requester.getId());
     }
 
     private CommandResponseBase handleClarify(
@@ -695,6 +1048,122 @@ public class CommandService {
         }
         snapshot.putAll(extra);
         return snapshot;
+    }
+
+    private List<CommandNeedsConfirmationResponse.ProposedAction> proposedActionDtos(
+            List<DecisionResult.StartJob.ProposedAction> actions) {
+        return actions.stream()
+                .map(action ->
+                        new CommandNeedsConfirmationResponse.ProposedAction(action.actionType(), action.parameters()))
+                .toList();
+    }
+
+    private List<String> defaultReasons(List<String> reasons) {
+        return reasons == null || reasons.isEmpty() ? List.of("AI Platform requested confirmation.") : reasons;
+    }
+
+    private List<String> defaultRiskLabels(List<String> riskLabels) {
+        return riskLabels == null || riskLabels.isEmpty() ? List.of("provider_confirmation") : riskLabels;
+    }
+
+    private String nullableString(String value) {
+        return value != null ? value : "";
+    }
+
+    private CommandConfirmation loadConfirmationForUpdate(UUID commandId, UUID confirmationId) {
+        return commandConfirmationRepository
+                .findWithLockByIdAndCommand_Id(confirmationId, commandId)
+                .orElseThrow(() -> new NotFoundException(
+                        ErrorCode.CONFIRMATION_NOT_FOUND, "Command confirmation not found: " + confirmationId));
+    }
+
+    private void requireConfirmationInitiator(CommandConfirmation confirmation, User requester) {
+        if (!confirmation.getInitiatorId().equals(requester.getId())) {
+            throw new AccessDeniedException("Only the original command initiator can approve or cancel confirmation");
+        }
+    }
+
+    private List<DecisionResult.StartJob.ProposedAction> storedProposedActions(CommandConfirmation confirmation) {
+        try {
+            List<CommandNeedsConfirmationResponse.ProposedAction> actions = objectMapper.readValue(
+                    confirmation.getProposedActions(),
+                    new TypeReference<List<CommandNeedsConfirmationResponse.ProposedAction>>() {});
+            return actions.stream()
+                    .map(action -> new DecisionResult.StartJob.ProposedAction(action.type(), action.parameters()))
+                    .toList();
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Failed to deserialize stored confirmation actions", e);
+        }
+    }
+
+    private CommandResponse.CommandResult commandResultFromJson(String executionResultJson) {
+        if (executionResultJson == null || executionResultJson.isBlank() || "null".equals(executionResultJson)) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(executionResultJson, CommandResponse.CommandResult.class);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Failed to deserialize stored confirmation execution result", e);
+        }
+    }
+
+    private CommandConfirmationApprovalResponse approvalResponse(
+            Command command,
+            CommandConfirmation confirmation,
+            CommandResponse.CommandResult result,
+            int executionMs,
+            boolean idempotentReplay,
+            String errorCode,
+            String reason) {
+        String status = errorCode == null ? "executed" : "rejected";
+        return new CommandConfirmationApprovalResponse(
+                command.getId(),
+                confirmation.getId(),
+                status,
+                result,
+                executionMs,
+                confirmation.getApprovedBy(),
+                idempotentReplay,
+                errorCode,
+                reason);
+    }
+
+    private CommandConfirmationCancelResponse cancelResponse(
+            Command command,
+            CommandConfirmation confirmation,
+            int executionMs,
+            boolean idempotentReplay,
+            String reason) {
+        return new CommandConfirmationCancelResponse(
+                command.getId(),
+                confirmation.getId(),
+                "cancelled",
+                executionMs,
+                confirmation.getCancelledBy(),
+                idempotentReplay,
+                reason);
+    }
+
+    private void writeConfirmationLifecycleLog(
+            Command command,
+            CommandConfirmation confirmation,
+            UUID correlationId,
+            String lifecycleType,
+            Map<String, Object> lifecycleDetails) {
+        Map<String, Object> decision = new HashMap<>(lifecycleDetails);
+        decision.put("type", lifecycleType);
+        decision.put("confirmationId", confirmation.getId().toString());
+        decision.put("confirmationStatus", confirmation.getStatus().name().toLowerCase());
+
+        decisionLogWriter.write(DecisionLogWriter.DecisionLogEntry.builder()
+                .command(command)
+                .correlationId(correlationId)
+                .intent(Map.of("type", command.getType().name().toLowerCase()))
+                .contextSnapshot(commandContextSnapshot(command))
+                .decision(decision)
+                .source(DecisionSource.USER_OVERRIDE)
+                .externalDecisionId(confirmation.getProviderDecisionId())
+                .build());
     }
 
     private void recordVoiceCommandReceived(Command command) {

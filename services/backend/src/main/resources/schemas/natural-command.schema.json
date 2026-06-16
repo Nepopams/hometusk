@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hometusk.app/schemas/natural-command.schema.json",
+  "title": "NaturalCommandPayload",
+  "type": "object",
+  "required": ["text", "inputMode", "locale", "timezone", "referenceInstant"],
+  "properties": {
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "inputMode": {
+      "type": "string",
+      "enum": ["text", "voice_transcript", "shortcut"]
+    },
+    "locale": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 20
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "referenceInstant": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "asrTraceId": {
+      "type": ["string", "null"],
+      "maxLength": 128
+    }
+  },
+  "additionalProperties": false
+}

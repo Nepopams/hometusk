@@ -22,6 +22,7 @@ This index tracks all architecture and flow diagrams in the project.
 | Social Auth Keycloak Broker | Sequence | Yandex social login through Keycloak broker and backend JWT-only user resolution | [Link](../diagrams/sequence-social-auth-keycloak-broker.md) |
 | Mobile Push And Deep Link Handoff | Sequence | Native device token registration, push delivery, and authorized deep-link target loading | [Link](../diagrams/sequence-mobile-push-deep-link.md) |
 | Voice Command Chat | Sequence | Audio recording to ASR draft to explicit command execution | [Link](../diagrams/sequence-voice-command-chat.md) |
+| Natural Command Needs Confirmation | Sequence | `natural_command` provider confirm maps to HomeTusk pending confirmation without mutation | [Link](../diagrams/sequence-natural-command-needs-confirmation.md) |
 | Command Processing Flow | Sequence | NL command → task creation | [Link](../architecture/diagrams/command-processing-flow.md) |
 
 ## Diagram Lifecycle

@@ -94,12 +94,43 @@ public class DecisionProviderSelector {
 
         DecisionResult manualResult = manualProvider.decide(context);
 
-        // Convert to fallback source
-        if (manualResult instanceof DecisionResult.StartJob startJob) {
-            return new DecisionResult.StartJob(DecisionSource.FALLBACK, startJob.confidence(), startJob.actions());
-        }
-        // Clarify and Reject shouldn't happen from manual provider, but handle anyway
-        return manualResult;
+        return withFallbackSource(manualResult);
+    }
+
+    private DecisionResult withFallbackSource(DecisionResult result) {
+        return switch (result) {
+            case DecisionResult.StartJob startJob -> new DecisionResult.StartJob(
+                    DecisionSource.FALLBACK, startJob.confidence(), startJob.actions());
+            case DecisionResult.Clarify clarify -> new DecisionResult.Clarify(
+                    DecisionSource.FALLBACK,
+                    clarify.confidence(),
+                    clarify.externalDecisionId(),
+                    clarify.rawPayload(),
+                    clarify.question(),
+                    clarify.requiredFields(),
+                    clarify.suggestions());
+            case DecisionResult.Confirm confirm -> new DecisionResult.Confirm(
+                    DecisionSource.FALLBACK,
+                    confirm.confidence(),
+                    confirm.externalDecisionId(),
+                    confirm.rawPayload(),
+                    confirm.providerConfirmationId(),
+                    confirm.summary(),
+                    confirm.reasons(),
+                    confirm.riskLabels(),
+                    confirm.expiresAt(),
+                    confirm.providerTraceId(),
+                    confirm.schemaVersion(),
+                    confirm.decisionVersion(),
+                    confirm.actions());
+            case DecisionResult.Reject reject -> new DecisionResult.Reject(
+                    DecisionSource.FALLBACK,
+                    reject.confidence(),
+                    reject.externalDecisionId(),
+                    reject.rawPayload(),
+                    reject.reason(),
+                    reject.errorCode());
+        };
     }
 
     /**

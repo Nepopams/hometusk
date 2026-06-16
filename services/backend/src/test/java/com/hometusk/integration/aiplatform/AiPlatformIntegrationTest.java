@@ -4,8 +4,11 @@ import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.hometusk.commands.domain.CommandConfirmationStatus;
 import com.hometusk.commands.domain.CommandStatus;
 import com.hometusk.commands.domain.DecisionSource;
+import com.hometusk.commands.repository.CommandConfirmationRepository;
 import com.hometusk.commands.repository.CommandRepository;
 import com.hometusk.commands.repository.DecisionLogRepository;
 import com.hometusk.shopping.repository.ShoppingItemRepository;
@@ -14,6 +17,7 @@ import com.hometusk.tasks.repository.TaskRepository;
 import com.hometusk.users.domain.Membership;
 import com.hometusk.users.domain.MembershipRole;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import jakarta.persistence.EntityManager;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +26,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.web.servlet.MvcResult;
 
 /**
  * Integration tests for AI Platform decision flow.
@@ -45,6 +51,9 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
     private CommandRepository commandRepository;
 
     @Autowired
+    private CommandConfirmationRepository commandConfirmationRepository;
+
+    @Autowired
     private TaskRepository taskRepository;
 
     @Autowired
@@ -52,6 +61,12 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
 
     @Autowired
     private DecisionLogRepository decisionLogRepository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @Autowired
     private CircuitBreakerRegistry circuitBreakerRegistry;
@@ -283,7 +298,7 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
                     "householdId",
                     testHousehold.getId(),
                     "source",
-                    "text",
+                    "web",
                     "payload",
                     Map.of("title", "Clean kitchen")));
 
@@ -313,7 +328,7 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
                     "householdId",
                     testHousehold.getId(),
                     "source",
-                    "text",
+                    "web",
                     "payload",
                     Map.of("title", "Clean kitchen")));
 
@@ -564,18 +579,29 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
     class ConfirmScenario {
 
         @Test
-        @DisplayName("should map confirm to unsupported rejection and preserve raw provider payload")
-        void mapsConfirmToUnsupportedRejectWithoutMutation() throws Exception {
+        @DisplayName("should map confirm to needs_confirmation and preserve raw provider payload without mutation")
+        void mapsConfirmToNeedsConfirmationWithoutMutation() throws Exception {
             stubConfirmDecision();
             long taskCountBefore = taskRepository.count();
             long shoppingItemCountBefore = shoppingItemRepository.count();
 
             String requestBody = objectMapper.writeValueAsString(Map.of(
-                    "type", "create_task",
+                    "type", "natural_command",
                     "householdId", testHousehold.getId(),
-                    "source", "web",
+                    "source", "mobile",
                     "clientTimestamp", "2024-01-15T10:00:00Z",
-                    "payload", Map.of("title", "Assign kitchen cleanup to someone else")));
+                    "payload",
+                            Map.of(
+                                    "text",
+                                    "Assign kitchen cleanup to someone else",
+                                    "inputMode",
+                                    "text",
+                                    "locale",
+                                    "en-US",
+                                    "timezone",
+                                    "UTC",
+                                    "referenceInstant",
+                                    "2026-06-16T09:00:00Z")));
 
             mockMvc.perform(post("/api/v1/commands")
                             .header("X-Correlation-ID", correlationId)
@@ -583,9 +609,14 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
                             .content(requestBody)
                             .with(jwt()))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.status").value("rejected"))
-                    .andExpect(jsonPath("$.errorCode").value("AI_CONFIRMATION_UNSUPPORTED"))
-                    .andExpect(jsonPath("$.reason").value("Please confirm before I do this."));
+                    .andExpect(jsonPath("$.status").value("needs_confirmation"))
+                    .andExpect(jsonPath("$.confirmation.confirmationId").isNotEmpty())
+                    .andExpect(jsonPath("$.confirmation.providerConfirmationId").value("conf-test"))
+                    .andExpect(jsonPath("$.confirmation.summary").value("Create a task for another household member."))
+                    .andExpect(
+                            jsonPath("$.confirmation.proposedActions[0].type").value("create_task"))
+                    .andExpect(jsonPath("$.trace.providerTraceId").value("trace-test-confirm"))
+                    .andExpect(jsonPath("$.trace.schemaVersion").value("2.1.0"));
 
             org.assertj.core.api.Assertions.assertThat(taskRepository.count()).isEqualTo(taskCountBefore);
             org.assertj.core.api.Assertions.assertThat(shoppingItemRepository.count())
@@ -594,7 +625,10 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
             var command = commandRepository
                     .findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId())
                     .get(0);
-            org.assertj.core.api.Assertions.assertThat(command.getStatus()).isEqualTo(CommandStatus.REJECTED);
+            org.assertj.core.api.Assertions.assertThat(command.getStatus()).isEqualTo(CommandStatus.NEEDS_CONFIRMATION);
+            org.assertj.core.api.Assertions.assertThat(
+                            commandConfirmationRepository.findByCommand_IdOrderByCreatedAtDesc(command.getId()))
+                    .hasSize(1);
 
             var log = decisionLogRepository.findByCorrelationId(correlationId);
             org.assertj.core.api.Assertions.assertThat(log).isPresent();
@@ -604,7 +638,212 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
                     .contains("\"trace_id\": \"trace-test-confirm\"")
                     .contains("\"schema_version\": \"2.1.0\"")
                     .contains("\"confirmation_id\": \"conf-test\"");
+            org.assertj.core.api.Assertions.assertThat(log.get().getDecision()).contains("needs_confirmation");
         }
+
+        @Test
+        @DisplayName("should approve pending confirmation exactly once")
+        void approvesPendingConfirmationOnce() throws Exception {
+            PendingConfirmation pending = createPendingConfirmation();
+            long taskCountBefore = taskRepository.count();
+            UUID approvalCorrelationId = UUID.randomUUID();
+
+            mockMvc.perform(post(
+                                    "/api/v1/commands/{commandId}/confirmations/{confirmationId}/approve",
+                                    pending.commandId(),
+                                    pending.confirmationId())
+                            .header("X-Correlation-ID", approvalCorrelationId)
+                            .with(jwt()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("executed"))
+                    .andExpect(jsonPath("$.result.taskId").isNotEmpty())
+                    .andExpect(jsonPath("$.approvedBy").value(testUser.getId().toString()))
+                    .andExpect(jsonPath("$.idempotentReplay").value(false));
+
+            org.assertj.core.api.Assertions.assertThat(taskRepository.count()).isEqualTo(taskCountBefore + 1);
+
+            var confirmation = commandConfirmationRepository
+                    .findById(pending.confirmationId())
+                    .orElseThrow();
+            org.assertj.core.api.Assertions.assertThat(confirmation.getStatus())
+                    .isEqualTo(CommandConfirmationStatus.EXECUTED);
+            org.assertj.core.api.Assertions.assertThat(confirmation.getApprovedBy())
+                    .isEqualTo(testUser.getId());
+            org.assertj.core.api.Assertions.assertThat(confirmation.getExecutionResult())
+                    .contains("taskId");
+
+            var command = commandRepository.findById(pending.commandId()).orElseThrow();
+            org.assertj.core.api.Assertions.assertThat(command.getStatus()).isEqualTo(CommandStatus.EXECUTED);
+
+            var approvalLog = decisionLogRepository.findByCorrelationId(approvalCorrelationId);
+            org.assertj.core.api.Assertions.assertThat(approvalLog).isPresent();
+            org.assertj.core.api.Assertions.assertThat(approvalLog.get().getDecision())
+                    .contains("confirmation_approved")
+                    .contains("executed");
+
+            mockMvc.perform(post(
+                                    "/api/v1/commands/{commandId}/confirmations/{confirmationId}/approve",
+                                    pending.commandId(),
+                                    pending.confirmationId())
+                            .header("X-Correlation-ID", UUID.randomUUID())
+                            .with(jwt()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("executed"))
+                    .andExpect(jsonPath("$.idempotentReplay").value(true));
+
+            org.assertj.core.api.Assertions.assertThat(taskRepository.count()).isEqualTo(taskCountBefore + 1);
+        }
+
+        @Test
+        @DisplayName("should cancel pending confirmation without mutation and replay safely")
+        void cancelsPendingConfirmationWithoutMutation() throws Exception {
+            PendingConfirmation pending = createPendingConfirmation();
+            long taskCountBefore = taskRepository.count();
+            UUID cancelCorrelationId = UUID.randomUUID();
+
+            mockMvc.perform(post(
+                                    "/api/v1/commands/{commandId}/confirmations/{confirmationId}/cancel",
+                                    pending.commandId(),
+                                    pending.confirmationId())
+                            .header("X-Correlation-ID", cancelCorrelationId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"reason\":\"Not needed anymore\"}")
+                            .with(jwt()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("cancelled"))
+                    .andExpect(jsonPath("$.cancelledBy").value(testUser.getId().toString()))
+                    .andExpect(jsonPath("$.idempotentReplay").value(false));
+
+            org.assertj.core.api.Assertions.assertThat(taskRepository.count()).isEqualTo(taskCountBefore);
+
+            var confirmation = commandConfirmationRepository
+                    .findById(pending.confirmationId())
+                    .orElseThrow();
+            org.assertj.core.api.Assertions.assertThat(confirmation.getStatus())
+                    .isEqualTo(CommandConfirmationStatus.CANCELLED);
+            org.assertj.core.api.Assertions.assertThat(confirmation.getCancelledBy())
+                    .isEqualTo(testUser.getId());
+            org.assertj.core.api.Assertions.assertThat(confirmation.getCancelReason())
+                    .isEqualTo("Not needed anymore");
+
+            var cancelLog = decisionLogRepository.findByCorrelationId(cancelCorrelationId);
+            org.assertj.core.api.Assertions.assertThat(cancelLog).isPresent();
+            org.assertj.core.api.Assertions.assertThat(cancelLog.get().getDecision())
+                    .contains("confirmation_cancelled")
+                    .contains("cancelled");
+
+            mockMvc.perform(post(
+                                    "/api/v1/commands/{commandId}/confirmations/{confirmationId}/cancel",
+                                    pending.commandId(),
+                                    pending.confirmationId())
+                            .header("X-Correlation-ID", UUID.randomUUID())
+                            .with(jwt()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("cancelled"))
+                    .andExpect(jsonPath("$.idempotentReplay").value(true));
+
+            org.assertj.core.api.Assertions.assertThat(taskRepository.count()).isEqualTo(taskCountBefore);
+        }
+
+        @Test
+        @DisplayName("should deny approval by non-initiator household member")
+        void deniesNonInitiatorApproval() throws Exception {
+            membershipRepository.save(new Membership(testUser2, testHousehold, MembershipRole.member));
+            PendingConfirmation pending = createPendingConfirmation();
+            long taskCountBefore = taskRepository.count();
+
+            mockMvc.perform(post(
+                                    "/api/v1/commands/{commandId}/confirmations/{confirmationId}/approve",
+                                    pending.commandId(),
+                                    pending.confirmationId())
+                            .header("X-Correlation-ID", UUID.randomUUID())
+                            .with(jwtForUser(testUser2)))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.errorCode").value("ACCESS_DENIED"));
+
+            org.assertj.core.api.Assertions.assertThat(taskRepository.count()).isEqualTo(taskCountBefore);
+            var confirmation = commandConfirmationRepository
+                    .findById(pending.confirmationId())
+                    .orElseThrow();
+            org.assertj.core.api.Assertions.assertThat(confirmation.getStatus())
+                    .isEqualTo(CommandConfirmationStatus.PENDING_CONFIRMATION);
+        }
+
+        @Test
+        @DisplayName("should expire stale confirmation on approval without mutation")
+        void expiresStaleConfirmationOnApprovalWithoutMutation() throws Exception {
+            PendingConfirmation pending = createPendingConfirmation();
+            long taskCountBefore = taskRepository.count();
+            UUID approvalCorrelationId = UUID.randomUUID();
+
+            entityManager.flush();
+            entityManager.clear();
+            jdbcTemplate.update(
+                    "UPDATE command_confirmations SET expires_at = NOW() - INTERVAL '1 minute' WHERE id = ?",
+                    pending.confirmationId());
+            entityManager.clear();
+
+            mockMvc.perform(post(
+                                    "/api/v1/commands/{commandId}/confirmations/{confirmationId}/approve",
+                                    pending.commandId(),
+                                    pending.confirmationId())
+                            .header("X-Correlation-ID", approvalCorrelationId)
+                            .with(jwt()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("rejected"))
+                    .andExpect(jsonPath("$.errorCode").value("CONFIRMATION_EXPIRED"));
+
+            org.assertj.core.api.Assertions.assertThat(taskRepository.count()).isEqualTo(taskCountBefore);
+            var confirmation = commandConfirmationRepository
+                    .findById(pending.confirmationId())
+                    .orElseThrow();
+            org.assertj.core.api.Assertions.assertThat(confirmation.getStatus())
+                    .isEqualTo(CommandConfirmationStatus.EXPIRED);
+
+            var expiryLog = decisionLogRepository.findByCorrelationId(approvalCorrelationId);
+            org.assertj.core.api.Assertions.assertThat(expiryLog).isPresent();
+            org.assertj.core.api.Assertions.assertThat(expiryLog.get().getDecision())
+                    .contains("confirmation_expired")
+                    .contains("expired");
+        }
+
+        private PendingConfirmation createPendingConfirmation() throws Exception {
+            stubConfirmDecision();
+
+            String requestBody = objectMapper.writeValueAsString(Map.of(
+                    "type", "natural_command",
+                    "householdId", testHousehold.getId(),
+                    "source", "mobile",
+                    "clientTimestamp", "2024-01-15T10:00:00Z",
+                    "payload",
+                            Map.of(
+                                    "text",
+                                    "Assign kitchen cleanup to someone else",
+                                    "inputMode",
+                                    "text",
+                                    "locale",
+                                    "en-US",
+                                    "timezone",
+                                    "UTC",
+                                    "referenceInstant",
+                                    "2026-06-16T09:00:00Z")));
+
+            MvcResult result = mockMvc.perform(post("/api/v1/commands")
+                            .header("X-Correlation-ID", UUID.randomUUID())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestBody)
+                            .with(jwt()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("needs_confirmation"))
+                    .andReturn();
+
+            JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
+            return new PendingConfirmation(
+                    UUID.fromString(body.get("commandId").asText()),
+                    UUID.fromString(body.at("/confirmation/confirmationId").asText()));
+        }
+
+        private record PendingConfirmation(UUID commandId, UUID confirmationId) {}
     }
 
     @Nested

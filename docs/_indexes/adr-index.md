@@ -29,6 +29,7 @@ This index tracks all ADRs in the project. Update this file when creating/supers
 | ADR-019 | Social Auth Through Keycloak Identity Broker | accepted | 2026-06-13 | [Link](../adr/019-social-auth-keycloak-broker.md) |
 | ADR-021 | Native Mobile Client Stack | accepted | 2026-06-14 | [Link](../adr/021-native-mobile-client-stack.md) |
 | ADR-020 | Voice Command Chat ASR BFF | accepted | 2026-06-14 | [Link](../adr/020-voice-command-chat-asr-bff.md) |
+| ADR-022 | Pending Command Confirmation State | accepted | 2026-06-16 | [Link](../adr/022-pending-command-confirmation-state.md) |
 
 ## Template
 

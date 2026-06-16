@@ -232,6 +232,11 @@ public class Command {
         this.errorMessage = clarificationQuestion; // Store question in error_message field
     }
 
+    public void markNeedsConfirmation(String summary) {
+        this.status = CommandStatus.NEEDS_CONFIRMATION;
+        this.errorMessage = summary;
+    }
+
     public boolean isExecuted() {
         return this.status == CommandStatus.EXECUTED;
     }

@@ -28,7 +28,8 @@ public class SchemaValidator {
 
     private static final Map<CommandType, String> SCHEMA_PATHS = Map.of(
             CommandType.CREATE_TASK, "/schemas/create-task.schema.json",
-            CommandType.COMPLETE_TASK, "/schemas/complete-task.schema.json");
+            CommandType.COMPLETE_TASK, "/schemas/complete-task.schema.json",
+            CommandType.NATURAL_COMMAND, "/schemas/natural-command.schema.json");
 
     private final ObjectMapper objectMapper;
     private final JsonSchemaFactory schemaFactory;

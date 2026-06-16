@@ -271,9 +271,14 @@ public class GlobalExceptionHandler {
                     ZONE_NOT_FOUND,
                     SHOPPING_RUN_NOT_FOUND,
                     NOTIFICATION_NOT_FOUND,
-                    DEVICE_NOT_FOUND -> HttpStatus.NOT_FOUND;
+                    DEVICE_NOT_FOUND,
+                    CONFIRMATION_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case INVITE_EXPIRED, INVITE_REDEEMED, INVITE_REVOKED -> HttpStatus.GONE;
-            case AUTH_EMAIL_EXISTS, IDEMPOTENCY_CONFLICT, DEVICE_TOKEN_CONFLICT -> HttpStatus.CONFLICT;
+            case AUTH_EMAIL_EXISTS,
+                    IDEMPOTENCY_CONFLICT,
+                    DEVICE_TOKEN_CONFLICT,
+                    CONFIRMATION_NOT_PENDING,
+                    CONFIRMATION_EXPIRED -> HttpStatus.CONFLICT;
             case AUTH_PROVIDER_UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
             case INTERNAL_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR;
             default -> HttpStatus.BAD_REQUEST;

@@ -3,7 +3,18 @@
 > Формат Now/Next/Later фиксирует направление и приоритеты без преждевременных дат.
 > У каждого пункта должен быть "якорь" — initiative/release документ.
 
-## NOW (Natural Command & Confirmation Contract Spike closed)
+## NOW (Natural Command + Needs Confirmation Backend Contract Gate D GO)
+
+- Initiative (current / delegated Gate D GO): **INIT-2026Q3-natural-command-needs-confirmation-backend-contract** - Natural Command + Needs Confirmation Backend Contract
+  - Anchor: docs/planning/initiatives/INIT-2026Q3-natural-command-needs-confirmation-backend-contract.md
+  - Execution: docs/planning/initiatives/INIT-2026Q3-natural-command-needs-confirmation-backend-contract.execution.md
+  - Workpack: docs/planning/workpacks/INIT-2026Q3-NATURAL-COMMAND-NEEDS-CONFIRMATION-BACKEND-CONTRACT/workpack.md
+  - Lifecycle workpack: docs/planning/workpacks/INIT-2026Q3-NATURAL-COMMAND-CONFIRMATION-APPROVAL-LIFECYCLE-BACKEND-CONTRACT/workpack.md
+  - Outcome: backend/API contract delivered for `type=natural_command`, first-class `needs_confirmation`, HomeTusk-owned pending confirmation state, provider `confirm` mapping, advertised provider `confirm` capability, initiator-only approve/cancel lifecycle, lazy expiry on approve, guardrails revalidation before approved execution, terminal-state replay, and DecisionLog traceability.
+  - Why now: the Natural Command & Confirmation Contract Spike closed on 2026-06-16 with Gate D GO and LIMITED-GO for this separate backend implementation initiative; the backend contract is now ready to be consumed by a separately gated client UX initiative.
+  - Gates: delegated Gate A GO, Gate B GO, artifact gate GO/HOLD split, Gate C GO, review gate GO, and Gate D GO recorded on 2026-06-16 for the backend contract foundation and approval/cancel lifecycle.
+  - Next recommended action: plan Mobile AI Command UX v1 as a separate gated initiative/workpack using this accepted backend contract; keep expiry scheduler, broader approval policy, `answered`, and production rollout separately gated.
+  - Boundaries: backend/API contract only; no mobile/web UI, no `answered`, no broad autonomous planning, no direct mobile/web to AI Platform, no AI Platform repo writes, no production rollout/config change.
 
 - Initiative (done / delegated Gate D GO): **INIT-2026Q3-natural-command-and-confirmation-contract-spike** - Natural Command & Confirmation Contract Spike
   - Anchor: docs/planning/initiatives/INIT-2026Q3-natural-command-and-confirmation-contract-spike.md
@@ -173,15 +184,10 @@
 
 ## NEXT (будущие инициативы / ranked candidates)
 
-- Initiative (recommended next / LIMITED-GO): **HomeTusk natural_command + needs_confirmation backend contract implementation**
-  - Anchor: TBD - recommended by `INIT-2026Q3-natural-command-and-confirmation-contract-spike` Gate D on 2026-06-16
-  - Outcome: implement the accepted backend contract foundation for `type=natural_command`, first-class `needs_confirmation`, pending confirmation ownership, provider `confirm` mapping, and DecisionLog traceability in small Gate C-approved slices.
-  - Planning note: backend/API contract implementation only; no mobile UX, `answered`, broad planner actions, direct mobile/web AI Platform calls, production rollout, or AI Platform repo writes until future gates.
-
 - Initiative (gated candidate): **HomeTusk natural_command + Mobile AI Command UX v1**
-  - Anchor: TBD — depends on `INIT-2026Q3-ai-platform-2-1-contract-intake` Gate D plus `INIT-2026Q3-natural-command-and-confirmation-contract-spike` Gate D and a future backend implementation/review gate
+  - Anchor: TBD — depends on `INIT-2026Q3-ai-platform-2-1-contract-intake` Gate D, `INIT-2026Q3-natural-command-and-confirmation-contract-spike` Gate D, and `INIT-2026Q3-natural-command-needs-confirmation-backend-contract` Gate D
   - Outcome: HomeTusk-owned natural command contract and mobile command UX for clarify/confirm/answer/execute outcomes without direct mobile → AI Platform calls
-  - Planning note: still blocked; artifact gate exists, but runtime `natural_command`, `needs_confirmation`, `answered`, backend adapter mapping, and mobile cards require separate contract governance, workpack, PLAN, Gate C, APPLY, and review
+  - Planning note: unblocked for separate client planning for execute/clarify/confirm using the accepted HomeTusk backend contract; `answered`, production rollout, and any direct mobile → AI Platform behavior remain blocked unless separately gated.
 
 - Initiative (candidate): **Agreements v0 (read-only)** (consent-first)
   - Anchor: TBD — requires initiative spec
@@ -208,7 +214,7 @@
   - Email/channel work сортируем по цепочке безопасности: verified profile state → delivery platform → конкретный notification use case.
 
 - Текущий рейтинг новых инициатив:
-  - #1 HomeTusk natural_command + needs_confirmation backend contract implementation - RECOMMENDED NEXT / LIMITED-GO from `INIT-2026Q3-natural-command-and-confirmation-contract-spike`; backend/API contract foundation only before any mobile UX or production rollout.
+  - #1 HomeTusk natural_command + needs_confirmation backend contract implementation - DONE / GATE D GO; backend/API contract foundation and approval/cancel lifecycle delivered before any mobile UX or production rollout.
   - #2 INIT-2026Q3-natural-command-and-confirmation-contract-spike - DONE / GATE D GO; draft-only contract package delivered for `natural_command`, `needs_confirmation`, confirmation lifecycle, provider `confirm` mapping, guardrails, DecisionLog traceability, mobile dependencies, and OpenAPI delta; no accepted public contract/runtime/mobile/provider changes.
   - #3 INIT-2026Q3-ai-platform-2-1-contract-intake - DONE / GATE D GO; AI Platform `2.1.0` consumed, integration docs updated, provider `reject` safely maps to rejection, provider `confirm` maps to non-executing `AI_CONFIRMATION_UNSUPPORTED`, DecisionLog traceability preserved, and `natural_command`, `needs_confirmation`, `answered`, mobile AI UX, public `/commands` changes, and AI Platform repo writes stayed out of scope.
   - #4 Provider contract + 50-scenario Domain Planner eval follow-up - DONE PROVIDER-SIDE / READ-ONLY INPUT; provider handoff reports 50 evaluated scenarios, 50 schema-valid decisions, 0 blocker failures, first-class `reject`, schema-level `confirm`, and `answer` blocked.

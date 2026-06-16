@@ -2,6 +2,7 @@ package com.hometusk.commands.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hometusk.commands.dto.CommandConfirmationCancelRequest;
 import com.hometusk.commands.dto.CommandRequest;
 import com.hometusk.commands.dto.CommandResponseBase;
 import com.hometusk.commands.dto.ContinueCommandRequest;
@@ -207,6 +208,73 @@ public class CommandController {
         }
     }
 
+    @PostMapping("/{commandId}/confirmations/{confirmationId}/approve")
+    @Operation(
+            summary = "Approve a pending command confirmation",
+            description =
+                    """
+            Approves a HomeTusk-owned pending confirmation and executes its stored proposed actions.
+            This lifecycle slice is initiator-only and revalidates guardrails before mutation.
+            """)
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Confirmation approval processed"),
+        @ApiResponse(responseCode = "401", description = "Authentication required"),
+        @ApiResponse(responseCode = "403", description = "Only the original initiator may approve"),
+        @ApiResponse(responseCode = "404", description = "Confirmation not found"),
+        @ApiResponse(responseCode = "409", description = "Confirmation is not pending")
+    })
+    public ResponseEntity<CommandResponseBase> approveConfirmation(
+            @PathVariable UUID commandId,
+            @PathVariable UUID confirmationId,
+            @RequestHeader(value = CORRELATION_ID_HEADER, required = false)
+                    @Parameter(description = "Client-provided correlation ID")
+                    String correlationIdHeader) {
+        UUID correlationId = correlationIdHeader != null ? parseUuidOrGenerate(correlationIdHeader) : UUID.randomUUID();
+        MDC.put(MdcKeys.CORRELATION_ID, correlationId.toString());
+        try {
+            User currentUser = getCurrentUser();
+            CommandResponseBase response =
+                    commandService.approveConfirmation(commandId, confirmationId, currentUser, correlationId);
+            HttpHeaders headers = new HttpHeaders();
+            headers.set(CORRELATION_ID_HEADER, correlationId.toString());
+            return ResponseEntity.ok().headers(headers).body(response);
+        } finally {
+            MDC.remove(MdcKeys.CORRELATION_ID);
+        }
+    }
+
+    @PostMapping("/{commandId}/confirmations/{confirmationId}/cancel")
+    @Operation(
+            summary = "Cancel a pending command confirmation",
+            description = "Cancels a HomeTusk-owned pending confirmation without executing proposed actions.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Confirmation cancelled"),
+        @ApiResponse(responseCode = "401", description = "Authentication required"),
+        @ApiResponse(responseCode = "403", description = "Only the original initiator may cancel"),
+        @ApiResponse(responseCode = "404", description = "Confirmation not found"),
+        @ApiResponse(responseCode = "409", description = "Confirmation is not pending")
+    })
+    public ResponseEntity<CommandResponseBase> cancelConfirmation(
+            @PathVariable UUID commandId,
+            @PathVariable UUID confirmationId,
+            @RequestBody(required = false) @Valid CommandConfirmationCancelRequest request,
+            @RequestHeader(value = CORRELATION_ID_HEADER, required = false)
+                    @Parameter(description = "Client-provided correlation ID")
+                    String correlationIdHeader) {
+        UUID correlationId = correlationIdHeader != null ? parseUuidOrGenerate(correlationIdHeader) : UUID.randomUUID();
+        MDC.put(MdcKeys.CORRELATION_ID, correlationId.toString());
+        try {
+            User currentUser = getCurrentUser();
+            CommandResponseBase response =
+                    commandService.cancelConfirmation(commandId, confirmationId, request, currentUser, correlationId);
+            HttpHeaders headers = new HttpHeaders();
+            headers.set(CORRELATION_ID_HEADER, correlationId.toString());
+            return ResponseEntity.ok().headers(headers).body(response);
+        } finally {
+            MDC.remove(MdcKeys.CORRELATION_ID);
+        }
+    }
+
     private UUID parseUuidOrGenerate(String value) {
         try {
             return UUID.fromString(value);
@@ -282,9 +350,10 @@ public class CommandController {
                     TASK_NOT_FOUND,
                     USER_NOT_FOUND,
                     ZONE_NOT_FOUND,
-                    NOTIFICATION_NOT_FOUND -> HttpStatus.NOT_FOUND;
+                    NOTIFICATION_NOT_FOUND,
+                    CONFIRMATION_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case INVITE_EXPIRED, INVITE_REDEEMED, INVITE_REVOKED -> HttpStatus.GONE;
-            case IDEMPOTENCY_CONFLICT -> HttpStatus.CONFLICT;
+            case IDEMPOTENCY_CONFLICT, CONFIRMATION_NOT_PENDING, CONFIRMATION_EXPIRED -> HttpStatus.CONFLICT;
             case INTERNAL_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR;
             default -> HttpStatus.BAD_REQUEST;
         };

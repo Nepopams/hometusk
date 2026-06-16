@@ -11,6 +11,8 @@ public enum CommandStatus {
     SCHEDULED,
     /** AI needs clarification from user (Stage 2) */
     NEEDS_INPUT,
+    /** AI proposed a plan that requires explicit user approval before mutation */
+    NEEDS_CONFIRMATION,
     EXECUTED,
     FAILED,
     REJECTED

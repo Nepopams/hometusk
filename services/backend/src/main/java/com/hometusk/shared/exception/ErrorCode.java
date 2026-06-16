@@ -26,6 +26,7 @@ public enum ErrorCode {
     INVALID_TOKEN("Invite token not found"),
     NOTIFICATION_NOT_FOUND("Notification not found"),
     DEVICE_NOT_FOUND("Mobile device registration not found"),
+    CONFIRMATION_NOT_FOUND("Command confirmation not found"),
 
     // Shopping validation (Stage 5)
     SHOPPING_ITEM_NAME_EMPTY("Shopping item name cannot be empty"),
@@ -65,6 +66,8 @@ public enum ErrorCode {
     GUARDRAILS_REJECTED("Command rejected by guardrails policy"),
     // Command continuation
     COMMAND_NOT_CONTINUABLE("Command cannot be continued in current state"),
+    CONFIRMATION_NOT_PENDING("Command confirmation is not pending"),
+    CONFIRMATION_EXPIRED("Command confirmation expired"),
 
     // Other
     IDEMPOTENCY_CONFLICT("Request with this idempotency key already processed"),

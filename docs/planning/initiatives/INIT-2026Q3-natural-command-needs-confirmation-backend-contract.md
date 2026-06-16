@@ -1,12 +1,23 @@
-# Initiative: INIT-2026Q3-natural-command-needs-confirmation-backend-contract — Natural Command & Needs Confirmation Backend Contract
+# Initiative: INIT-2026Q3-natural-command-needs-confirmation-backend-contract - Natural Command + Needs Confirmation Backend Contract
 
 ## Status
 
-Draft (to be approved at Human Gate A)
+Delivered / current roadmap initiative with delegated Gate D GO.
+
+Backend/API contract foundation slice delivered on 2026-06-16 with delegated
+Gate D GO. Approval/cancel lifecycle slice delivered on 2026-06-16 with
+delegated Gate D GO.
+
+Client/product readiness remains separately gated: mobile/web UI, expiry
+scheduler, `answered`, broader approval policy, and production rollout are not
+approved by this initiative.
+
+Delegated Gate A/B/C/D decisions are recorded in
+`docs/planning/initiatives/INIT-2026Q3-natural-command-needs-confirmation-backend-contract.execution.md`.
 
 ## Initiative type
 
-Backend Contract Implementation / Command Pipeline / AI Safety / Confirmation Lifecycle / Traceability
+Backend API Contract Implementation / Command Pipeline / AI Safety / Traceability / Compatibility
 
 ## Owner
 
@@ -14,15 +25,17 @@ HomeTusk product engineering team.
 
 ## Target milestone
 
-Before Mobile AI Command UX v1 and before any production rollout of AI-command natural execution.
+Before Mobile AI Command UX v1, before `answered`, and before production rollout
+of AI-native command flows.
 
 ## Parent / Related initiatives
 
-- Contract spike: `docs/planning/initiatives/INIT-2026Q3-natural-command-and-confirmation-contract-spike.md`
-- AI Platform 2.1 intake: `docs/planning/initiatives/INIT-2026Q3-ai-platform-2-1-contract-intake.md`
-- Provider acceptance review: `docs/planning/initiatives/INIT-2026Q3-ai-provider-domain-planner-v1-acceptance-review.md`
-- Natural command spike package: `docs/research/ai-command-capabilities/natural-command-contract-spike/**`
-- AI Platform integration package: `docs/integration/ai-platform/v2.1/**`
+- AI Command Capability Audit: `docs/planning/initiatives/INIT-2026Q3-ai-command-capability-audit.md`
+- AI Command Artifact Gate: `docs/planning/initiatives/INIT-2026Q3-ai-command-artifact-gate.md`
+- Provider Domain Planner v1 Acceptance Review: `docs/planning/initiatives/INIT-2026Q3-ai-provider-domain-planner-v1-acceptance-review.md`
+- AI Platform 2.1 Contract Intake: `docs/planning/initiatives/INIT-2026Q3-ai-platform-2-1-contract-intake.md`
+- Contract Spike: `docs/planning/initiatives/INIT-2026Q3-natural-command-and-confirmation-contract-spike.md`
+- Draft contract package: `docs/research/ai-command-capabilities/natural-command-contract-spike/`
 - Future candidate: Mobile AI Command UX v1
 - Future candidate: read-only `answered` / status-query contract
 
@@ -30,469 +43,253 @@ Before Mobile AI Command UX v1 and before any production rollout of AI-command n
 
 ## Sources of Truth
 
-### Contract spike artifacts
+### Product and planning
 
-- `docs/research/ai-command-capabilities/natural-command-contract-spike/README.md`
-- `docs/research/ai-command-capabilities/natural-command-contract-spike/natural-command-request-contract-v0.md`
-- `docs/research/ai-command-capabilities/natural-command-contract-spike/command-response-outcomes-v0.md`
-- `docs/research/ai-command-capabilities/natural-command-contract-spike/needs-confirmation-contract-v0.md`
-- `docs/research/ai-command-capabilities/natural-command-contract-spike/confirmation-lifecycle-v0.md`
-- `docs/research/ai-command-capabilities/natural-command-contract-spike/provider-confirm-mapping-v0.md`
-- `docs/research/ai-command-capabilities/natural-command-contract-spike/guardrails-policy-v0.md`
-- `docs/research/ai-command-capabilities/natural-command-contract-spike/decisionlog-traceability-v0.md`
-- `docs/research/ai-command-capabilities/natural-command-contract-spike/mobile-state-contract-dependencies-v0.md`
-- `docs/research/ai-command-capabilities/natural-command-contract-spike/openapi-delta-draft.yaml`
-- `docs/research/ai-command-capabilities/natural-command-contract-spike/implementation-readiness-decision.md`
+- Product Goal: `docs/planning/strategy/product-goal.md`
+- Roadmap: `docs/planning/strategy/roadmap.md`
+- MVP release scope: `docs/planning/releases/MVP.md`
+- DoR / DoD: `docs/_governance/dor.md`, `docs/_governance/dod.md`
+- Workflow: `AGENTS.md`, `docs/CODEX-WORKFLOW.md`
 
-### HomeTusk implementation sources
+### Contract and architecture
 
-- Public command contract: `docs/contracts/http/commands.openapi.yaml`
-- Command controller/service: `services/backend/src/main/java/com/hometusk/commands/**`
-- Command DTOs: `services/backend/src/main/java/com/hometusk/commands/dto/**`
-- Command domain: `services/backend/src/main/java/com/hometusk/commands/domain/**`
-- Command pipeline: `services/backend/src/main/java/com/hometusk/commands/pipeline/**`
-- AI Platform adapter: `services/backend/src/main/java/com/hometusk/commands/pipeline/decision/**`
-- Guardrails: `services/backend/src/main/java/com/hometusk/commands/pipeline/guardrails/**`
-- Action executor: `services/backend/src/main/java/com/hometusk/commands/pipeline/ActionExecutor.java`
-- Database migrations: `services/backend/src/main/resources/db/migration/**`
-- Backend tests: `services/backend/src/test/**`
+- Commands public contract: `docs/contracts/http/commands.openapi.yaml`
+- Contract index: `docs/_indexes/contracts-index.md`
+- AI Platform integration v2.1: `docs/integration/ai-platform/v2.1/**`
+- Service catalog: `docs/architecture/service-catalog.md`
+- Draft natural command contract package:
+  `docs/research/ai-command-capabilities/natural-command-contract-spike/**`
 
-### Read-only context
+### Runtime context
 
-- Mobile command feature: `clients/mobile/src/features/command/**`
-- AI Platform provider repository: read-only only if needed
+- Backend command pipeline: `services/backend/src/main/java/com/hometusk/commands/**`
+- AI Platform decision adapter:
+  `services/backend/src/main/java/com/hometusk/commands/pipeline/decision/**`
+- Guardrails:
+  `services/backend/src/main/java/com/hometusk/commands/pipeline/guardrails/**`
+- DecisionLog: `services/backend/src/main/java/com/hometusk/commands/domain/DecisionLog.java`
+- Current mobile command shell: `clients/mobile/src/features/command/**` (read-only context)
+
+### AI Platform read-only input
+
+- AI Platform provider contract version `2.1.0`
+- First-class provider `reject`
+- Schema-level, non-executing provider `confirm`
+- Provider `answer` remains blocked
+- Provider eval evidence from prior acceptance and intake gates
 
 ---
 
 ## 1. Problem / Opportunity
 
-HomeTusk now has the planning and provider foundations required for a first-class natural command backend contract:
+The prior contract spike closed with LIMITED-GO for a separate backend contract
+implementation initiative. HomeTusk now has a draft contract direction for:
 
-- AI Platform `2.1.0` can return `execute`, `clarify`, `reject`, and schema-supported `confirm` decisions.
-- HomeTusk safely consumes provider `reject` and maps provider `confirm` to controlled non-execution today.
-- The contract spike recommends using existing `POST /api/v1/commands` with `type=natural_command` rather than a separate AI endpoint.
-- The contract spike recommends a first-class `needs_confirmation` response instead of overloading `needs_input`.
-- The contract spike recommends an explicit pending confirmation model because `DecisionLog` is audit evidence, not workflow state.
+- `type=natural_command` on the existing Commands API boundary;
+- a first-class `needs_confirmation` response;
+- HomeTusk-owned pending confirmation state;
+- provider `confirm` mapping that never mutates before user approval;
+- DecisionLog traceability for provider payloads, guardrails, and confirmation lifecycle.
 
-The current product gap is that HomeTusk still cannot expose this as a real backend contract:
+The runtime still does not support those concepts:
 
-- `CommandRequest.type` does not support `natural_command`.
-- `CommandResponse.status` does not support `needs_confirmation`.
-- There is no pending confirmation persistence model.
-- Provider `confirm` cannot become a user-visible confirmation card because there is no approval/cancel lifecycle.
-- Mobile cannot safely build confirmation UI until backend contract exists.
+- current `CommandType` supports only `create_task` and `complete_task`;
+- public `/commands` contract does not accept `natural_command`;
+- public command responses do not include `needs_confirmation`;
+- provider `confirm` maps to controlled `rejected / AI_CONFIRMATION_UNSUPPORTED`;
+- `DecisionLog` is audit evidence, but there is no source of truth for pending confirmation state.
 
-This initiative implements the backend contract and persistence foundation while keeping mobile UI, `answered`, broad planning, and production rollout out of scope.
+This initiative turns the accepted draft direction into a backend-owned contract
+foundation while preserving HomeTusk's execution authority and safety posture.
 
 ---
 
 ## 2. Outcome
 
-HomeTusk supports natural command submission and first-class confirmation state at the backend/API contract level.
-
-Target flow:
-
-```text
-POST /api/v1/commands type=natural_command
-  -> HomeTusk validates natural payload
-  -> HomeTusk builds AI Platform request with text, input mode, locale, timezone, reference instant, context and capabilities
-  -> AI Platform returns execute / clarify / reject / confirm
-  -> HomeTusk validates provider response
-  -> HomeTusk guardrails and domain validation remain final authority
-  -> HomeTusk returns one controlled outcome:
-       executed
-       needs_input
-       rejected
-       needs_confirmation
-       executed_degraded, only for safe deterministic fallback if already supported
-```
-
-For provider `confirm`:
+HomeTusk backend has an accepted, tested contract foundation for natural command
+and confirmation flows:
 
 ```text
-provider confirm
-  -> validate provider schema
-  -> validate proposed actions are supported
-  -> guardrail pre-check as proposal
-  -> create HomeTusk pending confirmation
-  -> return needs_confirmation
-  -> no domain mutation until explicit approval
+POST /api/v1/commands with type=natural_command
+-> validated natural command payload
+-> AI Platform decision mapping
+-> execute / clarify / reject / needs_confirmation
+-> provider confirm creates HomeTusk-owned pending confirmation
+-> no mutation before explicit approval
+-> DecisionLog preserves raw provider payload and mapped outcome
 ```
 
-For confirmation approval:
-
-```text
-POST approve endpoint
-  -> household membership/authz check
-  -> idempotency check
-  -> status/expiry/stale check
-  -> revalidate proposed actions
-  -> re-run guardrails
-  -> execute approved actions
-  -> mark confirmation terminal
-  -> audit
-```
+The initiative ends with a GO / LIMITED-GO / NO-GO / HOLD decision for the next
+step, most likely Mobile AI Command UX v1 or a narrower follow-up slice.
 
 ---
 
 ## 3. Scope
 
-### NOW — Backend contract and confirmation foundation
+### NOW - Backend contract implementation
 
-#### 3.1 Public command contract update
+#### 3.1 Public Commands API contract
 
-Update accepted public command contract:
+Update HomeTusk-owned public contract docs for the accepted backend behavior:
 
-- add `natural_command` as a `CommandRequest.type` variant;
-- define natural command payload fields:
+- allow `type: natural_command` on `POST /api/v1/commands`;
+- define required natural command payload fields:
   - `text`;
   - `inputMode`;
   - `locale`;
   - `timezone`;
   - `referenceInstant`;
   - optional `asrTraceId`;
-- add response status `needs_confirmation`;
-- add `NeedsConfirmationResponse` schema;
-- add confirmation approve/cancel endpoints;
-- keep existing structured `create_task` and `complete_task` compatibility.
+- define validation failure semantics;
+- define backward compatibility with existing structured commands;
+- define `needs_confirmation` response shape;
+- define approve/cancel confirmation semantics if implemented in this initiative.
 
-Default endpoint direction from spike:
+The default compatibility posture is additive: existing clients sending
+`create_task` or `complete_task` keep working.
 
-```text
-POST /api/v1/commands with type=natural_command
-```
+#### 3.2 Backend command request handling
 
-Draft approve/cancel direction from spike:
-
-```text
-POST /api/v1/commands/{commandId}/confirmations/{confirmationId}/approve
-POST /api/v1/commands/{commandId}/confirmations/{confirmationId}/cancel
-```
-
-Codex must inspect current controller/router conventions and choose the final accepted shape in PLAN before APPLY.
-
-#### 3.2 Backend DTO/domain model update
-
-Implement backend DTO/domain support for:
-
-- `CommandType.NATURAL_COMMAND` or equivalent;
-- natural command payload validation;
-- `CommandStatus.PENDING_CONFIRMATION` or equivalent state handling;
-- `CommandResponse.status=needs_confirmation`;
-- confirmation response DTOs;
-- confirmation approval/cancel DTOs;
-- stable public error codes for confirmation lifecycle.
-
-Required public error codes to consider:
-
-```text
-CONFIRMATION_EXPIRED
-CONFIRMATION_CANCELLED
-CONFIRMATION_ALREADY_APPROVED
-CONFIRMATION_NOT_FOUND
-CONFIRMATION_FORBIDDEN
-CONFIRMATION_STALE
-CONFIRMATION_ACTION_UNSUPPORTED
-CONFIRMATION_VALIDATION_FAILED
-AI_CONFIRMATION_UNSUPPORTED, retained only for unexpected legacy/no-state paths
-```
-
-#### 3.3 Pending confirmation persistence
-
-Create explicit pending confirmation model/table.
-
-Do not use only `DecisionLog` as the source of truth.
-
-Candidate entity:
-
-```text
-CommandConfirmation
-  id
-  commandId
-  householdId
-  initiatorId
-  providerConfirmationId
-  providerDecisionId
-  providerTraceId
-  schemaVersion
-  decisionVersion
-  status
-  summary
-  reasonsJson
-  riskLabelsJson
-  proposedActionsJson
-  expiresAt
-  approvedBy
-  approvedAt
-  cancelledBy
-  cancelledAt
-  expiryProcessedAt
-  createdAt
-  updatedAt
-```
-
-Codex may refine field names and types after inspecting existing persistence conventions.
-
-Required status lifecycle:
-
-```text
-CREATED
-PENDING_CONFIRMATION
-CONFIRMED
-CANCELLED
-EXPIRED
-REJECTED
-EXECUTED
-FAILED
-```
-
-If implementation chooses a smaller status set, it must justify the simplification and preserve no-mutation safety.
-
-#### 3.4 Natural command pipeline integration
-
-Implement natural command routing through existing command pipeline.
+Implement `natural_command` as a first-class command type without creating a
+separate AI endpoint.
 
 Requirements:
 
-- no separate AI endpoint;
-- mobile/web still call HomeTusk only;
-- AI Platform remains external provider;
-- HomeTusk remains execution authority;
-- existing structured command behavior must not regress;
-- `natural_command` text must not be hidden inside `create_task.title`;
-- natural payload must provide `locale`, `timezone`, and `referenceInstant` for date expressions or the command must clarify/reject according to validation stage.
+- validate natural command payload explicitly;
+- preserve `source`, `clientTimestamp`, and optional ASR trace context;
+- require locale/timezone/reference instant rather than guessing date phrases;
+- keep manual/degraded fallback safe if AI Platform is unavailable;
+- reject unsupported or malformed payloads through existing validation patterns.
 
-Default AI Platform capabilities for natural command should include:
+#### 3.3 First-class `needs_confirmation`
 
-```text
-start_job
-propose_create_task
-propose_add_shopping_item
-clarify
-reject
-confirm
-```
+Implement a backend response outcome for controlled confirmation:
 
-Rationale: this initiative introduces HomeTusk confirmation state, so provider `confirm` may be advertised after Gate C approval.
+- `status=needs_confirmation`;
+- HomeTusk-owned `confirmationId`;
+- `commandId`;
+- user-safe summary;
+- reason/risk labels;
+- proposed actions safe for display;
+- expiry;
+- trace metadata where available.
 
-If Codex decides to keep `confirm` capability disabled by default, it must explain how provider `confirm` is tested and how future enablement happens.
+`needs_confirmation` must not reuse `needs_input`.
 
-#### 3.5 Provider decision mapping
+#### 3.4 Pending confirmation state
 
-Update mapping behavior:
+Add explicit HomeTusk-owned pending confirmation state if Gate C confirms the
+data-model plan.
 
-| Provider outcome | HomeTusk behavior |
-|---|---|
-| `execute/start_job` | existing guarded execution path, narrow corridor only |
-| `clarify` | `needs_input`, no mutation |
-| `reject` | `rejected`, no mutation |
-| `confirm` | create pending confirmation and return `needs_confirmation`, no mutation |
-| unknown/invalid | `rejected`, no mutation |
-| `answer` | blocked / rejected until separate answer contract |
+Requirements:
 
-For `confirm`, HomeTusk must:
+- `DecisionLog` remains audit evidence, not the source of truth;
+- pending confirmation is household-scoped;
+- requester/approval actor is auditable;
+- expiry and cancellation are explicit;
+- proposed actions are persisted only after schema validation and guardrail pre-checks;
+- no raw audio is stored.
 
-- validate proposed action types;
-- map provider proposed actions into HomeTusk proposed action shape;
-- reject unsupported proposed actions safely;
-- pre-check guardrails where possible as proposals;
-- store raw provider payload in `DecisionLog`;
-- store public pending confirmation state separately;
-- never execute proposed actions before approval.
+#### 3.5 Provider `confirm` mapping
 
-#### 3.6 Confirmation approval and cancel
-
-Implement approval/cancel contract.
-
-Approve must:
-
-- load confirmation by `commandId` + `confirmationId` or accepted resource shape;
-- verify household membership;
-- enforce approval policy;
-- check status is pending;
-- check not expired;
-- revalidate proposed actions against current household state;
-- re-run guardrails;
-- execute supported actions transactionally where possible;
-- mark confirmation terminal;
-- update command status/result;
-- write audit/DecisionLog or confirmation event evidence;
-- support idempotency.
-
-Cancel must:
-
-- load confirmation;
-- verify household membership;
-- return idempotent terminal result if already cancelled/expired/executed as appropriate;
-- mark cancelled;
-- audit actor/time;
-- never mutate domain entities.
-
-Default approval policy for v0:
+Change HomeTusk behavior from:
 
 ```text
-Only the command initiator may approve/cancel, as long as they are still a household member.
-Different household member approval is out of scope until product policy is accepted.
+provider confirm -> rejected / AI_CONFIRMATION_UNSUPPORTED
 ```
 
-If Codex proposes a different policy, it must be explicit and justified.
-
-#### 3.7 Supported proposed actions for approval
-
-V0 approval execution may support only:
+to the approved backend contract behavior:
 
 ```text
-create_task
-add_shopping_item
+provider confirm
+-> validate provider payload
+-> validate supported proposed actions
+-> guardrail-check as proposal
+-> create HomeTusk pending confirmation
+-> return needs_confirmation
+-> no mutation
 ```
 
-Everything else should remain rejected or unsupported:
+Unsupported provider confirmation payloads must degrade safely to clarify or
+reject; they must never execute.
 
-```text
-complete_task
-reschedule_task
-link_task_shopping
-batch planning
-workload redistribution
-payment/device/external side effects
-```
+#### 3.6 Confirmation approve/cancel lifecycle
 
-Natural completion/reschedule/linkage may appear in confirmation proposals but must not execute unless explicitly accepted in PLAN and covered by tests.
+If included by Gate C, implement narrow backend lifecycle operations:
 
-Default recommendation: do not execute them in this initiative.
+- approve a pending confirmation;
+- cancel a pending confirmation;
+- reject stale/expired confirmations;
+- enforce requester/household authorization;
+- preserve idempotency for approval where applicable;
+- write DecisionLog/lifecycle audit evidence.
 
-#### 3.8 Guardrails and date policy
+If Gate C finds approve/cancel too large for the first APPLY, this initiative may
+close as LIMITED-GO after implementing only creation and contract-safe
+`needs_confirmation`, with a follow-up initiative for approval execution.
 
-Guardrails must apply before execution and after approval.
+#### 3.7 Tests
 
-Confirmation is not a bypass.
+Minimum test evidence:
 
-Date policy:
-
-- natural command payload must include `referenceInstant`, `timezone`, and `locale`;
-- missing/invalid date context must not be guessed;
-- provider due/date values must be validated by HomeTusk;
-- deadlines in the past must clarify/reject according to existing guardrails;
-- weekday phrases such as `в среду надо встретить газовщика` require deterministic normalization or clarification.
-
-This initiative does not need to build advanced date normalization unless required for accepted tests. It must not silently rely on model/server current date.
-
-#### 3.9 DecisionLog and traceability
-
-Implementation must capture:
-
-- natural command input metadata;
-- provider raw payload;
-- provider decision id, trace id, schema version, decision version;
-- mapped HomeTusk outcome;
-- pending confirmation id;
-- confirmation approval/cancel/expiry events;
-- actor ids and timestamps;
-- guardrail results;
-- no raw audio.
-
-If current `DecisionLog` cannot represent all fields directly, store critical data in confirmation table and raw JSON, and document limitations.
-
-#### 3.10 Tests
-
-Minimum tests:
-
-1. `natural_command` execute create_task happy path.
-2. `natural_command` execute multi-item shopping happy path if supported by existing executor.
-3. `natural_command` clarify returns `needs_input` and no mutation.
-4. `natural_command` reject returns `rejected` and no mutation.
-5. Provider confirm returns `needs_confirmation`, creates pending confirmation, no mutation.
-6. Pending confirmation stores provider ids, trace, schema/decision version and proposed actions.
-7. Approve confirmation executes supported actions and marks terminal state.
-8. Approve expired confirmation rejects without mutation.
-9. Approve cancelled confirmation rejects/idempotently returns terminal result.
-10. Cancel pending confirmation marks cancelled and no mutation.
-11. Unauthorized/non-member approve/cancel is forbidden.
-12. Unsupported proposed action in confirm is rejected/no pending executable confirmation.
-13. Unknown/invalid provider response remains safe.
-14. Existing `create_task` structured command still works.
-15. Existing `complete_task` structured command still works.
-16. Existing `needs_input` continuation still works.
-17. DecisionLog/confirmation audit evidence exists for confirm/approve/cancel.
-18. Idempotency on natural command submission and approval is covered or explicitly documented if not currently supported.
-
-#### 3.11 Documentation and roadmap
-
-Update:
-
-- accepted OpenAPI contract;
-- contract index;
-- backend runbook if needed;
-- AI Platform integration mapping if behavior changes;
-- service catalog if a new confirmation model/table is introduced;
-- roadmap and initiative execution/closure docs.
+- existing structured commands still pass;
+- `natural_command` request validates required fields;
+- missing locale/timezone/reference instant rejects or clarifies safely;
+- provider execute/clarify/reject behavior remains compatible;
+- provider confirm returns `needs_confirmation` and does not mutate domain data;
+- unknown/unsupported confirm payload rejects safely;
+- pending confirmation is household-scoped;
+- DecisionLog contains raw provider payload and mapped outcome;
+- degraded AI behavior remains deterministic.
 
 ---
 
 ## 4. Explicit Out of Scope
 
-Do not implement:
+Do not implement in this initiative unless a later gate explicitly changes scope:
 
-- mobile/web UI;
+- Mobile AI Command UX v1;
 - mobile confirmation cards;
-- read-only `answered` / status query response;
-- natural completion auto-execute;
-- natural reschedule auto-execute;
-- task-shopping linkage auto-execute;
-- broad workload redistribution;
-- external payment/device/order side effects;
-- direct mobile/web calls to AI Platform;
+- web UI changes;
+- `answered` response;
+- broad household planning;
+- direct mobile/web to AI Platform;
 - AI Platform repository changes;
-- production rollout/config changes.
-
-Do not expand provider capabilities beyond AI Platform `2.1.0` contract without separate provider initiative.
+- production rollout/config enablement;
+- local LLM implementation;
+- silent auto-fix of invalid AI output;
+- storing raw audio in command or decision records.
 
 ---
 
 ## 5. Assumptions
 
-- AI Platform `2.1.0` intake is complete and merged.
-- Contract spike is complete and merged.
-- AI Platform provider can emit schema-valid `confirm` under `2.1.0`.
-- HomeTusk can advertise `confirm` after pending confirmation model exists.
-- Existing command pipeline can be extended without creating a separate AI endpoint.
-- Existing idempotency/correlation infrastructure can be reused or extended.
-- Mobile will consume the future contract later, but is not modified now.
+- AI Platform `2.1.0` intake is complete and remains read-only input.
+- HomeTusk remains execution authority.
+- Existing structured command clients must remain compatible.
+- Provider `confirm` is a proposal, never execution.
+- `answer` remains blocked.
+- Mobile/web clients continue to call HomeTusk only.
+- Confirmation runtime may require a small data-model change, but no service
+  decomposition is required.
 
 ---
 
 ## 6. Success Metrics
 
-### Contract
-
-- Public OpenAPI supports `natural_command` request.
-- Public OpenAPI supports `needs_confirmation` response.
-- Public OpenAPI supports confirmation approve/cancel or an accepted equivalent.
-- Existing structured command contract remains backward compatible.
-
-### Backend
-
-- Natural commands route through existing command pipeline.
-- Provider `confirm` creates pending confirmation instead of rejection when capability is enabled.
-- No domain mutation occurs before confirmation approval.
-- Approval executes only supported actions after revalidation and guardrails.
-- Cancel and expiry are safe and auditable.
-
-### Safety
-
-- Unsupported actions never execute.
-- Unknown/invalid provider outputs never execute.
-- Confirmation does not bypass guardrails.
-- Cross-household references are rejected.
-- Non-member approval/cancel is forbidden.
-
-### Verification
-
-- Backend tests pass.
-- OpenAPI/schema validation passes.
-- Migration tests pass if applicable.
-- No mobile/web changes.
-- No AI Platform repo changes.
+- Roadmap points to this initiative as current NOW scope.
+- Public Commands API contract documents `natural_command` and
+  `needs_confirmation` behavior if implemented.
+- Backend supports `natural_command` without a separate AI endpoint.
+- Provider `confirm` maps to non-mutating `needs_confirmation`.
+- Pending confirmation state has an explicit HomeTusk source of truth if runtime
+  confirmation is implemented.
+- DecisionLog preserves provider raw payload and mapped confirmation outcome.
+- Existing execute/clarify/reject structured command behavior does not regress.
+- Backend tests cover happy path, confirm no-mutation, validation, and household
+  boundary cases.
+- Final Gate D records GO / LIMITED-GO / NO-GO / HOLD, evidence, residual risks,
+  and next recommended action.
 
 ---
 
@@ -500,64 +297,67 @@ Do not expand provider capabilities beyond AI Platform `2.1.0` contract without 
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Confirmation executes before explicit approval | HIGH | Pending state, tests, no mutation before approve |
-| DecisionLog used as workflow source of truth | HIGH | Explicit `CommandConfirmation` model/table |
-| Natural command reintroduces create_task.title hack | HIGH | First-class `natural_command` payload |
-| Approve executes stale provider proposal | HIGH | Revalidate proposed actions and guardrails on approval |
-| Non-requester approval creates social issues | MEDIUM | v0 approval limited to initiator only |
-| Mobile starts before backend contract stabilizes | HIGH | Mobile out of scope |
-| `answered` scope creep | MEDIUM | Explicitly blocked |
-| Provider semantic quality still imperfect | MEDIUM | Narrow supported actions and safe reject/clarify/confirm policy |
-| Public API churn | MEDIUM | Contract-first with OpenAPI review and compatibility notes |
+| Confirmation accidentally executes before approval | HIGH | Provider `confirm` maps to pending state only; tests assert no mutation |
+| `needs_input` overloaded for confirmation | HIGH | First-class `needs_confirmation` response |
+| `DecisionLog` becomes state store | HIGH | Add explicit pending confirmation model or HOLD if data model is not ready |
+| Natural command becomes a create-task title hack | HIGH | `type=natural_command` payload has its own validation |
+| Scope drifts into mobile UX | HIGH | Mobile/web UI explicitly out of scope |
+| Provider semantic mismatches leak into mutations | HIGH | Validate schema, run guardrails as proposal, prefer clarify/reject over guessing |
+| Backward compatibility regresses | MEDIUM | Existing structured command tests and additive contract changes |
+| Date normalization guesses | MEDIUM | Require locale/timezone/reference instant or clarify |
 
 ---
 
 ## 8. Expected Files
 
-Codex must inspect actual repo conventions first, but likely files include:
+Planning:
 
 ```text
 docs/planning/initiatives/INIT-2026Q3-natural-command-needs-confirmation-backend-contract.md
 docs/planning/initiatives/INIT-2026Q3-natural-command-needs-confirmation-backend-contract.execution.md
-
-docs/contracts/http/commands.openapi.yaml
-docs/_indexes/contracts-index.md
 docs/planning/strategy/roadmap.md
-docs/architecture/service-catalog.md
-
-services/backend/src/main/java/com/hometusk/commands/domain/**
-services/backend/src/main/java/com/hometusk/commands/dto/**
-services/backend/src/main/java/com/hometusk/commands/controller/**
-services/backend/src/main/java/com/hometusk/commands/service/**
-services/backend/src/main/java/com/hometusk/commands/pipeline/**
-services/backend/src/main/resources/db/migration/**
-services/backend/src/test/**
+docs/planning/workpacks/INIT-2026Q3-NATURAL-COMMAND-NEEDS-CONFIRMATION-BACKEND-CONTRACT/**
 ```
 
-Codex may choose a different exact file set after PLAN, but must justify deviations.
+Likely contract/docs:
+
+```text
+docs/contracts/http/commands.openapi.yaml
+docs/_indexes/contracts-index.md
+docs/architecture/service-catalog.md
+docs/adr/**
+docs/diagrams/**
+```
+
+Likely backend:
+
+```text
+services/backend/src/main/java/com/hometusk/commands/**
+services/backend/src/main/resources/db/migration/**
+services/backend/src/test/**
+services/backend/src/test/resources/**
+```
+
+Forbidden unless separately gated:
+
+```text
+clients/**
+docs/integration/ai-platform/v1/upstream/**
+C:/Users/user/Documents/projects/VR_AI_Platform/**
+```
 
 ---
 
 ## 9. Exit Criteria
 
-This initiative is complete when:
-
-1. `natural_command` is accepted in public command contract.
-2. Natural command request validation is implemented.
-3. Natural command routes through existing command pipeline.
-4. `needs_confirmation` response is accepted in public contract.
-5. Pending confirmation persistence model exists.
-6. Provider `confirm` creates pending confirmation and returns `needs_confirmation` without mutation.
-7. Confirmation approve endpoint exists and executes only supported actions after authz, status, expiry, validation and guardrails.
-8. Confirmation cancel endpoint exists and is idempotent/safe.
-9. Confirmation expiry is enforced lazily or by documented mechanism.
-10. Unsupported proposed actions cannot execute.
-11. Existing structured command flows still work.
-12. DecisionLog/confirmation traceability is covered by tests or documentation.
-13. Backend/OpenAPI/migration tests pass.
-14. No mobile/web UI changes are made.
-15. No AI Platform repo changes are made.
-16. Final recommendation for Mobile AI Command UX readiness is recorded.
+1. Gate A/B/C/D decisions are explicitly recorded with evidence, risks, and rationale.
+2. Workpack and PLAN identify exact implementation files and STOP conditions.
+3. Contract artifacts are updated for accepted public behavior.
+4. Runtime behavior matches the accepted contract scope or the initiative records
+   LIMITED-GO/HOLD with rationale.
+5. Tests and checks are run or failures are documented.
+6. Review gate produces GO / NO-GO before Gate D.
+7. Residual risks and next recommended action are recorded.
 
 ---
 
@@ -565,16 +365,16 @@ This initiative is complete when:
 
 | Flag | Value | Notes |
 |------|-------|-------|
-| contract_impact | yes | Public `/commands` contract changes |
-| backend_impact | yes | DTOs, domain, persistence, service, controller, pipeline |
-| mobile_impact | no | Public contract changes may require future mobile work, but no UI/client implementation now |
-| ai_platform_impact | no | Provider repo read-only |
-| security_sensitive | yes | Approval/cancel, household authz, no-mutation confirmation |
-| traceability_critical | yes | Confirmation lifecycle and AI decision audit |
-| adr_needed | maybe | Pending confirmation persistence may need ADR-lite if architecture boundary changes |
-| diagrams_needed | maybe | Confirmation lifecycle diagram useful if implementation adds new entity/table |
-| migration_needed | likely | Pending confirmation persistence model |
-| cross_repo | yes | AI Platform read-only input |
+| contract_impact | yes | Accepted Commands API behavior changes are expected |
+| backend_impact | yes | Command request handling, provider mapping, response model, tests |
+| data_impact | yes/maybe | Pending confirmation source of truth likely needs persistence |
+| mobile_impact | no | Mobile/web UI remains out of scope |
+| ai_platform_impact | no | Provider repo read-only; HomeTusk adapts to upstream |
+| security_sensitive | yes | Confirmation approval, household scope, no-mutation policy |
+| traceability_critical | yes | DecisionLog and confirmation lifecycle audit |
+| adr_needed | yes/maybe | Required if pending confirmation persistence/lifecycle is implemented |
+| diagrams_needed | maybe | Sequence/state diagram if it reduces review risk |
+| cross_repo | yes-read-only | AI Platform evidence only |
 
 ---
 
@@ -582,16 +382,15 @@ This initiative is complete when:
 
 DO NOT:
 
-- implement mobile/web UI;
+- implement mobile or web confirmation UI;
 - implement `answered`;
-- implement broad natural planner actions;
-- auto-execute natural completion/reschedule/linkage;
-- allow non-requester approval unless explicitly accepted;
-- use DecisionLog as the only pending confirmation state store;
-- call AI Platform directly from mobile/web;
-- change AI Platform repo;
-- enable production rollout/config;
-- treat provider confidence as execution permission.
+- broaden natural command into autonomous household planning;
+- auto-execute provider `confirm`;
+- bypass HomeTusk schema validation or guardrails;
+- use `DecisionLog` as the only pending confirmation state;
+- call AI Platform directly from clients;
+- edit AI Platform upstream snapshots or external repo;
+- approve production rollout by implication.
 
 ---
 
@@ -599,17 +398,8 @@ DO NOT:
 
 Codex should:
 
-1. Read this initiative.
-2. Read the natural command contract spike package.
-3. Inspect current command OpenAPI, DTOs, controller, service, pipeline, guardrails, ActionExecutor, DecisionLog and tests.
-4. Produce PLAN with:
-   - exact contract deltas;
-   - persistence model;
-   - approve/cancel endpoint choice;
-   - provider confirm mapping strategy;
-   - supported proposed action list;
-   - tests;
-   - migrations;
-   - rollback;
-   - risks and stop conditions.
-5. Do not APPLY before Gate C.
+1. Read this initiative, roadmap, DoR/DoD, workflow, and related source artifacts.
+2. Inspect Commands API contract and backend command pipeline read-only.
+3. Produce or update the implementation workpack.
+4. Run Codex PLAN as read-only exploration.
+5. Record delegated Gate C GO / NO-GO / HOLD before APPLY.

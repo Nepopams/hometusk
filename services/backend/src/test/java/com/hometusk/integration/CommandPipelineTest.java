@@ -564,6 +564,73 @@ class CommandPipelineTest extends IntegrationTestBase {
     }
 
     @Nested
+    @DisplayName("POST /api/v1/commands - natural_command")
+    class NaturalCommandTests {
+
+        @Test
+        @DisplayName("Should validate natural command payload and return safe manual clarification")
+        void naturalCommand_manualProviderNeedsInputWithoutMutation() throws Exception {
+            var request = Map.of(
+                    "householdId",
+                    testHousehold.getId().toString(),
+                    "type",
+                    "natural_command",
+                    "payload",
+                    Map.of(
+                            "text",
+                            "купи молоко и курицу",
+                            "inputMode",
+                            "text",
+                            "locale",
+                            "ru-RU",
+                            "timezone",
+                            "Europe/Moscow",
+                            "referenceInstant",
+                            "2026-06-16T09:00:00Z"),
+                    "source",
+                    "mobile");
+
+            mockMvc.perform(post("/api/v1/commands")
+                            .with(jwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("needs_input"))
+                    .andExpect(jsonPath("$.question", containsString("Natural command processing is unavailable")));
+
+            assertThat(taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId()))
+                    .isEmpty();
+            assertThat(commandRepository.findAll().get(0).getStatus()).isEqualTo(CommandStatus.NEEDS_INPUT);
+            assertThat(decisionLogRepository.findAll()).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("Should reject natural command without timezone/reference instant")
+        void naturalCommand_missingTemporalContext_rejected() throws Exception {
+            var request = Map.of(
+                    "householdId",
+                    testHousehold.getId().toString(),
+                    "type",
+                    "natural_command",
+                    "payload",
+                    Map.of("text", "в среду надо встретить газовщика", "inputMode", "text", "locale", "ru-RU"),
+                    "source",
+                    "mobile");
+
+            mockMvc.perform(post("/api/v1/commands")
+                            .with(jwt())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("SCHEMA_INVALID"));
+
+            assertThat(taskRepository.findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId()))
+                    .isEmpty();
+            assertThat(commandRepository.findAll().get(0).getStatus()).isEqualTo(CommandStatus.REJECTED);
+        }
+    }
+
+    @Nested
     @DisplayName("POST /api/v1/commands - complete_task")
     class CompleteTaskTests {
 
