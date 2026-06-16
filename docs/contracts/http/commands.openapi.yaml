@@ -30,6 +30,15 @@ info:
     `POST /api/v1/voice/transcriptions`. ASR only creates an editable draft;
     command execution still requires an explicit `POST /api/v1/commands`.
 
+    **INIT-2026Q3-natural-command-needs-confirmation-backend-contract
+    compatibility delta:** `POST /api/v1/commands` accepts additive
+    `type=natural_command` payloads and may return `status=needs_confirmation`.
+    Provider confirmation creates HomeTusk-owned pending confirmation state and
+    does not mutate domain data. The approval lifecycle slice adds
+    initiator-only approve/cancel endpoints for pending confirmations; approval
+    revalidates guardrails before mutation and repeated terminal calls do not
+    duplicate mutations.
+
     See also:
     - [CLAUDE.md](../../../CLAUDE.md) — Development rules
     - [ADR-003](../../architecture/decisions/003-stage1-commands-api.md) — Stage 1 decisions
@@ -73,6 +82,9 @@ paths:
         **Supported command types:**
         - `create_task` — Create a new task
         - `complete_task` — Mark a task as done
+        - `natural_command` — Send natural household text through HomeTusk's
+          command pipeline, AI Platform adapter, schema validation, guardrails,
+          and audit trail
 
         **Traceability:**
         - Provide `X-Correlation-ID` header for distributed tracing
@@ -146,6 +158,18 @@ paths:
                   type: "complete_task"
                   payload:
                     taskId: "123e4567-e89b-12d3-a456-426614174002"
+                  source: "mobile"
+              naturalCommand:
+                summary: Submit a natural command
+                value:
+                  householdId: "123e4567-e89b-12d3-a456-426614174000"
+                  type: "natural_command"
+                  payload:
+                    text: "купи молоко и курицу"
+                    inputMode: "text"
+                    locale: "ru-RU"
+                    timezone: "Europe/Moscow"
+                    referenceInstant: "2026-06-16T09:00:00Z"
                   source: "mobile"
       responses:
         '200':
@@ -269,6 +293,218 @@ paths:
                 $ref: '#/components/schemas/CommandErrorResponse'
         '404':
           description: Command not found
+          headers:
+            X-Correlation-ID:
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+
+  /commands/{commandId}/confirmations/{confirmationId}/approve:
+    post:
+      operationId: approveCommandConfirmation
+      summary: Approve a pending command confirmation
+      description: |
+        Approves a HomeTusk-owned pending confirmation and executes its stored
+        proposed actions. This lifecycle slice is initiator-only: only the
+        original command requester may approve. HomeTusk revalidates guardrails
+        before mutation. Repeating approval after successful execution returns
+        the stored execution result and does not execute actions again.
+      tags:
+        - Commands
+      parameters:
+        - name: commandId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: confirmationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: X-Correlation-ID
+          in: header
+          required: false
+          description: Client-provided correlation ID for distributed tracing
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Confirmation approval processed
+          headers:
+            X-Correlation-ID:
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandConfirmationApprovalResponse'
+              examples:
+                executed:
+                  value:
+                    commandId: "123e4567-e89b-12d3-a456-426614174010"
+                    confirmationId: "123e4567-e89b-12d3-a456-426614174020"
+                    status: "executed"
+                    result:
+                      taskId: "123e4567-e89b-12d3-a456-426614174030"
+                      assigneeId: null
+                      decisionConfidence: 1
+                    executionMs: 42
+                    approvedBy: "123e4567-e89b-12d3-a456-426614174001"
+                    idempotentReplay: false
+                    errorCode: null
+                    reason: null
+                expired:
+                  value:
+                    commandId: "123e4567-e89b-12d3-a456-426614174010"
+                    confirmationId: "123e4567-e89b-12d3-a456-426614174020"
+                    status: "rejected"
+                    result: null
+                    executionMs: 12
+                    approvedBy: null
+                    idempotentReplay: false
+                    errorCode: "CONFIRMATION_EXPIRED"
+                    reason: "Command confirmation expired before approval"
+        '401':
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '403':
+          description: Only the original command initiator may approve
+          headers:
+            X-Correlation-ID:
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+        '404':
+          description: Confirmation not found for command
+          headers:
+            X-Correlation-ID:
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+        '409':
+          description: Confirmation is already terminal and cannot be approved
+          headers:
+            X-Correlation-ID:
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+
+  /commands/{commandId}/confirmations/{confirmationId}/cancel:
+    post:
+      operationId: cancelCommandConfirmation
+      summary: Cancel a pending command confirmation
+      description: |
+        Cancels a HomeTusk-owned pending confirmation without executing proposed
+        actions. This lifecycle slice is initiator-only. Repeating cancellation
+        after a successful cancel returns an idempotent cancelled response.
+      tags:
+        - Commands
+      parameters:
+        - name: commandId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: confirmationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: X-Correlation-ID
+          in: header
+          required: false
+          description: Client-provided correlation ID for distributed tracing
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommandConfirmationCancelRequest'
+            examples:
+              cancel:
+                value:
+                  reason: "Not needed anymore"
+      responses:
+        '200':
+          description: Confirmation cancelled
+          headers:
+            X-Correlation-ID:
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandConfirmationCancelResponse'
+              examples:
+                cancelled:
+                  value:
+                    commandId: "123e4567-e89b-12d3-a456-426614174010"
+                    confirmationId: "123e4567-e89b-12d3-a456-426614174020"
+                    status: "cancelled"
+                    executionMs: 9
+                    cancelledBy: "123e4567-e89b-12d3-a456-426614174001"
+                    idempotentReplay: false
+                    reason: "Not needed anymore"
+        '401':
+          description: Authentication required or token invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthErrorResponse'
+        '403':
+          description: Only the original command initiator may cancel
+          headers:
+            X-Correlation-ID:
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+        '404':
+          description: Confirmation not found for command
+          headers:
+            X-Correlation-ID:
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandErrorResponse'
+        '409':
+          description: Confirmation is already terminal and cannot be cancelled
           headers:
             X-Correlation-ID:
               schema:
@@ -1525,11 +1761,13 @@ components:
           enum:
             - create_task
             - complete_task
+            - natural_command
           description: Command type to execute
         payload:
           oneOf:
             - $ref: '#/components/schemas/CreateTaskPayload'
             - $ref: '#/components/schemas/CompleteTaskPayload'
+            - $ref: '#/components/schemas/NaturalCommandPayload'
           description: Command-specific payload
         dueDate:
           type: string
@@ -1631,11 +1869,52 @@ components:
           format: uuid
           description: ID of task to complete (must exist in household)
 
+    NaturalCommandPayload:
+      type: object
+      required:
+        - text
+        - inputMode
+        - locale
+        - timezone
+        - referenceInstant
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: Natural household command text or edited transcript.
+        inputMode:
+          type: string
+          enum:
+            - text
+            - voice_transcript
+            - shortcut
+          description: How the natural command text was produced.
+        locale:
+          type: string
+          minLength: 2
+          maxLength: 20
+          description: Locale used for language and date phrase interpretation.
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: IANA timezone used for date/time normalization.
+        referenceInstant:
+          type: string
+          format: date-time
+          description: Client-visible instant used to ground relative date phrases.
+        asrTraceId:
+          type: [string, 'null']
+          maxLength: 128
+          description: Optional ASR trace id; raw audio is not stored in the command.
+
     CommandResponse:
       oneOf:
         - $ref: '#/components/schemas/CommandExecutedResponse'
         - $ref: '#/components/schemas/CommandScheduledResponse'
         - $ref: '#/components/schemas/CommandNeedsInputResponse'
+        - $ref: '#/components/schemas/CommandNeedsConfirmationResponse'
         - $ref: '#/components/schemas/CommandRejectedResponse'
         - $ref: '#/components/schemas/CommandDegradedResponse'
       discriminator:
@@ -1644,6 +1923,7 @@ components:
           executed: '#/components/schemas/CommandExecutedResponse'
           scheduled: '#/components/schemas/CommandScheduledResponse'
           needs_input: '#/components/schemas/CommandNeedsInputResponse'
+          needs_confirmation: '#/components/schemas/CommandNeedsConfirmationResponse'
           rejected: '#/components/schemas/CommandRejectedResponse'
           executed_degraded: '#/components/schemas/CommandDegradedResponse'
 
@@ -1759,6 +2039,192 @@ components:
         initiatorId:
           type: string
           format: uuid
+
+    CommandNeedsConfirmationResponse:
+      type: object
+      required:
+        - commandId
+        - correlationId
+        - status
+        - confirmation
+        - trace
+        - executionMs
+        - initiatorId
+      properties:
+        commandId:
+          type: string
+          format: uuid
+        correlationId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - needs_confirmation
+          description: Proposed actions are pending explicit approval; no mutation has happened.
+        confirmation:
+          $ref: '#/components/schemas/CommandConfirmation'
+        trace:
+          $ref: '#/components/schemas/CommandConfirmationTrace'
+        executionMs:
+          type: integer
+          minimum: 0
+        initiatorId:
+          type: string
+          format: uuid
+
+    CommandConfirmation:
+      type: object
+      required:
+        - confirmationId
+        - summary
+        - reasons
+        - riskLabels
+        - expiresAt
+        - proposedActions
+      properties:
+        confirmationId:
+          type: string
+          format: uuid
+          description: HomeTusk-owned public confirmation id.
+        providerConfirmationId:
+          type: [string, 'null']
+          description: Provider id retained for audit only; not public authority.
+        summary:
+          type: string
+          description: User-safe summary of the proposed plan.
+        reasons:
+          type: array
+          items:
+            type: string
+          description: User-safe reasons confirmation is required.
+        riskLabels:
+          type: array
+          items:
+            type: string
+          description: Stable labels for confirmation policy/risk categories.
+        expiresAt:
+          type: string
+          format: date-time
+          description: HomeTusk-enforced expiry instant.
+        proposedActions:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommandConfirmationProposedAction'
+
+    CommandConfirmationProposedAction:
+      type: object
+      required:
+        - type
+        - parameters
+      properties:
+        type:
+          type: string
+          enum:
+            - create_task
+            - complete_task
+            - add_shopping_item
+        parameters:
+          type: object
+          additionalProperties: true
+          description: Display-safe proposed action parameters. Raw provider payload is not exposed.
+
+    CommandConfirmationTrace:
+      type: object
+      properties:
+        providerDecisionId:
+          type: [string, 'null']
+          format: uuid
+        providerTraceId:
+          type: [string, 'null']
+        schemaVersion:
+          type: [string, 'null']
+        decisionVersion:
+          type: [string, 'null']
+
+    CommandConfirmationApprovalResponse:
+      type: object
+      required:
+        - commandId
+        - confirmationId
+        - status
+        - result
+        - executionMs
+        - approvedBy
+        - idempotentReplay
+        - errorCode
+        - reason
+      properties:
+        commandId:
+          type: string
+          format: uuid
+        confirmationId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - executed
+            - rejected
+          description: Rejected is returned for controlled non-execution such as expiry or guardrail rejection.
+        result:
+          oneOf:
+            - $ref: '#/components/schemas/CommandResult'
+            - type: 'null'
+        executionMs:
+          type: integer
+          minimum: 0
+        approvedBy:
+          type: [string, 'null']
+          format: uuid
+        idempotentReplay:
+          type: boolean
+          description: True when a repeated terminal approval returned stored state without executing again.
+        errorCode:
+          type: [string, 'null']
+        reason:
+          type: [string, 'null']
+
+    CommandConfirmationCancelRequest:
+      type: object
+      properties:
+        reason:
+          type: [string, 'null']
+          maxLength: 500
+      additionalProperties: false
+
+    CommandConfirmationCancelResponse:
+      type: object
+      required:
+        - commandId
+        - confirmationId
+        - status
+        - executionMs
+        - cancelledBy
+        - idempotentReplay
+        - reason
+      properties:
+        commandId:
+          type: string
+          format: uuid
+        confirmationId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - cancelled
+        executionMs:
+          type: integer
+          minimum: 0
+        cancelledBy:
+          type: [string, 'null']
+          format: uuid
+        idempotentReplay:
+          type: boolean
+          description: True when a repeated cancel returned stored terminal state.
+        reason:
+          type: [string, 'null']
 
     CommandRejectedResponse:
       type: object

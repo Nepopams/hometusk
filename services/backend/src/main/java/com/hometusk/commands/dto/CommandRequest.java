@@ -24,6 +24,7 @@ public record CommandRequest(
         return switch (type.toLowerCase()) {
             case "create_task" -> CommandType.CREATE_TASK;
             case "complete_task" -> CommandType.COMPLETE_TASK;
+            case "natural_command" -> CommandType.NATURAL_COMMAND;
             default -> throw new IllegalArgumentException("Unknown command type: " + type);
         };
     }

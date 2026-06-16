@@ -26,6 +26,7 @@ public class ManualDecisionProvider implements DecisionProvider {
         return switch (context.commandType()) {
             case CREATE_TASK -> decideCreateTask(context);
             case COMPLETE_TASK -> decideCompleteTask(context);
+            case NATURAL_COMMAND -> clarifyNaturalCommandUnavailable();
         };
     }
 
@@ -63,6 +64,17 @@ public class ManualDecisionProvider implements DecisionProvider {
                 DecisionSource.MANUAL,
                 BigDecimal.ONE,
                 List.of(new DecisionResult.StartJob.ProposedAction("complete_task", parameters)));
+    }
+
+    private DecisionResult clarifyNaturalCommandUnavailable() {
+        return new DecisionResult.Clarify(
+                DecisionSource.MANUAL,
+                BigDecimal.ONE,
+                null,
+                null,
+                "Natural command processing is unavailable. Please retry later or use a structured command.",
+                List.of("type"),
+                Map.of("supportedTypes", List.of("create_task", "complete_task")));
     }
 
     @Override

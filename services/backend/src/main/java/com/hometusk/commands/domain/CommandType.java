@@ -5,5 +5,6 @@ package com.hometusk.commands.domain;
  */
 public enum CommandType {
     CREATE_TASK,
-    COMPLETE_TASK
+    COMPLETE_TASK,
+    NATURAL_COMMAND
 }

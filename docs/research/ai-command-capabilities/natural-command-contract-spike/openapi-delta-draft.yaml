@@ -1,0 +1,350 @@
+openapi: 3.1.0
+info:
+  title: HomeTusk Natural Command and Confirmation Delta
+  version: 0.0.0-draft
+  description: |
+    DRAFT ONLY - not an accepted public API contract.
+
+    This non-binding delta explores future additions to the existing
+    HomeTusk Commands API. It must not be implemented or treated as stable
+    without a separate contract gate, workpack, PLAN, Gate C, APPLY, and
+    review gate.
+servers:
+  - url: /api/v1
+    description: Existing HomeTusk API v1 base path
+tags:
+  - name: Commands Draft Delta
+    description: Draft-only natural command and confirmation proposals
+paths:
+  /commands:
+    post:
+      operationId: executeCommandDraftNaturalCommandDelta
+      x-draft-only: true
+      summary: Draft additive natural_command variant for existing command submission
+      description: |
+        DRAFT ONLY. This extends the existing command submission contract with
+        a future `type=natural_command` variant. The accepted
+        `docs/contracts/http/commands.openapi.yaml` contract is unchanged.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/NaturalCommandRequestDraft'
+      responses:
+        '200':
+          description: Draft command processed response
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NeedsConfirmationResponseDraft'
+              examples:
+                needsConfirmation:
+                  value:
+                    commandId: "123e4567-e89b-12d3-a456-426614174010"
+                    correlationId: "123e4567-e89b-12d3-a456-426614174099"
+                    status: "needs_confirmation"
+                    confirmation:
+                      confirmationId: "123e4567-e89b-12d3-a456-426614174020"
+                      providerConfirmationId: "conf-1"
+                      summary: "Create a task for another household member."
+                      reasons:
+                        - "Non-requester assignment requires confirmation."
+                      riskLabels:
+                        - "non_requester_assignment"
+                      expiresAt: "2026-06-16T09:10:00Z"
+                      proposedActions:
+                        - type: "create_task"
+                          title: "Clean kitchen"
+                          assigneeId: "123e4567-e89b-12d3-a456-426614174002"
+                          zoneId: null
+                          dueDate: null
+                    trace:
+                      providerDecisionId: "55555555-5555-4555-8555-555555555555"
+                      providerTraceId: "trace-confirm"
+                      schemaVersion: "2.1.0"
+                      decisionVersion: "mvp1-graph-0.1"
+                    executionMs: 123
+                    initiatorId: "123e4567-e89b-12d3-a456-426614174001"
+  /commands/{commandId}/confirmations/{confirmationId}/approve:
+    post:
+      operationId: approveCommandConfirmationDraft
+      x-draft-only: true
+      summary: Draft future approval endpoint
+      description: |
+        DRAFT ONLY. Approval must be idempotent, household-scoped, and must
+        revalidate proposed actions before mutation.
+      parameters:
+        - name: commandId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: confirmationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+      responses:
+        '200':
+          description: Draft approval result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfirmationApprovalResponseDraft'
+        '409':
+          description: Draft stale, expired, cancelled, or idempotency conflict
+  /commands/{commandId}/confirmations/{confirmationId}/cancel:
+    post:
+      operationId: cancelCommandConfirmationDraft
+      x-draft-only: true
+      summary: Draft future cancel endpoint
+      description: DRAFT ONLY. Cancel must be idempotent and auditable.
+      parameters:
+        - name: commandId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: confirmationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Draft cancel result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfirmationCancelResponseDraft'
+components:
+  schemas:
+    NaturalCommandRequestDraft:
+      type: object
+      required:
+        - householdId
+        - type
+        - source
+        - payload
+      properties:
+        householdId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          const: natural_command
+        source:
+          type: string
+          enum:
+            - web
+            - mobile
+            - voice
+            - api
+        clientTimestamp:
+          type: string
+          format: date-time
+        payload:
+          $ref: '#/components/schemas/NaturalCommandPayloadDraft'
+    NaturalCommandPayloadDraft:
+      type: object
+      required:
+        - text
+        - inputMode
+        - locale
+        - timezone
+        - referenceInstant
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        inputMode:
+          type: string
+          enum:
+            - text
+            - voice_transcript
+            - imported_shortcut
+        locale:
+          type: string
+          examples:
+            - ru-RU
+        timezone:
+          type: string
+          examples:
+            - Europe/Moscow
+        referenceInstant:
+          type: string
+          format: date-time
+        asrTraceId:
+          type:
+            - string
+            - 'null'
+          maxLength: 128
+    NeedsConfirmationResponseDraft:
+      type: object
+      required:
+        - commandId
+        - correlationId
+        - status
+        - confirmation
+        - executionMs
+        - initiatorId
+      properties:
+        commandId:
+          type: string
+          format: uuid
+        correlationId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          const: needs_confirmation
+        confirmation:
+          $ref: '#/components/schemas/ConfirmationDraft'
+        trace:
+          $ref: '#/components/schemas/ProviderTraceDraft'
+        executionMs:
+          type: integer
+          minimum: 0
+        initiatorId:
+          type: string
+          format: uuid
+    ConfirmationDraft:
+      type: object
+      required:
+        - confirmationId
+        - summary
+        - reasons
+        - riskLabels
+        - expiresAt
+        - proposedActions
+      properties:
+        confirmationId:
+          type: string
+          format: uuid
+        providerConfirmationId:
+          type:
+            - string
+            - 'null'
+        summary:
+          type: string
+        reasons:
+          type: array
+          items:
+            type: string
+        riskLabels:
+          type: array
+          items:
+            type: string
+        expiresAt:
+          type: string
+          format: date-time
+        proposedActions:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ProposedActionDraft'
+    ProposedActionDraft:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - create_task
+            - add_shopping_item
+            - complete_task
+            - reschedule_task
+            - link_task_shopping
+        title:
+          type:
+            - string
+            - 'null'
+        assigneeId:
+          type:
+            - string
+            - 'null'
+          format: uuid
+        zoneId:
+          type:
+            - string
+            - 'null'
+          format: uuid
+        dueDate:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        itemName:
+          type:
+            - string
+            - 'null'
+    ProviderTraceDraft:
+      type: object
+      properties:
+        providerDecisionId:
+          type:
+            - string
+            - 'null'
+        providerTraceId:
+          type:
+            - string
+            - 'null'
+        schemaVersion:
+          type:
+            - string
+            - 'null'
+        decisionVersion:
+          type:
+            - string
+            - 'null'
+    ConfirmationApprovalResponseDraft:
+      type: object
+      required:
+        - commandId
+        - confirmationId
+        - status
+      properties:
+        commandId:
+          type: string
+          format: uuid
+        confirmationId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - executed
+            - rejected
+            - failed
+    ConfirmationCancelResponseDraft:
+      type: object
+      required:
+        - commandId
+        - confirmationId
+        - status
+      properties:
+        commandId:
+          type: string
+          format: uuid
+        confirmationId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          const: cancelled

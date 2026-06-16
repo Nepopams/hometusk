@@ -53,6 +53,17 @@ public record CommandResponse(
                 commandId, correlationId, "rejected", errorCode, reason, executionMs, initiatorId);
     }
 
+    public static CommandResponseBase needsConfirmation(
+            UUID commandId,
+            UUID correlationId,
+            CommandNeedsConfirmationResponse.Confirmation confirmation,
+            CommandNeedsConfirmationResponse.ConfirmationTrace trace,
+            int executionMs,
+            UUID initiatorId) {
+        return new CommandNeedsConfirmationResponse(
+                commandId, correlationId, "needs_confirmation", confirmation, trace, executionMs, initiatorId);
+    }
+
     public static CommandResponseBase scheduled(
             UUID commandId, UUID correlationId, Instant scheduleAt, int executionMs, UUID initiatorId) {
         return new CommandScheduledResponse(

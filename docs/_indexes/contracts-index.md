@@ -23,6 +23,7 @@ This index tracks all API contracts (OpenAPI, JSON Schema, AsyncAPI) in the proj
 | Mobile Devices API | Native Mobile App | HomeTusk Backend | v1 | stable | [Link](../contracts/http/mobile-devices.openapi.yaml) |
 | AI Platform Decision API | HomeTusk Backend | AI Platform (external) | v1 | stable | [Link](../contracts/external/ai-platform.decision.openapi.yaml) |
 | AI Platform 2.1 Provider Snapshot | HomeTusk Backend | AI Platform (external) | 2.1.0 | draft | [Link](../integration/ai-platform/v2.1/) |
+| Natural Command & Confirmation Delta | Web/Native Mobile (future) | HomeTusk Backend | 0.0.0-draft | draft | [Link](../research/ai-command-capabilities/natural-command-contract-spike/openapi-delta-draft.yaml) |
 | Task Schema | Commands API | Backend | v1 | stable | [Link](../contracts/schemas/task.schema.json) |
 | Command Schema | Commands API | Backend | v1 | stable | [Link](../contracts/schemas/command.schema.json) |
 
@@ -48,6 +49,23 @@ This index tracks all API contracts (OpenAPI, JSON Schema, AsyncAPI) in the proj
 
 ## Material Contract Notes
 
+- 2026-06-16 - INIT-2026Q3-natural-command-needs-confirmation-backend-contract
+  accepts an additive Commands API backend contract slice for
+  `type=natural_command` and `status=needs_confirmation`. Provider `confirm`
+  creates HomeTusk-owned pending confirmation state and does not mutate domain
+  data. The continuation slice adds additive initiator-only approve/cancel
+  endpoints under `/api/v1/commands/{commandId}/confirmations/{confirmationId}`.
+  Approval revalidates guardrails before executing stored proposed actions;
+  repeated terminal calls do not duplicate mutations. Mobile/web UI, `answered`,
+  direct client-to-AI Platform calls, expiry scheduler, and production rollout
+  remain out of scope.
+- 2026-06-16 - INIT-2026Q3-natural-command-and-confirmation-contract-spike adds a
+  draft-only, non-binding HomeTusk contract spike under
+  `docs/research/ai-command-capabilities/natural-command-contract-spike/` for
+  future `natural_command`, `needs_confirmation`, confirmation lifecycle,
+  provider `confirm` mapping, guardrails, traceability, mobile dependencies, and
+  an OpenAPI delta draft. This is not an accepted public `/commands` contract
+  change and does not implement backend/mobile/runtime behavior.
 - 2026-06-15 - INIT-2026Q3-ai-platform-2-1-contract-intake adds a
   HomeTusk-local AI Platform `2.1.0` provider snapshot under
   `docs/integration/ai-platform/v2.1/`. This is an external-provider intake for

@@ -2,7 +2,7 @@
 
 Living registry of all services and applications in the HomeTusk monorepo.
 
-**Last updated:** 2026-06-14
+**Last updated:** 2026-06-16
 
 ---
 
@@ -59,7 +59,7 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 **Internal Packages:**
 - `voice` - Voice Command Chat ASR BFF for editable transcript drafts
 - `auth` - Keycloak-backed login, registration, refresh, logout, browser session cookies, and native mobile token facade
-- `commands` — Command pipeline (POST /api/v1/commands)
+- `commands` — Command pipeline (POST /api/v1/commands), including structured commands, the `natural_command` backend contract foundation, and initiator-only confirmation approve/cancel lifecycle
 - `tasks` — Task domain
 - `households` — Household, Zone, and Invite management
 - `users` — User profiles, email verification state, and Memberships
@@ -83,7 +83,9 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 - `POST /api/v1/mobile/devices` - Register or refresh a current user's native mobile push device
 - `PATCH /api/v1/mobile/devices/{deviceId}` - Rotate push token, status, and metadata for a current user's device
 - `DELETE /api/v1/mobile/devices/{deviceId}` - Deactivate a current user's mobile device registration
-- `POST /api/v1/commands` — Execute or schedule command (create_task, complete_task) with optional command-level create-task attributes `dueDate`, `assigneeId`, `zoneId`, and one-off `scheduleAt`
+- `POST /api/v1/commands` — Execute or schedule structured command (`create_task`, `complete_task`) with optional command-level create-task attributes `dueDate`, `assigneeId`, `zoneId`, and one-off `scheduleAt`; accepts `natural_command` payloads and may return `needs_confirmation` without mutation when provider confirmation is required
+- `POST /api/v1/commands/{commandId}/confirmations/{confirmationId}/approve` — Initiator-only approval of a pending confirmation; revalidates guardrails before executing stored proposed actions
+- `POST /api/v1/commands/{commandId}/confirmations/{confirmationId}/cancel` — Initiator-only cancellation of a pending confirmation without mutation
 - `GET /api/v1/users/me` — Current user profile with household memberships and email verification state
 - `POST /api/v1/households` — Create household
 - `POST /api/v1/households/{id}/invites` — Create invite token
@@ -103,7 +105,7 @@ Unified backend service for Stage 1 MVP. Combines all domain logic into a single
 |------------|-----------|-------|
 | VoiceTranscriptionController | `POST /api/v1/voice/transcriptions` | Synchronous ASR draft creation for Voice Command Chat; authenticated, no command execution |
 | AuthController | `POST /api/v1/auth/login`, `POST /api/v1/auth/register`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout`, `POST /api/v1/auth/session`, `POST /api/v1/auth/mobile/*` | Keycloak-backed browser auth, legacy session cookie bridge, and native mobile JSON-token auth facade |
-| CommandController | `POST /api/v1/commands` | Intent-driven command execution |
+| CommandController | `POST /api/v1/commands`, `POST /api/v1/commands/{commandId}/confirmations/{confirmationId}/approve`, `POST /api/v1/commands/{commandId}/confirmations/{confirmationId}/cancel` | Intent-driven command execution and confirmation lifecycle |
 | UserController | `GET /api/v1/users/me` | User profile with household memberships and email verification state |
 | HouseholdController | `POST /api/v1/households`, `GET/POST /*/zones`, `GET /*/members`, `POST /*/invites` | Household administration |
 | HouseholdInviteController | `POST /api/v1/invites/accept` | Invite acceptance |
@@ -140,6 +142,8 @@ Request → JWT Auth → UserResolver → Idempotency-Key Dedupe → MembershipV
            │   └─ MaxOpenTasksPerAssigneePolicy (limit open tasks)
            ├─ ActionExecutor (supports create_task, complete_task, add_shopping_item)
            │   └─ ShoppingService (Step 1)
+           ├─ Pending Confirmation (provider confirm -> command_confirmations, no mutation)
+           ├─ Confirmation Approval (initiator-only, guardrails revalidation, execute stored proposed actions)
            ├─ Task-Shopping Linking (link items to task if both created)
            ├─ DecisionLogWriter (includes guardrails info)
            └─ ActivityRecorder
@@ -308,7 +312,8 @@ Handles all notifications to users.
 - `mobile_devices` - Native mobile push device registrations with provider token, status, and non-sensitive device metadata
 
 **Command Pipeline Tables (2):**
-- `commands` — First-class command entities with JSONB payload, nullable explicit create-task attributes (`due_date`, `assignee_id`, `zone_id`), and nullable one-off `schedule_at`
+- `commands` — First-class command entities with JSONB payload, nullable explicit create-task attributes (`due_date`, `assignee_id`, `zone_id`), nullable one-off `schedule_at`, and `needs_confirmation` status for pending AI-confirmed proposals
+- `command_confirmations` — HomeTusk-owned confirmation proposals for provider `confirm`, with provider trace metadata, user-safe proposed actions, expiry, initiator-only approval/cancel actor fields, execution result, and no mutation before explicit approval
 - `decision_logs` — Audit trail for every command decision
 
 **Activity Table (1):**
@@ -352,7 +357,7 @@ HomeTusk is a **consumer** of an external AI Platform for intelligent decision-m
 - `propose_add_shopping_item` - Propose shopping item (mapped to start_job)
 - `clarify` - Need user clarification (full support)
 - `reject` - Cannot process command (maps to non-mutating HomeTusk rejection)
-- `confirm` - Provider confirmation request (schema-supported, non-executing in HomeTusk; maps to `AI_CONFIRMATION_UNSUPPORTED` until `needs_confirmation` exists)
+- `confirm` - Provider confirmation request; maps to HomeTusk-owned `needs_confirmation`, then requires explicit initiator approval before any mutation
 
 **Supported Action types:**
 - `create_task` - Create a new task

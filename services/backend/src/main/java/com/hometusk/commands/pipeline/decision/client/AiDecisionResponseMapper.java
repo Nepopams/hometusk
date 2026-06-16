@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hometusk.commands.domain.DecisionSource;
 import com.hometusk.commands.pipeline.decision.DecisionResult;
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,7 +30,8 @@ public class AiDecisionResponseMapper {
     private static final String ACTION_CLARIFY = "clarify";
     private static final String ACTION_REJECT = "reject";
     private static final String ACTION_CONFIRM = "confirm";
-    private static final String ERROR_CONFIRMATION_UNSUPPORTED = "AI_CONFIRMATION_UNSUPPORTED";
+    private static final String ERROR_CONFIRMATION_ACTION_UNSUPPORTED = "CONFIRMATION_ACTION_UNSUPPORTED";
+    private static final Duration DEFAULT_CONFIRMATION_TTL = Duration.ofMinutes(10);
 
     private final ObjectMapper objectMapper;
 
@@ -44,7 +47,7 @@ public class AiDecisionResponseMapper {
         if (STATUS_ERROR.equals(response.status())) {
             return switch (response.action()) {
                 case ACTION_REJECT -> mapReject(response, rawPayload);
-                case ACTION_CONFIRM -> mapConfirmAsUnsupported(response, rawPayload);
+                case ACTION_CONFIRM -> mapConfirm(response, rawPayload);
                 default -> mapToReject(response, rawPayload, "AI_PLATFORM_ERROR");
             };
         }
@@ -57,7 +60,7 @@ public class AiDecisionResponseMapper {
                     response, rawPayload, response.action(), response.payload());
             case ACTION_CLARIFY -> mapClarify(response, rawPayload);
             case ACTION_REJECT -> mapReject(response, rawPayload);
-            case ACTION_CONFIRM -> mapConfirmAsUnsupported(response, rawPayload);
+            case ACTION_CONFIRM -> mapConfirm(response, rawPayload);
             default -> unknownDecisionAction(response, rawPayload);
         };
     }
@@ -187,20 +190,48 @@ public class AiDecisionResponseMapper {
                 errorCode);
     }
 
-    private DecisionResult.Reject mapConfirmAsUnsupported(AiDecisionResponse response, String rawPayload) {
+    private DecisionResult mapConfirm(AiDecisionResponse response, String rawPayload) {
         Map<String, Object> payload = payload(response);
-        String reason = firstNonBlank(
-                stringValue(payload.get("ui_message")),
-                stringValue(payload.get("summary")),
-                "AI Platform requested confirmation, but HomeTusk confirmation is not supported yet.");
+        List<DecisionResult.StartJob.ProposedAction> actions = new ArrayList<>();
+        Object rawActions = payload.get("proposed_actions");
+        if (rawActions instanceof List<?> proposedActions) {
+            for (Object rawAction : proposedActions) {
+                DecisionResult.StartJob.ProposedAction mapped = mapProposedAction(rawAction);
+                if (mapped != null) {
+                    actions.add(mapped);
+                }
+            }
+        }
 
-        return new DecisionResult.Reject(
+        if (actions.isEmpty()) {
+            return new DecisionResult.Reject(
+                    DecisionSource.AI_PLATFORM,
+                    confidenceOrZero(response),
+                    response.decisionUuidOrNull(),
+                    rawPayload,
+                    firstNonBlank(
+                            stringValue(payload.get("ui_message")),
+                            "AI Platform requested confirmation for unsupported actions."),
+                    ERROR_CONFIRMATION_ACTION_UNSUPPORTED);
+        }
+
+        return new DecisionResult.Confirm(
                 DecisionSource.AI_PLATFORM,
                 confidenceOrZero(response),
                 response.decisionUuidOrNull(),
                 rawPayload,
-                reason,
-                ERROR_CONFIRMATION_UNSUPPORTED);
+                stringValue(payload.get("confirmation_id")),
+                firstNonBlank(
+                        stringValue(payload.get("summary")),
+                        stringValue(payload.get("ui_message")),
+                        "Please confirm this proposed command."),
+                stringList(payload.get("reasons")),
+                stringList(payload.get("risk_labels")),
+                expiresAt(payload.get("expires_at")),
+                response.traceId(),
+                response.schemaVersion(),
+                response.decisionVersion(),
+                actions);
     }
 
     private DecisionResult.Reject mapToReject(AiDecisionResponse response, String rawPayload, String errorCode) {
@@ -269,6 +300,21 @@ public class AiDecisionResponseMapper {
 
     private BigDecimal confidenceOrZero(AiDecisionResponse response) {
         return response.confidence() != null ? response.confidence() : BigDecimal.ZERO;
+    }
+
+    private Instant expiresAt(Object value) {
+        if (value != null && !value.toString().isBlank()) {
+            try {
+                Instant parsed = Instant.parse(value.toString());
+                if (parsed.isAfter(Instant.now())) {
+                    return parsed;
+                }
+                log.warn("AI Platform confirm returned past expires_at: {}", value);
+            } catch (RuntimeException e) {
+                log.warn("AI Platform confirm returned invalid expires_at: {}", value);
+            }
+        }
+        return Instant.now().plus(DEFAULT_CONFIRMATION_TTL);
     }
 
     private String firstNonBlank(String... values) {

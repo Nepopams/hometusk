@@ -7,12 +7,14 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Result of a decision. Three variants:
+ * Result of a decision. Four variants:
  * - StartJob: Execute the proposed actions
  * - Clarify: Need more information from user
+ * - Confirm: Need explicit user approval before mutation
  * - Reject: Cannot process this command
  */
-public sealed interface DecisionResult permits DecisionResult.StartJob, DecisionResult.Clarify, DecisionResult.Reject {
+public sealed interface DecisionResult
+        permits DecisionResult.StartJob, DecisionResult.Clarify, DecisionResult.Confirm, DecisionResult.Reject {
 
     DecisionSource source();
 
@@ -54,6 +56,25 @@ public sealed interface DecisionResult permits DecisionResult.StartJob, Decision
             String question,
             List<String> requiredFields,
             Map<String, Object> suggestions)
+            implements DecisionResult {}
+
+    /**
+     * AI proposed actions that require explicit user confirmation before mutation.
+     */
+    record Confirm(
+            DecisionSource source,
+            BigDecimal confidence,
+            UUID externalDecisionId,
+            String rawPayload,
+            String providerConfirmationId,
+            String summary,
+            List<String> reasons,
+            List<String> riskLabels,
+            java.time.Instant expiresAt,
+            String providerTraceId,
+            String schemaVersion,
+            String decisionVersion,
+            List<StartJob.ProposedAction> actions)
             implements DecisionResult {}
 
     /**

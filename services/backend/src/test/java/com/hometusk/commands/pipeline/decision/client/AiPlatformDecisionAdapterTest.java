@@ -53,8 +53,7 @@ class AiPlatformDecisionAdapterTest {
         assertThat(request.userId()).isEqualTo(requesterId.toString());
         assertThat(request.text()).isEqualTo("Buy milk");
         assertThat(request.capabilities())
-                .contains("start_job", "propose_create_task", "propose_add_shopping_item", "reject")
-                .doesNotContain("confirm");
+                .contains("start_job", "propose_create_task", "propose_add_shopping_item", "reject", "confirm");
 
         Map<String, Object> household = nestedMap(request.context(), "household");
         assertThat(household).containsEntry("household_id", householdId.toString());
@@ -213,7 +212,7 @@ class AiPlatformDecisionAdapterTest {
     }
 
     @Test
-    void mapsProviderConfirmToUnsupportedReject() {
+    void mapsProviderConfirmToNeedsConfirmationResult() {
         UUID decisionId = UUID.randomUUID();
         AiDecisionResponse response = new AiDecisionResponse(
                 decisionId.toString(),
@@ -249,11 +248,47 @@ class AiPlatformDecisionAdapterTest {
 
         DecisionResult result = mapper.toDecisionResult(response, "{\"action\":\"confirm\"}");
 
+        assertThat(result).isInstanceOf(DecisionResult.Confirm.class);
+        DecisionResult.Confirm confirm = (DecisionResult.Confirm) result;
+        assertThat(confirm.externalDecisionId()).isEqualTo(decisionId);
+        assertThat(confirm.providerConfirmationId()).isEqualTo("conf-1");
+        assertThat(confirm.summary()).isEqualTo("Create a task for another household member.");
+        assertThat(confirm.reasons()).containsExactly("Non-requester assignment requires confirmation.");
+        assertThat(confirm.rawPayload()).isEqualTo("{\"action\":\"confirm\"}");
+        assertThat(confirm.actions()).hasSize(1);
+        assertThat(confirm.actions().get(0).actionType()).isEqualTo("create_task");
+        assertThat(confirm.actions().get(0).parameters()).containsEntry("title", "Clean kitchen");
+    }
+
+    @Test
+    void mapsProviderConfirmWithoutSupportedActionsToReject() {
+        AiDecisionResponse response = new AiDecisionResponse(
+                UUID.randomUUID().toString(),
+                "cmd-1",
+                "ok",
+                "confirm",
+                "confirm",
+                new BigDecimal("0.73"),
+                Map.of(
+                        "confirmation_id",
+                        "conf-unsupported",
+                        "summary",
+                        "Unsupported action.",
+                        "proposed_actions",
+                        List.of(Map.of("action", "future_action", "payload", Map.of())),
+                        "ui_message",
+                        "I need confirmation for something unsupported."),
+                "Confirmation required.",
+                "trace-confirm",
+                "2.1.0",
+                "mvp1-graph-0.1",
+                "2026-06-15T00:00:00Z");
+
+        DecisionResult result = mapper.toDecisionResult(response, "{\"action\":\"confirm\"}");
+
         assertThat(result).isInstanceOf(DecisionResult.Reject.class);
         DecisionResult.Reject reject = (DecisionResult.Reject) result;
-        assertThat(reject.externalDecisionId()).isEqualTo(decisionId);
-        assertThat(reject.errorCode()).isEqualTo("AI_CONFIRMATION_UNSUPPORTED");
-        assertThat(reject.reason()).isEqualTo("Please confirm before I do this.");
+        assertThat(reject.errorCode()).isEqualTo("CONFIRMATION_ACTION_UNSUPPORTED");
         assertThat(reject.rawPayload()).isEqualTo("{\"action\":\"confirm\"}");
     }
 
