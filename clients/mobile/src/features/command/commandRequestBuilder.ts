@@ -1,59 +1,50 @@
-import type { CommandRequest, Task } from '../../api/types';
+import type { CommandRequest, CommandSource, NaturalCommandInputMode } from '../../api/types';
 
 export type CommandRequestBuildResult =
   | { request: CommandRequest; displayText: string }
   | { error: string };
 
+export type NaturalCommandRequestOptions = {
+  inputMode?: NaturalCommandInputMode;
+  source?: CommandSource;
+  locale?: string;
+  timezone?: string;
+  asrTraceId?: string | null;
+  now?: () => Date;
+};
+
 export function buildCommandRequestFromText(
   text: string,
   householdId: string,
-  tasks: Task[],
-  now: () => Date = () => new Date()
+  options: NaturalCommandRequestOptions = {}
 ): CommandRequestBuildResult {
   const trimmed = text.trim();
   if (!trimmed) {
     return { error: 'Command text is required.' };
   }
 
-  const completeMatch = /^(done|complete)\s+(.+)$/i.exec(trimmed);
-  if (completeMatch) {
-    const needle = completeMatch[2].trim().toLowerCase();
-    const task = tasks.find((candidate) => {
-      if (candidate.status === 'done') {
-        return false;
-      }
-      return candidate.id.toLowerCase().startsWith(needle) || candidate.title.toLowerCase().includes(needle);
-    });
+  const timestamp = (options.now ?? (() => new Date()))().toISOString();
+  const inputMode = options.inputMode ?? 'text';
+  const source = options.source ?? (inputMode === 'voice_transcript' ? 'voice' : 'mobile');
+  const asrTraceId = options.asrTraceId ?? null;
 
-    if (!task) {
-      return { error: 'No open task matched that command.' };
-    }
-
-    return {
-      request: {
-        householdId,
-        type: 'complete_task',
-        payload: { taskId: task.id },
-        source: 'mobile',
-        clientTimestamp: now().toISOString(),
-      },
-      displayText: `Done: ${task.title}`,
-    };
-  }
-
-  const title = trimmed.replace(/^create\s+/i, '').trim();
-  if (!title) {
-    return { error: 'Task title is required.' };
-  }
   return {
     request: {
       householdId,
-      type: 'create_task',
-      payload: { title },
-      source: 'mobile',
-      clientTimestamp: now().toISOString(),
+      type: 'natural_command',
+      payload: {
+        text: trimmed,
+        inputMode,
+        locale: options.locale ?? resolveLocale(),
+        timezone: options.timezone ?? resolveTimezone(),
+        referenceInstant: timestamp,
+        asrTraceId,
+      },
+      source,
+      ...(source === 'voice' && asrTraceId ? { asrTraceId } : {}),
+      clientTimestamp: timestamp,
     },
-    displayText: `Create task: ${title.length > 40 ? `${title.slice(0, 40)}...` : title}`,
+    displayText: `Command: ${trimmed.length > 60 ? `${trimmed.slice(0, 60)}...` : trimmed}`,
   };
 }
 
@@ -69,4 +60,12 @@ export function parseContinuationInput(value: string): Record<string, unknown> {
   }
 
   return { clarification: value };
+}
+
+function resolveLocale(): string {
+  return Intl.DateTimeFormat().resolvedOptions().locale || 'en-US';
+}
+
+function resolveTimezone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 }

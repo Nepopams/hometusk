@@ -39,6 +39,7 @@ import { addShoppingItem, deleteShoppingItem, markShoppingItemPurchased } from '
 import { completeTaskFromMobileCommand, createTaskFromMobileCommand } from '../features/tasks/taskMutations';
 import {
   formatAuthError,
+  formatConfirmationError,
   formatLinkError,
   formatMutationError,
   formatReadError,
@@ -51,6 +52,8 @@ import { surfaces } from './surfaces';
 import type {
   AuthMode,
   AuthState,
+  CommandConfirmationAction,
+  CommandConfirmationActionResult,
   HouseholdReadModels,
   OpenedSession,
   ReadStatus,
@@ -84,6 +87,9 @@ export function AppShell() {
   const [commandText, setCommandText] = useState('');
   const [continuationText, setContinuationText] = useState('');
   const [commandResponse, setCommandResponse] = useState<CommandResponse | null>(null);
+  const [confirmationAction, setConfirmationAction] = useState<CommandConfirmationAction | null>(null);
+  const [confirmationResult, setConfirmationResult] =
+    useState<CommandConfirmationActionResult | null>(null);
   const [commandError, setCommandError] = useState<string | null>(null);
   const [commandSaving, setCommandSaving] = useState(false);
   const [recentCommands, setRecentCommands] = useState<RecentCommandHint[]>([]);
@@ -356,6 +362,12 @@ export function AppShell() {
   }, [authState, readReloadKey, selectedHouseholdId, session?.accessToken]);
 
   useEffect(() => {
+    setCommandResponse(null);
+    setCommandError(null);
+    setContinuationText('');
+    setConfirmationAction(null);
+    setConfirmationResult(null);
+
     let isMounted = true;
 
     async function loadRecentCommandHints() {
@@ -569,7 +581,7 @@ export function AppShell() {
       return;
     }
 
-    const parsed = buildCommandRequestFromText(commandText, selectedHouseholdId, readModels.tasks);
+    const parsed = buildCommandRequestFromText(commandText, selectedHouseholdId);
     if ('error' in parsed) {
       setCommandError(parsed.error);
       return;
@@ -586,6 +598,7 @@ export function AppShell() {
         generateClientUuid()
       );
       setCommandResponse(response);
+      setConfirmationResult(null);
       setCommandText('');
       await storeRecentCommandHint(selectedHouseholdId, parsed.displayText, response, setRecentCommands);
       setReadReloadKey((value) => value + 1);
@@ -617,6 +630,7 @@ export function AppShell() {
         { additionalInput: parseContinuationInput(trimmed) }
       );
       setCommandResponse(response);
+      setConfirmationResult(null);
       setContinuationText('');
       await storeRecentCommandHint(
         selectedHouseholdId,
@@ -629,6 +643,70 @@ export function AppShell() {
       setCommandError(formatMutationError(error));
     } finally {
       setCommandSaving(false);
+    }
+  }
+
+  async function handleApproveConfirmation() {
+    if (
+      !session?.accessToken ||
+      commandResponse?.status !== 'needs_confirmation' ||
+      !commandResponse.confirmation
+    ) {
+      setCommandError('A pending confirmation is required.');
+      return;
+    }
+    if (confirmationAction || confirmationResult) {
+      return;
+    }
+
+    setConfirmationAction('approve');
+    setCommandError(null);
+
+    try {
+      const response = await createHomeTuskApiClient({
+        accessToken: session.accessToken,
+      }).approveCommandConfirmation(
+        commandResponse.commandId,
+        commandResponse.confirmation.confirmationId
+      );
+      setConfirmationResult({ type: 'approve', response });
+      if (response.status === 'executed') {
+        setReadReloadKey((value) => value + 1);
+      }
+    } catch (error) {
+      setCommandError(formatConfirmationError(error));
+    } finally {
+      setConfirmationAction(null);
+    }
+  }
+
+  async function handleCancelConfirmation() {
+    if (
+      !session?.accessToken ||
+      commandResponse?.status !== 'needs_confirmation' ||
+      !commandResponse.confirmation
+    ) {
+      setCommandError('A pending confirmation is required.');
+      return;
+    }
+    if (confirmationAction || confirmationResult) {
+      return;
+    }
+
+    setConfirmationAction('cancel');
+    setCommandError(null);
+
+    try {
+      const response = await createHomeTuskApiClient({
+        accessToken: session.accessToken,
+      }).cancelCommandConfirmation(commandResponse.commandId, commandResponse.confirmation.confirmationId, {
+        reason: 'cancelled_from_mobile',
+      });
+      setConfirmationResult({ type: 'cancel', response });
+    } catch (error) {
+      setCommandError(formatConfirmationError(error));
+    } finally {
+      setConfirmationAction(null);
     }
   }
 
@@ -649,6 +727,8 @@ export function AppShell() {
       setCommandText('');
       setContinuationText('');
       setCommandResponse(null);
+      setConfirmationAction(null);
+      setConfirmationResult(null);
       setCommandError(null);
       setRecentCommands([]);
       setPushStatus(null);
@@ -773,6 +853,8 @@ export function AppShell() {
             }}
             commandControls={{
               commandText,
+              confirmationAction,
+              confirmationResult,
               continuationText,
               error: commandError,
               isSaving: commandSaving,
@@ -780,6 +862,8 @@ export function AppShell() {
               response: commandResponse,
               onChangeCommandText: setCommandText,
               onChangeContinuationText: setContinuationText,
+              onApproveConfirmation: handleApproveConfirmation,
+              onCancelConfirmation: handleCancelConfirmation,
               onContinueCommand: handleContinueCommand,
               onSubmitCommand: handleSubmitCommand,
             }}

@@ -48,6 +48,25 @@ export function formatMutationError(error: unknown): string {
   return 'Could not save the change. Check the backend URL and try again.';
 }
 
+export function formatConfirmationError(error: unknown): string {
+  if (error instanceof HomeTuskApiError) {
+    if (error.status === 403) {
+      return 'Only the original command initiator can approve or cancel this confirmation.';
+    }
+    if (error.status === 404) {
+      return 'This confirmation is no longer available.';
+    }
+    if (error.status === 409) {
+      return 'This confirmation is already terminal, stale, or expired. Refresh command state and try again.';
+    }
+    if (error.body.message) {
+      return error.body.message;
+    }
+    return `Confirmation action failed with API ${error.status}.`;
+  }
+  return 'Could not update this confirmation. Check the backend URL and try again.';
+}
+
 export function formatPushRegistrationError(error: unknown): string {
   if (error instanceof HomeTuskApiError) {
     if (error.status === 401) {
