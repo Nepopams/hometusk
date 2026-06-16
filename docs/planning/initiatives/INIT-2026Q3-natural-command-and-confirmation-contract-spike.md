@@ -2,7 +2,8 @@
 
 ## Status
 
-Draft (to be approved at Human Gate A)
+Completed (delegated Gate D GO on 2026-06-16; implementation readiness
+LIMITED-GO for a separate backend contract implementation initiative)
 
 ## Initiative type
 
