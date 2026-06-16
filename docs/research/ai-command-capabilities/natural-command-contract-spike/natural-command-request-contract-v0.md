@@ -36,7 +36,7 @@ It does not support a first-class natural command payload.
   "source": "mobile",
   "clientTimestamp": "2026-06-16T09:00:00Z",
   "payload": {
-    "text": "РєСѓРїРё РјРѕР»РѕРєРѕ Рё РєСѓСЂРёС†Сѓ",
+    "text": "купи молоко и курицу",
     "inputMode": "text",
     "locale": "ru-RU",
     "timezone": "Europe/Moscow",

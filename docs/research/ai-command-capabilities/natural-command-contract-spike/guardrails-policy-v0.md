@@ -26,11 +26,11 @@ Status: Draft only
 
 | User text | Draft outcome | Notes |
 | --- | --- | --- |
-| `СЏ РїРѕРјС‹Р» РїРѕСЃСѓРґСѓ Р·Р°РєСЂРѕР№` | clarify or confirmation | Natural completion is blocked until exact task matching and approval policy exist |
-| `СЏ РІС‹РЅРµСЃ РјСѓСЃРѕСЂ РІРјРµСЃС‚Рѕ РџРµС‚Рё` | confirmation | Completion for another member affects audit/workload and must not auto-execute |
-| `РІ СЃСЂРµРґСѓ РЅР°РґРѕ РІСЃС‚СЂРµС‚РёС‚СЊ РіР°Р·РѕРІС‰РёРєР°` | execute or clarify | Requires locale/timezone/reference instant to normalize Wednesday |
-| `Рє СѓР¶РёРЅСѓ РєСѓРїРё РјРѕР»РѕРєРѕ Рё РєСѓСЂРёС†Сѓ` | execute or clarify | Shopping addition may execute if list/defaults/date phrase are grounded |
-| `РЅР°Р·РЅР°С‡СЊ РІСЃРµРј РїРѕ 20 Р·Р°РґР°С‡ СЃРµРіРѕРґРЅСЏ РЅРѕС‡СЊСЋ` | reject | Unsafe/broad workload redistribution and possible quiet-hours issue |
+| `я помыл посуду закрой` | clarify or confirmation | Natural completion is blocked until exact task matching and approval policy exist |
+| `я вынес мусор вместо Пети` | confirmation | Completion for another member affects audit/workload and must not auto-execute |
+| `в среду надо встретить газовщика` | execute or clarify | Requires locale/timezone/reference instant to normalize Wednesday |
+| `к ужину купи молоко и курицу` | execute or clarify | Shopping addition may execute if list/defaults/date phrase are grounded |
+| `назначь всем по 20 задач сегодня ночью` | reject | Unsafe/broad workload redistribution and possible quiet-hours issue |
 
 ## Date / Time Policy
 
