@@ -1,0 +1,42 @@
+{
+  "decision_id": "22222222-2222-4222-8222-222222222222",
+  "command_id": "cmd-shopping",
+  "status": "ok",
+  "action": "start_job",
+  "decision_outcome": "execute",
+  "confidence": 0.86,
+  "payload": {
+    "job_id": "job-shopping",
+    "job_type": "add_shopping_item",
+    "proposed_actions": [
+      {
+        "action": "propose_add_shopping_item",
+        "payload": {
+          "item": {
+            "name": "Milk",
+            "quantity": "2",
+            "unit": "l",
+            "list_id": "list-1"
+          }
+        }
+      },
+      {
+        "action": "propose_add_shopping_item",
+        "payload": {
+          "item": {
+            "name": "Bread",
+            "quantity": "1",
+            "unit": "loaf",
+            "list_id": "list-1"
+          }
+        }
+      }
+    ],
+    "ui_message": "Accepted."
+  },
+  "explanation": "Shopping items accepted as repeated singular actions.",
+  "trace_id": "trace-shopping",
+  "schema_version": "2.1.0",
+  "decision_version": "mvp1-graph-0.1",
+  "created_at": "2026-06-15T00:00:00Z"
+}

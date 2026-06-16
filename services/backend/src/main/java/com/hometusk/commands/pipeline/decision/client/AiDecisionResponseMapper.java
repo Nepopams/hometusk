@@ -26,6 +26,9 @@ public class AiDecisionResponseMapper {
     private static final String ACTION_PROPOSE_CREATE_TASK = "propose_create_task";
     private static final String ACTION_PROPOSE_ADD_SHOPPING_ITEM = "propose_add_shopping_item";
     private static final String ACTION_CLARIFY = "clarify";
+    private static final String ACTION_REJECT = "reject";
+    private static final String ACTION_CONFIRM = "confirm";
+    private static final String ERROR_CONFIRMATION_UNSUPPORTED = "AI_CONFIRMATION_UNSUPPORTED";
 
     private final ObjectMapper objectMapper;
 
@@ -34,10 +37,16 @@ public class AiDecisionResponseMapper {
     }
 
     public DecisionResult toDecisionResult(AiDecisionResponse response) {
-        String rawPayload = toJson(response);
+        return toDecisionResult(response, toJson(response));
+    }
 
+    public DecisionResult toDecisionResult(AiDecisionResponse response, String rawPayload) {
         if (STATUS_ERROR.equals(response.status())) {
-            return mapToReject(response, rawPayload, "AI_PLATFORM_ERROR");
+            return switch (response.action()) {
+                case ACTION_REJECT -> mapReject(response, rawPayload);
+                case ACTION_CONFIRM -> mapConfirmAsUnsupported(response, rawPayload);
+                default -> mapToReject(response, rawPayload, "AI_PLATFORM_ERROR");
+            };
         }
 
         return switch (response.action()) {
@@ -47,6 +56,8 @@ public class AiDecisionResponseMapper {
             case ACTION_PROPOSE_ADD_SHOPPING_ITEM -> mapSingleAction(
                     response, rawPayload, response.action(), response.payload());
             case ACTION_CLARIFY -> mapClarify(response, rawPayload);
+            case ACTION_REJECT -> mapReject(response, rawPayload);
+            case ACTION_CONFIRM -> mapConfirmAsUnsupported(response, rawPayload);
             default -> unknownDecisionAction(response, rawPayload);
         };
     }
@@ -161,6 +172,37 @@ public class AiDecisionResponseMapper {
                 suggestions(payload));
     }
 
+    private DecisionResult.Reject mapReject(AiDecisionResponse response, String rawPayload) {
+        Map<String, Object> payload = payload(response);
+        String reason = firstNonBlank(
+                stringValue(payload.get("ui_message")), stringValue(payload.get("reason")), response.explanation());
+        String errorCode = firstNonBlank(stringValue(payload.get("code")), "AI_REJECTED");
+
+        return new DecisionResult.Reject(
+                DecisionSource.AI_PLATFORM,
+                confidenceOrZero(response),
+                response.decisionUuidOrNull(),
+                rawPayload,
+                reason,
+                errorCode);
+    }
+
+    private DecisionResult.Reject mapConfirmAsUnsupported(AiDecisionResponse response, String rawPayload) {
+        Map<String, Object> payload = payload(response);
+        String reason = firstNonBlank(
+                stringValue(payload.get("ui_message")),
+                stringValue(payload.get("summary")),
+                "AI Platform requested confirmation, but HomeTusk confirmation is not supported yet.");
+
+        return new DecisionResult.Reject(
+                DecisionSource.AI_PLATFORM,
+                confidenceOrZero(response),
+                response.decisionUuidOrNull(),
+                rawPayload,
+                reason,
+                ERROR_CONFIRMATION_UNSUPPORTED);
+    }
+
     private DecisionResult.Reject mapToReject(AiDecisionResponse response, String rawPayload, String errorCode) {
         return new DecisionResult.Reject(
                 DecisionSource.AI_PLATFORM,
@@ -227,6 +269,15 @@ public class AiDecisionResponseMapper {
 
     private BigDecimal confidenceOrZero(AiDecisionResponse response) {
         return response.confidence() != null ? response.confidence() : BigDecimal.ZERO;
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
     }
 
     private String toJson(Object obj) {

@@ -2,7 +2,12 @@
 
 ## Status
 
-Draft (to be approved at Human Gate A)
+Done / delegated Gate D GO for AI Platform 2.1 contract intake.
+
+Gate A, Gate B, artifact gate, Gate C, APPLY evidence, review gate, Gate D GO,
+residual risks, and final recommendation are recorded in
+`docs/planning/initiatives/INIT-2026Q3-ai-platform-2-1-contract-intake.execution.md`
+and `docs/planning/workpacks/INIT-2026Q3-AI-PLATFORM-2-1-CONTRACT-INTAKE/gate-d.md`.
 
 ## Initiative type
 
@@ -537,3 +542,19 @@ Codex should:
    - rollback;
    - risks.
 6. Do not APPLY before Gate C.
+
+Planning pipeline result on 2026-06-15:
+
+- Gate A: GO.
+- Gate B: GO for the initiative-level workpack
+  `docs/planning/workpacks/INIT-2026Q3-AI-PLATFORM-2-1-CONTRACT-INTAKE/`.
+- Artifact gate: GO for external provider snapshot and HomeTusk-owned
+  integration mapping docs; HOLD for public HomeTusk `/commands`,
+  `natural_command`, `needs_confirmation`, `answered`, mobile AI UX, direct
+  mobile/web to AI Platform, AI Platform repo writes, and production rollout.
+- Gate C: GO for the approved APPLY scope recorded in
+  `docs/planning/workpacks/INIT-2026Q3-AI-PLATFORM-2-1-CONTRACT-INTAKE/gate-c.md`.
+- Gate D: GO for initiative closure.
+- Final recommendation: LIMITED-GO for a separate HomeTusk
+  `natural_command` + `needs_confirmation` contract spike; no runtime/mobile
+  UX or production rollout is approved by this initiative.

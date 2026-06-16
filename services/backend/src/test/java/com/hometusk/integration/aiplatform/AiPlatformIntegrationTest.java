@@ -8,6 +8,7 @@ import com.hometusk.commands.domain.CommandStatus;
 import com.hometusk.commands.domain.DecisionSource;
 import com.hometusk.commands.repository.CommandRepository;
 import com.hometusk.commands.repository.DecisionLogRepository;
+import com.hometusk.shopping.repository.ShoppingItemRepository;
 import com.hometusk.tasks.domain.Task;
 import com.hometusk.tasks.repository.TaskRepository;
 import com.hometusk.users.domain.Membership;
@@ -45,6 +46,9 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
 
     @Autowired
     private TaskRepository taskRepository;
+
+    @Autowired
+    private ShoppingItemRepository shoppingItemRepository;
 
     @Autowired
     private DecisionLogRepository decisionLogRepository;
@@ -180,6 +184,46 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
             org.assertj.core.api.Assertions.assertThat(commands).isNotEmpty();
             org.assertj.core.api.Assertions.assertThat(commands.get(0).getStatus())
                     .isEqualTo(CommandStatus.REJECTED);
+        }
+
+        @Test
+        @DisplayName("should reject malformed AI response without fallback mutation")
+        void rejectsMalformedResponseWithoutFallbackMutation() throws Exception {
+            stubMalformedJsonResponse();
+            long taskCountBefore = taskRepository.count();
+            long shoppingItemCountBefore = shoppingItemRepository.count();
+
+            String requestBody = objectMapper.writeValueAsString(Map.of(
+                    "type", "create_task",
+                    "householdId", testHousehold.getId(),
+                    "source", "web",
+                    "clientTimestamp", "2024-01-15T10:00:00Z",
+                    "payload", Map.of("title", "Clean kitchen")));
+
+            mockMvc.perform(post("/api/v1/commands")
+                            .header("X-Correlation-ID", correlationId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestBody)
+                            .with(jwt()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("rejected"))
+                    .andExpect(jsonPath("$.errorCode").value("AI_RESPONSE_INVALID"));
+
+            org.assertj.core.api.Assertions.assertThat(taskRepository.count()).isEqualTo(taskCountBefore);
+            org.assertj.core.api.Assertions.assertThat(shoppingItemRepository.count())
+                    .isEqualTo(shoppingItemCountBefore);
+
+            var command = commandRepository
+                    .findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId())
+                    .get(0);
+            org.assertj.core.api.Assertions.assertThat(command.getStatus()).isEqualTo(CommandStatus.REJECTED);
+
+            var log = decisionLogRepository.findByCorrelationId(correlationId);
+            org.assertj.core.api.Assertions.assertThat(log).isPresent();
+            org.assertj.core.api.Assertions.assertThat(log.get().getRawDecisionPayload())
+                    .contains("\"raw_payload_format\":\"invalid_json\"")
+                    .contains("malformed")
+                    .contains("reject");
         }
     }
 
@@ -464,6 +508,102 @@ class AiPlatformIntegrationTest extends AiPlatformIntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value("rejected"))
                     .andExpect(jsonPath("$.errorCode").value("AI_RESPONSE_INVALID"));
+        }
+    }
+
+    @Nested
+    @DisplayName("Scenario 10: first-class reject → REJECTED without mutation")
+    class RejectScenario {
+
+        @Test
+        @DisplayName("should reject safely and preserve raw provider payload")
+        void rejectsWithoutMutationAndStoresRawPayload() throws Exception {
+            stubRejectDecision();
+            long taskCountBefore = taskRepository.count();
+            long shoppingItemCountBefore = shoppingItemRepository.count();
+
+            String requestBody = objectMapper.writeValueAsString(Map.of(
+                    "type", "create_task",
+                    "householdId", testHousehold.getId(),
+                    "source", "web",
+                    "clientTimestamp", "2024-01-15T10:00:00Z",
+                    "payload", Map.of("title", "Transfer money")));
+
+            mockMvc.perform(post("/api/v1/commands")
+                            .header("X-Correlation-ID", correlationId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestBody)
+                            .with(jwt()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("rejected"))
+                    .andExpect(jsonPath("$.errorCode").value("unsupported_or_unsafe_command"))
+                    .andExpect(jsonPath("$.reason").value("I cannot safely handle this request."));
+
+            org.assertj.core.api.Assertions.assertThat(taskRepository.count()).isEqualTo(taskCountBefore);
+            org.assertj.core.api.Assertions.assertThat(shoppingItemRepository.count())
+                    .isEqualTo(shoppingItemCountBefore);
+
+            var command = commandRepository
+                    .findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId())
+                    .get(0);
+            org.assertj.core.api.Assertions.assertThat(command.getStatus()).isEqualTo(CommandStatus.REJECTED);
+
+            var log = decisionLogRepository.findByCorrelationId(correlationId);
+            org.assertj.core.api.Assertions.assertThat(log).isPresent();
+            org.assertj.core.api.Assertions.assertThat(log.get().getRawDecisionPayload())
+                    .contains("\"action\": \"reject\"")
+                    .contains("\"trace_id\": \"trace-test-reject\"")
+                    .contains("\"schema_version\": \"2.1.0\"")
+                    .contains("\"decision_version\": \"mvp1-graph-0.1\"")
+                    .contains("\"code\": \"unsupported_or_unsafe_command\"");
+        }
+    }
+
+    @Nested
+    @DisplayName("Scenario 11: schema confirm → controlled non-execution")
+    class ConfirmScenario {
+
+        @Test
+        @DisplayName("should map confirm to unsupported rejection and preserve raw provider payload")
+        void mapsConfirmToUnsupportedRejectWithoutMutation() throws Exception {
+            stubConfirmDecision();
+            long taskCountBefore = taskRepository.count();
+            long shoppingItemCountBefore = shoppingItemRepository.count();
+
+            String requestBody = objectMapper.writeValueAsString(Map.of(
+                    "type", "create_task",
+                    "householdId", testHousehold.getId(),
+                    "source", "web",
+                    "clientTimestamp", "2024-01-15T10:00:00Z",
+                    "payload", Map.of("title", "Assign kitchen cleanup to someone else")));
+
+            mockMvc.perform(post("/api/v1/commands")
+                            .header("X-Correlation-ID", correlationId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestBody)
+                            .with(jwt()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("rejected"))
+                    .andExpect(jsonPath("$.errorCode").value("AI_CONFIRMATION_UNSUPPORTED"))
+                    .andExpect(jsonPath("$.reason").value("Please confirm before I do this."));
+
+            org.assertj.core.api.Assertions.assertThat(taskRepository.count()).isEqualTo(taskCountBefore);
+            org.assertj.core.api.Assertions.assertThat(shoppingItemRepository.count())
+                    .isEqualTo(shoppingItemCountBefore);
+
+            var command = commandRepository
+                    .findByHousehold_IdOrderByCreatedAtDesc(testHousehold.getId())
+                    .get(0);
+            org.assertj.core.api.Assertions.assertThat(command.getStatus()).isEqualTo(CommandStatus.REJECTED);
+
+            var log = decisionLogRepository.findByCorrelationId(correlationId);
+            org.assertj.core.api.Assertions.assertThat(log).isPresent();
+            org.assertj.core.api.Assertions.assertThat(log.get().getRawDecisionPayload())
+                    .contains("\"action\": \"confirm\"")
+                    .contains("\"decision_outcome\": \"confirm\"")
+                    .contains("\"trace_id\": \"trace-test-confirm\"")
+                    .contains("\"schema_version\": \"2.1.0\"")
+                    .contains("\"confirmation_id\": \"conf-test\"");
         }
     }
 

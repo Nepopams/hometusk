@@ -1,0 +1,30 @@
+{
+  "decision_id": "55555555-5555-4555-8555-555555555555",
+  "command_id": "cmd-confirm",
+  "status": "ok",
+  "action": "confirm",
+  "decision_outcome": "confirm",
+  "confidence": 0.73,
+  "payload": {
+    "confirmation_id": "conf-1",
+    "summary": "Create a task for another household member.",
+    "reasons": ["Non-requester assignment requires HomeTusk confirmation."],
+    "proposed_actions": [
+      {
+        "action": "propose_create_task",
+        "payload": {
+          "task": {
+            "title": "Clean kitchen"
+          }
+        }
+      }
+    ],
+    "expires_at": "2026-06-15T01:00:00Z",
+    "ui_message": "Please confirm before I do this."
+  },
+  "explanation": "Confirmation required.",
+  "trace_id": "trace-confirm",
+  "schema_version": "2.1.0",
+  "decision_version": "mvp1-graph-0.1",
+  "created_at": "2026-06-15T00:00:00Z"
+}

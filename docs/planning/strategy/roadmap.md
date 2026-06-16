@@ -3,13 +3,23 @@
 > Формат Now/Next/Later фиксирует направление и приоритеты без преждевременных дат.
 > У каждого пункта должен быть "якорь" — initiative/release документ.
 
-## NOW (AI Provider Domain Planner v1 acceptance review closed)
+## NOW (AI Platform 2.1 Contract Intake closed)
+
+- Initiative (done / delegated Gate D GO): **INIT-2026Q3-ai-platform-2-1-contract-intake** — AI Platform 2.1 Contract Intake & Safe Adapter Mapping
+  - Anchor: docs/planning/initiatives/INIT-2026Q3-ai-platform-2-1-contract-intake.md
+  - Execution: docs/planning/initiatives/INIT-2026Q3-ai-platform-2-1-contract-intake.execution.md
+  - Workpack: docs/planning/workpacks/INIT-2026Q3-AI-PLATFORM-2-1-CONTRACT-INTAKE/workpack.md
+  - Outcome: HomeTusk imports/documents AI Platform `2.1.0`, updates safe adapter mapping for execute / clarify / reject / confirm, maps provider `reject` to non-mutating HomeTusk rejection, maps provider `confirm` to controlled non-execution rejection until `needs_confirmation` exists, and keeps existing command flows stable.
+  - Why now: HomeTusk provider acceptance review closed with LIMITED-GO, and provider-side `2.1.0` handoff is now available read-only with 50 evaluated scenarios, 50 schema-valid decisions, 0 blocker failures, first-class `reject`, schema-level `confirm`, and `answer` still blocked.
+  - Gates: delegated Gate A GO, Gate B GO, artifact gate GO/HOLD split, Gate C GO, review gate GO, and Gate D GO recorded on 2026-06-15.
+  - Closed: 2026-06-15 with **GO** for initiative closure and **LIMITED-GO** for a separate HomeTusk `natural_command` + `needs_confirmation` contract spike; no runtime/mobile UX or production rollout approved.
+  - Boundaries: no HomeTusk `natural_command`, no public `/commands` contract change, no `needs_confirmation`, no `answered`, no mobile AI UX, no direct mobile/web to AI Platform, no AI Platform repo writes, no production rollout/config change.
 
 - Initiative (done / closed acceptance review): **INIT-2026Q3-ai-provider-domain-planner-v1-acceptance-review** — AI Provider Domain Planner v1 Evidence Review
   - Anchor: docs/planning/initiatives/INIT-2026Q3-ai-provider-domain-planner-v1-acceptance-review.md
   - Outcome: HomeTusk-owned acceptance decision for provider Domain Planner v1 evidence, expanded product golden scenarios, provider evidence index, contract posture decision for `reject` / `confirm` / `answer`, and natural command readiness recommendation
   - Why now: the AI Command Capability Audit and Artifact Gate are closed; provider-side Domain Planner v1 evidence now needs HomeTusk product acceptance before any `natural_command`, Mobile AI Command UX, provider contract follow-up, or runtime APPLY
-  - Closed: 2026-06-15 with **LIMITED-GO**; acceptance artifacts delivered under `docs/research/ai-command-capabilities/provider-domain-planner-v1-acceptance/**`; provider revision inspected read-only: `b1ca7235dfacb1faee35e042d6a072976c640d35`; next recommended action is a provider contract + 50-scenario eval workpack; no runtime/backend/mobile/OpenAPI/AI Platform changes approved
+  - Closed: 2026-06-15 with **LIMITED-GO**; acceptance artifacts delivered under `docs/research/ai-command-capabilities/provider-domain-planner-v1-acceptance/**`; provider revision inspected read-only: `b1ca7235dfacb1faee35e042d6a072976c640d35`; provider contract + 50-scenario eval follow-up is now available as read-only input for `INIT-2026Q3-ai-platform-2-1-contract-intake`; no runtime/backend/mobile/OpenAPI/AI Platform changes were approved by this review
 
 - Initiative (done / closed artifact gate): **INIT-2026Q3-ai-command-artifact-gate** — AI Command Artifact Gate for Domain Planner v1
   - Anchor: docs/planning/initiatives/INIT-2026Q3-ai-command-artifact-gate.md
@@ -152,13 +162,13 @@
 
 ## NEXT (будущие инициативы / ranked candidates)
 
-- Initiative (recommended candidate): **Provider contract + 50-scenario Domain Planner eval follow-up**
-  - Anchor: docs/research/ai-command-capabilities/provider-domain-planner-v1-acceptance/recommendation.md
-  - Outcome: provider-side follow-up that consumes HomeTusk `expanded-golden-scenarios-v1`, runs deterministic eval against all 50 scenarios, and resolves first-class `reject` plus non-executing `confirm` posture before any HomeTusk runtime integration
-  - Planning note: HomeTusk `natural_command`, Mobile AI Command UX, runtime APPLY, production rollout, and direct mobile → AI Platform remain blocked until this follow-up and a separate HomeTusk contract gate complete
+- Initiative (recommended next / LIMITED-GO): **HomeTusk natural_command + needs_confirmation contract spike**
+  - Anchor: TBD — recommended by `INIT-2026Q3-ai-platform-2-1-contract-intake` Gate D on 2026-06-15
+  - Outcome: HomeTusk-owned public contract decision for `natural_command`, `needs_confirmation`, and answer posture, without mobile UX or runtime rollout until a separate implementation workpack is approved
+  - Planning note: contract governance only; no runtime, mobile UX, `answered`, direct mobile/web AI Platform calls, or production rollout until a future initiative passes gates.
 
 - Initiative (gated candidate): **HomeTusk natural_command + Mobile AI Command UX v1**
-  - Anchor: TBD — depends on Domain Planner v1 provider readiness plus future HomeTusk contract gate
+  - Anchor: TBD — depends on `INIT-2026Q3-ai-platform-2-1-contract-intake` Gate D plus future HomeTusk `natural_command` / `needs_confirmation` contract gate
   - Outcome: HomeTusk-owned natural command contract and mobile command UX for clarify/confirm/answer/execute outcomes without direct mobile → AI Platform calls
   - Planning note: still blocked; artifact gate exists, but runtime `natural_command`, `needs_confirmation`, `answered`, backend adapter mapping, and mobile cards require separate contract governance, workpack, PLAN, Gate C, APPLY, and review
 
@@ -187,17 +197,19 @@
   - Email/channel work сортируем по цепочке безопасности: verified profile state → delivery platform → конкретный notification use case.
 
 - Текущий рейтинг новых инициатив:
-  - #1 Provider contract + 50-scenario Domain Planner eval follow-up - RECOMMENDED NEXT; consume `expanded-golden-scenarios-v1`, run all 50 scenarios, resolve first-class `reject` and non-executing `confirm` before HomeTusk runtime integration.
-  - #2 INIT-2026Q3-ai-provider-domain-planner-v1-acceptance-review - DONE / LIMITED-GO; HomeTusk-owned provider evidence review closed without runtime/backend/mobile/OpenAPI/AI Platform approval.
-  - #3 INIT-2026Q3-ai-command-artifact-gate - DONE / CLOSED ARTIFACT GATE; docs-only artifact/contract/eval package accepted before Domain Planner v1 and any `natural_command` / Mobile AI Command UX APPLY.
-  - #4 INIT-2026Q3-ai-command-capability-audit - DONE / CLOSED DISCOVERY BASELINE; result LIMITED-GO with research pack and external comparison before Domain Planner v1, `natural_command`, and Mobile AI Command Center.
-  - #5 INIT-2026Q3-voice-command-chat-mvp - DONE / CLOSED NOW TRACK; E2E voice-to-command value inside existing Commands, with remaining planner semantics moved to artifact gate.
-  - #6 INIT-2026Q3-mobile-client-refactor-foundation - DONE; native mobile engineering enablement before richer command/voice semantics.
-  - #7 INIT-2026Q2-social-auth-yandex-vk - DEFERRED / CLOSED AS NOW FOCUS; activation/security candidate, not delivered, parked behind AI provider acceptance review.
-  - #8 INIT-2026Q3-native-mobile-mvp - DONE; product validation track for native Android/iOS client, push/deep links, and mobile command chat without a new backend source of truth.
-  - #9 INIT-2026Q2-email-validation - DONE; foundation for trusted email state and eligibility.
-  - #10 INIT-2026Q2-email-notification-platform - DONE; safe delivery foundation before use-case logic.
-  - #11 INIT-2026Q2-task-assignment-email-notifications - DONE; direct user value after delivery foundation.
+  - #1 HomeTusk natural_command + needs_confirmation contract spike - RECOMMENDED NEXT / LIMITED-GO; contract governance only before any runtime/mobile UX or production rollout.
+  - #2 INIT-2026Q3-ai-platform-2-1-contract-intake - DONE / GATE D GO; AI Platform `2.1.0` consumed, integration docs updated, provider `reject` safely maps to rejection, provider `confirm` maps to non-executing `AI_CONFIRMATION_UNSUPPORTED`, DecisionLog traceability preserved, and `natural_command`, `needs_confirmation`, `answered`, mobile AI UX, public `/commands` changes, and AI Platform repo writes stayed out of scope.
+  - #3 Provider contract + 50-scenario Domain Planner eval follow-up - DONE PROVIDER-SIDE / READ-ONLY INPUT; provider handoff reports 50 evaluated scenarios, 50 schema-valid decisions, 0 blocker failures, first-class `reject`, schema-level `confirm`, and `answer` blocked.
+  - #4 INIT-2026Q3-ai-provider-domain-planner-v1-acceptance-review - DONE / LIMITED-GO; HomeTusk-owned provider evidence review closed without runtime/backend/mobile/OpenAPI/AI Platform approval.
+  - #5 INIT-2026Q3-ai-command-artifact-gate - DONE / CLOSED ARTIFACT GATE; docs-only artifact/contract/eval package accepted before Domain Planner v1 and any `natural_command` / Mobile AI Command UX APPLY.
+  - #6 INIT-2026Q3-ai-command-capability-audit - DONE / CLOSED DISCOVERY BASELINE; result LIMITED-GO with research pack and external comparison before Domain Planner v1, `natural_command`, and Mobile AI Command Center.
+  - #7 INIT-2026Q3-voice-command-chat-mvp - DONE / CLOSED NOW TRACK; E2E voice-to-command value inside existing Commands, with remaining planner semantics moved to artifact gate.
+  - #8 INIT-2026Q3-mobile-client-refactor-foundation - DONE; native mobile engineering enablement before richer command/voice semantics.
+  - #9 INIT-2026Q2-social-auth-yandex-vk - DEFERRED / CLOSED AS NOW FOCUS; activation/security candidate, not delivered, parked behind AI provider acceptance review.
+  - #10 INIT-2026Q3-native-mobile-mvp - DONE; product validation track for native Android/iOS client, push/deep links, and mobile command chat without a new backend source of truth.
+  - #11 INIT-2026Q2-email-validation - DONE; foundation for trusted email state and eligibility.
+  - #12 INIT-2026Q2-email-notification-platform - DONE; safe delivery foundation before use-case logic.
+  - #13 INIT-2026Q2-task-assignment-email-notifications - DONE; direct user value after delivery foundation.
 
 - Риски:
   - Scope creep в web (слишком много экранов/фич за раз) → режем до NOW-инкремента инициативы.

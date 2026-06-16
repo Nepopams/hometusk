@@ -2,6 +2,11 @@
 
 > Документ описывает различия между HomeTusk реализацией и canonical upstream контрактами AI Platform
 
+> Supersession note (2026-06-15): AI Platform provider contract `2.1.0` and
+> HomeTusk adapter policy for `reject` / `confirm` are documented in
+> `docs/integration/ai-platform/v2.1/`. Keep this v1 file as historical context
+> only for the earlier upstream-alignment migration.
+
 **Upstream Version:** 1.0.0 (см. `upstream/VERSION`)
 **HomeTusk Version:** 0.1.0 (см. `contracts/VERSION`)
 **Last Updated:** 2026-01-13

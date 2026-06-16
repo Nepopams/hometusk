@@ -22,6 +22,7 @@ This index tracks all API contracts (OpenAPI, JSON Schema, AsyncAPI) in the proj
 | Shopping Marketplaces API | Web Frontend | HomeTusk Backend | v1 | draft | [Link](../contracts/http/shopping-marketplaces.openapi.yaml) |
 | Mobile Devices API | Native Mobile App | HomeTusk Backend | v1 | stable | [Link](../contracts/http/mobile-devices.openapi.yaml) |
 | AI Platform Decision API | HomeTusk Backend | AI Platform (external) | v1 | stable | [Link](../contracts/external/ai-platform.decision.openapi.yaml) |
+| AI Platform 2.1 Provider Snapshot | HomeTusk Backend | AI Platform (external) | 2.1.0 | draft | [Link](../integration/ai-platform/v2.1/) |
 | Task Schema | Commands API | Backend | v1 | stable | [Link](../contracts/schemas/task.schema.json) |
 | Command Schema | Commands API | Backend | v1 | stable | [Link](../contracts/schemas/command.schema.json) |
 
@@ -36,6 +37,7 @@ This index tracks all API contracts (OpenAPI, JSON Schema, AsyncAPI) in the proj
 | Contract | Source | Local Path |
 |----------|--------|------------|
 | AI Platform Decision API (upstream) | AI Platform team | [Link](../integration/ai-platform/v1/upstream/) |
+| AI Platform 2.1 Provider Snapshot | AI Platform team | [Link](../integration/ai-platform/v2.1/upstream/) |
 | ASR Service API (upstream) | ASR Service team | [Link](../contracts/external/asr-service/asr/openapi.yaml) |
 
 **CRITICAL**: Upstream contracts are **READ-ONLY**. Changes require coordination with external team.
@@ -46,6 +48,13 @@ This index tracks all API contracts (OpenAPI, JSON Schema, AsyncAPI) in the proj
 
 ## Material Contract Notes
 
+- 2026-06-15 - INIT-2026Q3-ai-platform-2-1-contract-intake adds a
+  HomeTusk-local AI Platform `2.1.0` provider snapshot under
+  `docs/integration/ai-platform/v2.1/`. This is an external-provider intake for
+  backend adapter compatibility, not a public `/commands` contract change.
+  Provider `reject` maps to non-mutating `rejected`; provider `confirm` remains
+  non-executing and maps to `AI_CONFIRMATION_UNSUPPORTED` until a future
+  `needs_confirmation` contract exists.
 - 2026-06-13 — `commands.openapi.yaml` and `shopping-marketplaces.openapi.yaml`
   include the non-breaking INIT-2026Q3-shopping-categories contract delta:
   optional `category`/`source` metadata on shopping items, list filters,

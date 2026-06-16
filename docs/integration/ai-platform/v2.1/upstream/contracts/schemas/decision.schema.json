@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://hometusk.app/schemas/ai-platform-upstream-decision-response.json",
-  "title": "AI Platform Decision Response",
+  "$id": "https://hometask.ai/schemas/decision.schema.json",
+  "title": "Decision",
   "type": "object",
   "required": [
     "decision_id",
@@ -51,7 +51,7 @@
           "properties": {
             "action": { "const": "start_job" },
             "decision_outcome": { "const": "execute" },
-            "payload": { "$ref": "#/$defs/start_job_payload" }
+            "payload": { "$ref": "#/definitions/start_job_payload" }
           },
           "required": ["action", "payload"]
         },
@@ -59,7 +59,7 @@
           "properties": {
             "action": { "const": "propose_create_task" },
             "decision_outcome": { "const": "execute" },
-            "payload": { "$ref": "#/$defs/propose_create_task_payload" }
+            "payload": { "$ref": "#/definitions/propose_create_task_payload" }
           },
           "required": ["action", "payload"]
         },
@@ -67,7 +67,7 @@
           "properties": {
             "action": { "const": "propose_add_shopping_item" },
             "decision_outcome": { "const": "execute" },
-            "payload": { "$ref": "#/$defs/propose_add_shopping_item_payload" }
+            "payload": { "$ref": "#/definitions/propose_add_shopping_item_payload" }
           },
           "required": ["action", "payload"]
         },
@@ -75,7 +75,7 @@
           "properties": {
             "action": { "const": "clarify" },
             "decision_outcome": { "const": "clarify" },
-            "payload": { "$ref": "#/$defs/clarify_payload" }
+            "payload": { "$ref": "#/definitions/clarify_payload" }
           },
           "required": ["action", "payload"]
         },
@@ -83,7 +83,7 @@
           "properties": {
             "action": { "const": "reject" },
             "decision_outcome": { "const": "reject" },
-            "payload": { "$ref": "#/$defs/reject_payload" }
+            "payload": { "$ref": "#/definitions/reject_payload" }
           },
           "required": ["action", "payload"]
         },
@@ -91,14 +91,14 @@
           "properties": {
             "action": { "const": "confirm" },
             "decision_outcome": { "const": "confirm" },
-            "payload": { "$ref": "#/$defs/confirm_payload" }
+            "payload": { "$ref": "#/definitions/confirm_payload" }
           },
           "required": ["action", "payload"]
         }
       ]
     }
   ],
-  "$defs": {
+  "definitions": {
     "task_payload": {
       "type": "object",
       "required": ["title"],
@@ -132,8 +132,8 @@
         },
         "payload": {
           "oneOf": [
-            { "$ref": "#/$defs/propose_create_task_payload" },
-            { "$ref": "#/$defs/propose_add_shopping_item_payload" }
+            { "$ref": "#/definitions/propose_create_task_payload" },
+            { "$ref": "#/definitions/propose_add_shopping_item_payload" }
           ]
         }
       },
@@ -144,10 +144,13 @@
       "required": ["job_id", "job_type"],
       "properties": {
         "job_id": { "type": "string" },
-        "job_type": { "type": "string", "enum": ["create_task", "add_shopping_item", "unknown"] },
+        "job_type": {
+          "type": "string",
+          "enum": ["create_task", "add_shopping_item", "unknown"]
+        },
         "proposed_actions": {
           "type": "array",
-          "items": { "$ref": "#/$defs/proposed_action" }
+          "items": { "$ref": "#/definitions/proposed_action" }
         },
         "ui_message": { "type": "string" }
       },
@@ -157,12 +160,15 @@
       "type": "object",
       "required": ["task"],
       "properties": {
-        "task": { "$ref": "#/$defs/task_payload" },
+        "task": { "$ref": "#/definitions/task_payload" },
         "idempotency_key": { "type": "string" },
         "job_hint": {
           "type": "object",
           "properties": {
-            "job_type": { "type": "string", "enum": ["create_task", "add_shopping_item", "unknown"] },
+            "job_type": {
+              "type": "string",
+              "enum": ["create_task", "add_shopping_item", "unknown"]
+            },
             "job_id": { "type": "string" }
           },
           "additionalProperties": false
@@ -174,7 +180,7 @@
       "type": "object",
       "required": ["item"],
       "properties": {
-        "item": { "$ref": "#/$defs/shopping_item_payload" },
+        "item": { "$ref": "#/definitions/shopping_item_payload" },
         "idempotency_key": { "type": "string" }
       },
       "additionalProperties": false
@@ -220,7 +226,7 @@
         "proposed_actions": {
           "type": "array",
           "minItems": 1,
-          "items": { "$ref": "#/$defs/proposed_action" }
+          "items": { "$ref": "#/definitions/proposed_action" }
         },
         "expires_at": { "type": "string", "format": "date-time" },
         "ui_message": { "type": "string" }
