@@ -15,6 +15,7 @@ public record AiDecisionResponse(
         @JsonProperty("command_id") String commandId,
         String status,
         String action,
+        @JsonProperty("decision_outcome") String decisionOutcome,
         BigDecimal confidence,
         Map<String, Object> payload,
         String explanation,

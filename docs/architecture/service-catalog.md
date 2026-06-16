@@ -330,14 +330,16 @@ Handles all notifications to users.
 HomeTusk is a **consumer** of an external AI Platform for intelligent decision-making.
 
 **Upstream Contracts (Source of Truth):**
-- Location: `docs/integration/ai-platform/v1/upstream/`
-- Version: 1.0.0 (see `upstream/VERSION`)
-- Canonical endpoint: `POST /decide`
+- Active intake package: `docs/integration/ai-platform/v2.1/`
+- Active provider snapshot version: 2.1.0
+- Historical package: `docs/integration/ai-platform/v1/`
+- Read-only historical upstream snapshot: `docs/integration/ai-platform/v1/upstream/`
+- Canonical/default endpoint for current adapter: `POST /v1/decide`
 
 **HomeTusk Integration:**
-- Integration Package: [`docs/integration/ai-platform/v1/`](../integration/ai-platform/v1/README.md)
-- Mapping: `docs/integration/ai-platform/v1/mapping/hometusk-to-upstream.md`
-- Wrapper Schemas: `docs/integration/ai-platform/v1/contracts/schemas/`
+- Active Integration Package: [`docs/integration/ai-platform/v2.1/`](../integration/ai-platform/v2.1/README.md)
+- Active Mapping: `docs/integration/ai-platform/v2.1/mapping/aiplatform-to-hometusk.md`
+- Historical package: [`docs/integration/ai-platform/v1/`](../integration/ai-platform/v1/README.md)
 
 **Endpoints (configurable):**
 - `POST /v1/decide` (HomeTusk default for UAT)
@@ -349,7 +351,8 @@ HomeTusk is a **consumer** of an external AI Platform for intelligent decision-m
 - `propose_create_task` - Propose task creation (mapped to start_job)
 - `propose_add_shopping_item` - Propose shopping item (mapped to start_job)
 - `clarify` - Need user clarification (full support)
-- `reject` - Cannot process command (full support)
+- `reject` - Cannot process command (maps to non-mutating HomeTusk rejection)
+- `confirm` - Provider confirmation request (schema-supported, non-executing in HomeTusk; maps to `AI_CONFIRMATION_UNSUPPORTED` until `needs_confirmation` exists)
 
 **Supported Action types:**
 - `create_task` - Create a new task
@@ -371,7 +374,7 @@ aiplatform:
 
 > **Contract-First:** Upstream contracts are canonical. HomeTusk adapts to upstream, not vice versa. See ADR-006.
 >
-> See [mapping documentation](../integration/ai-platform/v1/mapping/hometusk-to-aiplatform.md) for field mappings between HomeTusk and AI Platform.
+> See [mapping documentation](../integration/ai-platform/v2.1/mapping/aiplatform-to-hometusk.md) for current field mappings between HomeTusk and AI Platform.
 
 ---
 

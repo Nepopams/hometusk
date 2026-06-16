@@ -8,6 +8,7 @@ import com.hometusk.commands.domain.DecisionSource;
 import com.hometusk.commands.pipeline.decision.DecisionContext;
 import com.hometusk.commands.pipeline.decision.DecisionResult;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -51,7 +52,9 @@ class AiPlatformDecisionAdapterTest {
         assertThat(request.commandId()).isEqualTo(commandId.toString());
         assertThat(request.userId()).isEqualTo(requesterId.toString());
         assertThat(request.text()).isEqualTo("Buy milk");
-        assertThat(request.capabilities()).contains("start_job", "propose_create_task", "propose_add_shopping_item");
+        assertThat(request.capabilities())
+                .contains("start_job", "propose_create_task", "propose_add_shopping_item", "reject")
+                .doesNotContain("confirm");
 
         Map<String, Object> household = nestedMap(request.context(), "household");
         assertThat(household).containsEntry("household_id", householdId.toString());
@@ -76,6 +79,7 @@ class AiPlatformDecisionAdapterTest {
                 "cmd-1",
                 "ok",
                 "start_job",
+                "execute",
                 new BigDecimal("0.91"),
                 Map.of(
                         "job_id",
@@ -150,6 +154,7 @@ class AiPlatformDecisionAdapterTest {
                 "cmd-1",
                 "clarify",
                 "clarify",
+                "clarify",
                 new BigDecimal("0.42"),
                 Map.of("question", "Which room?", "missing_fields", List.of("zoneId"), "options", List.of("Kitchen")),
                 "More details required.",
@@ -171,6 +176,88 @@ class AiPlatformDecisionAdapterTest {
     }
 
     @Test
+    void mapsProviderRejectToSafeReject() {
+        UUID decisionId = UUID.randomUUID();
+        AiDecisionResponse response = new AiDecisionResponse(
+                decisionId.toString(),
+                "cmd-1",
+                "error",
+                "reject",
+                "reject",
+                new BigDecimal("0.21"),
+                Map.of(
+                        "code",
+                        "unsupported_or_unsafe_command",
+                        "reason",
+                        "Outside the supported command corridor.",
+                        "ui_message",
+                        "I cannot safely handle this request.",
+                        "details",
+                        Map.of("category", "unsupported")),
+                "Unsupported command is rejected without proposed mutation.",
+                "trace-reject",
+                "2.1.0",
+                "mvp1-graph-0.1",
+                "2026-06-15T00:00:00Z");
+
+        assertThat(schemaValidator.validate(response).valid()).isTrue();
+
+        DecisionResult result = mapper.toDecisionResult(response, "{\"action\":\"reject\"}");
+
+        assertThat(result).isInstanceOf(DecisionResult.Reject.class);
+        DecisionResult.Reject reject = (DecisionResult.Reject) result;
+        assertThat(reject.externalDecisionId()).isEqualTo(decisionId);
+        assertThat(reject.errorCode()).isEqualTo("unsupported_or_unsafe_command");
+        assertThat(reject.reason()).isEqualTo("I cannot safely handle this request.");
+        assertThat(reject.rawPayload()).isEqualTo("{\"action\":\"reject\"}");
+    }
+
+    @Test
+    void mapsProviderConfirmToUnsupportedReject() {
+        UUID decisionId = UUID.randomUUID();
+        AiDecisionResponse response = new AiDecisionResponse(
+                decisionId.toString(),
+                "cmd-1",
+                "ok",
+                "confirm",
+                "confirm",
+                new BigDecimal("0.73"),
+                Map.of(
+                        "confirmation_id",
+                        "conf-1",
+                        "summary",
+                        "Create a task for another household member.",
+                        "reasons",
+                        List.of("Non-requester assignment requires confirmation."),
+                        "proposed_actions",
+                        List.of(Map.of(
+                                "action",
+                                "propose_create_task",
+                                "payload",
+                                Map.of("task", Map.of("title", "Clean kitchen")))),
+                        "expires_at",
+                        "2026-06-15T01:00:00Z",
+                        "ui_message",
+                        "Please confirm before I do this."),
+                "Confirmation required.",
+                "trace-confirm",
+                "2.1.0",
+                "mvp1-graph-0.1",
+                "2026-06-15T00:00:00Z");
+
+        assertThat(schemaValidator.validate(response).valid()).isTrue();
+
+        DecisionResult result = mapper.toDecisionResult(response, "{\"action\":\"confirm\"}");
+
+        assertThat(result).isInstanceOf(DecisionResult.Reject.class);
+        DecisionResult.Reject reject = (DecisionResult.Reject) result;
+        assertThat(reject.externalDecisionId()).isEqualTo(decisionId);
+        assertThat(reject.errorCode()).isEqualTo("AI_CONFIRMATION_UNSUPPORTED");
+        assertThat(reject.reason()).isEqualTo("Please confirm before I do this.");
+        assertThat(reject.rawPayload()).isEqualTo("{\"action\":\"confirm\"}");
+    }
+
+    @Test
     void rejectsLegacyResponseShapeBeforeMapping() {
         String legacyResponse =
                 """
@@ -185,6 +272,25 @@ class AiPlatformDecisionAdapterTest {
         assertThat(schemaValidator.validateRaw(legacyResponse).valid()).isFalse();
     }
 
+    @Test
+    void validatesProvider21Fixtures() throws Exception {
+        for (String fixture : List.of(
+                "decision-execute-create-task.json",
+                "decision-execute-shopping-items.json",
+                "decision-clarify.json",
+                "decision-reject.json",
+                "decision-confirm.json")) {
+            assertThat(schemaValidator.validateRaw(readFixture(fixture)).valid())
+                    .as(fixture)
+                    .isTrue();
+        }
+
+        assertThat(schemaValidator
+                        .validateRaw(readFixture("decision-invalid-unknown-action.json"))
+                        .valid())
+                .isFalse();
+    }
+
     @SuppressWarnings("unchecked")
     private Map<String, Object> nestedMap(Map<String, Object> source, String key) {
         return (Map<String, Object>) source.get(key);
@@ -193,5 +299,12 @@ class AiPlatformDecisionAdapterTest {
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> nestedList(Map<String, Object> source, String key) {
         return (List<Map<String, Object>>) source.get(key);
+    }
+
+    private String readFixture(String fileName) throws Exception {
+        try (var stream = getClass().getResourceAsStream("/ai-platform/v2.1/" + fileName)) {
+            assertThat(stream).as(fileName).isNotNull();
+            return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+        }
     }
 }

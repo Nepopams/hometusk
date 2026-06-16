@@ -76,25 +76,24 @@ public class AiPlatformClient {
      * Requests a decision from AI Platform.
      *
      * @param request Decision request
-     * @return Decision response
+     * @return Decision response with the exact raw response payload
      * @throws AiPlatformException if request fails
      */
-    public AiDecisionResponse requestDecision(AiDecisionRequest request) {
+    public AiDecisionClientResponse requestDecision(AiDecisionRequest request) {
         log.debug("Requesting decision from AI Platform: commandId={}, path={}", request.commandId(), decisionPath);
 
         try {
-            Supplier<AiDecisionResponse> supplier = () -> executeRequest(request);
-            Supplier<AiDecisionResponse> decorated =
+            Supplier<String> supplier = () -> executeRequest(request);
+            Supplier<String> decorated =
                     CircuitBreaker.decorateSupplier(circuitBreaker, Retry.decorateSupplier(retry, supplier));
-            AiDecisionResponse response = decorated.get();
+            String rawPayload = decorated.get();
 
             log.debug(
-                    "Received decision from AI Platform: decisionId={}, status={}, action={}",
-                    response.decisionId(),
-                    response.status(),
-                    response.action());
+                    "Received raw decision from AI Platform: commandId={}, bytes={}",
+                    request.commandId(),
+                    rawPayload != null ? rawPayload.length() : 0);
 
-            return response;
+            return new AiDecisionClientResponse(rawPayload);
 
         } catch (RestClientException e) {
             log.error("AI Platform request failed", e);
@@ -102,7 +101,7 @@ public class AiPlatformClient {
         }
     }
 
-    private AiDecisionResponse executeRequest(AiDecisionRequest request) {
+    private String executeRequest(AiDecisionRequest request) {
         var spec = restClient.post().uri(decisionPath);
         String correlationId = MDC.get(MdcKeys.CORRELATION_ID);
         if (correlationId != null) {
@@ -115,7 +114,7 @@ public class AiPlatformClient {
                     throw new AiPlatformException(
                             "AI Platform returned error: " + resp.getStatusCode(), resp.getStatusCode());
                 })
-                .body(AiDecisionResponse.class);
+                .body(String.class);
     }
 
     /**
@@ -137,4 +136,6 @@ public class AiPlatformClient {
     public int getTimeoutMs() {
         return timeoutMs;
     }
+
+    public record AiDecisionClientResponse(String rawPayload) {}
 }

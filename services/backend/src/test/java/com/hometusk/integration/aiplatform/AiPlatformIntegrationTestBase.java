@@ -169,6 +169,14 @@ public abstract class AiPlatformIntegrationTestBase extends IntegrationTestBase 
                         .withBody(responseBody)));
     }
 
+    protected void stubMalformedJsonResponse() {
+        stubFor(post(urlEqualTo(DECIDE_PATH))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\"decision_id\":\"malformed\",\"action\":\"reject\"")));
+    }
+
     protected void stubTimeout() {
         stubFor(post(urlEqualTo(DECIDE_PATH)).willReturn(aResponse().withFixedDelay(10000)));
     }
@@ -270,6 +278,84 @@ public abstract class AiPlatformIntegrationTestBase extends IntegrationTestBase 
                 """;
 
         stubFor(post(urlEqualTo(DECIDE_PATH))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(responseBody)));
+    }
+
+    protected void stubRejectDecision() {
+        String responseBody =
+                """
+                {
+                    "decision_id": "b690f1ee-9c54-4b01-90e6-d701748f0855",
+                    "command_id": "cmd-test",
+                    "status": "error",
+                    "action": "reject",
+                    "decision_outcome": "reject",
+                    "confidence": 0.2,
+                    "payload": {
+                        "code": "unsupported_or_unsafe_command",
+                        "reason": "Outside the supported household command corridor.",
+                        "ui_message": "I cannot safely handle this request.",
+                        "details": {
+                            "category": "unsupported"
+                        }
+                    },
+                    "explanation": "Unsupported command is rejected without proposed mutation.",
+                    "trace_id": "trace-test-reject",
+                    "schema_version": "2.1.0",
+                    "decision_version": "mvp1-graph-0.1",
+                    "created_at": "2026-06-15T00:00:00Z"
+                }
+                """;
+
+        stubFor(post(urlEqualTo(DECIDE_PATH))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(responseBody)));
+    }
+
+    protected void stubConfirmDecision() {
+        String responseBody =
+                """
+                {
+                    "decision_id": "c790f1ee-9c54-4b01-90e6-d701748f0856",
+                    "command_id": "cmd-test",
+                    "status": "ok",
+                    "action": "confirm",
+                    "decision_outcome": "confirm",
+                    "confidence": 0.73,
+                    "payload": {
+                        "confirmation_id": "conf-test",
+                        "summary": "Create a task for another household member.",
+                        "reasons": [
+                            "Non-requester assignment requires HomeTusk confirmation."
+                        ],
+                        "proposed_actions": [
+                            {
+                                "action": "propose_create_task",
+                                "payload": {
+                                    "task": {
+                                        "title": "Clean kitchen"
+                                    }
+                                }
+                            }
+                        ],
+                        "expires_at": "2026-06-15T01:00:00Z",
+                        "ui_message": "Please confirm before I do this."
+                    },
+                    "explanation": "Confirmation required.",
+                    "trace_id": "trace-test-confirm",
+                    "schema_version": "2.1.0",
+                    "decision_version": "mvp1-graph-0.1",
+                    "created_at": "2026-06-15T00:00:00Z"
+                }
+                """;
+
+        stubFor(post(urlEqualTo(DECIDE_PATH))
+                .withRequestBody(matchingJsonPath("$.capabilities[?(@ == 'reject')]"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")

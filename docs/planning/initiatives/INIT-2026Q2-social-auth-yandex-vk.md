@@ -1,6 +1,14 @@
 # Initiative: INIT-2026Q2-social-auth-yandex-vk
-Status: **IN_PROGRESS** (selected as NOW focus on 2026-06-13 after INIT-2026Q2-task-assignment-email-notifications)
+Status: **DEFERRED / CLOSED AS NOW FOCUS** (roadmap focus closed on 2026-06-15; not delivered)
 Owner: Planning/Architecture
+
+Closure posture:
+
+- Social Auth via Yandex/VK is no longer the active roadmap focus.
+- Delivered planning/architecture evidence remains valid where already recorded.
+- Remaining provider/runbook/secrets/VK compatibility work is deferred behind
+  `docs/planning/initiatives/INIT-2026Q3-ai-provider-domain-planner-v1-acceptance-review.md`.
+- This closure does not claim the initiative exit criteria are satisfied.
 
 ## Goal
 

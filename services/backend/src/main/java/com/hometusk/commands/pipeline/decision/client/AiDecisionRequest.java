@@ -19,7 +19,7 @@ public record AiDecisionRequest(
         Map<String, Object> context) {
 
     private static final List<String> DEFAULT_CAPABILITIES =
-            List.of("start_job", "propose_create_task", "propose_add_shopping_item", "clarify");
+            List.of("start_job", "propose_create_task", "propose_add_shopping_item", "clarify", "reject");
 
     public static AiDecisionRequest from(DecisionContext context) {
         return new AiDecisionRequest(

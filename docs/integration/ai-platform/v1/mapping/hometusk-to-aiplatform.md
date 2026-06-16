@@ -2,6 +2,11 @@
 
 > Документ описывает маппинг между внутренними сущностями HomeTusk и API AI Platform
 
+> Supersession note (2026-06-15): provider contract `2.1.0` mapping is now
+> documented in `docs/integration/ai-platform/v2.1/mapping/**`. This v1 file is
+> retained as legacy Stage 2 migration context and must not be used for new
+> `reject` / `confirm` adapter work.
+
 ## Endpoint
 
 ### Расхождение: `/decide` vs `/decision`

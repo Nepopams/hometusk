@@ -1,5 +1,5 @@
 # Initiative: INIT-2026Q2-analytics-fairness-dashboard
-Status: **IN_PROGRESS** (Gate B approved)
+Status: **DONE** (closed 2026-01-24 via EP-008 / Sprint S07; roadmap closure already recorded)
 Owner: Planning/Architecture (Claude Code)
 Epic: `docs/planning/epics/EP-008/epic.md`
 Sprint: `docs/planning/sprints/S07/sprint.md`

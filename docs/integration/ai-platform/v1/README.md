@@ -2,6 +2,11 @@
 
 > Документация интеграции HomeTusk ↔ AI Platform
 
+> Supersession note (2026-06-15): new HomeTusk AI Platform work should use
+> `docs/integration/ai-platform/v2.1/` for provider contract `2.1.0`.
+> This v1 package is retained as historical migration context. The
+> `upstream/**` subtree remains read-only.
+
 ## Обзор
 
 HomeTusk является **потребителем** внешнего AI Platform для принятия решений по командам пользователей.
