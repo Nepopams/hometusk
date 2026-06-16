@@ -5,8 +5,10 @@ import { EmptyRow, InfoRow } from '../../shared/ui/InfoRow';
 import { SectionList } from '../../shared/ui/SectionList';
 import { styles } from '../../shared/ui/styles';
 import { CommandComposer, CommandError } from './CommandComposer';
+import { CommandConfirmationCard } from './CommandConfirmationCard';
 import { CommandContinuationCard } from './CommandContinuationCard';
 import { CommandOutcomeCard } from './CommandOutcomeCard';
+import { formatCommandOutcome } from './commandOutcomeFormatting';
 import type { CommandSurfaceProps } from './commandTypes';
 
 export function CommandSurface({
@@ -27,7 +29,11 @@ export function CommandSurface({
 
       <CommandError message={controls.error} />
 
-      {controls.response && <CommandOutcomeCard accent={accent} response={controls.response} />}
+      {controls.response?.status === 'needs_confirmation' ? (
+        <CommandConfirmationCard accent={accent} controls={controls} response={controls.response} />
+      ) : (
+        controls.response && <CommandOutcomeCard accent={accent} response={controls.response} />
+      )}
 
       <CommandContinuationCard controls={controls} />
 
@@ -39,7 +45,7 @@ export function CommandSurface({
             <InfoRow
               accent={accent}
               key={`${entry.id}-${entry.createdAt}`}
-              meta={`${entry.status} - ${formatShortDate(entry.createdAt)}`}
+              meta={`${formatHistoryStatus(entry.status)} - ${formatShortDate(entry.createdAt)}`}
               title={entry.text}
             />
           ))
@@ -47,4 +53,8 @@ export function CommandSurface({
       </SectionList>
     </View>
   );
+}
+
+function formatHistoryStatus(status: string): string {
+  return formatCommandOutcome(status).replace(/\.$/, '');
 }

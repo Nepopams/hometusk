@@ -2,6 +2,8 @@ import type { ColorValue } from 'react-native';
 
 import type {
   CommandResponse,
+  CommandConfirmationApprovalResponse,
+  CommandConfirmationCancelResponse,
   HouseholdMember,
   HouseholdNotification,
   HouseholdSummary,
@@ -20,6 +22,17 @@ export type AuthState = 'checking' | 'signedOut' | 'signedIn';
 export type ReadStatus = 'idle' | 'loading' | 'ready' | 'error';
 export type SavingAction = string | null;
 export type BannerTone = 'success' | 'info' | 'error';
+export type CommandConfirmationAction = 'approve' | 'cancel';
+
+export type CommandConfirmationActionResult =
+  | {
+      type: 'approve';
+      response: CommandConfirmationApprovalResponse;
+    }
+  | {
+      type: 'cancel';
+      response: CommandConfirmationCancelResponse;
+    };
 
 export type StatusBannerMessage = {
   tone: BannerTone;
@@ -65,6 +78,8 @@ export type MutationControls = {
 
 export type CommandChatControls = {
   commandText: string;
+  confirmationAction: CommandConfirmationAction | null;
+  confirmationResult: CommandConfirmationActionResult | null;
   continuationText: string;
   error: string | null;
   isSaving: boolean;
@@ -72,6 +87,8 @@ export type CommandChatControls = {
   response: CommandResponse | null;
   onChangeCommandText: (value: string) => void;
   onChangeContinuationText: (value: string) => void;
+  onApproveConfirmation: () => void;
+  onCancelConfirmation: () => void;
   onContinueCommand: () => void;
   onSubmitCommand: () => void;
 };

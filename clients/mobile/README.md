@@ -118,7 +118,22 @@ Task create and complete actions use `POST /api/v1/commands` with mobile idempot
 
 ## Command Chat
 
-The Command tab is a deterministic mobile text shell over HomeTusk command contracts. Plain text creates a task title, `done <id-or-title>` completes a matched open task, and `needs_input` continues through `/api/v1/commands/{commandId}/continue`. Recent command hints are stored only as non-sensitive AsyncStorage app memory; the mobile client never calls AI Platform directly.
+The Command tab is the native Mobile AI Command UX v1 surface over HomeTusk command contracts. Typed text is sent to `POST /api/v1/commands` as `type=natural_command` with `payload.text`, `inputMode=text`, locale, timezone, and a reference instant. HomeTusk backend remains the source of truth for command state, guardrails, execution, confirmation, and audit.
+
+The mobile client renders backend-controlled outcomes:
+
+- `executed`
+- `executed_degraded`
+- `needs_input`
+- `needs_confirmation`
+- `rejected`
+- `scheduled`
+
+`needs_input` uses `/api/v1/commands/{commandId}/continue`. `needs_confirmation` shows a dedicated confirmation card with summary, reasons, risk labels, proposed actions, expiry, and explicit approve/cancel controls. Approve and cancel call the HomeTusk backend confirmation endpoints; mobile never executes or simulates proposed actions locally.
+
+Recent command hints are stored only as non-sensitive AsyncStorage app memory. Pending confirmations are v1 submit-result-driven: after an app refresh, mobile does not reconstruct a durable pending confirmation card unless a future backend read model is separately gated.
+
+The mobile client never calls AI Platform directly and never displays raw provider payloads, prompts, credentials, or stack traces.
 
 ## Verification
 
@@ -126,3 +141,7 @@ The Command tab is a deterministic mobile text shell over HomeTusk command contr
 npm run typecheck
 npx expo start --help
 ```
+
+AI command manual smoke checklist:
+
+- `clients/mobile/docs/release-smoke-ai-command.md`

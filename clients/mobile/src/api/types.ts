@@ -4,10 +4,12 @@ export type CommandStatus =
   | 'executed'
   | 'scheduled'
   | 'needs_input'
+  | 'needs_confirmation'
   | 'rejected'
   | 'executed_degraded';
 
-export type CommandSource = 'mobile';
+export type CommandSource = 'api' | 'web' | 'mobile' | 'voice';
+export type NaturalCommandInputMode = 'text' | 'voice_transcript' | 'shortcut';
 
 export interface HouseholdSummary {
   id: string;
@@ -227,14 +229,72 @@ export interface AcceptInviteResponse {
 
 export interface CommandRequest {
   householdId: string;
-  type: 'create_task' | 'complete_task';
+  type: 'create_task' | 'complete_task' | 'natural_command';
   payload: Record<string, unknown>;
   source: CommandSource;
+  asrTraceId?: string | null;
   clientTimestamp?: string;
+}
+
+export interface NaturalCommandPayload {
+  text: string;
+  inputMode: NaturalCommandInputMode;
+  locale: string;
+  timezone: string;
+  referenceInstant: string;
+  asrTraceId?: string | null;
 }
 
 export interface ContinueCommandRequest {
   additionalInput: Record<string, unknown>;
+}
+
+export interface CommandConfirmationProposedAction {
+  type: 'create_task' | 'complete_task' | 'add_shopping_item';
+  parameters: Record<string, unknown>;
+}
+
+export interface CommandConfirmation {
+  confirmationId: string;
+  providerConfirmationId?: string | null;
+  summary: string;
+  reasons: string[];
+  riskLabels: string[];
+  expiresAt: string;
+  proposedActions: CommandConfirmationProposedAction[];
+}
+
+export interface CommandConfirmationTrace {
+  providerDecisionId?: string | null;
+  providerTraceId?: string | null;
+  schemaVersion?: string | null;
+  decisionVersion?: string | null;
+}
+
+export interface CommandConfirmationApprovalResponse {
+  commandId: string;
+  confirmationId: string;
+  status: 'executed' | 'rejected';
+  result?: Record<string, unknown> | null;
+  executionMs: number;
+  approvedBy?: string | null;
+  idempotentReplay: boolean;
+  errorCode?: string | null;
+  reason?: string | null;
+}
+
+export interface CommandConfirmationCancelRequest {
+  reason?: string | null;
+}
+
+export interface CommandConfirmationCancelResponse {
+  commandId: string;
+  confirmationId: string;
+  status: 'cancelled';
+  executionMs: number;
+  cancelledBy?: string | null;
+  idempotentReplay: boolean;
+  reason?: string | null;
 }
 
 export interface CommandResponse {
@@ -249,6 +309,8 @@ export interface CommandResponse {
   requiredFields?: string[];
   suggestions?: Record<string, unknown>;
   policyName?: string;
+  confirmation?: CommandConfirmation;
+  trace?: CommandConfirmationTrace;
   errorCode?: string;
   reason?: string;
   degradedReason?: 'ai_unavailable' | 'ai_timeout' | 'ai_low_confidence';

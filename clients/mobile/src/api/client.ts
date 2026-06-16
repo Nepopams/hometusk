@@ -4,6 +4,9 @@ import type {
   ApiErrorBody,
   AcceptInviteResponse,
   AddShoppingItemRequest,
+  CommandConfirmationApprovalResponse,
+  CommandConfirmationCancelRequest,
+  CommandConfirmationCancelResponse,
   CommandRequest,
   CommandResponse,
   ContinueCommandRequest,
@@ -182,6 +185,38 @@ export class HomeTuskApiClient {
         'X-Correlation-ID': generateClientUuid(),
       },
     });
+  }
+
+  approveCommandConfirmation(
+    commandId: string,
+    confirmationId: string
+  ): Promise<CommandConfirmationApprovalResponse> {
+    return this.fetchJson<CommandConfirmationApprovalResponse>(
+      `/commands/${commandId}/confirmations/${confirmationId}/approve`,
+      {
+        method: 'POST',
+        headers: {
+          'X-Correlation-ID': generateClientUuid(),
+        },
+      }
+    );
+  }
+
+  cancelCommandConfirmation(
+    commandId: string,
+    confirmationId: string,
+    request: CommandConfirmationCancelRequest = {}
+  ): Promise<CommandConfirmationCancelResponse> {
+    return this.fetchJson<CommandConfirmationCancelResponse>(
+      `/commands/${commandId}/confirmations/${confirmationId}/cancel`,
+      {
+        method: 'POST',
+        body: request,
+        headers: {
+          'X-Correlation-ID': generateClientUuid(),
+        },
+      }
+    );
   }
 
   private async fetchJson<T>(

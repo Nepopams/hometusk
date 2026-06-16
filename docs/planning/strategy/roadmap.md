@@ -3,7 +3,17 @@
 > Формат Now/Next/Later фиксирует направление и приоритеты без преждевременных дат.
 > У каждого пункта должен быть "якорь" — initiative/release документ.
 
-## NOW (Natural Command + Needs Confirmation Backend Contract Gate D GO)
+## NOW (Mobile AI Command UX v1)
+
+- Initiative (current / delegated Gate D GO): **INIT-2026Q3-mobile-ai-command-ux-v1** - Mobile AI Command UX v1
+  - Anchor: docs/planning/initiatives/INIT-2026Q3-mobile-ai-command-ux-v1.md
+  - Execution: docs/planning/initiatives/INIT-2026Q3-mobile-ai-command-ux-v1.execution.md
+  - Workpack: docs/planning/workpacks/INIT-2026Q3-MOBILE-AI-COMMAND-UX-V1/workpack.md
+  - Outcome: native mobile Command tab submits typed text as `type=natural_command`, renders backend-controlled executed / degraded / clarify / rejected / scheduled / needs_confirmation outcomes, and lets the original mobile user approve or cancel pending confirmations through HomeTusk backend endpoints.
+  - Why now: the backend `natural_command + needs_confirmation` contract and approval/cancel lifecycle closed with Gate D GO on 2026-06-16, so the next product step is the first safe user-facing mobile AI-command surface over the accepted HomeTusk contract.
+  - Gates: delegated Gate A GO, Gate B GO, artifact gate GO, Gate C GO, review gate GO, and Gate D GO / LIMITED-GO recorded on 2026-06-16.
+  - Next recommended action: run the mobile AI command smoke checklist on Android/iOS-capable test environments, then separately gate production rollout/config and any durable pending-confirmation read model.
+  - Boundaries: mobile client only; no backend/OpenAPI/AI Platform changes, no direct mobile-to-AI-Platform calls, no `answered`, no durable pending-confirmation read model, and no production rollout/config enablement.
 
 - Initiative (current / delegated Gate D GO): **INIT-2026Q3-natural-command-needs-confirmation-backend-contract** - Natural Command + Needs Confirmation Backend Contract
   - Anchor: docs/planning/initiatives/INIT-2026Q3-natural-command-needs-confirmation-backend-contract.md
@@ -184,10 +194,15 @@
 
 ## NEXT (будущие инициативы / ranked candidates)
 
-- Initiative (gated candidate): **HomeTusk natural_command + Mobile AI Command UX v1**
-  - Anchor: TBD — depends on `INIT-2026Q3-ai-platform-2-1-contract-intake` Gate D, `INIT-2026Q3-natural-command-and-confirmation-contract-spike` Gate D, and `INIT-2026Q3-natural-command-needs-confirmation-backend-contract` Gate D
-  - Outcome: HomeTusk-owned natural command contract and mobile command UX for clarify/confirm/answer/execute outcomes without direct mobile → AI Platform calls
-  - Planning note: unblocked for separate client planning for execute/clarify/confirm using the accepted HomeTusk backend contract; `answered`, production rollout, and any direct mobile → AI Platform behavior remain blocked unless separately gated.
+- Initiative (future candidate): **Mobile AI Command production rollout / enablement**
+  - Anchor: TBD — depends on `INIT-2026Q3-mobile-ai-command-ux-v1` Gate D evidence.
+  - Outcome: decide rollout posture, feature flag/config enablement, monitoring expectations, and UAT path for the mobile AI-command surface.
+  - Planning note: keep separate from client implementation; do not combine with `answered` or direct mobile → AI Platform behavior.
+
+- Initiative (future candidate): **Read-only answered / status-query UX**
+  - Anchor: TBD — depends on separate provider/backend readiness for `answered`.
+  - Outcome: safe read-only answer/status-query cards without domain mutation.
+  - Planning note: remains blocked from Mobile AI Command UX v1 by explicit anti-scope.
 
 - Initiative (candidate): **Agreements v0 (read-only)** (consent-first)
   - Anchor: TBD — requires initiative spec

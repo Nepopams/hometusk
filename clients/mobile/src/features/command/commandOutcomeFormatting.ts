@@ -14,6 +14,9 @@ export function formatCommandOutcome(status: string): string {
   if (status === 'needs_input') {
     return 'Command needs more input.';
   }
+  if (status === 'needs_confirmation') {
+    return 'Confirmation required.';
+  }
   if (status === 'rejected') {
     return 'Command rejected by HomeTusk rules.';
   }
@@ -23,6 +26,9 @@ export function formatCommandOutcome(status: string): string {
 export function getCommandOutcomeBody(response: CommandResponse): string {
   if (response.status === 'needs_input') {
     return response.question ?? 'HomeTusk needs more input.';
+  }
+  if (response.status === 'needs_confirmation') {
+    return response.confirmation?.summary ?? 'Review and approve before HomeTusk executes anything.';
   }
   if (response.status === 'rejected') {
     return response.reason ?? response.errorCode ?? 'HomeTusk rejected this command.';

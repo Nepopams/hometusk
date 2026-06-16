@@ -11,10 +11,12 @@ export function CommandComposer({ controls }: { controls: CommandChatControls })
         editable={!controls.isSaving}
         label="Command"
         onChangeText={controls.onChangeCommandText}
-        placeholder="Take out recycling"
+        placeholder="Buy milk and move laundry tonight"
         value={controls.commandText}
       />
-      <Text style={styles.hintText}>Use plain text to create a task, or "done task title" to complete one.</Text>
+      <Text style={styles.hintText}>
+        Send natural household text. HomeTusk will execute, clarify, reject, or ask for confirmation.
+      </Text>
       <Pressable
         accessibilityRole="button"
         disabled={controls.isSaving}
