@@ -1,10 +1,15 @@
 package com.hometusk.commands.pipeline.decision.client;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.hometusk.shared.logging.MdcKeys;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryRegistry;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,8 +18,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StreamUtils;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
@@ -38,6 +45,7 @@ public class AiPlatformClient {
     private final String decisionPath;
     private final Retry retry;
     private final CircuitBreaker circuitBreaker;
+    private final ObjectMapper objectMapper;
 
     public AiPlatformClient(
             @Value("${aiplatform.base-url}") String baseUrl,
@@ -45,9 +53,11 @@ public class AiPlatformClient {
             @Value("${aiplatform.api-key:}") String apiKey,
             @Value("${aiplatform.decision-path:/v1/decide}") String decisionPath,
             RetryRegistry retryRegistry,
-            CircuitBreakerRegistry circuitBreakerRegistry) {
+            CircuitBreakerRegistry circuitBreakerRegistry,
+            ObjectMapper objectMapper) {
         this.timeoutMs = timeoutMs;
         this.decisionPath = decisionPath;
+        this.objectMapper = objectMapper;
 
         var requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(timeoutMs);
@@ -111,10 +121,56 @@ public class AiPlatformClient {
         return spec.body(request)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, (req, resp) -> {
+                    String responseBody = sanitizedErrorBody(resp);
                     throw new AiPlatformException(
-                            "AI Platform returned error: " + resp.getStatusCode(), resp.getStatusCode());
+                            "AI Platform returned error: " + resp.getStatusCode() + ", body=" + responseBody,
+                            resp.getStatusCode());
                 })
                 .body(String.class);
+    }
+
+    private String sanitizedErrorBody(ClientHttpResponse response) {
+        try {
+            String body = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
+            if (body == null || body.isBlank()) {
+                return "<empty>";
+            }
+            return truncate(redactInputFields(body));
+        } catch (IOException e) {
+            return "<unreadable: " + e.getClass().getSimpleName() + ">";
+        }
+    }
+
+    private String redactInputFields(String body) {
+        try {
+            JsonNode root = objectMapper.readTree(body);
+            redactInputFields(root);
+            return objectMapper.writeValueAsString(root);
+        } catch (Exception ignored) {
+            return body;
+        }
+    }
+
+    private void redactInputFields(JsonNode node) {
+        if (node == null) {
+            return;
+        }
+        if (node instanceof ObjectNode objectNode) {
+            objectNode.remove("input");
+            objectNode.fields().forEachRemaining(entry -> redactInputFields(entry.getValue()));
+            return;
+        }
+        if (node.isArray()) {
+            node.forEach(this::redactInputFields);
+        }
+    }
+
+    private String truncate(String value) {
+        int maxLength = 2000;
+        if (value.length() <= maxLength) {
+            return value;
+        }
+        return value.substring(0, maxLength) + "...<truncated>";
     }
 
     /**
