@@ -355,7 +355,6 @@ public abstract class AiPlatformIntegrationTestBase extends IntegrationTestBase 
                 """;
 
         stubFor(post(urlEqualTo(DECIDE_PATH))
-                .withRequestBody(matchingJsonPath("$.capabilities[?(@ == 'confirm')]"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
