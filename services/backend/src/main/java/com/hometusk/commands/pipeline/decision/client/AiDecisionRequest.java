@@ -19,7 +19,7 @@ public record AiDecisionRequest(
         Map<String, Object> context) {
 
     private static final List<String> DEFAULT_CAPABILITIES =
-            List.of("start_job", "propose_create_task", "propose_add_shopping_item", "clarify", "reject", "confirm");
+            List.of("start_job", "propose_create_task", "propose_add_shopping_item", "clarify", "reject");
 
     public static AiDecisionRequest from(DecisionContext context) {
         return new AiDecisionRequest(
@@ -57,23 +57,7 @@ public record AiDecisionRequest(
             requestContext.put("defaults", defaults);
         }
 
-        Map<String, Object> command = buildCommandContext(context);
-        if (!command.isEmpty()) {
-            requestContext.put("command", command);
-        }
-
         return requestContext;
-    }
-
-    private static Map<String, Object> buildCommandContext(DecisionContext context) {
-        Map<String, Object> payload = context.payload() != null ? context.payload() : Map.of();
-        Map<String, Object> command = new LinkedHashMap<>();
-        copyIfPresent(payload, command, "inputMode", "input_mode");
-        copyIfPresent(payload, command, "locale", "locale");
-        copyIfPresent(payload, command, "timezone", "timezone");
-        copyIfPresent(payload, command, "referenceInstant", "reference_instant");
-        copyIfPresent(payload, command, "asrTraceId", "asr_trace_id");
-        return command;
     }
 
     private static Map<String, Object> buildHouseholdContext(
@@ -149,13 +133,5 @@ public record AiDecisionRequest(
             }
         });
         return target;
-    }
-
-    private static void copyIfPresent(
-            Map<String, Object> source, Map<String, Object> target, String sourceKey, String targetKey) {
-        Object value = source.get(sourceKey);
-        if (value != null) {
-            target.put(targetKey, value);
-        }
     }
 }

@@ -7,10 +7,17 @@ import com.hometusk.commands.domain.CommandType;
 import com.hometusk.commands.domain.DecisionSource;
 import com.hometusk.commands.pipeline.decision.DecisionContext;
 import com.hometusk.commands.pipeline.decision.DecisionResult;
+import com.networknt.schema.JsonSchema;
+import com.networknt.schema.JsonSchemaFactory;
+import com.networknt.schema.SpecVersion;
+import com.networknt.schema.ValidationMessage;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +28,7 @@ class AiPlatformDecisionAdapterTest {
     private final AiResponseSchemaValidator schemaValidator = new AiResponseSchemaValidator(objectMapper);
 
     @Test
-    void requestUsesUpstreamShapeAndHouseholdContext() {
+    void requestUsesUpstreamShapeAndHouseholdContext() throws Exception {
         UUID commandId = UUID.randomUUID();
         UUID requesterId = UUID.randomUUID();
         UUID householdId = UUID.randomUUID();
@@ -35,7 +42,19 @@ class AiPlatformDecisionAdapterTest {
                 .commandType(CommandType.CREATE_TASK)
                 .requesterId(requesterId)
                 .householdId(householdId)
-                .payload(Map.of("title", "Buy milk"))
+                .payload(Map.of(
+                        "title",
+                        "Buy milk",
+                        "inputMode",
+                        "text",
+                        "locale",
+                        "en-US",
+                        "timezone",
+                        "Europe/Moscow",
+                        "referenceInstant",
+                        "2026-06-17T12:00:00Z",
+                        "asrTraceId",
+                        "asr-test"))
                 .householdContext(Map.of(
                         "members",
                         List.of(Map.of("id", memberId.toString(), "name", "Vadim", "workload_score", 0.2)),
@@ -53,7 +72,9 @@ class AiPlatformDecisionAdapterTest {
         assertThat(request.userId()).isEqualTo(requesterId.toString());
         assertThat(request.text()).isEqualTo("Buy milk");
         assertThat(request.capabilities())
-                .contains("start_job", "propose_create_task", "propose_add_shopping_item", "reject", "confirm");
+                .containsExactly("start_job", "propose_create_task", "propose_add_shopping_item", "clarify", "reject")
+                .doesNotContain("confirm");
+        assertThat(request.context()).containsOnlyKeys("household", "defaults");
 
         Map<String, Object> household = nestedMap(request.context(), "household");
         assertThat(household).containsEntry("household_id", householdId.toString());
@@ -68,6 +89,8 @@ class AiPlatformDecisionAdapterTest {
         assertThat(defaults)
                 .containsEntry("default_assignee_id", requesterId.toString())
                 .containsEntry("default_list_id", listId.toString());
+
+        assertMatchesUpstreamCommandSchema(request);
     }
 
     @Test
@@ -334,6 +357,23 @@ class AiPlatformDecisionAdapterTest {
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> nestedList(Map<String, Object> source, String key) {
         return (List<Map<String, Object>>) source.get(key);
+    }
+
+    private void assertMatchesUpstreamCommandSchema(AiDecisionRequest request) throws Exception {
+        JsonSchema schema = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012)
+                .getSchema(Files.newInputStream(Path.of(
+                        "..",
+                        "..",
+                        "docs",
+                        "integration",
+                        "ai-platform",
+                        "v2.1",
+                        "upstream",
+                        "contracts",
+                        "schemas",
+                        "command.schema.json")));
+        Set<ValidationMessage> errors = schema.validate(objectMapper.valueToTree(request));
+        assertThat(errors).isEmpty();
     }
 
     private String readFixture(String fileName) throws Exception {
