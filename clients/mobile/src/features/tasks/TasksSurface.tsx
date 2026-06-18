@@ -4,7 +4,7 @@ import type { Task } from '../../api/types';
 import type { MutationControls } from '../../app/types';
 import { formatShortDate } from '../../shared/format/dates';
 import { formatTaskStatus } from '../../shared/format/labels';
-import { DataSurface } from '../../shared/ui/DataSurface';
+import { EmptyState } from '../../shared/ui/EmptyState';
 import { LabeledInput } from '../../shared/ui/LabeledInput';
 import { SectionList } from '../../shared/ui/SectionList';
 import { styles } from '../../shared/ui/styles';
@@ -47,7 +47,11 @@ export function TasksSurface({
       </View>
 
       {tasks.length === 0 ? (
-        <DataSurface accent={accent} title="No tasks yet" body="Create the first task above." />
+        <EmptyState
+          body="Создай первую задачу здесь или отправь домашнюю команду."
+          mascotMood="idle"
+          title="Задач пока нет"
+        />
       ) : (
         <SectionList title={`${tasks.length} tasks`}>
           {tasks.map((task) => {

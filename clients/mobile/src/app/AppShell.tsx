@@ -806,25 +806,6 @@ export function AppShell() {
         <StatusBanner status={pushStatus} />
         <StatusBanner status={linkStatus} />
 
-        <View style={styles.tabBar} accessibilityRole="tablist">
-          {surfaces.map((item) => {
-            const isActive = item.key === activeSurface;
-            return (
-              <Pressable
-                key={item.key}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: isActive }}
-                onPress={() => setActiveSurface(item.key)}
-                style={[styles.tab, isActive && styles.tabActive]}
-              >
-                <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
-                  {item.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={[styles.surfaceBand, { borderLeftColor: surface.accent }]}>
             <Text style={styles.surfaceTitle}>{surface.title}</Text>
@@ -868,6 +849,7 @@ export function AppShell() {
               onSubmitCommand: handleSubmitCommand,
             }}
             highlightedTaskId={highlightedTaskId}
+            onNavigate={setActiveSurface}
             onRetry={() => setReadReloadKey((value) => value + 1)}
             profile={profile}
             readError={readError}
@@ -876,6 +858,27 @@ export function AppShell() {
             surfaceKey={surface.key}
           />
         </ScrollView>
+
+        <View style={styles.bottomNavigation}>
+          <View style={styles.tabBar} accessibilityRole="tablist">
+            {surfaces.map((item) => {
+              const isActive = item.key === activeSurface;
+              return (
+                <Pressable
+                  key={item.key}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: isActive }}
+                  onPress={() => setActiveSurface(item.key)}
+                  style={[styles.tab, isActive && styles.tabActive]}
+                >
+                  <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
+                    {item.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
       </View>
     </SafeAreaView>
   );

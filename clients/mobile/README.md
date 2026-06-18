@@ -34,9 +34,9 @@ The mobile client keeps `App.tsx` as the Expo entrypoint and places app behavior
 - `src/features/auth/` - auth screen and secure session bootstrap/login/logout controller.
 - `src/features/households/` - household switcher and selected-household persistence.
 - `src/features/home/`, `src/features/tasks/`, `src/features/shopping/` - household surfaces and mutation helpers.
-- `src/features/command/` - command composer, outcome/continuation cards, request builder, continuation parser, outcome formatting, and recent-command history wrapper.
+- `src/features/command/` - command composer, hero/outcome/confirmation/continuation cards, request builder, continuation parser, outcome formatting, and recent-command history wrapper.
 - `src/features/notifications/` - push registration and notification/deep-link routing helpers.
-- `src/shared/ui/`, `src/shared/format/`, `src/shared/errors/` - reusable mobile UI primitives, pure formatters, and API error formatting.
+- `src/shared/ui/`, `src/shared/format/`, `src/shared/errors/` - reusable mobile UI primitives, mascot fallback renderer, pure formatters, and API error formatting.
 
 Future command/voice work should prefer `src/features/command/**` first and avoid coupling command changes to auth, shopping, push, or household modules.
 
@@ -119,6 +119,30 @@ Task create and complete actions use `POST /api/v1/commands` with mobile idempot
 ## Command Chat
 
 The Command tab is the native Mobile AI Command UX v1 surface over HomeTusk command contracts. Typed text is sent to `POST /api/v1/commands` as `type=natural_command` with `payload.text`, `inputMode=text`, locale, timezone, and a reference instant. HomeTusk backend remains the source of truth for command state, guardrails, execution, confirmation, and audit.
+
+The mobile visual system uses the approved Mobile Redesign + Mascot v1 direction:
+
+- warm cream app background;
+- warm white elevated cards;
+- teal primary actions;
+- amber confirmation cards;
+- muted red rejection cards;
+- blue/gray clarify cards;
+- static mascot state support through `src/shared/ui/Mascot.tsx`;
+- redesigned Home and Command surfaces with recent-command and empty states.
+
+Final mascot PNGs are expected under `clients/mobile/assets/mascot/`:
+
+- `mascot_idle.png`
+- `mascot_hello.png`
+- `mascot_thinking.png`
+- `mascot_success.png`
+- `mascot_confirm.png`
+- `mascot_confused.png`
+- `mascot_reject.png`
+- `mascot_degraded.png`
+
+Until final exports are present, the app renders deterministic labeled placeholders. Mascot artwork must come from the approved illustration source; do not redraw it in code.
 
 The mobile client renders backend-controlled outcomes:
 

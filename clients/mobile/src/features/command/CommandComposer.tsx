@@ -6,17 +6,26 @@ import { styles } from '../../shared/ui/styles';
 
 export function CommandComposer({ controls }: { controls: CommandChatControls }) {
   return (
-    <>
+    <View style={styles.commandComposer}>
       <LabeledInput
         editable={!controls.isSaving}
-        label="Command"
+        label="Команда"
         onChangeText={controls.onChangeCommandText}
-        placeholder="Buy milk and move laundry tonight"
+        placeholder="Назначь Пете вынести мусор сегодня вечером"
         value={controls.commandText}
       />
-      <Text style={styles.hintText}>
-        Send natural household text. HomeTusk will execute, clarify, reject, or ask for confirmation.
-      </Text>
+      <View style={styles.commandExamples}>
+        <View style={styles.exampleChip}>
+          <Text style={styles.exampleChipText}>кухня сегодня</Text>
+        </View>
+        <View style={styles.exampleChip}>
+          <Text style={styles.exampleChipText}>покупки</Text>
+        </View>
+        <View style={styles.exampleChip}>
+          <Text style={styles.exampleChipText}>назначить</Text>
+        </View>
+      </View>
+      <Text style={styles.hintText}>HomeTusk покажет результат или спросит подтверждение.</Text>
       <Pressable
         accessibilityRole="button"
         disabled={controls.isSaving}
@@ -27,9 +36,9 @@ export function CommandComposer({ controls }: { controls: CommandChatControls })
           controls.isSaving && styles.buttonDisabled,
         ]}
       >
-        <Text style={styles.primaryButtonText}>{controls.isSaving ? 'Sending...' : 'Send command'}</Text>
+        <Text style={styles.primaryButtonText}>{controls.isSaving ? 'Отправляю...' : 'Отправить команду'}</Text>
       </Pressable>
-    </>
+    </View>
   );
 }
 

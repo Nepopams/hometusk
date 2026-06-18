@@ -10,15 +10,15 @@ export function CommandContinuationCard({ controls }: { controls: CommandChatCon
   }
 
   return (
-    <View style={styles.formPanel}>
+    <View style={[styles.formPanel, styles.dataPanelClarify]}>
       <LabeledInput
         editable={!controls.isSaving}
-        label="Additional input"
+        label="Ответ на уточнение"
         onChangeText={controls.onChangeContinuationText}
-        placeholder="assigneeId=..."
+        placeholder="Например: Петя или кухня"
         value={controls.continuationText}
       />
-      <Text style={styles.hintText}>Use key=value pairs when a specific field is requested.</Text>
+      <Text style={styles.hintText}>Ответ уйдет как уточнение к той же команде.</Text>
       <Pressable
         accessibilityRole="button"
         disabled={controls.isSaving}
@@ -29,7 +29,7 @@ export function CommandContinuationCard({ controls }: { controls: CommandChatCon
           controls.isSaving && styles.buttonDisabled,
         ]}
       >
-        <Text style={styles.primaryButtonText}>Continue</Text>
+        <Text style={styles.primaryButtonText}>{controls.isSaving ? 'Отправляю...' : 'Ответить'}</Text>
       </Pressable>
     </View>
   );

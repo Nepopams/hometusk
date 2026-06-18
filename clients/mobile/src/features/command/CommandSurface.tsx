@@ -1,14 +1,14 @@
 import { Text, View } from 'react-native';
 
-import { formatShortDate } from '../../shared/format/dates';
-import { EmptyRow, InfoRow } from '../../shared/ui/InfoRow';
+import { EmptyState } from '../../shared/ui/EmptyState';
 import { SectionList } from '../../shared/ui/SectionList';
 import { styles } from '../../shared/ui/styles';
 import { CommandComposer, CommandError } from './CommandComposer';
 import { CommandConfirmationCard } from './CommandConfirmationCard';
 import { CommandContinuationCard } from './CommandContinuationCard';
+import { CommandHeroCard } from './CommandHeroCard';
 import { CommandOutcomeCard } from './CommandOutcomeCard';
-import { formatCommandOutcome } from './commandOutcomeFormatting';
+import { RecentCommandRow } from './RecentCommandRow';
 import type { CommandSurfaceProps } from './commandTypes';
 
 export function CommandSurface({
@@ -19,14 +19,16 @@ export function CommandSurface({
 }: CommandSurfaceProps) {
   return (
     <View style={styles.section}>
-      <View style={styles.formPanel}>
+      <CommandHeroCard isSaving={controls.isSaving} status={controls.response?.status} />
+
+      <View style={styles.softCard}>
         <Text style={styles.sectionTitle}>{selectedHousehold.name}</Text>
-        <Text style={styles.entityMeta}>
-          {models.members.length} members, {models.zones.length} zones, {models.tasks.length} tasks loaded
+        <Text style={styles.hintText}>
+          Загружено: {models.members.length} участников, {models.zones.length} зон, {models.tasks.length} задач.
         </Text>
-        <CommandComposer controls={controls} />
       </View>
 
+      <CommandComposer controls={controls} />
       <CommandError message={controls.error} />
 
       {controls.response?.status === 'needs_confirmation' ? (
@@ -37,24 +39,19 @@ export function CommandSurface({
 
       <CommandContinuationCard controls={controls} />
 
-      <SectionList title="Recent commands">
+      <SectionList title="Недавние команды">
         {controls.recentCommands.length === 0 ? (
-          <EmptyRow accent={accent} title="No recent commands" />
+          <EmptyState
+            body="После первой команды здесь появится короткая история для этого дома."
+            mascotMood="idle"
+            title="Команд пока нет"
+          />
         ) : (
-          controls.recentCommands.slice(0, 8).map((entry) => (
-            <InfoRow
-              accent={accent}
-              key={`${entry.id}-${entry.createdAt}`}
-              meta={`${formatHistoryStatus(entry.status)} - ${formatShortDate(entry.createdAt)}`}
-              title={entry.text}
-            />
-          ))
+          controls.recentCommands
+            .slice(0, 8)
+            .map((entry) => <RecentCommandRow entry={entry} key={`${entry.id}-${entry.createdAt}`} />)
         )}
       </SectionList>
     </View>
   );
-}
-
-function formatHistoryStatus(status: string): string {
-  return formatCommandOutcome(status).replace(/\.$/, '');
 }
