@@ -4,6 +4,7 @@ import type { CommandChatControls } from '../../app/types';
 import type { CommandConfirmationProposedAction, CommandResponse } from '../../api/types';
 import { formatShortDate } from '../../shared/format/dates';
 import { shortId } from '../../shared/format/ids';
+import { Mascot } from '../../shared/ui/Mascot';
 import { styles } from '../../shared/ui/styles';
 
 type CommandConfirmationCardProps = {
@@ -13,7 +14,6 @@ type CommandConfirmationCardProps = {
 };
 
 export function CommandConfirmationCard({
-  accent,
   controls,
   response,
 }: CommandConfirmationCardProps) {
@@ -27,21 +27,23 @@ export function CommandConfirmationCard({
 
   return (
     <View style={styles.confirmationPanel}>
-      <View style={[styles.checkDot, { backgroundColor: accent }]} />
+      <Mascot mood="confirm" size="small" />
       <View style={styles.dataCopy}>
-        <Text style={styles.dataTitle}>Confirmation required.</Text>
+        <View style={[styles.statePill, styles.statePillConfirm]}>
+          <Text style={styles.statePillText}>Нужно подтверждение</Text>
+        </View>
+        <Text style={styles.dataTitle}>Пока ничего не изменилось</Text>
         <Text style={styles.dataBody}>
-          No action has happened yet. Approve explicitly to let HomeTusk revalidate and execute through
-          the backend.
+          Проверь, что будет сделано. HomeTusk выполнит действие только после явного подтверждения.
         </Text>
         <Text style={styles.dataBody}>{confirmation.summary}</Text>
 
         {confirmation.reasons.length > 0 && (
           <View style={styles.confirmationBlock}>
-            <Text style={styles.entityMeta}>Reasons</Text>
+            <Text style={styles.entityMeta}>Почему спрашиваем</Text>
             {confirmation.reasons.map((reason) => (
               <Text key={reason} style={styles.dataBody}>
-                - {reason}
+                {reason}
               </Text>
             ))}
           </View>
@@ -49,7 +51,7 @@ export function CommandConfirmationCard({
 
         {confirmation.riskLabels.length > 0 && (
           <View style={styles.confirmationBlock}>
-            <Text style={styles.entityMeta}>Risk labels</Text>
+            <Text style={styles.entityMeta}>На что обратить внимание</Text>
             <View style={styles.confirmationChipRow}>
               {confirmation.riskLabels.map((label) => (
                 <Text key={label} style={styles.confirmationChip}>
@@ -61,21 +63,21 @@ export function CommandConfirmationCard({
         )}
 
         <View style={styles.confirmationBlock}>
-          <Text style={styles.entityMeta}>Proposed actions</Text>
+          <Text style={styles.entityMeta}>После подтверждения</Text>
           {confirmation.proposedActions.length === 0 ? (
-            <Text style={styles.dataBody}>No displayable proposed actions were returned.</Text>
+            <Text style={styles.dataBody}>Нет действий для показа.</Text>
           ) : (
             confirmation.proposedActions.map((action, index) => (
               <Text key={`${action.type}-${index}`} style={styles.dataBody}>
-                - {formatProposedAction(action)}
+                {formatProposedAction(action)}
               </Text>
             ))
           )}
         </View>
 
-        <Text style={styles.entityMeta}>Expires {formatShortDate(confirmation.expiresAt)}</Text>
+        <Text style={styles.entityMeta}>Действует до {formatShortDate(confirmation.expiresAt)}</Text>
         <Text style={styles.entityMeta}>
-          Command {shortId(response.commandId)} / Confirmation {shortId(confirmation.confirmationId)}
+          Команда {shortId(response.commandId)} / подтверждение {shortId(confirmation.confirmationId)}
         </Text>
 
         {controls.confirmationResult && (
@@ -99,7 +101,7 @@ export function CommandConfirmationCard({
             ]}
           >
             <Text style={styles.primaryButtonText}>
-              {controls.confirmationAction === 'approve' ? 'Approving...' : 'Approve'}
+              {controls.confirmationAction === 'approve' ? 'Подтверждаю...' : 'Подтвердить'}
             </Text>
           </Pressable>
           <Pressable
@@ -107,14 +109,14 @@ export function CommandConfirmationCard({
             disabled={actionDisabled}
             onPress={controls.onCancelConfirmation}
             style={({ pressed }) => [
-              styles.smallDangerButton,
+              styles.secondaryButton,
               styles.confirmationButton,
               pressed && styles.buttonPressed,
               actionDisabled && styles.buttonDisabled,
             ]}
           >
-            <Text style={styles.smallDangerText}>
-              {controls.confirmationAction === 'cancel' ? 'Cancelling...' : 'Cancel'}
+            <Text style={styles.secondaryButtonText}>
+              {controls.confirmationAction === 'cancel' ? 'Отменяю...' : 'Отменить'}
             </Text>
           </Pressable>
         </View>
@@ -129,15 +131,15 @@ function formatProposedAction(action: CommandConfirmationProposedAction): string
   const taskId = readString(action.parameters.taskId);
 
   if (action.type === 'create_task') {
-    return title ? `Create task "${title}"` : 'Create a task';
+    return title ? `Создать задачу "${title}"` : 'Создать задачу';
   }
   if (action.type === 'complete_task') {
-    return taskId ? `Complete task ${shortId(taskId)}` : 'Complete a task';
+    return taskId ? `Закрыть задачу ${shortId(taskId)}` : 'Закрыть задачу';
   }
   if (action.type === 'add_shopping_item') {
-    return name ? `Add shopping item "${name}"` : 'Add a shopping item';
+    return name ? `Добавить покупку "${name}"` : 'Добавить покупку';
   }
-  return 'Review proposed action';
+  return 'Проверить действие';
 }
 
 function readString(value: unknown): string | null {
@@ -150,15 +152,15 @@ function formatConfirmationResult(result: CommandChatControls['confirmationResul
   }
   if (result.type === 'cancel') {
     return result.response.idempotentReplay
-      ? 'Cancellation already recorded. No domain action was executed.'
-      : 'Confirmation cancelled. No domain action was executed.';
+      ? 'Отмена уже была записана. Действий по дому не было.'
+      : 'Подтверждение отменено. Действий по дому не было.';
   }
 
   if (result.response.status === 'executed') {
     return result.response.idempotentReplay
-      ? 'Approval was already recorded. HomeTusk returned the stored terminal result.'
-      : 'Approved and executed by HomeTusk.';
+      ? 'Подтверждение уже было записано. HomeTusk вернул сохраненный результат.'
+      : 'Подтверждено и выполнено через HomeTusk.';
   }
 
-  return result.response.reason ?? result.response.errorCode ?? 'Approval ended without execution.';
+  return result.response.reason ?? result.response.errorCode ?? 'Подтверждение завершилось без действия.';
 }

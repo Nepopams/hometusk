@@ -3,7 +3,7 @@ import { Pressable, ScrollView, Text, View, type ColorValue } from 'react-native
 import type { ShoppingItem, ShoppingList } from '../../api/types';
 import type { MutationControls } from '../../app/types';
 import { shortId } from '../../shared/format/ids';
-import { DataSurface } from '../../shared/ui/DataSurface';
+import { EmptyState } from '../../shared/ui/EmptyState';
 import { EmptyRow } from '../../shared/ui/InfoRow';
 import { LabeledInput } from '../../shared/ui/LabeledInput';
 import { SectionList } from '../../shared/ui/SectionList';
@@ -22,10 +22,10 @@ export function ShoppingSurface({
 }) {
   if (lists.length === 0) {
     return (
-      <DataSurface
-        accent={accent}
-        title="No shopping lists"
-        body="Create a shopping list from web or command flow, then add items here."
+      <EmptyState
+        body="Создай список через web или команду, затем добавляй товары здесь."
+        mascotMood="idle"
+        title="Списков покупок пока нет"
       />
     );
   }

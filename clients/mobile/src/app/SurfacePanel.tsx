@@ -21,6 +21,7 @@ export function SurfacePanel({
   commandControls,
   highlightedTaskId,
   accent,
+  onNavigate,
   onRetry,
 }: SurfacePanelProps) {
   if (!selectedHousehold) {
@@ -47,7 +48,9 @@ export function SurfacePanel({
         <MutationFeedback message={mutationMessage} error={mutationError} />
         <HomeSurface
           accent={accent}
+          commandControls={commandControls}
           models={models}
+          onNavigate={onNavigate}
           profile={profile}
           selectedHousehold={selectedHousehold}
         />

@@ -106,5 +106,6 @@ export type SurfacePanelProps = {
   commandControls: CommandChatControls;
   highlightedTaskId: string | null;
   accent: ColorValue;
+  onNavigate: (surface: SurfaceKey) => void;
   onRetry: () => void;
 };

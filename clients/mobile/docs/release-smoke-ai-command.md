@@ -2,7 +2,7 @@
 
 ## Scope
 
-Manual smoke for `INIT-2026Q3-mobile-ai-command-ux-v1`.
+Manual smoke for `INIT-2026Q3-mobile-ai-command-ux-v1` plus the mobile-only visual layer from `INIT-2026Q3-mobile-redesign-mascot-v1`.
 
 ## Preconditions
 
@@ -14,14 +14,19 @@ Manual smoke for `INIT-2026Q3-mobile-ai-command-ux-v1`.
 ## Checks
 
 - [ ] Typecheck passes: `cd clients/mobile && npm run typecheck`.
+- [ ] Home uses warm cream background, warm white cards, teal primary route action, and readable bottom navigation.
+- [ ] Home shows summary counts, recent command/change hint, empty state when data is empty, and no command composer.
+- [ ] Home pending confirmation summary appears only for current in-session `needs_confirmation` and states that no action has happened yet.
+- [ ] Command tab shows redesigned state hero with static mascot placeholder or approved static asset.
 - [ ] Command tab accepts typed natural text and sends `type=natural_command`.
 - [ ] Request includes `payload.text`, `inputMode=text`, `locale`, `timezone`, `referenceInstant`, `source=mobile`, and `clientTimestamp`.
 - [ ] `executed` response renders as a controlled success outcome.
-- [ ] `executed_degraded` response renders degraded reason or fallback strategy without crashing.
-- [ ] `needs_input` response renders clarify UI and can continue through `/commands/{commandId}/continue`.
+- [ ] `executed_degraded` response renders a non-technical limited/safe outcome without crashing.
+- [ ] `needs_input` response renders blue/gray clarify UI and can continue through `/commands/{commandId}/continue`.
 - [ ] `rejected` response renders `errorCode` / safe reason as controlled outcome.
 - [ ] `scheduled` response renders schedule date when backend returns it.
-- [ ] `needs_confirmation` response renders summary, reasons, risk labels, proposed actions, expiry, command id, and confirmation id.
+- [ ] `rejected` uses muted red visual treatment and does not look like an app crash.
+- [ ] `needs_confirmation` response renders amber confirmation card with summary, reasons, risk labels, proposed actions, expiry, command id, and confirmation id.
 - [ ] Confirmation card states that no action has happened yet.
 - [ ] Approve calls `/commands/{commandId}/confirmations/{confirmationId}/approve`.
 - [ ] Successful approve shows terminal state and refreshes household read models.
@@ -30,6 +35,8 @@ Manual smoke for `INIT-2026Q3-mobile-ai-command-ux-v1`.
 - [ ] Successful cancel shows terminal state and does not refresh as a domain mutation.
 - [ ] Forbidden/not found/conflict/expired confirmation failures render user-safe error copy.
 - [ ] Recent commands distinguish executed, degraded, clarify, rejected, scheduled, and confirmation outcomes.
+- [ ] Empty command history, empty tasks, and empty shopping states render as soft cards with static mascot fallback when final assets are absent.
+- [ ] Mascot is not a button, does not replace explanatory text, and is limited to Home/Command/empty state support.
 - [ ] App refresh limitation is understood: v1 does not restore pending confirmations from a durable backend read model.
 - [ ] No mobile request goes directly to AI Platform.
 - [ ] No raw provider payload, provider prompt, credential, stack trace, or raw audio is shown.
