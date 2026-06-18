@@ -25,7 +25,13 @@
     },
     "plugins": [
       "expo-notifications",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow HomeTusk Mobile to record short voice commands."
+        }
+      ]
     ],
     "extra": {
       "apiBaseUrl": "http://localhost:8080/api/v1",

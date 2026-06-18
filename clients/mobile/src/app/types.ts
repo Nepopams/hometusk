@@ -11,6 +11,8 @@ import type {
   ShoppingList,
   Task,
   UserProfile,
+  VoiceTranscriptionFile,
+  VoiceTranscriptionResponse,
   Zone,
 } from '../api/types';
 import type { RecentCommandHint } from '../storage/localAppMemory';
@@ -91,6 +93,13 @@ export type CommandChatControls = {
   onCancelConfirmation: () => void;
   onContinueCommand: () => void;
   onSubmitCommand: () => void;
+  voice: CommandVoiceControls;
+};
+
+export type CommandVoiceControls = {
+  asrTraceId: string | null;
+  onTranscriptReady: (transcript: string, traceId: string) => void;
+  onTranscribeRecording: (file: VoiceTranscriptionFile) => Promise<VoiceTranscriptionResponse>;
 };
 
 export type SurfacePanelProps = {

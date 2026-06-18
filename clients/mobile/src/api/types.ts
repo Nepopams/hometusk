@@ -249,6 +249,19 @@ export interface ContinueCommandRequest {
   additionalInput: Record<string, unknown>;
 }
 
+export interface VoiceTranscriptionFile {
+  uri: string;
+  name: string;
+  type: string;
+}
+
+export interface VoiceTranscriptionResponse {
+  transcript: string;
+  status: 'ok';
+  traceId: string;
+  latencyMs: number;
+}
+
 export interface CommandConfirmationProposedAction {
   type: 'create_task' | 'complete_task' | 'add_shopping_item';
   parameters: Record<string, unknown>;
@@ -319,6 +332,8 @@ export interface CommandResponse {
 
 export interface ApiErrorBody {
   correlationId?: string | null;
+  code?: string;
   errorCode?: string;
   message?: string;
+  details?: Record<string, unknown> | null;
 }

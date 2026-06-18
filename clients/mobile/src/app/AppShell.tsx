@@ -13,7 +13,7 @@ import {
 
 import { createHomeTuskApiClient } from '../api/client';
 import { generateClientUuid } from '../api/ids';
-import type { CommandResponse, ShoppingItem, UserProfile } from '../api/types';
+import type { CommandResponse, ShoppingItem, UserProfile, VoiceTranscriptionFile } from '../api/types';
 import type { RecentCommandHint } from '../storage/localAppMemory';
 import {
   targetFromDeepLinkUrl,
@@ -94,6 +94,7 @@ export function AppShell() {
     useState<CommandConfirmationActionResult | null>(null);
   const [commandError, setCommandError] = useState<string | null>(null);
   const [commandSaving, setCommandSaving] = useState(false);
+  const [voiceAsrTraceId, setVoiceAsrTraceId] = useState<string | null>(null);
   const [recentCommands, setRecentCommands] = useState<RecentCommandHint[]>([]);
   const [pushStatus, setPushStatus] = useState<StatusBannerMessage | null>(null);
   const [linkStatus, setLinkStatus] = useState<StatusBannerMessage | null>(null);
@@ -368,6 +369,7 @@ export function AppShell() {
     setContinuationText('');
     setConfirmationAction(null);
     setConfirmationResult(null);
+    setVoiceAsrTraceId(null);
 
     let isMounted = true;
 
@@ -575,13 +577,49 @@ export function AppShell() {
     }
   }
 
+  function handleChangeCommandText(value: string) {
+    setCommandText(value);
+    if (!value.trim()) {
+      setVoiceAsrTraceId(null);
+    }
+  }
+
+  function handleVoiceTranscriptReady(transcript: string, traceId: string) {
+    setCommandText(transcript);
+    setVoiceAsrTraceId(traceId);
+    setCommandError(null);
+    setCommandResponse(null);
+    setConfirmationAction(null);
+    setConfirmationResult(null);
+    setContinuationText('');
+  }
+
+  async function handleTranscribeVoiceRecording(file: VoiceTranscriptionFile) {
+    if (!session?.accessToken) {
+      throw new Error('Sign in again before using voice entry.');
+    }
+
+    return createHomeTuskApiClient({ accessToken: session.accessToken }).createVoiceTranscription(file);
+  }
+
   async function handleSubmitCommand() {
     if (!session?.accessToken || !selectedHouseholdId) {
       setCommandError('Selected household is required.');
       return;
     }
 
-    const parsed = buildCommandRequestFromText(commandText, selectedHouseholdId);
+    const submittedVoiceTraceId = voiceAsrTraceId;
+    const parsed = buildCommandRequestFromText(
+      commandText,
+      selectedHouseholdId,
+      submittedVoiceTraceId
+        ? {
+            inputMode: 'voice_transcript',
+            source: 'voice',
+            asrTraceId: submittedVoiceTraceId,
+          }
+        : {}
+    );
     if ('error' in parsed) {
       setCommandError(parsed.error);
       return;
@@ -600,7 +638,13 @@ export function AppShell() {
       setCommandResponse(response);
       setConfirmationResult(null);
       setCommandText('');
-      await storeRecentCommandHint(selectedHouseholdId, parsed.displayText, response, setRecentCommands);
+      setVoiceAsrTraceId(null);
+      await storeRecentCommandHint(
+        selectedHouseholdId,
+        submittedVoiceTraceId ? toVoiceRecentCommandText(parsed.displayText) : parsed.displayText,
+        response,
+        setRecentCommands
+      );
       setReadReloadKey((value) => value + 1);
     } catch (error) {
       setCommandError(formatMutationError(error));
@@ -725,6 +769,7 @@ export function AppShell() {
       setTaskTitle('');
       setShoppingItemName('');
       setCommandText('');
+      setVoiceAsrTraceId(null);
       setContinuationText('');
       setCommandResponse(null);
       setConfirmationAction(null);
@@ -841,12 +886,17 @@ export function AppShell() {
               isSaving: commandSaving,
               recentCommands,
               response: commandResponse,
-              onChangeCommandText: setCommandText,
+              onChangeCommandText: handleChangeCommandText,
               onChangeContinuationText: setContinuationText,
               onApproveConfirmation: handleApproveConfirmation,
               onCancelConfirmation: handleCancelConfirmation,
               onContinueCommand: handleContinueCommand,
               onSubmitCommand: handleSubmitCommand,
+              voice: {
+                asrTraceId: voiceAsrTraceId,
+                onTranscriptReady: handleVoiceTranscriptReady,
+                onTranscribeRecording: handleTranscribeVoiceRecording,
+              },
             }}
             highlightedTaskId={highlightedTaskId}
             onNavigate={setActiveSurface}
@@ -897,4 +947,8 @@ function formatRestoreSessionError(error: unknown): string {
   }
 
   return 'Session expired. Sign in again.';
+}
+
+function toVoiceRecentCommandText(displayText: string): string {
+  return `Voice: ${displayText.replace(/^Command:\s*/, '')}`;
 }
