@@ -1,3 +1,5 @@
+import { File, UploadType } from 'expo-file-system';
+
 import { appConfig } from '../config/env';
 import { generateClientUuid } from './ids';
 import type {
@@ -38,6 +40,16 @@ export class HomeTuskApiError extends Error {
     this.name = 'HomeTuskApiError';
     this.status = status;
     this.body = body;
+  }
+}
+
+export class HomeTuskNetworkError extends Error {
+  readonly path: string;
+
+  constructor(path: string, cause: unknown) {
+    super(`HomeTusk API request could not reach ${path}: ${formatNetworkCause(cause)}`);
+    this.name = 'HomeTuskNetworkError';
+    this.path = path;
   }
 }
 
@@ -222,14 +234,7 @@ export class HomeTuskApiClient {
   }
 
   createVoiceTranscription(file: VoiceTranscriptionFile): Promise<VoiceTranscriptionResponse> {
-    const formData = new FormData();
-    formData.append('file', {
-      uri: file.uri,
-      name: file.name,
-      type: file.type,
-    } as unknown as Blob);
-
-    return this.fetchMultipart<VoiceTranscriptionResponse>('/voice/transcriptions', formData, {
+    return this.uploadFile<VoiceTranscriptionResponse>('/voice/transcriptions', file, {
       headers: {
         'X-Correlation-ID': generateClientUuid(),
       },
@@ -263,30 +268,53 @@ export class HomeTuskApiClient {
     return (await response.json()) as T;
   }
 
-  private async fetchMultipart<T>(
+  private async uploadFile<T>(
     path: string,
-    body: FormData,
+    file: VoiceTranscriptionFile,
     options: { headers?: Record<string, string> } = {}
   ): Promise<T> {
-    const response = await fetch(`${this.apiBaseUrl}${path}`, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        ...(this.accessToken ? { Authorization: `Bearer ${this.accessToken}` } : {}),
-        ...options.headers,
-      },
-      body,
-    });
+    let response: { status: number; body: string };
+    try {
+      response = await new File(file.uri).upload(`${this.apiBaseUrl}${path}`, {
+        fieldName: 'file',
+        headers: {
+          Accept: 'application/json',
+          ...(this.accessToken ? { Authorization: `Bearer ${this.accessToken}` } : {}),
+          ...options.headers,
+        },
+        httpMethod: 'POST',
+        mimeType: file.type,
+        uploadType: UploadType.MULTIPART,
+        sessionType: 'foreground',
+      });
+    } catch (error) {
+      throw new HomeTuskNetworkError(path, error);
+    }
 
-    if (!response.ok) {
-      const errorBody = (await response.json().catch(() => ({}))) as ApiErrorBody;
+    if (response.status < 200 || response.status >= 300) {
+      const errorBody = parseJsonBody<ApiErrorBody>(response.body);
       throw new HomeTuskApiError(response.status, errorBody);
     }
 
-    return (await response.json()) as T;
+    return parseJsonBody<T>(response.body);
   }
 }
 
 export function createHomeTuskApiClient(options?: ApiClientOptions): HomeTuskApiClient {
   return new HomeTuskApiClient(options);
+}
+
+function parseJsonBody<T>(body: string): T {
+  if (!body) {
+    return {} as T;
+  }
+  try {
+    return JSON.parse(body) as T;
+  } catch {
+    return {} as T;
+  }
+}
+
+function formatNetworkCause(cause: unknown): string {
+  return cause instanceof Error && cause.message ? cause.message : 'network unavailable';
 }

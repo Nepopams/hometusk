@@ -170,3 +170,27 @@ Result: **PASS**, with Windows line-ending warnings only.
 **Next recommended action:**
 
 Run the updated `clients/mobile/docs/release-smoke-ai-command.md` checklist on an Android/iOS-capable environment against a backend with `POST /api/v1/voice/transcriptions` enabled.
+
+---
+
+## Live Smoke Follow-Up - 2026-06-18
+
+**Trigger:** Android live smoke showed the voice sheet error "draft not ready" after review/upload.
+
+**Backend log evidence from `docker logs --since=20m hometusk-uat-backend`:**
+
+- Mobile auth reached backend at `2026-06-18T15:46:34Z`.
+- Household read traffic reached backend at `2026-06-18T15:46:36Z`.
+- `POST /api/v1/voice/transcriptions` count in the provided log window: `0`.
+
+**Conclusion:** The failed voice attempt did not reach the HomeTusk backend, so the observed error was a mobile upload/network failure before any ASR or BFF response.
+
+**Applied mobile-only fix:**
+
+- Added direct `expo-file-system` dependency for native upload support.
+- Switched voice transcription upload from React Native `fetch(FormData)` to Expo FileSystem native multipart upload.
+- Added `HomeTuskNetworkError` for failures before an HTTP response.
+- Mapped pre-HTTP voice upload failures to user-safe copy that points testers to backend reachability.
+- Left backend, OpenAPI, AI Platform contracts, command lifecycle, confirmation semantics, and auto-send behavior unchanged.
+
+**Follow-up smoke target:** Re-run voice upload on Android and confirm the UAT backend logs now include `POST /api/v1/voice/transcriptions` for the attempt.

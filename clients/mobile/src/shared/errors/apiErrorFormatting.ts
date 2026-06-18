@@ -1,4 +1,4 @@
-import { HomeTuskApiError } from '../../api/client';
+import { HomeTuskApiError, HomeTuskNetworkError } from '../../api/client';
 
 export function formatAuthError(error: unknown): string {
   if (error instanceof HomeTuskApiError) {
@@ -68,6 +68,9 @@ export function formatConfirmationError(error: unknown): string {
 }
 
 export function formatVoiceTranscriptionError(error: unknown): string {
+  if (error instanceof HomeTuskNetworkError) {
+    return 'Не удалось отправить запись в HomeTusk. Проверь доступность backend с телефона и попробуй снова.';
+  }
   if (error instanceof HomeTuskApiError) {
     const code = error.body.code ?? error.body.errorCode;
     if (error.status === 401) {

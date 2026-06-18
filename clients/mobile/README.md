@@ -75,7 +75,7 @@ Android dev build smoke:
 
 ```bash
 npx expo install expo-notifications expo-constants expo-linking
-npx expo install expo-audio
+npx expo install expo-audio expo-file-system
 npx expo start
 npx uri-scheme open "hometusk://command" --android
 ```
@@ -95,6 +95,7 @@ Expo references checked on 2026-06-14 and refreshed for audio on 2026-06-18:
 - `https://docs.expo.dev/push-notifications/receiving-notifications/`
 - `https://docs.expo.dev/linking/into-your-app/`
 - `https://docs.expo.dev/versions/latest/sdk/audio/`
+- `https://docs.expo.dev/versions/latest/sdk/filesystem/`
 
 ## Boundaries
 
@@ -127,7 +128,8 @@ Mobile Voice Command Entry v1 adds voice only as a secondary command input. The 
 Voice compatibility notes:
 
 - `expo-audio` `RecordingPresets.HIGH_QUALITY` records `.m4a` on native platforms and `audio/webm` on web; both are accepted by the HomeTusk voice transcription media allowlist.
-- The mobile client sends voice uploads only to the authenticated HomeTusk BFF with bearer auth and `X-Correlation-ID`; it does not call AI Platform directly.
+- The mobile client sends voice uploads through Expo FileSystem native multipart upload only to the authenticated HomeTusk BFF with bearer auth and `X-Correlation-ID`; it does not call AI Platform directly.
+- If backend logs show normal mobile auth/read traffic but no `POST /api/v1/voice/transcriptions` for a voice attempt, debug mobile backend reachability or native upload before debugging ASR.
 - Voice-originated command drafts are submitted through the existing `natural_command` path with `inputMode=voice_transcript`, `source=voice`, and safe `asrTraceId` metadata.
 - Controlled voice failures map to permission denied, recording failed, upload/transcription failed, unsupported media, rate limit, timeout, or unclear speech states, each with typed command fallback.
 
