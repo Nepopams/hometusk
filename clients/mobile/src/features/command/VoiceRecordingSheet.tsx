@@ -350,7 +350,7 @@ function getRecordingMediaType(extension: string): string {
       return 'audio/mp4';
     case '.m4a':
     default:
-      return 'audio/m4a';
+      return 'audio/mp4';
   }
 }
 

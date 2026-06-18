@@ -189,6 +189,7 @@ Run the updated `clients/mobile/docs/release-smoke-ai-command.md` checklist on a
 
 - Added direct `expo-file-system` dependency for native upload support.
 - Switched voice transcription upload from React Native `fetch(FormData)` to Expo FileSystem native multipart upload.
+- Normalized native `.m4a` uploads to the standard `audio/mp4` media type for backend/upstream compatibility.
 - Added `HomeTuskNetworkError` for failures before an HTTP response.
 - Mapped pre-HTTP voice upload failures to user-safe copy that points testers to backend reachability.
 - Left backend, OpenAPI, AI Platform contracts, command lifecycle, confirmation semantics, and auto-send behavior unchanged.

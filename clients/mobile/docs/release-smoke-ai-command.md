@@ -28,7 +28,7 @@ Manual smoke for `INIT-2026Q3-mobile-ai-command-ux-v1`, the mobile-only visual l
 - [ ] Stopping recording shows review-before-upload state; no command is sent at this point.
 - [ ] Sending the recording calls `POST /api/v1/voice/transcriptions` as authenticated multipart `file`.
 - [ ] Backend logs contain `POST /api/v1/voice/transcriptions` for the upload attempt; if not, verify mobile backend URL/device reachability and native upload behavior before debugging ASR.
-- [ ] Native recording format is accepted by backend allowlist (`.m4a` / `audio/m4a` expected for Expo native high-quality preset).
+- [ ] Native recording format is accepted by backend allowlist (`.m4a` / `audio/mp4` expected for Expo native high-quality preset).
 - [ ] Successful voice transcription inserts an editable transcript into the normal command composer.
 - [ ] Voice transcript is not auto-sent; user must press `Отправить команду`.
 - [ ] Voice-originated Send uses `type=natural_command`, `payload.inputMode=voice_transcript`, `source=voice`, and safe `asrTraceId` metadata.
