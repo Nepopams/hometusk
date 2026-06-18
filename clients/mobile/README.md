@@ -106,7 +106,7 @@ Expo references checked on 2026-06-14:
 
 ## Auth Session Flow
 
-The app opens a saved SecureStore session on boot, calls `/api/v1/users/me`, and attempts `/auth/mobile/refresh` once when the access token is stale or rejected. Failed refresh clears SecureStore and returns to the unauthenticated screen. Logout calls `/auth/mobile/logout` best effort, then clears SecureStore on the device.
+The app opens a saved SecureStore session on boot, calls `/api/v1/users/me`, and attempts `/auth/mobile/refresh` once when the access token is stale or rejected. Invalid or expired refresh tokens clear SecureStore and return to the unauthenticated screen. Transient restore failures keep SecureStore intact and ask the user to retry. Logout calls `/auth/mobile/logout` best effort, then clears SecureStore on the device.
 
 ## Household Read Models
 

@@ -14,6 +14,15 @@ export interface SecureSession {
   refreshTokenExpiresAt: string;
 }
 
+export class SecureSessionStoreError extends Error {
+  readonly code = 'CORRUPTED_SECURE_SESSION';
+
+  constructor() {
+    super('Stored secure session is corrupted');
+    this.name = 'SecureSessionStoreError';
+  }
+}
+
 export function createSecureSession(auth: MobileAuthResponse, issuedAt = new Date()): SecureSession {
   const issuedAtMs = issuedAt.getTime();
   return {
@@ -37,10 +46,13 @@ export async function readSecureSession(): Promise<SecureSession | null> {
   }
 
   try {
-    return JSON.parse(rawValue) as SecureSession;
+    const parsed = JSON.parse(rawValue) as unknown;
+    if (!isSecureSession(parsed)) {
+      throw new SecureSessionStoreError();
+    }
+    return parsed;
   } catch {
-    await clearSecureSession();
-    return null;
+    throw new SecureSessionStoreError();
   }
 }
 
@@ -52,4 +64,24 @@ export async function writeSecureSession(session: SecureSession): Promise<void> 
 
 export async function clearSecureSession(): Promise<void> {
   await SecureStore.deleteItemAsync(SESSION_KEY);
+}
+
+function isSecureSession(value: unknown): value is SecureSession {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const candidate = value as Partial<SecureSession>;
+  return (
+    typeof candidate.accessToken === 'string' &&
+    typeof candidate.refreshToken === 'string' &&
+    candidate.tokenType === 'Bearer' &&
+    isIsoDate(candidate.issuedAt) &&
+    isIsoDate(candidate.accessTokenExpiresAt) &&
+    isIsoDate(candidate.refreshTokenExpiresAt)
+  );
+}
+
+function isIsoDate(value: unknown): value is string {
+  return typeof value === 'string' && Number.isFinite(Date.parse(value));
 }
