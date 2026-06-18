@@ -23,7 +23,7 @@ import {
 import type { SecureSession } from '../storage/secureSessionStore';
 import { AuthScreen } from '../features/auth/AuthScreen';
 import {
-  clearMobileSessionMemory,
+  isMobileSessionRestoreError,
   logoutMobileSession,
   openStoredMobileSession,
   submitMobileAuth,
@@ -61,6 +61,8 @@ import type {
   StatusBannerMessage,
   SurfaceKey,
 } from './types';
+
+const RESTORE_TRANSIENT_ERROR = 'Could not restore session. Check connection and retry.';
 
 export function AppShell() {
   const [activeSurface, setActiveSurface] = useState<SurfaceKey>('home');
@@ -210,8 +212,7 @@ export function AppShell() {
         }
 
         await applyOpenedSession(opened);
-      } catch {
-        await clearMobileSessionMemory();
+      } catch (error) {
         if (!isMounted) {
           return;
         }
@@ -221,7 +222,7 @@ export function AppShell() {
         setReadModels(emptyReadModels());
         setReadStatus('idle');
         setAuthState('signedOut');
-        setAuthError('Session expired. Sign in again.');
+        setAuthError(formatRestoreSessionError(error));
       }
     }
 
@@ -425,7 +426,6 @@ export function AppShell() {
       await applyOpenedSession(opened);
       setPassword('');
     } catch (error) {
-      await clearMobileSessionMemory();
       setSession(null);
       setProfile(null);
       setSelectedHouseholdId(null);
@@ -879,4 +879,19 @@ export function AppShell() {
       </View>
     </SafeAreaView>
   );
+}
+
+function formatRestoreSessionError(error: unknown): string {
+  if (!isMobileSessionRestoreError(error)) {
+    return RESTORE_TRANSIENT_ERROR;
+  }
+
+  if (
+    error.reason === 'refresh_transient_failure' ||
+    error.reason === 'profile_transient_failure'
+  ) {
+    return RESTORE_TRANSIENT_ERROR;
+  }
+
+  return 'Session expired. Sign in again.';
 }
