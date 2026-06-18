@@ -75,6 +75,7 @@ Android dev build smoke:
 
 ```bash
 npx expo install expo-notifications expo-constants expo-linking
+npx expo install expo-audio
 npx expo start
 npx uri-scheme open "hometusk://command" --android
 ```
@@ -88,11 +89,12 @@ iOS dev/TestFlight-equivalent smoke:
 - Build/install the development build, sign in, confirm push registration, then send a test notification through the Expo push notifications tool.
 - When Apple credentials are unavailable, treat iOS push receipt as credential-blocked but still verify TypeScript, app config, deep-link parsing, and Android path.
 
-Expo references checked on 2026-06-14:
+Expo references checked on 2026-06-14 and refreshed for audio on 2026-06-18:
 
 - `https://docs.expo.dev/push-notifications/push-notifications-setup/`
 - `https://docs.expo.dev/push-notifications/receiving-notifications/`
 - `https://docs.expo.dev/linking/into-your-app/`
+- `https://docs.expo.dev/versions/latest/sdk/audio/`
 
 ## Boundaries
 
@@ -119,6 +121,15 @@ Task create and complete actions use `POST /api/v1/commands` with mobile idempot
 ## Command Chat
 
 The Command tab is the native Mobile AI Command UX v1 surface over HomeTusk command contracts. Typed text is sent to `POST /api/v1/commands` as `type=natural_command` with `payload.text`, `inputMode=text`, locale, timezone, and a reference instant. HomeTusk backend remains the source of truth for command state, guardrails, execution, confirmation, and audit.
+
+Mobile Voice Command Entry v1 adds voice only as a secondary command input. The mic opens a short recording sheet, records through `expo-audio`, sends one multipart `file` to `POST /api/v1/voice/transcriptions`, and inserts the returned transcript into the same editable command field. The app does not send the command automatically after ASR; the user must press the existing Send action.
+
+Voice compatibility notes:
+
+- `expo-audio` `RecordingPresets.HIGH_QUALITY` records `.m4a` on native platforms and `audio/webm` on web; both are accepted by the HomeTusk voice transcription media allowlist.
+- The mobile client sends voice uploads only to the authenticated HomeTusk BFF with bearer auth and `X-Correlation-ID`; it does not call AI Platform directly.
+- Voice-originated command drafts are submitted through the existing `natural_command` path with `inputMode=voice_transcript`, `source=voice`, and safe `asrTraceId` metadata.
+- Controlled voice failures map to permission denied, recording failed, upload/transcription failed, unsupported media, rate limit, timeout, or unclear speech states, each with typed command fallback.
 
 The mobile visual system uses the approved Mobile Redesign + Mascot v1 direction:
 

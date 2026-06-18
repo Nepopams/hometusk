@@ -24,6 +24,8 @@ import type {
   Task,
   UpdateShoppingItemRequest,
   UserProfile,
+  VoiceTranscriptionFile,
+  VoiceTranscriptionResponse,
   Zone,
 } from './types';
 
@@ -219,6 +221,21 @@ export class HomeTuskApiClient {
     );
   }
 
+  createVoiceTranscription(file: VoiceTranscriptionFile): Promise<VoiceTranscriptionResponse> {
+    const formData = new FormData();
+    formData.append('file', {
+      uri: file.uri,
+      name: file.name,
+      type: file.type,
+    } as unknown as Blob);
+
+    return this.fetchMultipart<VoiceTranscriptionResponse>('/voice/transcriptions', formData, {
+      headers: {
+        'X-Correlation-ID': generateClientUuid(),
+      },
+    });
+  }
+
   private async fetchJson<T>(
     path: string,
     options: { method?: string; body?: unknown; headers?: Record<string, string> } = {}
@@ -241,6 +258,29 @@ export class HomeTuskApiClient {
 
     if (response.status === 204) {
       return undefined as T;
+    }
+
+    return (await response.json()) as T;
+  }
+
+  private async fetchMultipart<T>(
+    path: string,
+    body: FormData,
+    options: { headers?: Record<string, string> } = {}
+  ): Promise<T> {
+    const response = await fetch(`${this.apiBaseUrl}${path}`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        ...(this.accessToken ? { Authorization: `Bearer ${this.accessToken}` } : {}),
+        ...options.headers,
+      },
+      body,
+    });
+
+    if (!response.ok) {
+      const errorBody = (await response.json().catch(() => ({}))) as ApiErrorBody;
+      throw new HomeTuskApiError(response.status, errorBody);
     }
 
     return (await response.json()) as T;

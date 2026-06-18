@@ -27,6 +27,9 @@ function formatRecentCommandText(text: string): string {
   if (text.startsWith('Command: ')) {
     return text.replace(/^Command:\s*/, '');
   }
+  if (text.startsWith('Voice: ')) {
+    return `Голосом: ${text.replace(/^Voice:\s*/, '')}`;
+  }
   if (text.startsWith('Continue: ')) {
     return `Уточнение: ${text.replace(/^Continue:\s*/, '')}`;
   }

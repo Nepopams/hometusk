@@ -67,6 +67,38 @@ export function formatConfirmationError(error: unknown): string {
   return 'Could not update this confirmation. Check the backend URL and try again.';
 }
 
+export function formatVoiceTranscriptionError(error: unknown): string {
+  if (error instanceof HomeTuskApiError) {
+    const code = error.body.code ?? error.body.errorCode;
+    if (error.status === 401) {
+      return 'Войди снова перед голосовым вводом.';
+    }
+    if (error.status === 400 || code === 'invalid_multipart' || code === 'missing_audio_file') {
+      return 'Запись не удалось отправить. Попробуй еще раз или введи команду текстом.';
+    }
+    if (error.status === 413 || code === 'file_too_large') {
+      return 'Запись слишком длинная. Скажи команду короче или введи ее текстом.';
+    }
+    if (error.status === 415 || code === 'unsupported_media') {
+      return 'Формат записи не поддержан. Попробуй еще раз или введи команду текстом.';
+    }
+    if (error.status === 429 || code === 'local_rate_limit') {
+      return 'Голосовой ввод временно ограничен. Введи команду текстом или попробуй позже.';
+    }
+    if (error.status === 504 || code === 'timeout') {
+      return 'Голосовой ввод занял слишком много времени. Попробуй еще раз или введи команду текстом.';
+    }
+    if (error.status === 500 || error.status === 502) {
+      return 'Голосовой ввод сейчас недоступен. Введи команду текстом или попробуй еще раз.';
+    }
+    if (error.body.message) {
+      return error.body.message;
+    }
+    return `Голосовой ввод завершился ошибкой API ${error.status}.`;
+  }
+  return 'Голосовой ввод не завершился. Проверь соединение и попробуй еще раз.';
+}
+
 export function formatPushRegistrationError(error: unknown): string {
   if (error instanceof HomeTuskApiError) {
     if (error.status === 401) {

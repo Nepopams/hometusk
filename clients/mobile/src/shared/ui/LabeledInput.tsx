@@ -9,6 +9,8 @@ type LabeledInputProps = {
   placeholder: string;
   editable: boolean;
   keyboardType?: 'default' | 'email-address';
+  multiline?: boolean;
+  numberOfLines?: number;
   secureTextEntry?: boolean;
 };
 
@@ -19,6 +21,8 @@ export function LabeledInput({
   placeholder,
   editable,
   keyboardType,
+  multiline,
+  numberOfLines,
   secureTextEntry,
 }: LabeledInputProps) {
   return (
@@ -28,11 +32,14 @@ export function LabeledInput({
         autoCapitalize="none"
         editable={editable}
         keyboardType={keyboardType ?? 'default'}
+        multiline={multiline}
+        numberOfLines={numberOfLines}
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor="#8a908d"
         secureTextEntry={secureTextEntry}
-        style={styles.input}
+        style={[styles.input, multiline && styles.inputMultiline]}
+        textAlignVertical={multiline ? 'top' : 'center'}
         value={value}
       />
     </View>
