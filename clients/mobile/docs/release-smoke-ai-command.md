@@ -22,7 +22,7 @@ Manual smoke for `INIT-2026Q3-mobile-ai-command-ux-v1`, the mobile-only visual l
 - [ ] Command tab shows redesigned state hero with static mascot placeholder or approved static asset.
 - [ ] Command tab accepts typed natural text and sends `type=natural_command`.
 - [ ] Request includes `payload.text`, `inputMode=text`, `locale`, `timezone`, `referenceInstant`, `source=mobile`, and `clientTimestamp`.
-- [ ] Mic is visible as a secondary action and does not replace typed command entry.
+- [ ] Mic is visible as a small round icon button inside the command input field and does not replace typed command entry.
 - [ ] Mic opens a short recording sheet with ready state and explicit close/start controls.
 - [ ] Recording state shows a timer and explicit stop/cancel controls.
 - [ ] Stopping recording shows review-before-upload state; no command is sent at this point.

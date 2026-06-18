@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 
 import type { CommandChatControls } from '../../app/types';
-import { LabeledInput } from '../../shared/ui/LabeledInput';
 import { styles } from '../../shared/ui/styles';
 import { VoiceRecordingSheet } from './VoiceRecordingSheet';
 
@@ -11,15 +10,37 @@ export function CommandComposer({ controls }: { controls: CommandChatControls })
 
   return (
     <View style={styles.commandComposer}>
-      <LabeledInput
-        editable={!controls.isSaving}
-        label="Команда"
-        multiline
-        numberOfLines={3}
-        onChangeText={controls.onChangeCommandText}
-        placeholder="Назначь Пете вынести мусор сегодня вечером"
-        value={controls.commandText}
-      />
+      <View style={styles.commandInputGroup}>
+        <Text style={styles.inputLabel}>Команда</Text>
+        <View style={styles.commandInputRow}>
+          <TextInput
+            autoCapitalize="sentences"
+            editable={!controls.isSaving}
+            onChangeText={controls.onChangeCommandText}
+            placeholder="Например: купи молоко и хлеб"
+            placeholderTextColor="#8a908d"
+            style={styles.commandTextInput}
+            value={controls.commandText}
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Записать голосовую команду"
+            disabled={controls.isSaving}
+            onPress={() => setIsVoiceSheetVisible(true)}
+            style={({ pressed }) => [
+              styles.voiceMicButton,
+              pressed && styles.buttonPressed,
+              controls.isSaving && styles.buttonDisabled,
+            ]}
+          >
+            <View style={styles.voiceMicIcon}>
+              <View style={styles.voiceMicIconCapsule} />
+              <View style={styles.voiceMicIconStem} />
+              <View style={styles.voiceMicIconBase} />
+            </View>
+          </Pressable>
+        </View>
+      </View>
       {controls.voice.asrTraceId ? (
         <View style={styles.voiceDraftBanner}>
           <Text style={styles.voiceDraftText}>
@@ -42,19 +63,6 @@ export function CommandComposer({ controls }: { controls: CommandChatControls })
         HomeTusk покажет результат или спросит подтверждение.
       </Text>
       <View style={styles.commandComposerActions}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Записать голосовую команду"
-          disabled={controls.isSaving}
-          onPress={() => setIsVoiceSheetVisible(true)}
-          style={({ pressed }) => [
-            styles.voiceMicButton,
-            pressed && styles.buttonPressed,
-            controls.isSaving && styles.buttonDisabled,
-          ]}
-        >
-          <Text style={styles.voiceMicButtonText}>Голос</Text>
-        </Pressable>
         <Pressable
           accessibilityRole="button"
           disabled={controls.isSaving}
