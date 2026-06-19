@@ -23,12 +23,13 @@ Manual smoke for `INIT-2026Q3-mobile-ai-command-ux-v1`, the mobile-only visual l
 - [ ] Command tab accepts typed natural text and sends `type=natural_command`.
 - [ ] Request includes `payload.text`, `inputMode=text`, `locale`, `timezone`, `referenceInstant`, `source=mobile`, and `clientTimestamp`.
 - [ ] Mic is visible as a small round icon button inside the command input field and does not replace typed command entry.
-- [ ] Mic opens a short recording sheet with ready state and explicit close/start controls.
+- [ ] Mic opens a short recording sheet and starts recording immediately after microphone permission.
 - [ ] Recording state shows a timer and explicit stop/cancel controls.
-- [ ] Stopping recording shows review-before-upload state; no command is sent at this point.
-- [ ] Sending the recording calls `POST /api/v1/voice/transcriptions` as authenticated multipart `file`.
+- [ ] Stopping recording automatically calls `POST /api/v1/voice/transcriptions` as authenticated multipart `file`.
+- [ ] No separate `Start recording` or `Send recording` button is required in the happy path.
+- [ ] Auto-transcription does not send a command; it only prepares an editable transcript draft.
 - [ ] Backend logs contain `POST /api/v1/voice/transcriptions` for the upload attempt; if not, verify mobile backend URL/device reachability and native upload behavior before debugging ASR.
-- [ ] Native recording format is accepted by backend allowlist (`.m4a` / `audio/m4a` expected for Expo native high-quality preset).
+- [ ] Native recording format is accepted by backend allowlist (`.m4a` / `audio/mp4` expected for Expo native high-quality preset).
 - [ ] Successful voice transcription inserts an editable transcript into the normal command composer.
 - [ ] Voice transcript is not auto-sent; user must press `Отправить команду`.
 - [ ] Voice-originated Send uses `type=natural_command`, `payload.inputMode=voice_transcript`, `source=voice`, and safe `asrTraceId` metadata.

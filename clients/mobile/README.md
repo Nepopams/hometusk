@@ -123,11 +123,11 @@ Task create and complete actions use `POST /api/v1/commands` with mobile idempot
 
 The Command tab is the native Mobile AI Command UX v1 surface over HomeTusk command contracts. Typed text is sent to `POST /api/v1/commands` as `type=natural_command` with `payload.text`, `inputMode=text`, locale, timezone, and a reference instant. HomeTusk backend remains the source of truth for command state, guardrails, execution, confirmation, and audit.
 
-Mobile Voice Command Entry v1 adds voice only as a secondary command input. The mic opens a short recording sheet, records through `expo-audio`, sends one multipart `file` to `POST /api/v1/voice/transcriptions`, and inserts the returned transcript into the same editable command field. The app does not send the command automatically after ASR; the user must press the existing Send action.
+Mobile Voice Command Entry v1 adds voice only as a secondary command input. The mic opens a short recording sheet and starts recording immediately after microphone permission, records through `expo-audio`, uploads the stopped recording as one multipart `file` to `POST /api/v1/voice/transcriptions`, and inserts the returned transcript into the same editable command field. The app does not send the command automatically after ASR; the user must press the existing Send action.
 
 Voice compatibility notes:
 
-- `expo-audio` `RecordingPresets.HIGH_QUALITY` records `.m4a` on native platforms and `audio/webm` on web; both are accepted by the HomeTusk voice transcription media allowlist.
+- `expo-audio` `RecordingPresets.HIGH_QUALITY` records `.m4a` on native platforms and `audio/webm` on web; native `.m4a` uploads are sent with the standard `audio/mp4` media type accepted by the HomeTusk voice transcription media allowlist.
 - The mobile client sends voice uploads through Expo FileSystem native multipart upload only to the authenticated HomeTusk BFF with bearer auth and `X-Correlation-ID`; it does not call AI Platform directly.
 - If backend logs show normal mobile auth/read traffic but no `POST /api/v1/voice/transcriptions` for a voice attempt, debug mobile backend reachability or native upload before debugging ASR.
 - Voice-originated command drafts are submitted through the existing `natural_command` path with `inputMode=voice_transcript`, `source=voice`, and safe `asrTraceId` metadata.
