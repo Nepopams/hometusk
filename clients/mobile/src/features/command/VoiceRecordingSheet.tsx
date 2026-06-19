@@ -4,7 +4,7 @@ import {
   useAudioRecorder,
   useAudioRecorderState,
 } from 'expo-audio';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Modal, Platform, Pressable, Text, View } from 'react-native';
 
 import { HomeTuskApiError } from '../../api/client';
@@ -15,8 +15,8 @@ import { styles } from '../../shared/ui/styles';
 
 type VoiceRecordingPhase =
   | 'ready'
+  | 'starting'
   | 'recording'
-  | 'review'
   | 'processing'
   | 'permission_denied'
   | 'recording_failed'
@@ -41,15 +41,21 @@ export function VoiceRecordingSheet({
 }: VoiceRecordingSheetProps) {
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(audioRecorder, 250);
+  const hasAutoStartedRef = useRef(false);
   const [phase, setPhase] = useState<VoiceRecordingPhase>('ready');
-  const [recordingFile, setRecordingFile] = useState<VoiceTranscriptionFile | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!visible) {
+      hasAutoStartedRef.current = false;
       setPhase('ready');
-      setRecordingFile(null);
       setErrorMessage(null);
+      return;
+    }
+
+    if (!hasAutoStartedRef.current) {
+      hasAutoStartedRef.current = true;
+      void startRecording();
     }
   }, [visible]);
 
@@ -65,12 +71,12 @@ export function VoiceRecordingSheet({
   const copy = getVoiceCopy(phase, errorMessage);
 
   async function startRecording() {
-    if (disabled || phase === 'processing') {
+    if (disabled || phase === 'starting' || phase === 'processing') {
       return;
     }
 
     setErrorMessage(null);
-    setRecordingFile(null);
+    setPhase('starting');
 
     try {
       const permission = await requestRecordingPermissionsAsync();
@@ -84,7 +90,7 @@ export function VoiceRecordingSheet({
       setPhase('recording');
     } catch {
       setPhase('recording_failed');
-        setErrorMessage('Не удалось начать запись. Попробуй еще раз или введи команду текстом.');
+      setErrorMessage('Не удалось начать запись. Попробуй еще раз или введи команду текстом.');
     }
   }
 
@@ -102,19 +108,14 @@ export function VoiceRecordingSheet({
         return;
       }
 
-      setRecordingFile(createVoiceRecordingFile(uri));
-      setPhase('review');
+      await transcribeRecording(createVoiceRecordingFile(uri));
     } catch {
       setPhase('recording_failed');
       setErrorMessage('Не удалось завершить запись. Попробуй еще раз или введи команду текстом.');
     }
   }
 
-  async function sendRecordingForTranscript() {
-    if (!recordingFile || phase !== 'review') {
-      return;
-    }
-
+  async function transcribeRecording(recordingFile: VoiceTranscriptionFile) {
     setPhase('processing');
     setErrorMessage(null);
 
@@ -128,7 +129,6 @@ export function VoiceRecordingSheet({
       }
 
       controls.onTranscriptReady(transcript, response.traceId);
-      setRecordingFile(null);
       setPhase('ready');
       onClose();
     } catch (error) {
@@ -141,16 +141,9 @@ export function VoiceRecordingSheet({
     if (audioRecorder.isRecording) {
       await audioRecorder.stop().catch(() => undefined);
     }
-    setRecordingFile(null);
     setErrorMessage(null);
     setPhase('ready');
     onClose();
-  }
-
-  function resetToReady() {
-    setRecordingFile(null);
-    setErrorMessage(null);
-    setPhase('ready');
   }
 
   return (
@@ -174,21 +167,17 @@ export function VoiceRecordingSheet({
             <Text style={styles.voiceSheetBody}>{copy.body}</Text>
           </View>
 
+          {phase === 'starting' && (
+            <View style={styles.voiceProcessingCard}>
+              <Text style={styles.voiceStatusText}>Открываю микрофон...</Text>
+            </View>
+          )}
+
           {phase === 'recording' && (
             <View style={styles.voiceRecordingPanel}>
               <View style={styles.voicePulse} />
               <Text style={styles.voiceTimer}>{formatDuration(recorderState.durationMillis)}</Text>
               <Text style={styles.hintText}>Скажи одну короткую бытовую команду.</Text>
-            </View>
-          )}
-
-          {phase === 'review' && recordingFile && (
-            <View style={styles.voiceReviewCard}>
-              <Text style={styles.dataTitle}>Запись готова</Text>
-              <Text style={styles.dataBody}>
-                Отправь запись, чтобы получить редактируемый текст, или запиши заново.
-              </Text>
-              <Text style={styles.entityMeta}>{recordingFile.name}</Text>
             </View>
           )}
 
@@ -232,33 +221,6 @@ export function VoiceRecordingSheet({
               </>
             ) : null}
 
-            {phase === 'review' ? (
-              <>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={resetToReady}
-                  style={({ pressed }) => [
-                    styles.secondaryButton,
-                    styles.voiceSheetActionButton,
-                    pressed && styles.buttonPressed,
-                  ]}
-                >
-                  <Text style={styles.secondaryButtonText}>Записать заново</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={sendRecordingForTranscript}
-                  style={({ pressed }) => [
-                    styles.primaryButton,
-                    styles.voiceSheetActionButton,
-                    pressed && styles.buttonPressed,
-                  ]}
-                >
-                  <Text style={styles.primaryButtonText}>Получить текст</Text>
-                </Pressable>
-              </>
-            ) : null}
-
             {(phase === 'ready' || isErrorPhase(phase)) && (
               <>
                 <Pressable
@@ -283,18 +245,20 @@ export function VoiceRecordingSheet({
                     disabled && styles.buttonDisabled,
                   ]}
                 >
-                  <Text style={styles.primaryButtonText}>Начать запись</Text>
+                  <Text style={styles.primaryButtonText}>Попробовать снова</Text>
                 </Pressable>
               </>
             )}
 
-            {phase === 'processing' && (
+            {(phase === 'starting' || phase === 'processing') && (
               <Pressable
                 accessibilityRole="button"
                 disabled
                 style={[styles.primaryButton, styles.voiceSheetActionButton, styles.buttonDisabled]}
               >
-                <Text style={styles.primaryButtonText}>Готовлю...</Text>
+                <Text style={styles.primaryButtonText}>
+                  {phase === 'starting' ? 'Слушаю...' : 'Готовлю...'}
+                </Text>
               </Pressable>
             )}
           </View>
@@ -383,16 +347,16 @@ function isErrorPhase(phase: VoiceRecordingPhase): boolean {
 }
 
 function getVoiceCopy(phase: VoiceRecordingPhase, errorMessage: string | null) {
+  if (phase === 'starting') {
+    return {
+      title: 'Готовлю микрофон',
+      body: 'Запись начнется сразу после разрешения доступа.',
+    };
+  }
   if (phase === 'recording') {
     return {
       title: 'Идет запись',
       body: 'Останови запись, когда команда закончена.',
-    };
-  }
-  if (phase === 'review') {
-    return {
-      title: 'Проверь запись',
-      body: 'Отправь запись, чтобы получить редактируемый текстовый черновик.',
     };
   }
   if (phase === 'processing') {

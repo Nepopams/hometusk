@@ -123,7 +123,7 @@ Task create and complete actions use `POST /api/v1/commands` with mobile idempot
 
 The Command tab is the native Mobile AI Command UX v1 surface over HomeTusk command contracts. Typed text is sent to `POST /api/v1/commands` as `type=natural_command` with `payload.text`, `inputMode=text`, locale, timezone, and a reference instant. HomeTusk backend remains the source of truth for command state, guardrails, execution, confirmation, and audit.
 
-Mobile Voice Command Entry v1 adds voice only as a secondary command input. The mic opens a short recording sheet, records through `expo-audio`, sends one multipart `file` to `POST /api/v1/voice/transcriptions`, and inserts the returned transcript into the same editable command field. The app does not send the command automatically after ASR; the user must press the existing Send action.
+Mobile Voice Command Entry v1 adds voice only as a secondary command input. The mic opens a short recording sheet and starts recording immediately after microphone permission, records through `expo-audio`, uploads the stopped recording as one multipart `file` to `POST /api/v1/voice/transcriptions`, and inserts the returned transcript into the same editable command field. The app does not send the command automatically after ASR; the user must press the existing Send action.
 
 Voice compatibility notes:
 
