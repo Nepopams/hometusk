@@ -127,7 +127,7 @@ Mobile Voice Command Entry v1 adds voice only as a secondary command input. The 
 
 Voice compatibility notes:
 
-- `expo-audio` `RecordingPresets.HIGH_QUALITY` records `.m4a` on native platforms and `audio/webm` on web; native `.m4a` uploads are sent with the standard `audio/mp4` media type accepted by the HomeTusk voice transcription media allowlist.
+- Mobile records MPEG4/AAC as `.mp4` on native platforms and `audio/webm` on web; native uploads are sent as `audio/mp4`, which is accepted by the HomeTusk voice transcription media allowlist.
 - The mobile client sends voice uploads through Expo FileSystem native multipart upload only to the authenticated HomeTusk BFF with bearer auth and `X-Correlation-ID`; it does not call AI Platform directly.
 - If backend logs show normal mobile auth/read traffic but no `POST /api/v1/voice/transcriptions` for a voice attempt, debug mobile backend reachability or native upload before debugging ASR.
 - Voice-originated command drafts are submitted through the existing `natural_command` path with `inputMode=voice_transcript`, `source=voice`, and safe `asrTraceId` metadata.
