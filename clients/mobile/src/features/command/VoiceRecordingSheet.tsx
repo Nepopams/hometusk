@@ -1,5 +1,6 @@
 import {
   RecordingPresets,
+  type RecordingOptions,
   requestRecordingPermissionsAsync,
   useAudioRecorder,
   useAudioRecorderState,
@@ -33,13 +34,26 @@ type VoiceRecordingSheetProps = {
   visible: boolean;
 };
 
+const voiceRecordingOptions: RecordingOptions = {
+  ...RecordingPresets.HIGH_QUALITY,
+  extension: '.mp4',
+  android: {
+    ...RecordingPresets.HIGH_QUALITY.android,
+    extension: '.mp4',
+  },
+  ios: {
+    ...RecordingPresets.HIGH_QUALITY.ios,
+    extension: '.mp4',
+  },
+};
+
 export function VoiceRecordingSheet({
   controls,
   disabled,
   onClose,
   visible,
 }: VoiceRecordingSheetProps) {
-  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const audioRecorder = useAudioRecorder(voiceRecordingOptions);
   const recorderState = useAudioRecorderState(audioRecorder, 250);
   const hasAutoStartedRef = useRef(false);
   const [phase, setPhase] = useState<VoiceRecordingPhase>('ready');

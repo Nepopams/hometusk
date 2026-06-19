@@ -72,7 +72,7 @@
 - Added `expo-audio` as the mobile recording dependency and configured the Expo audio plugin with foreground microphone permission copy.
 - Added a secondary voice entry action to the existing Command composer.
 - Added `VoiceRecordingSheet` with ready, recording, review, processing, permission denied, recording failed, upload/transcription failed, unsupported media, rate limit, timeout, and unclear speech states.
-- Voice recording uses Expo high-quality recording output; native `.m4a` / `audio/m4a` and web `audio/webm` are compatible with the accepted backend media allowlist.
+- Voice recording uses Expo high-quality MPEG4/AAC output; native `.mp4` / `audio/mp4` and web `audio/webm` are compatible with the accepted backend media allowlist.
 - Added mobile API client support for authenticated multipart `POST /api/v1/voice/transcriptions` with `X-Correlation-ID`.
 - Successful ASR returns only an editable transcript draft and safe `traceId`; the sheet inserts the draft into the existing command composer and closes.
 - Existing Send remains the only command execution trigger.
@@ -189,7 +189,7 @@ Run the updated `clients/mobile/docs/release-smoke-ai-command.md` checklist on a
 
 - Added direct `expo-file-system` dependency for native upload support.
 - Switched voice transcription upload from React Native `fetch(FormData)` to Expo FileSystem native multipart upload.
-- Normalized native `.m4a` uploads to the standard `audio/mp4` media type for backend/upstream compatibility.
+- Normalized native MPEG4/AAC uploads to `.mp4` plus `audio/mp4` so multipart filename and media type agree for backend/upstream compatibility.
 - Added `HomeTuskNetworkError` for failures before an HTTP response.
 - Mapped pre-HTTP voice upload failures to user-safe copy that points testers to backend reachability.
 - Left backend, OpenAPI, AI Platform contracts, command lifecycle, confirmation semantics, and auto-send behavior unchanged.
